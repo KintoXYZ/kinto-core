@@ -1,0 +1,9 @@
+{
+  "name": "kinto-id",
+  "version": "1.0.0",
+  "description": "Kinto ID ",
+  "main": "index.js",
+  "author": "Ramon Recuero <rrmoreno1987@gmail.com>",
+  "license": "MIT",
+  "private": true
+}
