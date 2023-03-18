@@ -181,7 +181,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     /* ============ View Functions ============ */
 
     function isKYC(address _account) external view override returns (bool) {
-        return balanceOf(_account, 1) > 0;
+        return balanceOf(_account, KYC_TOKEN_ID) > 0;
     }
 
     function isSanctionsMonitored(uint32 _days) public view override returns(bool) {
