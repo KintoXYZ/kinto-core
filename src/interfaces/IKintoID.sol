@@ -43,6 +43,8 @@ interface IKintoID {
 
     function removeSanction(address _account, uint8 _countryId) external;
 
+    function monitor() external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);

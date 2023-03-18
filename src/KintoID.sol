@@ -26,6 +26,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     event TraitRemoved(address indexed _to, uint8 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
     event SanctionRemoved(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
+    event AccountsMonitoredAt(address indexed _signer, uint256 _timestamp);
 
     /* ============ Constants ============ */
     bytes32 public override constant KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
@@ -132,6 +133,11 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     }
 
     /* ============ Sanctions & traits ============ */
+
+    function monitor() external override onlyRole(KYC_PROVIDER_ROLE) {
+        lastMonitoredAt = block.timestamp;
+        emit AccountsMonitoredAt(msg.sender, block.timestamp);
+    }
 
     function addTrait(address _account, uint8 _traitId) external override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
