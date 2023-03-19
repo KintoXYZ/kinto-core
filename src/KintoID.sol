@@ -78,7 +78,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @return string representing the token name
      */
     function name() external pure override returns (string memory) {
-        return "OM - ID";
+        return "Kinto ID";
     }
 
     /**
@@ -86,7 +86,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @return string representing the token symbol
      */
     function symbol() external pure override returns (string memory) {
-        return "OMID";
+        return "KINID";
     }
 
     function setURI(string memory newuri) external override onlyRole(DEFAULT_ADMIN_ROLE) {
