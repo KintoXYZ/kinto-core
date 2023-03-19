@@ -75,6 +75,8 @@ interface IKintoID {
 
     function KYC_PROVIDER_ROLE() external view returns (bytes32);
 
+    function UPGRADER_ROLE() external view returns (bytes32);
+
     function lastMonitoredAt() external view returns (uint256);
 
 }

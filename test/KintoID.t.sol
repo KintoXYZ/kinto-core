@@ -34,6 +34,7 @@ contract KintoIDTest is Test {
     address signer = address(2);
     address user = address(3);
     address user2 = address(4);
+    address upgrader = address(5);
 
     function setUp() public {
         vm.startPrank(owner);
@@ -71,6 +72,22 @@ contract KintoIDTest is Test {
         // re-wrap the proxy
         kintoIDv2 = KintoIDV2(address(proxy));
         assertEq(kintoIDv2.newFunction(), 1);
+    }
+
+    function testAuthorizedCanUpgrade() public {
+        assertEq(false, kintoIDv1.hasRole(kintoIDv1.UPGRADER_ROLE(), upgrader));
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.UPGRADER_ROLE(), upgrader);
+        vm.stopPrank();
+        vm.startPrank(upgrader);
+        // Upgrade from the upgrader account
+        assertEq(true, kintoIDv1.hasRole(kintoIDv1.UPGRADER_ROLE(), upgrader));
+        KintoIDV2 implementationV2 = new KintoIDV2();
+        kintoIDv1.upgradeTo(address(implementationV2));
+        // re-wrap the proxy
+        kintoIDv2 = KintoIDV2(address(proxy));
+        assertEq(kintoIDv2.newFunction(), 1);
+        vm.stopPrank();
     }
 
 }

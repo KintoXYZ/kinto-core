@@ -12,6 +12,9 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol
 import {IKintoID} from "./interfaces/IKintoID.sol";
 import {SignatureChecker} from './lib/SignatureChecker.sol';
 
+import "forge-std/console2.sol";
+
+
 /**
  * @title Kinto ID
  * @dev The Kinto ID predeploy provides an interface to access all the ID functionality from the L2.
@@ -30,6 +33,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Constants ============ */
     bytes32 public override constant KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
+    bytes32 public override constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     uint8 public override constant KYC_TOKEN_ID = 1;
 
@@ -63,13 +67,14 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(KYC_PROVIDER_ROLE, msg.sender);
+        _setupRole(UPGRADER_ROLE, msg.sender);
         lastMonitoredAt = block.timestamp;
     }
 
     /**
     *
     */
-    function _authorizeUpgrade(address newImplementation) internal onlyRole(DEFAULT_ADMIN_ROLE) override {}
+    function _authorizeUpgrade(address newImplementation) internal onlyRole(UPGRADER_ROLE) override {}
 
     /* ============ Token name, symbol & URI ============ */
 
