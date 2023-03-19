@@ -38,7 +38,6 @@ contract KintoIDTest is Test {
 
     function setUp() public {
         vm.startPrank(owner);
-        vm.deal(address(owner), 1e18);
         implementation = new KintoID();
         // deploy proxy contract and point it to implementation
         proxy = new UUPSProxy(address(implementation), "");
@@ -79,15 +78,15 @@ contract KintoIDTest is Test {
         vm.startPrank(owner);
         kintoIDv1.grantRole(kintoIDv1.UPGRADER_ROLE(), upgrader);
         vm.stopPrank();
-        vm.startPrank(upgrader);
         // Upgrade from the upgrader account
         assertEq(true, kintoIDv1.hasRole(kintoIDv1.UPGRADER_ROLE(), upgrader));
         KintoIDV2 implementationV2 = new KintoIDV2();
+        vm.startPrank(upgrader);
         kintoIDv1.upgradeTo(address(implementationV2));
         // re-wrap the proxy
         kintoIDv2 = KintoIDV2(address(proxy));
-        assertEq(kintoIDv2.newFunction(), 1);
         vm.stopPrank();
+        assertEq(kintoIDv2.newFunction(), 1);
     }
 
 }
