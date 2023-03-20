@@ -49,6 +49,9 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
+    // 256 traits max
+    // 256 countries max. Currently, 192 countries exist
+
     /* ============ Modifiers ============ */
 
 

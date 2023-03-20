@@ -61,6 +61,8 @@ contract KintoIDTest is Test {
         assertEq(kintoIDv1.KYC_TOKEN_ID(), 1);
     }
 
+    // Upgrade Tests
+
     function testOwnerCanUpgrade() public {
         vm.startPrank(owner);
         KintoIDV2 implementationV2 = new KintoIDV2();
@@ -94,6 +96,8 @@ contract KintoIDTest is Test {
         vm.stopPrank();
         assertEq(kintoIDv2.newFunction(), 1);
     }
+
+    // Mint Tests
 
     function testMintIndividualKYC() public {
         IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
@@ -161,6 +165,8 @@ contract KintoIDTest is Test {
         kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
+    // Burn Tests
+
     function testBurnKYC() public {
         IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
         uint8[] memory traits = new uint8[](1);
@@ -207,6 +213,7 @@ contract KintoIDTest is Test {
         kintoIDv1.burnKYC(sigdata);
     }
 
+    // Monitor Tests
     function testMonitor() public {
         vm.startPrank(kyc_provider);
         kintoIDv1.monitor();
@@ -216,6 +223,92 @@ contract KintoIDTest is Test {
     function testFailOnlyProviderCanMonitor() public {
         vm.startPrank(user);
         kintoIDv1.monitor();
+    }
+
+    function testIsSanctionsMonitored() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.monitor();
+        assertEq(kintoIDv1.isSanctionsMonitored(1), true);
+        vm.warp(block.timestamp + 7 days);
+        assertEq(kintoIDv1.isSanctionsMonitored(8), true);
+        assertEq(kintoIDv1.isSanctionsMonitored(6), false);
+    }
+
+    // Trait Tests
+    function testProviderCanAddTrait() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addTrait(user, 1);
+        assertEq(kintoIDv1.hasTrait(user,1), true);
+    }
+
+    function testFailUserCannotAddTrait() public {
+        vm.startPrank(user);
+        kintoIDv1.addTrait(user, 1);
+    }
+
+    function testProviderCanRemoveTrait() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addTrait(user, 1);
+        assertEq(kintoIDv1.hasTrait(user,1), true);
+        kintoIDv1.removeTrait(user, 1);
+        assertEq(kintoIDv1.hasTrait(user,1), false);
+    }
+
+    function testFailUserCannotRemoveTrait() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addTrait(user, 1);
+        assertEq(kintoIDv1.hasTrait(user,1), true);
+        vm.stopPrank();
+        vm.startPrank(user);
+        kintoIDv1.removeTrait(user, 1);
+    }
+
+    // Sanction Tests
+    function testProviderCanAddSanction() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addSanction(user, 1);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,1), false);
+        assertEq(kintoIDv1.isSanctionsSafe(user), false);
+    }
+
+    function testProviderCanRemoveSancion() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addSanction(user, 1);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,1), false);
+        kintoIDv1.removeSanction(user, 1);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,1), true);
+        assertEq(kintoIDv1.isSanctionsSafe(user), true);
+    }
+
+    function testFailUserCannotAddSanction() public {
+        vm.startPrank(user);
+        kintoIDv1.addSanction(user2, 1);
+    }
+
+    function testFailUserCannotRemoveSanction() public {
+        vm.startPrank(kyc_provider);
+        kintoIDv1.addSanction(user, 1);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,1), false);
+        vm.stopPrank();
+        vm.startPrank(user);
+        kintoIDv1.removeSanction(user2, 1);
+    }
+
+    // Transfer
+
+    function testFailTransfersAreDisabled() public {
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        vm.startPrank(kyc_provider);
+        assertEq(kintoIDv1.isKYC(user), false);
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.stopPrank();
+        vm.startPrank(user);
+        kintoIDv1.safeTransferFrom(user, user2, kintoIDv1.KYC_TOKEN_ID(), 1, "0x0");
+        assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 0);
+        assertEq(kintoIDv1.balanceOf(user2, kintoIDv1.KYC_TOKEN_ID()), 1);
+
     }
 
     // Create a test for minting a KYC token
