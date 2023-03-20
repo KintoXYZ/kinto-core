@@ -340,7 +340,8 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
       IKintoID.SignatureData calldata _signature
     ) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
-        require(nonces[_signature.signer] == _signature.nonce, "Invalid nonce");
+        require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
+        require(hasRole(KYC_PROVIDER_ROLE, msg.sender), "Invalid Provider");
 
         bytes32 hash = keccak256(
           abi.encode(
@@ -355,9 +356,8 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         ).toEthSignedMessageHash();
 
         require(
-          hasRole(KYC_PROVIDER_ROLE, msg.sender) &&
           _signature.signer.isValidSignatureNow(hash, _signature.signature),
-          "Invalid signer"
+          "Invalid Signer"
         );
         _;
     }

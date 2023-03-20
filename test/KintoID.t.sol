@@ -103,9 +103,58 @@ contract KintoIDTest is Test {
         traits[0] = 1;
         vm.startPrank(kyc_provider);
         kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.stopPrank();
         assertEq(kintoIDv1.isKYC(user), true);
+        assertEq(kintoIDv1.isIndividual(user), true);
         assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 1);
+    }
+
+    function testMintIndividualKYCWithInvalidSender() public {
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.KYC_PROVIDER_ROLE(), kyc_provider);
+        vm.stopPrank();
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        vm.startPrank(user);
+        vm.expectRevert("Invalid Provider");
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+    }
+
+    function testMintIndividualKYCWithInvalidSigner() public {
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.KYC_PROVIDER_ROLE(), kyc_provider);
+        vm.stopPrank();
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 5, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        vm.startPrank(kyc_provider);
+        vm.expectRevert("Invalid Signer");
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+    }
+
+    function testMintIndividualKYCWithInvalidNonce() public {
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.KYC_PROVIDER_ROLE(), kyc_provider);
+        vm.stopPrank();
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        vm.startPrank(kyc_provider);
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.expectRevert("Invalid Nonce");
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+    }
+
+    function testMintIndividualKYCWithExpiredSignature() public {
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.KYC_PROVIDER_ROLE(), kyc_provider);
+        vm.stopPrank();
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp - 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        vm.startPrank(kyc_provider);
+        vm.expectRevert("Signature has expired");
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
     // Create a test for minting a KYC token
