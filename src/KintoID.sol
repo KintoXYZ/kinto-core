@@ -29,7 +29,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     event TraitRemoved(address indexed _to, uint8 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
     event SanctionRemoved(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
-    event AccountsMonitoredAt(address indexed _signer, uint256 _timestamp);
+    event AccountsMonitoredAt(address indexed _signer, uint256 _accountsCount, uint256 _timestamp);
 
     /* ============ Constants ============ */
     bytes32 public override constant KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
@@ -177,9 +177,27 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     /**
      * @dev Monitors the account. Only by the KYC provider role.
      */
-    function monitor() external override onlyRole(KYC_PROVIDER_ROLE) {
+    function monitor(address[] memory _accounts, uint8[][] memory _traitsAndSanctions) external override onlyRole(KYC_PROVIDER_ROLE) {
+        require(_accounts.length == _traitsAndSanctions.length && _traitsAndSanctions.length % 4 == 0, "Length mismatch");
+        require(_accounts.length <= 200, "Too many accounts to monitor at once");
+        for (uint8 i = 0; i < _accounts.length; i+= 1) {
+            require(balanceOf(_accounts[i], 1) > 0, "Invalid account address");
+            Metadata storage meta = kycmetas[_accounts[i]];
+            meta.updatedAt = block.timestamp;
+            for (uint8 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
+                if (j < _traitsAndSanctions[i].length / 4) {
+                    meta.traits.set(_traitsAndSanctions[i][j]);
+                } else if (j < _traitsAndSanctions[i].length / 2) {
+                    meta.traits.unset(_traitsAndSanctions[i][j]);
+                } else if (j < _traitsAndSanctions[i].length / 2) {
+                    meta.sanctions.set(_traitsAndSanctions[i][j]);
+                } else {
+                    meta.sanctions.unset(_traitsAndSanctions[i][j]);
+                }
+            }
+        }
         lastMonitoredAt = block.timestamp;
-        emit AccountsMonitoredAt(msg.sender, block.timestamp);
+        emit AccountsMonitoredAt(msg.sender, _accounts.length, block.timestamp);
     }
 
     /**

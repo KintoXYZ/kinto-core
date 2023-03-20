@@ -101,15 +101,14 @@ contract KintoIDTest is Test {
 
     function testMintIndividualKYC() public {
         IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
+        uint8[] memory traits = new uint8[](0);
         vm.startPrank(kyc_provider);
         assertEq(kintoIDv1.isKYC(user), false);
         kintoIDv1.mintIndividualKyc(sigdata, traits);
         assertEq(kintoIDv1.isKYC(user), true);
         assertEq(kintoIDv1.isIndividual(user), true);
         assertEq(kintoIDv1.mintedAt(user), block.timestamp);
-        assertEq(kintoIDv1.hasTrait(user, 1), true);
+        assertEq(kintoIDv1.hasTrait(user, 1), false);
         assertEq(kintoIDv1.hasTrait(user, 2), false);
         assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 1);
     }
@@ -214,20 +213,20 @@ contract KintoIDTest is Test {
     }
 
     // Monitor Tests
-    function testMonitor() public {
+    function testMonitorNoChanges() public {
         vm.startPrank(kyc_provider);
-        kintoIDv1.monitor();
+        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
         assertEq(kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testFailOnlyProviderCanMonitor() public {
         vm.startPrank(user);
-        kintoIDv1.monitor();
+        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
     }
 
     function testIsSanctionsMonitored() public {
         vm.startPrank(kyc_provider);
-        kintoIDv1.monitor();
+        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
         assertEq(kintoIDv1.isSanctionsMonitored(1), true);
         vm.warp(block.timestamp + 7 days);
         assertEq(kintoIDv1.isSanctionsMonitored(8), true);
