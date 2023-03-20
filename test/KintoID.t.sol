@@ -105,6 +105,26 @@ contract KintoIDTest is Test {
         kintoIDv1.mintIndividualKyc(sigdata, traits);
         assertEq(kintoIDv1.isKYC(user), true);
         assertEq(kintoIDv1.isIndividual(user), true);
+        assertEq(kintoIDv1.mintedAt(user), block.timestamp);
+        assertEq(kintoIDv1.hasTrait(user, 1), true);
+        assertEq(kintoIDv1.hasTrait(user, 2), false);
+        assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 1);
+    }
+
+    function testMintCompanyKYC() public {
+        vm.startPrank(owner);
+        kintoIDv1.grantRole(kintoIDv1.KYC_PROVIDER_ROLE(), kyc_provider);
+        vm.stopPrank();
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 2;
+        vm.startPrank(kyc_provider);
+        kintoIDv1.mintCompanyKyc(sigdata, traits);
+        assertEq(kintoIDv1.isKYC(user), true);
+        assertEq(kintoIDv1.isCompany(user), true);
+        assertEq(kintoIDv1.mintedAt(user), block.timestamp);
+        assertEq(kintoIDv1.hasTrait(user, 1), false);
+        assertEq(kintoIDv1.hasTrait(user, 2), true);
         assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 1);
     }
 
