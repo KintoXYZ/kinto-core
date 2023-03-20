@@ -47,7 +47,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
-    mapping(address => uint256) private nonces;
+    mapping(address => uint256) public override nonces;
 
     /* ============ Modifiers ============ */
 
@@ -72,8 +72,10 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     }
 
     /**
-    *
-    */
+     * @dev Authorize the upgrade. Only by the upgrader role.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal onlyRole(UPGRADER_ROLE) override {}
 
     /* ============ Token name, symbol & URI ============ */
@@ -94,20 +96,41 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         return "KINID";
     }
 
+    /**
+     * @dev Sets the token URI. Only by the admin role.
+     * @param newuri representing the token URI.
+     */
     function setURI(string memory newuri) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(newuri);
     }
 
     /* ============ Mint & Burn ============ */
 
+    /**
+     * @dev Mints a new individual KYC token.
+     * @param _signatureData Signature data
+     * @param _traits Traits to be added to the account.
+     */
     function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint8[] memory _traits) external override {
         mintTo(KYC_TOKEN_ID, _signatureData,_traits, true);
     }
 
+    /**
+     * @dev Mints a new company KYC token.
+     * @param _signatureData Signature data
+     * @param _traits Traits to be added to the account.
+     */
     function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint8[] memory _traits) external override {
         mintTo(KYC_TOKEN_ID, _signatureData, _traits, false);
     }
 
+    /**
+     * @dev Mints a new token to the given account.
+     * @param _tokenId Token ID to be minted
+     * @param _signatureData Signature data
+     * @param _traits Traits to be added to the account.
+     * @param _indiv Whether the account is individual or a company.
+    */
     function mintTo(uint8 _tokenId, IKintoID.SignatureData calldata _signatureData, uint8[] memory _traits, bool _indiv) private
       onlySignerVerified(_tokenId, _signatureData) {
        require(balanceOf(_signatureData.account, _tokenId) == 0, "Balance before mint must be 0");
@@ -126,10 +149,19 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Burn ============ */
 
+    /**
+     * @dev Burns a KYC token.
+     * @param _signatureData Signature data
+     */
     function burnKYC(SignatureData calldata _signatureData) external override {
         burn(KYC_TOKEN_ID, _signatureData);
     }
 
+    /**
+     * @dev Burns a token.
+     * @param _tokenId  token ID to be burned
+     * @param _signatureData Signature data
+     */
     function burn(uint256 _tokenId, SignatureData calldata _signatureData) private onlySignerVerified(_tokenId, _signatureData) {
         require(balanceOf(_signatureData.account, _tokenId) > 0, "Nothing to burn");
         nonces[_signatureData.account] += 1;
@@ -139,11 +171,19 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Sanctions & traits ============ */
 
+    /**
+     * @dev Monitors the account. Only by the KYC provider role.
+     */
     function monitor() external override onlyRole(KYC_PROVIDER_ROLE) {
         lastMonitoredAt = block.timestamp;
         emit AccountsMonitoredAt(msg.sender, block.timestamp);
     }
 
+    /**
+     * @dev Adds a trait to the account. Only by the KYC provider role.
+     * @param _account  account to be added the trait to.
+     * @param _traitId trait id to be added.
+     */
     function addTrait(address _account, uint8 _traitId) external override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
@@ -153,6 +193,11 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         }
     }
 
+    /**
+     * @dev Removes a trait from the account. Only by the KYC provider role.
+     * @param _account  account to be removed the trait from.
+     * @param _traitId trait id to be removed.
+     */
     function removeTrait(address _account, uint8 _traitId) external override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
 
@@ -163,6 +208,11 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         }
     }
 
+    /**
+     * @dev Adds a sanction to the account. Only by the KYC provider role.
+     * @param _account  account to be added the sanction to.
+     * @param _countryId country id to be added.
+     */
     function addSanction(address _account, uint8 _countryId) external override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
@@ -173,6 +223,11 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         }
     }
 
+    /**
+     * @dev Removes a sanction from the account. Only by the KYC provider role.
+     * @param _account  account to be removed the sanction from.
+     * @param _countryId country id to be removed.
+     */
     function removeSanction(address _account, uint8 _countryId) external override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
@@ -185,42 +240,87 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ View Functions ============ */
 
+    /**
+     * @dev Returns whether the account holder is KYCd
+     * @param _account account to be checked.
+     * @return true if the account has KYC token.
+     */
     function isKYC(address _account) external view override returns (bool) {
         return balanceOf(_account, KYC_TOKEN_ID) > 0;
     }
 
+    /** 
+     * @dev Returns whether the account has been monitored in the last x days.
+     * @param _days Days to be checked. 
+     * @return true if the account has been monitored in the last x days.
+    */
     function isSanctionsMonitored(uint32 _days) public view override returns(bool) {
         return block.timestamp - lastMonitoredAt < _days * (1 days);
     }
 
+    /**
+     * @dev Returns whether the account is sanctions safe.
+     * @param _account account to be checked.
+     * @return true if the account is sanctions safe.
+     */
     function isSanctionsSafe(address _account) external view override returns (bool) {
         return isSanctionsMonitored(7) && kycmetas[_account].sanctionsCount == 0;
     }
 
+    /**
+     * @dev Returns whether the account is sanctions safe in a given country.
+     * @param _account account to be checked.
+     * @param _countryId country id to be checked.
+     * @return true if the account is sanctions safe in a given country.
+     */
     function isSanctionsSafeIn(address _account, uint8 _countryId) external view override returns (bool) {
         return isSanctionsMonitored(7) && !kycmetas[_account].sanctions.get(_countryId);
     }
 
+    /**
+     * @dev Returns whether the KYC account is a company
+     * @param _account account to be checked.
+     * @return true if the account is a company.
+     */
     function isCompany(address _account) external view override returns (bool) {
         return !kycmetas[_account].individual;
     }
 
+    /**
+     * @dev Returns whether the KYC account is an individual
+     * @param _account account to be checked.
+     * @return true if the account is an indivdual.
+     */
     function isIndividual(address _account) external view override returns (bool) {
         return kycmetas[_account].individual;
     }
 
+    /** 
+     * @dev Returns the timestamp when the KYC token was minted
+     * @param _account account to be checked.
+     * @return timestamp when the KYC token was minted.
+     */
     function mintedAt(address _account) external view override returns (uint256) {
         return kycmetas[_account].mintedAt;
     }
 
+    /**
+     * @dev Returns whether the account has a given trait.
+     * @param _account account to be checked.
+     * @param index index of the trait to be checked.
+     * @return true if the account has the trait.
+     */
     function hasTrait(address _account, uint8 index) external view override returns (bool) {
         return kycmetas[_account].traits.get(index);
     }
 
+    /**
+     * @dev Returns an array of 256 booleans representing the traits of the account.
+     * @param _account account to be checked.
+     * @return array of 256 booleans representing the traits of the account.
+     */
     function traits(address _account) external view override returns (bool[] memory) {
         BitMapsUpgradeable.BitMap storage tokenTraits = kycmetas[_account].traits;
-        // For all possible traits, see if the trait is set in the token, and if so, add
-        // the index of the trait to our list of indexes.
         bool[] memory result = new bool[](256);
         for (uint256 i = 0; i < 256; i++) {
             result[i] = tokenTraits.get(i);
@@ -230,12 +330,17 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Signature Recovery ============ */
 
+    /**
+     * @dev Check that the signature is valid and the sender is a valid KYC provider.
+     * @param _id id of the token to be signed.
+     * @param _signature signature to be recovered.
+     */
     modifier onlySignerVerified(
       uint256 _id,
       IKintoID.SignatureData calldata _signature
     ) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
-        require(nonces[_signature.account] == _signature.nonce, "Invalid nonce");
+        require(nonces[_signature.signer] == _signature.nonce, "Invalid nonce");
 
         bytes32 hash = keccak256(
           abi.encodePacked(
@@ -244,7 +349,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
             _signature.account,
             _id,
             _signature.expiresAt,
-            nonces[_signature.account],
+            nonces[_signature.signer],
             block.chainid
           )
         ).toEthSignedMessageHash();
@@ -259,6 +364,15 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Disable token transfers ============ */
 
+    /**
+     * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
+     * @param operator address which called `safeTransferFrom` function
+     * @param from source address
+     * @param to target address
+     * @param ids ids of the token type
+     * @param amounts transfer amounts
+     * @param data additional data with no specified format
+     */
     function _beforeTokenTransfer(
         address operator,
         address from,
@@ -276,6 +390,11 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ Interface ============ */
 
+    /**
+     * @dev Returns whether the contract implements the interface defined by the id
+     * @param interfaceId id of the interface to be checked.
+     * @return true if the contract implements the interface defined by the id.
+    */
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }

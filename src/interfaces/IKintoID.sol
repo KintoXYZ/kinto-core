@@ -79,4 +79,6 @@ interface IKintoID {
 
     function lastMonitoredAt() external view returns (uint256);
 
+    function nonces(address _account) external view returns (uint256);
+
 }
