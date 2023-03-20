@@ -115,8 +115,9 @@ contract KintoIDTest is Test {
 
     function testMintCompanyKYC() public {
         IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint8[] memory traits = new uint8[](2);
         traits[0] = 2;
+        traits[1] = 5;
         vm.startPrank(kyc_provider);
         kintoIDv1.mintCompanyKyc(sigdata, traits);
         assertEq(kintoIDv1.isKYC(user), true);
@@ -124,6 +125,7 @@ contract KintoIDTest is Test {
         assertEq(kintoIDv1.mintedAt(user), block.timestamp);
         assertEq(kintoIDv1.hasTrait(user, 1), false);
         assertEq(kintoIDv1.hasTrait(user, 2), true);
+        assertEq(kintoIDv1.hasTrait(user, 5), true);
         assertEq(kintoIDv1.balanceOf(user, kintoIDv1.KYC_TOKEN_ID()), 1);
     }
 
