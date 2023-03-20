@@ -8,9 +8,9 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 import {IKintoID} from "./interfaces/IKintoID.sol";
-import {SignatureChecker} from './lib/SignatureChecker.sol';
 
 import "forge-std/console2.sol";
 
@@ -164,8 +164,8 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      */
     function burn(uint256 _tokenId, SignatureData calldata _signatureData) private onlySignerVerified(_tokenId, _signatureData) {
         require(balanceOf(_signatureData.account, _tokenId) > 0, "Nothing to burn");
-        nonces[_signatureData.account] += 1;
         _burn(_signatureData.account, _tokenId, 1);
+        nonces[_signatureData.account] += 1;
         require(balanceOf(_signatureData.account, _tokenId) == 0, "Balance after burn must be 0");
     }
 
@@ -249,9 +249,9 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         return balanceOf(_account, KYC_TOKEN_ID) > 0;
     }
 
-    /** 
+    /**
      * @dev Returns whether the account has been monitored in the last x days.
-     * @param _days Days to be checked. 
+     * @param _days Days to be checked.
      * @return true if the account has been monitored in the last x days.
     */
     function isSanctionsMonitored(uint32 _days) public view override returns(bool) {
@@ -295,7 +295,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         return kycmetas[_account].individual;
     }
 
-    /** 
+    /**
      * @dev Returns the timestamp when the KYC token was minted
      * @param _account account to be checked.
      * @return timestamp when the KYC token was minted.
@@ -343,14 +343,14 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         require(nonces[_signature.signer] == _signature.nonce, "Invalid nonce");
 
         bytes32 hash = keccak256(
-          abi.encodePacked(
+          abi.encode(
             _signature.signer,
             address(this),
             _signature.account,
             _id,
             _signature.expiresAt,
             nonces[_signature.signer],
-            block.chainid
+            bytes32(block.chainid)
           )
         ).toEthSignedMessageHash();
 
