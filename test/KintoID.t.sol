@@ -42,6 +42,7 @@ contract KintoIDTest is Test {
     address upgrader = address(5);
 
     function setUp() public {
+        vm.chainId(42888);
         vm.startPrank(owner);
         implementation = new KintoID();
         // deploy proxy contract and point it to implementation
@@ -316,7 +317,7 @@ contract KintoIDTest is Test {
     function auxCreateSignature(address _signer, address _account, uint256 _privateKey, uint256 _expiresAt) private view returns (
         IKintoID.SignatureData memory signData
     ) {
-        bytes32 hash = keccak256(
+        bytes32 dataHash = keccak256(
             abi.encode(
                 _signer,
                 address(kintoIDv1),
@@ -325,10 +326,16 @@ contract KintoIDTest is Test {
                 _expiresAt,
                 kintoIDv1.nonces(_signer),
                 bytes32(block.chainid)
-            )).toEthSignedMessageHash();
+            ));
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0x01),
+                dataHash
+            )
+        ).toEthSignedMessageHash();
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
-
         return IKintoID.SignatureData(
                 _signer,
                 _account,
@@ -338,4 +345,43 @@ contract KintoIDTest is Test {
             );
     }
 
+    function auxDappSignature(IKintoID.SignatureData memory signData) public view returns (bool) {
+        bytes32 dataHash = keccak256(abi.encode(
+            signData.signer,
+            0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,
+            signData.account,
+            kintoIDv1.KYC_TOKEN_ID(),
+            signData.expiresAt,
+            kintoIDv1.nonces(signData.signer),
+            bytes32(block.chainid)
+        ));
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0x01),
+                dataHash
+            )
+        );
+        hash = hash.toEthSignedMessageHash();
+        uint256 key = vm.envUint("FRONTEND_KEY");
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, hash);
+        bytes memory newsignature = abi.encodePacked(r, s, v);
+        bool valid = signData.signer.isValidSignatureNow(hash, newsignature);
+        return valid;
+    }
+
+    function testDappSignature() public {
+        vm.startPrank(kyc_provider);
+        bytes memory sig = hex"0fcafa82e64fcfd3c38209e23270274132e88061f1718c7ff45e8c0ddbbe7cdd59b5af57e10a5d8221baa6ae37b57d02acace7e25fc29cb4025f15269e0939aa1b";
+        bool valid = auxDappSignature(
+            IKintoID.SignatureData(
+                0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
+                0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
+                0,
+                1680614821,
+                sig
+            )
+        );
+        assertEq(valid, true);
+    }
 }

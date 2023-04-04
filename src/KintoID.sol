@@ -12,7 +12,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 import {IKintoID} from "./interfaces/IKintoID.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 
 /**
@@ -365,14 +365,17 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), "Invalid Provider");
 
         bytes32 hash = keccak256(
-          abi.encode(
-            _signature.signer,
-            address(this),
-            _signature.account,
-            _id,
-            _signature.expiresAt,
-            nonces[_signature.signer],
-            bytes32(block.chainid)
+          abi.encodePacked(
+            "\x19\x01",   // EIP-191 header
+            keccak256(abi.encode(
+                _signature.signer,
+                address(this),
+                _signature.account,
+                _id,
+                _signature.expiresAt,
+                nonces[_signature.signer],
+                bytes32(block.chainid)
+            ))
           )
         ).toEthSignedMessageHash();
 
