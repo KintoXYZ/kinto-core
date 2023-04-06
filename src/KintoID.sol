@@ -177,22 +177,23 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
     /**
      * @dev Monitors the account. Only by the KYC provider role.
      */
-    function monitor(address[] memory _accounts, uint8[][] memory _traitsAndSanctions) external override onlyRole(KYC_PROVIDER_ROLE) {
-        require(_accounts.length == _traitsAndSanctions.length && _traitsAndSanctions.length % 4 == 0, "Length mismatch");
+    function monitor(address[] memory _accounts, IKintoID.MonitorUpdateData[][] memory _traitsAndSanctions) external override onlyRole(KYC_PROVIDER_ROLE) {
+        require(_accounts.length == _traitsAndSanctions.length, "Length mismatch");
         require(_accounts.length <= 200, "Too many accounts to monitor at once");
         for (uint8 i = 0; i < _accounts.length; i+= 1) {
             require(balanceOf(_accounts[i], 1) > 0, "Invalid account address");
             Metadata storage meta = kycmetas[_accounts[i]];
             meta.updatedAt = block.timestamp;
             for (uint8 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
-                if (j < _traitsAndSanctions[i].length / 4) {
-                    meta.traits.set(_traitsAndSanctions[i][j]);
-                } else if (j < _traitsAndSanctions[i].length / 2) {
-                    meta.traits.unset(_traitsAndSanctions[i][j]);
-                } else if (j < _traitsAndSanctions[i].length / 2) {
-                    meta.sanctions.set(_traitsAndSanctions[i][j]);
+                IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
+                if (updateData.isTrait && updateData.isSet) {
+                    addTrait(_accounts[i], updateData.index);
+                } else if (updateData.isTrait && !updateData.isSet) {
+                    removeTrait(_accounts[i], updateData.index);
+                } else if (!updateData.isTrait && updateData.isSet) {
+                    addSanction(_accounts[i], updateData.index);
                 } else {
-                    meta.sanctions.unset(_traitsAndSanctions[i][j]);
+                    removeSanction(_accounts[i], updateData.index);
                 }
             }
         }
@@ -205,7 +206,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @param _account  account to be added the trait to.
      * @param _traitId trait id to be added.
      */
-    function addTrait(address _account, uint8 _traitId) external override onlyRole(KYC_PROVIDER_ROLE) {
+    function addTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
           meta.traits.set(_traitId);
@@ -219,7 +220,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @param _account  account to be removed the trait from.
      * @param _traitId trait id to be removed.
      */
-    function removeTrait(address _account, uint8 _traitId) external override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -234,7 +235,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @param _account  account to be added the sanction to.
      * @param _countryId country id to be added.
      */
-    function addSanction(address _account, uint8 _countryId) external override onlyRole(KYC_PROVIDER_ROLE) {
+    function addSanction(address _account, uint8 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -249,7 +250,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @param _account  account to be removed the sanction from.
      * @param _countryId country id to be removed.
      */
-    function removeSanction(address _account, uint8 _countryId) external override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeSanction(address _account, uint8 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);

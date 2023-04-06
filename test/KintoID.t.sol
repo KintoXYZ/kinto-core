@@ -218,22 +218,41 @@ contract KintoIDTest is Test {
     // Monitor Tests
     function testMonitorNoChanges() public {
         vm.startPrank(kyc_provider);
-        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
+        kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
         assertEq(kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testFailOnlyProviderCanMonitor() public {
         vm.startPrank(user);
-        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
+        kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
     }
 
     function testIsSanctionsMonitored() public {
         vm.startPrank(kyc_provider);
-        kintoIDv1.monitor(new address[](0), new uint8 [][](0));
+        kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
         assertEq(kintoIDv1.isSanctionsMonitored(1), true);
         vm.warp(block.timestamp + 7 days);
         assertEq(kintoIDv1.isSanctionsMonitored(8), true);
         assertEq(kintoIDv1.isSanctionsMonitored(6), false);
+    }
+
+    function testSettingTraitsAndSanctions() public {
+        vm.startPrank(kyc_provider);
+        IKintoID.SignatureData memory sigdata = auxCreateSignature(user, user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 1;
+        kintoIDv1.mintIndividualKyc(sigdata, traits);
+        address[] memory accounts = new address[](1);
+        accounts[0] = user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](2);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        updates[0][1] = IKintoID.MonitorUpdateData(true, false, 1); // remove 1
+        kintoIDv1.monitor(accounts, updates);
+        assertEq(kintoIDv1.hasTrait(user,5), true);
+        assertEq(kintoIDv1.hasTrait(user,1), false);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,5), true);
+        assertEq(kintoIDv1.isSanctionsSafeIn(user,1), true);
     }
 
     // Trait Tests

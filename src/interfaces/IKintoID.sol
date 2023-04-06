@@ -24,6 +24,12 @@ interface IKintoID {
         bytes signature;
     }
 
+    struct MonitorUpdateData {
+        bool isTrait; // otherwise sanction
+        bool isSet; // otherwise remove
+        uint8 index;
+    }
+
     /* ============ State Change ============ */
 
 
@@ -43,7 +49,7 @@ interface IKintoID {
 
     function removeSanction(address _account, uint8 _countryId) external;
 
-    function monitor(address[] memory _accounts, uint8[][] memory _traitsAndSanctions) external;
+    function monitor(address[] memory _accounts, MonitorUpdateData[][] memory _traitsAndSanctions) external;
 
     /* ============ Basic Viewers ============ */
 
