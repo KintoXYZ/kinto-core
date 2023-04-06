@@ -268,7 +268,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @return true if the account has KYC token.
      */
     function isKYC(address _account) external view override returns (bool) {
-        return balanceOf(_account, KYC_TOKEN_ID) > 0;
+        return balanceOf(_account, KYC_TOKEN_ID) > 0 && isSanctionsSafe(_account);
     }
 
     /**
@@ -285,7 +285,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
      * @param _account account to be checked.
      * @return true if the account is sanctions safe.
      */
-    function isSanctionsSafe(address _account) external view override returns (bool) {
+    function isSanctionsSafe(address _account) public view override returns (bool) {
         return isSanctionsMonitored(7) && kycmetas[_account].sanctionsCount == 0;
     }
 
