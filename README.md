@@ -1,10 +1,48 @@
 # Kinto ID
+Kinto ID gives developers all the functionality to verify on-chain whether a given address has the appropriate KYC, accreditation requirements. Kinto ID also provides functionality to check AML sanctions.
+
+## Docs
+
+Check to our gitbook to see all the documentation.
+
+[Docs](https://docs.kinto.xyz/developers)
+
+## Relevant Public Methods
+
+You can check all the public methods in the interface [here](https://github.com/KintoXYZ/kinto-id/blob/main/src/interfaces/IKintoID.sol)
+
+```
+    function isKYC(address _account) external view returns (bool);
+
+    function isSanctionsMonitored(uint32 _days) external view returns (bool);
+
+    function isSanctionsSafe(address _account) external view returns (bool);
+
+    function isSanctionsSafeIn(address _account, uint8 _countryId) external view returns (bool);
+
+    function isCompany(address _account) external view returns (bool);
+
+    function isIndividual(address _account) external view returns (bool);
+
+    function mintedAt(address _account) external view returns (uint256);
+
+    function hasTrait(address _account, uint8 index) external view returns (bool);
+
+    function traits(address _account) external view returns (bool[] memory);
+```
 
 ## Requirements
 
-Copy .env.sample to .env and fill the values.
+- Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Copy .env.sample to .env and fill the values. After you deploy the proxy make sure to fill its address as well.
 
-After you deploy the proxy make sure to fill its address as well.
+## Tests
+
+In order to run the tests, execute the following command:
+
+```
+forge test
+```
 
 ## Deploy a new proxy and 1st version
 
