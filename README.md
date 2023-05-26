@@ -38,7 +38,7 @@ You can check all the public methods in the interface [here](https://github.com/
 - Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
 - Copy .env.sample to .env and fill the values. After you deploy the proxy make sure to fill its address as well.
 
-## Tests
+## Testing
 
 In order to run the tests, execute the following command:
 
@@ -58,7 +58,7 @@ source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url
 source .env && forge script script/deploy.sol:KintoUpgradeScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
 
-## Test
+## Calling the smart contract
 
 Check that the contract is deployed:
 
