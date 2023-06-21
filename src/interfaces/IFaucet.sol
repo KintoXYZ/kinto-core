@@ -9,6 +9,10 @@ interface IFaucet {
 
     function claimKintoETH() external;
 
+    function withdrawAll() external;
+
+    function startFaucet() payable external;
+
     /* ============ Basic Viewers ============ */
 
     function claimed(address _account) external view returns (bool);

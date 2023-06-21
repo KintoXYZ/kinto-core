@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract Faucet is Ownable, IFaucet{
 
-  mapping(address => bool) public claimed;
+  mapping(address => bool) public override claimed;
   bool public active;
 
   uint public constant CLAIM_AMOUNT = 1 ether / 200;
@@ -25,8 +25,8 @@ contract Faucet is Ownable, IFaucet{
     require(active, "Faucet is not active");
     require(!claimed[msg.sender], "You have already claimed your KintoETH");
     claimed[msg.sender] = true;
-    payable(msg.sender).transfer(FAUCET_AMOUNT);
-    if (address(this).balance < FAUCET_AMOUNT) {
+    payable(msg.sender).transfer(CLAIM_AMOUNT);
+    if (address(this).balance < CLAIM_AMOUNT) {
       active = false;
     }
   }
@@ -34,14 +34,14 @@ contract Faucet is Ownable, IFaucet{
   /**
   * @dev Function to withdraw all eth by owner
   */
-  function withdrawAll() external onlyOwner {
+  function withdrawAll() external override onlyOwner {
     payable(msg.sender).transfer(address(this).balance);
   }
 
   /**
   * @dev Function to start the faucet
   */
-  function startFaucet() payable external onlyOwner {
+  function startFaucet() payable external override onlyOwner {
     require(msg.value >= FAUCET_AMOUNT, 'Not enough ETH to start faucet');
     active = true;
   }

@@ -10,7 +10,6 @@ import "forge-std/console.sol";
 contract FaucetTest is Test {
     Faucet faucet;
 
-
     address owner = address(1);
     address kyc_provider = address(2);
     address user = vm.addr(3);
@@ -33,6 +32,8 @@ contract FaucetTest is Test {
     function testOwnerCanStartFaucet() public {
         vm.startPrank(owner);
         faucet.startFaucet{value: 1 ether}();
+        assertEq(address(faucet).balance, faucet.FAUCET_AMOUNT());
+
         vm.stopPrank();
     }
 
@@ -48,4 +49,25 @@ contract FaucetTest is Test {
         vm.stopPrank();
     }
 
+    function testClaim() public {
+        vm.startPrank(owner);
+        faucet.startFaucet{value: 1 ether}();
+        vm.stopPrank();
+        vm.startPrank(user);
+        uint previousBalance = address(user).balance;
+        faucet.claimKintoETH();
+        assertEq(address(faucet).balance, 1 ether - faucet.CLAIM_AMOUNT());
+        assertEq(address(user).balance, previousBalance + faucet.CLAIM_AMOUNT());
+        vm.stopPrank();
+    }
+
+    function testFailIfClaimedTwice() public {
+        vm.startPrank(owner);
+        faucet.startFaucet{value: 1 ether}();
+        vm.stopPrank();
+        vm.startPrank(user);
+        faucet.claimKintoETH();
+        faucet.claimKintoETH();
+        vm.stopPrank();
+    }
 }
