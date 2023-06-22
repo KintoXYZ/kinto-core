@@ -5,5 +5,8 @@
   "main": "index.js",
   "author": "Ramon Recuero <rrmoreno1987@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "export": "node ./utils/export.js"
+  },
   "private": true
 }
