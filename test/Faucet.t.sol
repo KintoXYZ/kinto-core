@@ -6,7 +6,6 @@ import "src/interfaces/IFaucet.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-
 contract FaucetTest is Test {
     Faucet faucet;
 
