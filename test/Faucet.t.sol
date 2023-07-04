@@ -1,72 +1,118 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "src/Faucet.sol";
-import "src/interfaces/IFaucet.sol";
+import "../src/Faucet.sol";
+import "../src/interfaces/IFaucet.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 contract FaucetTest is Test {
-    Faucet faucet;
+    using ECDSA for bytes32;
+    using SignatureChecker for address;
+    Faucet _faucet;
 
-    address owner = address(1);
-    address kyc_provider = address(2);
-    address user = vm.addr(3);
-    address user2 = address(4);
+    address _owner = address(1);
+    address _user = vm.addr(3);
+
+    // Create a aux function to create a signature for claiming kinto ETH from the faucet
+    function _auxCreateSignature(address _signer, address _account, uint256 _privateKey, uint256 _expiresAt) private view returns (
+        IFaucet.SignatureData memory signData
+    ) {
+        bytes32 dataHash = keccak256(
+            abi.encode(
+                _signer,
+                address(_faucet),
+                _account,
+                _expiresAt,
+                _faucet.nonces(_signer),
+                bytes32(block.chainid)
+            ));
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0x01),
+                dataHash
+            )
+        ).toEthSignedMessageHash();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, hash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        return IFaucet.SignatureData(
+                _signer,
+                _account,
+                _faucet.nonces(_signer),
+                _expiresAt,
+                signature
+            );
+    }
+
 
     function setUp() public {
-        vm.chainId(42888);
-        vm.startPrank(owner);
-        faucet = new Faucet();
+        vm.chainId(1);
+        vm.startPrank(_owner);
+        _faucet = new Faucet();
         vm.stopPrank();
     }
 
     function testUp() public {
-        assertEq(faucet.CLAIM_AMOUNT(), 1 ether / 200);
-        assertEq(faucet.FAUCET_AMOUNT(), 1 ether);
+        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 200);
+        assertEq(_faucet.FAUCET_AMOUNT(), 1 ether);
     }
 
     // Upgrade Tests
 
     function testOwnerCanStartFaucet() public {
-        vm.startPrank(owner);
-        faucet.startFaucet{value: 1 ether}();
-        assertEq(address(faucet).balance, faucet.FAUCET_AMOUNT());
+        vm.startPrank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+        assertEq(address(_faucet).balance, _faucet.FAUCET_AMOUNT());
 
         vm.stopPrank();
     }
 
     function testFailOwnerCannotStartWithoutAmount() public {
-        vm.startPrank(owner);
-        faucet.startFaucet{value: 0.1 ether}();
+        vm.startPrank(_owner);
+        _faucet.startFaucet{value: 0.1 ether}();
         vm.stopPrank();
     }
 
     function testFailStartFaucetByOthers() public {
-        vm.startPrank(user);
-        faucet.startFaucet{value: 1 ether}();
+        vm.startPrank(_user);
+        _faucet.startFaucet{value: 1 ether}();
         vm.stopPrank();
     }
 
     function testClaim() public {
-        vm.startPrank(owner);
-        faucet.startFaucet{value: 1 ether}();
+        vm.startPrank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
         vm.stopPrank();
-        vm.startPrank(user);
-        uint previousBalance = address(user).balance;
-        faucet.claimKintoETH();
-        assertEq(address(faucet).balance, 1 ether - faucet.CLAIM_AMOUNT());
-        assertEq(address(user).balance, previousBalance + faucet.CLAIM_AMOUNT());
+        vm.startPrank(_user);
+        uint previousBalance = address(_user).balance;
+        _faucet.claimKintoETH();
+        assertEq(address(_faucet).balance, 1 ether - _faucet.CLAIM_AMOUNT());
+        assertEq(address(_user).balance, previousBalance + _faucet.CLAIM_AMOUNT());
         vm.stopPrank();
     }
 
     function testFailIfClaimedTwice() public {
-        vm.startPrank(owner);
-        faucet.startFaucet{value: 1 ether}();
+        vm.startPrank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
         vm.stopPrank();
-        vm.startPrank(user);
-        faucet.claimKintoETH();
-        faucet.claimKintoETH();
+        vm.startPrank(_user);
+        _faucet.claimKintoETH();
+        _faucet.claimKintoETH();
+        vm.stopPrank();
+    }
+
+    function testClaimOnBehalf() public {
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_user, _user, 3, block.timestamp + 1000);
+        vm.startPrank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+        assertEq(_faucet.claimed(_user), false);
+        assertEq(_faucet.nonces(_user), 0);
+        _faucet.claimOnBehalf(sigdata);
+        assertEq(_faucet.claimed(_user), true);
+        assertEq(_faucet.nonces(_user), 1);
         vm.stopPrank();
     }
 }
