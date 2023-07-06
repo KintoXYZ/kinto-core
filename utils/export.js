@@ -32,5 +32,5 @@ for (let i = 0; i < files.length; i++) {
   }
 }
 
-const jsonString = JSON.stringify(contracts);
+const jsonString = JSON.stringify({"contracts": contracts});
 fs.writeFileSync(`./artifacts/${network}.json`, jsonString);
