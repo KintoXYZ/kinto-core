@@ -7,6 +7,11 @@ const files = fs.readdirSync(dirPath);
 
 let contracts = {};
 
+const network = process.argv[2];
+console.log('Exporting contracts for network:', network);
+
+const addresses = JSON.parse(fs.readFileSync(`./artifacts/addresses-${network}.json`, 'utf-8'));
+
 for (let i = 0; i < files.length; i++) {
   const filePath = path.join(dirPath, files[i]);
   const fileExt = path.extname(filePath);
@@ -19,9 +24,13 @@ for (let i = 0; i < files.length; i++) {
     console.log('Exported:', contractName, 'ABI');
     
     const jsonObject = JSON.parse(result);
-    contracts[contractName] = {"abi": jsonObject};
+    const address = addresses[contractName];
+    if (!address || address.length < 8) {
+      console.error('MISSING ADDRESS FOR', contractName);
+    }
+    contracts[contractName] = {"abi": jsonObject, "address": address};
   }
 }
 
 const jsonString = JSON.stringify(contracts);
-fs.writeFileSync('./artifacts/42888.json', jsonString);
+fs.writeFileSync(`./artifacts/${network}.json`, jsonString);

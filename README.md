@@ -70,6 +70,14 @@ Call KYC on an address
 cast call $ID_PROXY_ADDRESS "isKYC(address)(bool)" 0xa8beb41cf4721121ea58837ebdbd36169a7f246e  --rpc-url $KINTO_RPC_URL
 ```
 
+## Deploying other contracts
+
+In order to deploy non upgradeable contracts, use the following command:
+
+```
+forge create --rpc-url $KINTO_RPC_URL --private-key <your_private_key> src/<CONTRACT_NAME>
+```
+
 ## Verifying smart contracts on blockscout
 
 On Testnet:

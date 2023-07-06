@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "src/KintoID.sol";
-import "src/interfaces/IKintoID.sol";
+import "../src/KintoID.sol";
+import "../src/interfaces/IKintoID.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
@@ -20,25 +20,23 @@ contract KintoInitialDeployScript is Script {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
-    KintoID implementation;
 
-    KintoID kintoIDv1;
-    UUPSProxy proxy;
-
-    address owner = address(1);
+    KintoID _implementation;
+    KintoID _kintoIDv1;
+    UUPSProxy _proxy;
 
     function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        implementation = new KintoID();
+        _implementation = new KintoID();
         // deploy proxy contract and point it to implementation
-        proxy = new UUPSProxy(address(implementation), "");
+        _proxy = new UUPSProxy(address(_implementation), "");
         // wrap in ABI to support easier calls
-        kintoIDv1 = KintoID(address(proxy));
+        _kintoIDv1 = KintoID(address(_proxy));
         // Initialize proxy
-        kintoIDv1.initialize();
+        _kintoIDv1.initialize();
         vm.stopBroadcast();
     }
 }
@@ -51,13 +49,9 @@ contract KintoUpgradeScript is Script {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
-    KintoID implementation;
 
-    KintoID oldKinto;
-    KintoIDV2 newKinto;
-    UUPSProxy proxy;
-
-    address owner = address(1);
+    KintoID _implementation;
+    KintoID _oldKinto;
 
     function setUp() public {}
 
@@ -65,12 +59,12 @@ contract KintoUpgradeScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         console.log('address proxy', vm.envAddress("ID_PROXY_ADDRESS"));
-        oldKinto = KintoID(payable(vm.envAddress("ID_PROXY_ADDRESS")));
-        console.log(oldKinto.name());
+        _oldKinto = KintoID(payable(vm.envAddress("ID_PROXY_ADDRESS")));
+        console.log(_oldKinto.name());
         console.log('deploying new implementation');
         KintoIDV2 implementationV2 = new KintoIDV2();
         console.log('before upgrade');
-        oldKinto.upgradeTo(address(implementationV2));
+        _oldKinto.upgradeTo(address(implementationV2));
         // re-wrap the proxy
         console.log('upgraded');
         vm.stopBroadcast();

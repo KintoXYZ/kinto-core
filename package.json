@@ -6,7 +6,7 @@
   "author": "Ramon Recuero <rrmoreno1987@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "export": "node ./utils/export.js"
+    "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID"
   },
   "private": true
 }
