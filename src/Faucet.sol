@@ -92,7 +92,7 @@ contract Faucet is Ownable, IFaucet{
     ) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
         require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
-        require(owner() == msg.sender, "Invalid Signer");
+        require(owner() == msg.sender, "Invalid Sender");
         bytes32 hash = keccak256(
           abi.encodePacked(
             "\x19\x01",   // EIP-191 header
