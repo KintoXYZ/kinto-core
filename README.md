@@ -85,30 +85,3 @@ On Testnet:
 ```
 forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-url http://test-explorer.kinto.xyz/api --num-of-optimizations 100000 0xE40C427226D78060062670E341b0d8D8e66d725A ETHPriceIsRight
 ```
-
-## Enable CREATE2 in our chain
-
-Fund the signer `0x3fab184622dc19b6109349b94811493bf2a45362` to deploy the arachnid proxy:
-
-```
-cast send 0x3fab184622dc19b6109349b94811493bf2a45362 --value 0.01ether --private-key <your_private_key> --rpc-url $KINTO_RPC_URL
-```
-
-Send the following transaction using foundry. Make sure you disable EIP-155:
-
-```
-cast publish f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222  --rpc-url <NODE_OPEN_EIP155>
-```
-Now we should have the proxy live at `0x4e59b44847b379578588920ca78fbf26c0b4956c`.
-
-## Deploy Account Abstraction
-
-Reference implementation: [https://github.com/eth-infinitism/account-abstraction/blob/develop/deploy/1_deploy_entrypoint.ts](ETH-Infinitism)
-
-We want to deploy the entry point at `0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789`.
-
-Add the kinto network to `hardhat-config` file. Run yarn run deploy in their repo as follows:
-
-```
-yarn deploy --network kintotest
-```
