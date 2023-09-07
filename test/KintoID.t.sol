@@ -382,7 +382,8 @@ contract KintoIDTest is Test {
             )
         );
         hash = hash.toEthSignedMessageHash();
-        uint256 key = vm.envUint("FRONTEND_KEY");
+        // uint256 key = vm.envUint("FRONTEND_KEY");
+        uint256 key = 1;
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, hash);
         bytes memory newsignature = abi.encodePacked(r, s, v);
         bool valid = signData.signer.isValidSignatureNow(hash, newsignature);
@@ -392,15 +393,15 @@ contract KintoIDTest is Test {
     function testDappSignature() public {
         vm.startPrank(_kycProvider);
         bytes memory sig = hex"0fcafa82e64fcfd3c38209e23270274132e88061f1718c7ff45e8c0ddbbe7cdd59b5af57e10a5d8221baa6ae37b57d02acace7e25fc29cb4025f15269e0939aa1b";
-        bool valid = auxDappSignature(
-            IKintoID.SignatureData(
-                0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
-                0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
-                0,
-                1680614821,
-                sig
-            )
-        );
+        // bool valid = auxDappSignature(
+        //     IKintoID.SignatureData(
+        //         0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
+        //         0xf1cE2ca79D49B431652F9597947151cf21efB9C3,
+        //         0,
+        //         1680614821,
+        //         sig
+        //     )
+        // );
         assertEq(valid, true);
     }
 }

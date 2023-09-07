@@ -91,7 +91,7 @@ forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-
 Fund the signer `0x3fab184622dc19b6109349b94811493bf2a45362` to deploy the arachnid proxy:
 
 ```
-cast send 0x3fab184622dc19b6109349b94811493bf2a45362 --value 0.01ether --private-key <your_private_key> --rpc-url $KINTO_RPC_URL
+cast send 0x3fab184622dc19b6109349b94811493bf2a45362 --value 0.03ether --private-key <your_private_key> --rpc-url $KINTO_RPC_URL
 ```
 
 Send the following transaction using foundry. Make sure you disable EIP-155:
