@@ -33,3 +33,31 @@ contract KintoAAInitialDeployScript is Script {
         vm.stopBroadcast();
     }
 }
+
+contract KintoWalletv2 is KintoWallet {
+  constructor() KintoWallet(IEntryPoint(0xB8E2e62b4d44EB2bd39d75FDF6de124b5f95F1Af)) {}
+}
+
+contract KintoWalletUpgradeScript is Script {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoWallet _implementation;
+    KintoWallet _oldKinto;
+
+    function setUp() public {}
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        _oldKinto = KintoWallet(payable(vm.envAddress("WALLET_PROXY_ADDRESS")));
+        console.log('deploying new implementation');
+        KintoWalletv2 implementationV2 = new KintoWalletv2();
+        console.log('before upgrade');
+        _oldKinto.upgradeTo(address(implementationV2));
+        // re-wrap the proxy
+        console.log('upgraded');
+        vm.stopBroadcast();
+    }
+}

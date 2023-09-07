@@ -14,10 +14,17 @@ import "./KintoWallet.sol";
  *   This way, the entryPoint.getSenderAddress() can be called either before or after the account is created.
  */
 contract KintoWalletFactory {
-    KintoWallet public immutable accountImplementation;
+    KintoWallet public accountImplementation;
+    address public factoryOwner;
 
     constructor(IEntryPoint _entryPoint) {
         accountImplementation = new KintoWallet(_entryPoint);
+        factoryOwner = msg.sender;
+    }
+
+    function upgradeImplementation(KintoWallet newImplementationWallet) public {
+        require(msg.sender == factoryOwner, "only owner");
+        accountImplementation = newImplementationWallet;
     }
 
     /**
