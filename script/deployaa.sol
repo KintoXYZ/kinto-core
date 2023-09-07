@@ -51,13 +51,14 @@ contract KintoWalletUpgradeScript is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        _oldKinto = KintoWallet(payable(vm.envAddress("WALLET_PROXY_ADDRESS")));
+        _oldKinto = KintoWallet(payable(vm.envAddress("WALLET_ADDRESS")));
         console.log('deploying new implementation');
         KintoWalletv2 implementationV2 = new KintoWalletv2();
         console.log('before upgrade');
         _oldKinto.upgradeTo(address(implementationV2));
-        // re-wrap the proxy
         console.log('upgraded');
         vm.stopBroadcast();
     }
 }
+
+// TODO: add upgrade script for wallet factory

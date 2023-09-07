@@ -83,7 +83,7 @@ abstract contract UserOpTest is Test {
         sender: _account,
         nonce: KintoWallet(payable(_account)).getNonce(),
         initCode: bytes(""),
-        callData: bytes(""),
+        callData: abi.encodeCall(KintoWallet.execute, (_account, 1e1, bytes(""))),
         callGasLimit: 0,
         verificationGasLimit: 150000, // default verification gas. will add create2 cost (3200+200*length) if initCode exists
         preVerificationGas: 21000, // should also cover calldata cost.
