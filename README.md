@@ -86,7 +86,11 @@ On Testnet:
 forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-url http://test-explorer.kinto.xyz/api --num-of-optimizations 100000 0xE40C427226D78060062670E341b0d8D8e66d725A ETHPriceIsRight
 ```
 
-## Enable CREATE2 in our chain
+# Account Abstraction & Smart Contract Wallet
+
+## Prerequisites
+
+### Enable CREATE2 in our chain
 
 Fund the signer `0x3fab184622dc19b6109349b94811493bf2a45362` to deploy the arachnid proxy:
 
@@ -101,7 +105,7 @@ cast publish f8a58085174876e800830186a08080b853604580600e600039806000f350fe7ffff
 ```
 Now we should have the proxy live at `0x4e59b44847b379578588920ca78fbf26c0b4956c`.
 
-## Deploy Account Abstraction
+### Deploy Account Abstraction Entry Point
 
 Reference implementation: [https://github.com/eth-infinitism/account-abstraction/blob/develop/deploy/1_deploy_entrypoint.ts](ETH-Infinitism)
 
@@ -111,4 +115,12 @@ Add the kinto network to `hardhat-config` file. Run yarn run deploy in their rep
 
 ```
 yarn deploy --network kintotest
+```
+
+## Deploy Kinto Wallet Factory
+
+Here is the code to deploy our wallet factory and an initial wallet owned by the PUBLIC_KEY/PRIVATE_KEY signer:
+
+```
+source .env && forge script script/deployaa.sol:KintoAAInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
