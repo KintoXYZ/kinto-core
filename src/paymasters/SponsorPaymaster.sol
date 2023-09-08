@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
 /* solhint-disable reason-string */
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import "@aa/core/BasePaymaster.sol";
+import '@aa/core/BasePaymaster.sol';
 
 /**
  * An ETH-based paymaster that accepts ETH deposits
@@ -82,7 +82,7 @@ contract SponsorPaymaster is BasePaymaster {
      */
      // TODO: prevent reentrancy
     function withdrawTokensTo(address target, uint256 amount) public {
-        require(unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender], "DepositPaymaster: must unlockTokenDeposit");
+        require(unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender], 'DepositPaymaster: must unlockTokenDeposit');
         balances[msg.sender] -= amount;
         payable(target).transfer(amount);
     }
@@ -97,15 +97,16 @@ contract SponsorPaymaster is BasePaymaster {
 
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(userOp.verificationGasLimit > COST_OF_POST, "DepositPaymaster: gas too low for postOp");
+        require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
 
         bytes calldata paymasterAndData = userOp.paymasterAndData;
-        require(paymasterAndData.length == 20, "DepositPaymaster: paymasterAndData must be empty");
-        address account = userOp.getSender();
+        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must be empty');
+        // Get the contract deployed address from the first 20 bytes of the paymasterAndData
+        address targetAccount =  address(bytes20(userOp.callData));
         uint256 gasPriceUserOp = userOp.gasPrice();
-        require(unlockBlock[account] == 0, "DepositPaymaster: deposit not locked");
-        require(balances[account] >= maxCost, "DepositPaymaster: deposit too low");
-        return (abi.encode(account, gasPriceUserOp),0);
+        require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
+        require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
+        return (abi.encode(targetAccount, gasPriceUserOp),0);
     }
 
     /**
