@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {IFaucet} from "./interfaces/IFaucet.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {IFaucet} from './interfaces/IFaucet.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
 
 /**
  * @title Faucet
@@ -71,8 +71,8 @@ contract Faucet is Ownable, IFaucet{
     /* ============ Private functions ============ */
 
     function _privateClaim(address _receiver) private {
-        require(active, "Faucet is not active");
-        require(!claimed[_receiver], "You have already claimed your KintoETH");
+        require(active, 'Faucet is not active');
+        require(!claimed[_receiver], 'You have already claimed your KintoETH');
         claimed[_receiver] = true;
         payable(_receiver).transfer(CLAIM_AMOUNT);
         if (address(this).balance < CLAIM_AMOUNT) {
@@ -90,12 +90,12 @@ contract Faucet is Ownable, IFaucet{
     modifier onlySignerVerified(
       IFaucet.SignatureData calldata _signature
     ) {
-        require(block.timestamp < _signature.expiresAt, "Signature has expired");
-        require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
-        require(owner() == msg.sender, "Invalid Sender");
+        require(block.timestamp < _signature.expiresAt, 'Signature has expired');
+        require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
+        require(owner() == msg.sender, 'Invalid Sender');
         bytes32 hash = keccak256(
           abi.encodePacked(
-            "\x19\x01",   // EIP-191 header
+            '\x19\x01',   // EIP-191 header
             keccak256(abi.encode(
                 _signature.signer,
                 address(this),
@@ -109,7 +109,7 @@ contract Faucet is Ownable, IFaucet{
 
         require(
           _signature.signer.isValidSignatureNow(hash, _signature.signature),
-          "Invalid Signer"
+          'Invalid Signer'
         );
         _;
     }

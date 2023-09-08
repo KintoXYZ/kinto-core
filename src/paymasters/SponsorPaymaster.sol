@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 import '@aa/core/BasePaymaster.sol';
+import 'forge-std/console2.sol';
 
 /**
  * An ETH-based paymaster that accepts ETH deposits
@@ -47,6 +48,7 @@ contract SponsorPaymaster is BasePaymaster {
         if (msg.sender == account) {
             lockTokenDeposit();
         }
+        this.deposit{value: msg.value}();
     }
 
     /**
@@ -102,7 +104,7 @@ contract SponsorPaymaster is BasePaymaster {
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must be empty');
         // Get the contract deployed address from the first 20 bytes of the paymasterAndData
-        address targetAccount =  address(bytes20(userOp.callData));
+        address targetAccount =  address(bytes20(userOp.callData[16:]));
         uint256 gasPriceUserOp = userOp.gasPrice();
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
         require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');

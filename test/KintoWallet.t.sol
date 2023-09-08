@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import '../src/wallet/KintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
+import '../src/paymasters/SponsorPaymaster.sol';
 import '../src/KintoID.sol';
 import {UserOp} from './helpers/UserOp.sol';
 import {KYCSignature} from './helpers/KYCSignature.sol';
@@ -54,6 +55,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     KintoWalletFactory _walletFactory;
     KintoID _implementation;
     KintoID _kintoIDv1;
+    SponsorPaymaster _paymaster;
 
     KintoWallet _kintoWalletv1;
     KintoWalletv2 _kintoWalletv2;
@@ -96,6 +98,8 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.startPrank(_owner);
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, 0);
+        // deploy the paymaster
+        _paymaster = new SponsorPaymaster(_entryPoint);
         vm.stopPrank();
     }
 
@@ -144,6 +148,24 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(counter.count(), 0);
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = this.createUserOperation(address(_kintoWalletv1), 1, address(counter), abi.encodeWithSignature('increment()'));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+        vm.stopPrank();
+    }
+
+    function testTransactionViaPaymaster() public {
+        vm.startPrank(_owner);
+        vm.deal(_owner, 1e20);
+        // Let's deploy the counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        // We add the deposit to the counter contract the entry point
+        _paymaster.addDepositFor{value: 5e18}(address(counter));
+        // Let's send a transaction to the counter contract through our wallet
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(address(_kintoWalletv1), 1, address(counter), abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
