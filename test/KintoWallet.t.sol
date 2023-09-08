@@ -4,7 +4,8 @@ pragma solidity ^0.8.13;
 import '../src/wallet/KintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/KintoID.sol';
-import {UserOpTest} from './helpers/UserOpTest.sol';
+import {UserOp} from './helpers/UserOp.sol';
+import {KYCSignature} from './helpers/KYCSignature.sol';
 
 import '@aa/interfaces/IAccount.sol';
 import '@aa/interfaces/INonceManager.sol';
@@ -45,7 +46,7 @@ contract Counter {
     }
 }
 
-contract KintoWalletTest is UserOpTest {
+contract KintoWalletTest is UserOp, KYCSignature {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
@@ -84,13 +85,17 @@ contract KintoWalletTest is UserOpTest {
         _kintoIDv1.initialize();
         _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         _entryPoint = new EntryPoint{salt: 0}();
-        console.log('Deployed entry point at', address(_entryPoint));
         //Deploy wallet factory
         _walletFactory = new KintoWalletFactory(_entryPoint, _kintoIDv1);
-        console.log('Wallet factory deployed at', address(_walletFactory));
+        // Mint an nft to the owner
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](0);
+        vm.startPrank(_kycProvider);
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.stopPrank();
+        vm.startPrank(_owner);
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, 0);
-        console.log('wallet deployed at', address(_kintoWalletv1));
         vm.stopPrank();
     }
 
