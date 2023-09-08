@@ -65,6 +65,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the implementation is upgraded
+    // TODO: this should come from entry point eventually
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
         _onlyOwner();
@@ -120,6 +121,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /* ============ Deposit and withdraw into entry point ============ */
 
+    // TODO: remove but keep once is working with funds here
     // This should be handled by paymaster
     /**
      * check current account deposit in the entryPoint

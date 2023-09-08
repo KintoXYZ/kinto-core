@@ -124,3 +124,9 @@ Here is the code to deploy our wallet factory and an initial wallet owned by the
 ```
 source .env && forge script script/deployaa.sol:KintoAAInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
+
+## Funding a smart contract wallet for testing
+
+```
+cast send <WALLET_ADDRESS> "addDeposit()" --value 0.1ether
+```
