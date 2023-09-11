@@ -32,18 +32,20 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     IKintoID public immutable kintoID;
     IEntryPoint private immutable _entryPoint;
 
+    uint8 public signerPolicy = 1; // 1 = single signer, 2 = n-1 required
+
     address[] public owners;
 
     /* ============ Modifiers ============ */
 
-    modifier onlyOwner() {
-        _onlyOwner();
+    modifier onlySelf() {
+        _onlySelf();
         _;
     }
     
-    function _onlyOwner() internal view {
+    function _onlySelf() internal view {
         //directly from EOA owner, or through the account itself (which gets redirected through execute())
-        require(msg.sender == owners[0] || msg.sender == address(this), 'only owner');
+        require(msg.sender == address(this), 'only owner');
     }
 
     /* ============ Constructor & Initializers ============ */
@@ -62,6 +64,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function initialize(address anOwner) public virtual initializer {
         __UUPSUpgradeable_init();
         owners.push(anOwner);
+        signerPolicy = 1;
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 
@@ -72,7 +75,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
-        _onlyOwner();
+        _onlySelf();
     }
 
     /// @inheritdoc BaseAccount
@@ -87,12 +90,23 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /// implement template method of BaseAccount
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash) internal override virtual returns (uint256 validationData) {
-        // Check id holder of this account is still KYC'ed
+        // Check first owner of this account is still KYC'ed
         require(kintoID.isKYC(owners[0]), 'KYC Required');
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        if (owners[0] != hash.recover(userOp.signature))
-            return SIG_VALIDATION_FAILED;
-        return 0;
+        // Single signer
+        if (signerPolicy == 1 && owners.length == 1) {
+            if (owners[0] != hash.recover(userOp.signature))
+                return SIG_VALIDATION_FAILED;
+            return 0;
+        }
+        uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
+        // Split signature from userOp.signature
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == hash.recover(userOp.signature)) {
+                requiredSigners--;
+            }
+        }
+        return requiredSigners;
     }
 
     /* ============ Execution methods ============ */
@@ -124,6 +138,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
             }
         }
     }
+    /* ============ Signer Management ============ */
+
+    // TODO
+    // add signer
+    // remove signer
+    // change policy
 
     /* ============ Deposit and withdraw into entry point ============ */
 
@@ -137,7 +157,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     /**
      * Deposit more funds for this account in the entryPoint
      */
-    function addDeposit() public payable {
+    function addDeposit() public payable onlySelf {
         entryPoint().depositTo{value : msg.value}(address(this));
     }
 
@@ -146,7 +166,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @param withdrawAddress target to send to
      * @param amount to withdraw
      */
-    function withdrawDepositTo(address payable withdrawAddress, uint256 amount) public onlyOwner {
+    function withdrawDepositTo(address payable withdrawAddress, uint256 amount) public onlySelf {
         entryPoint().withdrawTo(withdrawAddress, amount);
     }
 
