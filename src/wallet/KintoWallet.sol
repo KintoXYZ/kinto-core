@@ -34,8 +34,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     IEntryPoint private immutable _entryPoint;
 
     uint8 public constant MAX_SIGNERS = 3;
-    uint8 public constant MINUS_ONE_SIGNER = 2;
     uint8 public constant SINGLE_SIGNER = 1;
+    uint8 public constant MINUS_ONE_SIGNER = 2;
     uint8 public constant ALL_SIGNERS = 3;
 
     uint8 public signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
@@ -70,7 +70,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function initialize(address anOwner) public virtual initializer {
         __UUPSUpgradeable_init();
         owners.push(anOwner);
-        signerPolicy = 1;
+        signerPolicy = SINGLE_SIGNER;
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 
@@ -177,6 +177,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function resetSigners(address[] calldata newSigners) public onlySelf {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
         require(kintoID.isKYC(newSigners[0]), 'KYC Required');
+        require(newSigners.length == 1 ||
+            (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
+            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) && (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
+            'duplicate owners');
         owners = newSigners;
     }
 
