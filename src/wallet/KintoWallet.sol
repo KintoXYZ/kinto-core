@@ -27,12 +27,18 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
+    event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
 
     /* ============ State Variables ============ */
     IKintoID public immutable kintoID;
     IEntryPoint private immutable _entryPoint;
 
-    uint8 public signerPolicy = 1; // 1 = single signer, 2 = n-1 required
+    uint8 public constant MAX_SIGNERS = 3;
+    uint8 public constant MINUS_ONE_SIGNER = 2;
+    uint8 public constant SINGLE_SIGNER = 1;
+    uint8 public constant ALL_SIGNERS = 3;
+
+    uint8 public signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
 
     address[] public owners;
 
@@ -78,11 +84,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         _onlySelf();
     }
 
-    /// @inheritdoc BaseAccount
-    function entryPoint() public view virtual override returns (IEntryPoint) {
-        return _entryPoint;
-    }
-
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
   
@@ -90,8 +91,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /// implement template method of BaseAccount
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash) internal override virtual returns (uint256 validationData) {
+        // We don't want to do requires here as it would revert the whole transaction
         // Check first owner of this account is still KYC'ed
-        require(kintoID.isKYC(owners[0]), 'KYC Required');
+        if (!kintoID.isKYC(owners[0])) {
+            return SIG_VALIDATION_FAILED;
+        }
+        if (userOp.signature.length != 65 * owners.length) {
+            return SIG_VALIDATION_FAILED;
+        }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
         if (signerPolicy == 1 && owners.length == 1) {
@@ -100,9 +107,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
             return 0;
         }
         uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
+        bytes[] memory signatures = new bytes[](owners.length);
+        if (owners.length == 2) {
+            (signatures[0], signatures[1]) = _extractTwoSignatures(userOp.signature);
+        } else {
+            (signatures[0], signatures[1], signatures[2]) = _extractThreeSignatures(userOp.signature);
+        }
         // Split signature from userOp.signature
         for (uint i = 0; i < owners.length; i++) {
-            if (owners[i] == hash.recover(userOp.signature)) {
+            if (owners[i] == hash.recover(signatures[i])) {
                 requiredSigners--;
             }
         }
@@ -130,6 +143,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         }
     }
 
+    /**
+     * @dev Executes a transaction, and send the value to the last destination
+     * @param target target contract address
+     * @param value eth value to send to the target
+     * @param data calldata
+     */
     function _call(address target, uint256 value, bytes memory data) internal {
         (bool success, bytes memory result) = target.call{value : value}(data);
         if (!success) {
@@ -139,35 +158,65 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         }
     }
     /* ============ Signer Management ============ */
-
-    // TODO
-    // add signer
-    // remove signer
-    // change policy
-
-    /* ============ Deposit and withdraw into entry point ============ */
-
+    
     /**
-     * Get current account deposit in the entryPoint
+     * @dev Change the signer policy
+     * @param policy new policy
      */
-    function getDeposit() public view returns (uint256) {
-        return entryPoint().balanceOf(address(this));
+    function setSignerPolicy(uint8 policy) public onlySelf {
+        require(policy > 0 && policy < 4  && policy != signerPolicy, 'invalid policy');
+        require(policy == 1 || owners.length > 1, 'invalid policy');
+        emit WalletPolicyChanged(policy, signerPolicy);
+        signerPolicy = policy;
     }
 
     /**
-     * Deposit more funds for this account in the entryPoint
+     * @dev Changed the signers
+     * @param newSigners new signers array
      */
-    function addDeposit() public payable onlySelf {
-        entryPoint().depositTo{value : msg.value}(address(this));
+    function resetSigners(address[] calldata newSigners) public onlySelf {
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
+        require(kintoID.isKYC(newSigners[0]), 'KYC Required');
+        owners = newSigners;
     }
 
-    /**
-     * Withdraw value from the account's deposit
-     * @param withdrawAddress target to send to
-     * @param amount to withdraw
-     */
-    function withdrawDepositTo(address payable withdrawAddress, uint256 amount) public onlySelf {
-        entryPoint().withdrawTo(withdrawAddress, amount);
+    /* ============ View Functions ============ */
+
+    // @inheritdoc BaseAccount
+    function entryPoint() public view virtual override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    /* ============ Helpers (Move to Library) ============ */
+    function _extractTwoSignatures(bytes memory _fullSignature) internal pure returns (bytes memory signature1, bytes memory signature2) {
+        signature1 = new bytes(65);
+        signature2 = new bytes(65);
+        return (_extractECDASignatureFromBytes(_fullSignature, 1), _extractECDASignatureFromBytes(_fullSignature, 2));
+    }
+
+    function _extractThreeSignatures(bytes memory _fullSignature) internal pure returns (bytes memory signature1, bytes memory signature2, bytes memory signature3) {
+        signature1 = new bytes(65);
+        signature2 = new bytes(65);
+        signature3 = new bytes(65);
+        return (_extractECDASignatureFromBytes(_fullSignature, 1), _extractECDASignatureFromBytes(_fullSignature, 2), _extractECDASignatureFromBytes(_fullSignature, 3));
+    }
+
+    function _extractECDASignatureFromBytes(bytes memory _fullSignature, uint position) internal pure returns (bytes memory signature) {
+        signature = new bytes(65);
+        // Copying the first signature. Note, that we need an offset of 0x20
+        // since it is where the length of the `_fullSignature` is stored
+        uint firstIndex = (position * 0x40 + 1) + 0x20;
+        uint secondIndex = (position * 0x40 + 1) + 0x40;
+        uint thirdIndex = (position * 0x40 + 2) + 0x40;
+        assembly {
+            let r := mload(add(_fullSignature, firstIndex))
+            let s := mload(add(_fullSignature, secondIndex))
+            let v := and(mload(add(_fullSignature, thirdIndex)), 0xff)
+
+            mstore(add(signature, 0x20), r)
+            mstore(add(signature, 0x40), s)
+            mstore8(add(signature, 0x60), v)
+        }
     }
 
 }

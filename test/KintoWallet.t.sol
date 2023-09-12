@@ -112,42 +112,43 @@ contract KintoWalletTest is UserOp, KYCSignature {
 
     function testOwnerCanUpgrade() public {
         vm.startPrank(_owner);
+        vm.deal(_owner, 1e20);
+        _paymaster.addDepositFor{value: 5e18}(address(_kintoWalletv1));
         KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
-        _kintoWalletv1.upgradeTo(address(_implementationV2));
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(address(_kintoWalletv1), 1, address(_kintoWalletv1), 0, abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        // _kintoWalletv1.upgradeTo(address(_implementationV2));
         _kintoWalletv2 = KintoWalletv2(payable(_kintoWalletv1));
         assertEq(_kintoWalletv2.newFunction(), 1);
         vm.stopPrank();
     }
 
     function testFailOthersCannotUpgrade() public {
+        vm.startPrank(_owner);
+        vm.deal(_owner, 1e20);
+        _paymaster.addDepositFor{value: 5e18}(address(_kintoWalletv1));
         KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
-        _kintoWalletv1.upgradeTo(address(_implementationV2));
-    }
-
-    function testExecuteDirectly() public {
-        vm.startPrank(_owner);
-        // We add the deposit in the entry point
-        _kintoWalletv1.addDeposit{value: 1e15}();
-        vm.stopPrank();
-        vm.startPrank(address(_entryPoint));
-        // Let's deploy the counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-        // Let's execute directly through the wallet
-        _kintoWalletv1.execute(address(counter), 0, abi.encodeWithSignature('increment()'));
-        assertEq(counter.count(), 1);
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(address(_user), 3, address(_kintoWalletv1), 0, abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        // _kintoWalletv1.upgradeTo(address(_implementationV2));
+        _kintoWalletv2 = KintoWalletv2(payable(_kintoWalletv1));
+        assertEq(_kintoWalletv2.newFunction(), 1);
         vm.stopPrank();
     }
 
-    function testSimpleTransactionAfterDeposit() public {
+    function testFailSendingTransactionDirectly() public {
         vm.startPrank(_owner);
-        // We add the deposit in the entry point
-        _kintoWalletv1.addDeposit{value: 1e15}();
         // Let's deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
         // Let's send a transaction to the counter contract through our wallet
-        UserOperation memory userOp = this.createUserOperation(address(_kintoWalletv1), 1, address(counter), abi.encodeWithSignature('increment()'));
+        UserOperation memory userOp = this.createUserOperation(address(_kintoWalletv1), 1, address(counter), 0, abi.encodeWithSignature('increment()'));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
@@ -162,10 +163,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         // Let's deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
-        // We add the deposit to the counter contract the entry point
+        // We add the deposit to the counter contract in the paymaster
         _paymaster.addDepositFor{value: 5e18}(address(counter));
         // Let's send a transaction to the counter contract through our wallet
-        UserOperation memory userOp = this.createUserOperationWithPaymaster(address(_kintoWalletv1), 1, address(counter), abi.encodeWithSignature('increment()'), address(_paymaster));
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(address(_kintoWalletv1), 1, address(counter), 0, abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point

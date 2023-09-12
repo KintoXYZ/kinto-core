@@ -78,23 +78,24 @@ abstract contract UserOp is Test {
     // 'uint256', // maxFeePerGas
     // 'uint256', // maxPriorityFeePerGas
     // 'bytes32' // paymasterAndData
-    function createUserOperation(address _account, uint256 _privateKeyOwner, address _targetContract, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
+    function createUserOperation(address _account, uint256 _privateKeyOwner, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
       return
         this.createUserOperationWithPaymaster(
           _account,
           _privateKeyOwner,
           _targetContract,
+          value,
           _bytesOp,
           address(0)
         );
     }
 
-    function createUserOperationWithPaymaster(address _account, uint256 _privateKeyOwner, address _targetContract, bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
+    function createUserOperationWithPaymaster(address _account, uint256 _privateKeyOwner, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
       op = UserOperation({
         sender: _account,
         nonce: KintoWallet(payable(_account)).getNonce(),
         initCode: bytes(''),
-        callData: abi.encodeCall(KintoWallet.execute, (_targetContract, 0, _bytesOp)),
+        callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
         callGasLimit: 4000000, // generate from call simulation
         verificationGasLimit: 150000, // default verification gas. will add create2 cost (3200+200*length) if initCode exists
         preVerificationGas: 21000, // should also cover calldata cost.
