@@ -110,15 +110,15 @@ contract KintoWalletTest is UserOp, KYCSignature {
     }
 
     /* ============ Upgrade Tests ============ */
-
-
     function testOwnerCanUpgrade() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -134,8 +134,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.startPrank(_owner);
         KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 3;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_user), startingNonce, 3, address(_kintoWalletv1), 0,
+            address(_user), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -146,7 +148,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.stopPrank();
     }
 
-    /* ============ Transaction Tests ============ */
+    /* ============ One Signer Account Transaction Tests ============ */
 
     function testFailSendingTransactionDirectly() public {
         vm.startPrank(_owner);
@@ -155,8 +157,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(counter.count(), 0);
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperation(
-            address(_kintoWalletv1), startingNonce, 1, address(counter), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -175,8 +179,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _setPaymasterForContract(address(counter));
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(counter), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -192,14 +198,16 @@ contract KintoWalletTest is UserOp, KYCSignature {
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         vm.stopPrank();
         _setPaymasterForContract(address(counter));
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(counter), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce + 1, 1, address(counter), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = userOp;
@@ -219,8 +227,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         owners[0] = _owner;
         owners[1] = _user;
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -237,8 +247,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         owners[0] = _owner;
         owners[1] = _owner;
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1),
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1),
             0, abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -253,8 +265,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.startPrank(_owner);
         address[] memory owners = new address[](0);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1),
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1),
             0, abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -268,13 +282,15 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         address[] memory owners = new address[](4);
         owners[0] = _owner;
         owners[1] = _user;
         owners[2] = _user;
         owners[3] = _user;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -288,10 +304,12 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         address[] memory owners = new address[](1);
         owners[0] = _user;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -308,11 +326,13 @@ contract KintoWalletTest is UserOp, KYCSignature {
         owners[0] = _owner;
         owners[1] = _user;
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce + 1, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('setSignerPolicy(uint8)', _kintoWalletv1.ALL_SIGNERS()),
             address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](2);
@@ -325,6 +345,33 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.stopPrank();
     }
 
+    function testChangingPolicyWithThreeSigners() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
+        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setSignerPolicy(uint8)', _kintoWalletv1.MINUS_ONE_SIGNER()),
+            address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = userOp;
+        userOps[1] = userOp2;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.owners(1), _user);
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.MINUS_ONE_SIGNER());
+        vm.stopPrank();
+    }
+
     function testFailChangingPolicyWithoutRightSigners() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
@@ -332,11 +379,13 @@ contract KintoWalletTest is UserOp, KYCSignature {
         owners[0] = _owner;
         owners[1] = _user;
         uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
         UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce + 1, 1, address(_kintoWalletv1), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
             abi.encodeWithSignature('setSignerPolicy(uint8)', _kintoWalletv1.ALL_SIGNERS()),
             address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](2);
@@ -349,11 +398,52 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.stopPrank();
     }
 
-    // test changing policies
-
     /* ============ Multisig Transactions ============ */
 
-    // test a multisig transaction with 2 signers
+
+    function testMultisigTransaction() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
+        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setSignerPolicy(uint8)', _kintoWalletv1.ALL_SIGNERS()),
+            address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = userOp;
+        userOps[1] = userOp2;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.owners(1), _user);
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.ALL_SIGNERS());
+        // Deploy Counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        vm.stopPrank();
+        // Fund counter contract
+        _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
+        // Create counter increment transaction
+        userOps = new UserOperation[](1);
+        privateKeys = new uint256[](2);
+        privateKeys[0] = 1;
+        privateKeys[1] = 3;
+        userOp = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
+            abi.encodeWithSignature('increment()'), address(_paymaster));
+        userOps[0] = userOp;
+        _entryPoint.handleOps(userOps, payable(_owner));
+        vm.stopPrank();
+    }
+
     // test fail multisig transaction that requires 2 signers with 1 signer
 
     // test a multisig transaction with 3 signers
@@ -367,7 +457,6 @@ contract KintoWalletTest is UserOp, KYCSignature {
         // We add the deposit to the counter contract in the paymaster
         _paymaster.addDepositFor{value: 5e18}(address(_contract));
         vm.stopPrank();
-
     }
 
 }

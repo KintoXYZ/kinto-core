@@ -90,7 +90,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     /* ============ IAccountOverrides ============ */
 
     /// implement template method of BaseAccount
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash) internal override virtual returns (uint256 validationData) {
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+        internal override virtual returns (uint256 validationData) {
         // We don't want to do requires here as it would revert the whole transaction
         // Check first owner of this account is still KYC'ed
         if (!kintoID.isKYC(owners[0])) {
@@ -179,7 +180,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         require(kintoID.isKYC(newSigners[0]), 'KYC Required');
         require(newSigners.length == 1 ||
             (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
-            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) && (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
+            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
+                (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
         owners = newSigners;
     }
@@ -191,21 +193,32 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         return _entryPoint;
     }
 
-    /* ============ Helpers (Move to Library) ============ */
-    function _extractTwoSignatures(bytes memory _fullSignature) internal pure returns (bytes memory signature1, bytes memory signature2) {
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 1), _extractECDASignatureFromBytes(_fullSignature, 2));
+    function getOwnersCount() public view returns (uint) {
+        return owners.length;
     }
 
-    function _extractThreeSignatures(bytes memory _fullSignature) internal pure returns (bytes memory signature1, bytes memory signature2, bytes memory signature3) {
+    /* ============ Helpers (Move to Library) ============ */
+    function _extractTwoSignatures(bytes memory _fullSignature)
+        internal pure
+        returns (bytes memory signature1, bytes memory signature2) {
+        signature1 = new bytes(65);
+        signature2 = new bytes(65);
+        return (_extractECDASignatureFromBytes(_fullSignature, 1),
+            _extractECDASignatureFromBytes(_fullSignature, 2));
+    }
+
+    function _extractThreeSignatures(bytes memory _fullSignature)
+        internal pure returns (bytes memory signature1, bytes memory signature2, bytes memory signature3) {
         signature1 = new bytes(65);
         signature2 = new bytes(65);
         signature3 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 1), _extractECDASignatureFromBytes(_fullSignature, 2), _extractECDASignatureFromBytes(_fullSignature, 3));
+        return (_extractECDASignatureFromBytes(_fullSignature, 1),
+            _extractECDASignatureFromBytes(_fullSignature, 2),
+            _extractECDASignatureFromBytes(_fullSignature, 3));
     }
 
-    function _extractECDASignatureFromBytes(bytes memory _fullSignature, uint position) internal pure returns (bytes memory signature) {
+    function _extractECDASignatureFromBytes(bytes memory _fullSignature, uint position)
+        internal pure returns (bytes memory signature) {
         signature = new bytes(65);
         // Copying the first signature. Note, that we need an offset of 0x20
         // since it is where the length of the `_fullSignature` is stored

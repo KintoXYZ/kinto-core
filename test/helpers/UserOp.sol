@@ -60,30 +60,34 @@ abstract contract UserOp is Test {
       );
     }
 
-    function _signUserOp (UserOperation memory op, IEntryPoint _entryPoint, uint256 chainID, uint256 privateKey) internal pure returns (bytes memory) {
+    function _signUserOp (
+      UserOperation memory op,
+      IEntryPoint _entryPoint,
+      uint256 chainID,
+      uint256[] calldata privateKeys
+    ) internal pure returns (bytes memory) {
       bytes32 hash = _getUserOpHash(op, _entryPoint, chainID);
       hash = hash.toEthSignedMessageHash();
-      (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);
-      bytes memory signature = abi.encodePacked(r, s, v);
+
+      bytes memory signature;
+      for (uint i = 0; i < privateKeys.length; i++) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[0], hash);
+        if (i == 0) {
+          signature = abi.encodePacked(r, s, v);
+        } else {
+          signature = abi.encodePacked(signature, r,s,v);
+        }
+      }
+
       return signature;
     }
     
-    // 'address', // sender
-    // 'uint256', // nonce
-    // 'bytes32', // initCode
-    // 'bytes32', // callData
-    // 'uint256', // callGasLimit
-    // 'uint256', // verificationGasLimit
-    // 'uint256', // preVerificationGas
-    // 'uint256', // maxFeePerGas
-    // 'uint256', // maxPriorityFeePerGas
-    // 'bytes32' // paymasterAndData
-    function createUserOperation(address _account, uint nonce, uint256 _privateKeyOwner, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
+    function createUserOperation(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
       return
         this.createUserOperationWithPaymaster(
           _account,
           nonce,
-          _privateKeyOwner,
+          _privateKeyOwners,
           _targetContract,
           value,
           _bytesOp,
@@ -91,7 +95,7 @@ abstract contract UserOp is Test {
         );
     }
 
-    function createUserOperationWithPaymaster(address _account, uint nonce, uint256 _privateKeyOwner, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
+    function createUserOperationWithPaymaster(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
       op = UserOperation({
         sender: _account,
         nonce: nonce,
@@ -105,7 +109,7 @@ abstract contract UserOp is Test {
         paymasterAndData: abi.encodePacked(_paymaster),
         signature: bytes('')
       });
-      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), 1, _privateKeyOwner);
+      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), 1, _privateKeyOwners);
       return op;
     }
 }
