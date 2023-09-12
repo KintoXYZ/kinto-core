@@ -177,6 +177,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(counter.count(), 0);
         vm.stopPrank();
         _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -202,6 +203,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         privateKeys[0] = 1;
         vm.stopPrank();
         _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
@@ -214,7 +216,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         userOps[1] = userOp2;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
+        assertEq(counter.count(), 2);
         vm.stopPrank();
     }
 
@@ -348,7 +350,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     function testChangingPolicyWithThreeSigners() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
-        address[] memory owners = new address[](2);
+        address[] memory owners = new address[](3);
         owners[0] = _owner;
         owners[1] = _user;
         owners[2] = _user2;
@@ -368,6 +370,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWalletv1.owners(1), _user);
+        assertEq(_kintoWalletv1.owners(2), _user2);
         assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.MINUS_ONE_SIGNER());
         vm.stopPrank();
     }
