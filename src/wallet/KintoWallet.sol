@@ -109,12 +109,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         }
         uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
         bytes[] memory signatures = new bytes[](owners.length);
+        // Split signature from userOp.signature
         if (owners.length == 2) {
             (signatures[0], signatures[1]) = _extractTwoSignatures(userOp.signature);
         } else {
             (signatures[0], signatures[1], signatures[2]) = _extractThreeSignatures(userOp.signature);
         }
-        // Split signature from userOp.signature
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
                 requiredSigners--;
@@ -203,8 +203,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         returns (bytes memory signature1, bytes memory signature2) {
         signature1 = new bytes(65);
         signature2 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 1),
-            _extractECDASignatureFromBytes(_fullSignature, 2));
+        return (_extractECDASignatureFromBytes(_fullSignature, 0),
+            _extractECDASignatureFromBytes(_fullSignature, 1));
     }
 
     function _extractThreeSignatures(bytes memory _fullSignature)
@@ -212,9 +212,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         signature1 = new bytes(65);
         signature2 = new bytes(65);
         signature3 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 1),
-            _extractECDASignatureFromBytes(_fullSignature, 2),
-            _extractECDASignatureFromBytes(_fullSignature, 3));
+        return (_extractECDASignatureFromBytes(_fullSignature, 0),
+            _extractECDASignatureFromBytes(_fullSignature, 1),
+            _extractECDASignatureFromBytes(_fullSignature, 2));
     }
 
     function _extractECDASignatureFromBytes(bytes memory _fullSignature, uint position)
@@ -222,9 +222,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         signature = new bytes(65);
         // Copying the first signature. Note, that we need an offset of 0x20
         // since it is where the length of the `_fullSignature` is stored
-        uint firstIndex = (position * 0x40 + 1) + 0x20;
-        uint secondIndex = (position * 0x40 + 1) + 0x40;
-        uint thirdIndex = (position * 0x40 + 2) + 0x40;
+        uint firstIndex = (position * 0x40) + 0x20 + position;
+        uint secondIndex = (position * 0x40) + 0x40 + position;
+        uint thirdIndex = (position * 0x40) + 0x41 + position;
         assembly {
             let r := mload(add(_fullSignature, firstIndex))
             let s := mload(add(_fullSignature, secondIndex))

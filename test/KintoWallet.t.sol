@@ -440,17 +440,59 @@ contract KintoWalletTest is UserOp, KYCSignature {
         privateKeys[0] = 1;
         privateKeys[1] = 3;
         userOp = this.createUserOperationWithPaymaster(
-            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
         vm.stopPrank();
     }
 
-    // test fail multisig transaction that requires 2 signers with 1 signer
+    function testFailMultisigTransaction() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[])',owners), address(_paymaster));
+        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setSignerPolicy(uint8)', _kintoWalletv1.ALL_SIGNERS()),
+            address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = userOp;
+        userOps[1] = userOp2;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.owners(1), _user);
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.ALL_SIGNERS());
+        // Deploy Counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        vm.stopPrank();
+        // Fund counter contract
+        _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
+        // Create counter increment transaction
+        userOps = new UserOperation[](1);
+        privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        userOp = this.createUserOperationWithPaymaster(
+            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
+            abi.encodeWithSignature('increment()'), address(_paymaster));
+        userOps[0] = userOp;
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+        vm.stopPrank();
+    }
 
-    // test a multisig transaction with 3 signers
-    // test fail multisig transaction that requires 3 signers with 2 signers
+    // TODO: test a multisig transaction with 3 signers
+    // TODO: test fail multisig transaction that requires 3 signers with 2 signers
 
     /* ============ Helpers ============ */
 
