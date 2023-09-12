@@ -78,10 +78,11 @@ abstract contract UserOp is Test {
     // 'uint256', // maxFeePerGas
     // 'uint256', // maxPriorityFeePerGas
     // 'bytes32' // paymasterAndData
-    function createUserOperation(address _account, uint256 _privateKeyOwner, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
+    function createUserOperation(address _account, uint nonce, uint256 _privateKeyOwner, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
       return
         this.createUserOperationWithPaymaster(
           _account,
+          nonce,
           _privateKeyOwner,
           _targetContract,
           value,
@@ -90,10 +91,10 @@ abstract contract UserOp is Test {
         );
     }
 
-    function createUserOperationWithPaymaster(address _account, uint256 _privateKeyOwner, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
+    function createUserOperationWithPaymaster(address _account, uint nonce, uint256 _privateKeyOwner, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
       op = UserOperation({
         sender: _account,
-        nonce: KintoWallet(payable(_account)).getNonce(),
+        nonce: nonce,
         initCode: bytes(''),
         callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
         callGasLimit: 4000000, // generate from call simulation
