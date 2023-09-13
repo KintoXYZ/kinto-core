@@ -7,6 +7,7 @@ import "../src/interfaces/IKintoID.sol";
 import "../src/ETHPriceIsRight.sol";
 import "forge-std/console.sol";
 import "../src/wallet/KintoWallet.sol";
+import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
 import '@aa/interfaces/IEntryPoint.sol';
 import '@aa/core/EntryPoint.sol';
@@ -14,6 +15,7 @@ import {UserOp} from '../test/helpers/UserOp.sol';
 
 contract ExperimentalWalletUse is Script, UserOp {
     KintoWallet _kintoWalletv1;
+    KintoWalletFactory _walletFactory;
     SponsorPaymaster _paymaster;
     ETHPriceIsRight _ethpriceisright;
     EntryPoint _entryPoint;
