@@ -119,7 +119,7 @@ contract SponsorPaymaster is BasePaymaster {
      * this time in *postOpReverted* mode.
      * In this mode, we use the deposit to pay (which we validated to be large enough)
      */
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
+    function _postOp(PostOpMode /* mode */, bytes calldata context, uint256 actualGasCost) internal override {
         (address account, uint256 gasPricePostOp) = abi.decode(context, (address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);

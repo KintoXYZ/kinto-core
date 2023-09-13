@@ -82,9 +82,10 @@ abstract contract UserOp is Test {
       return signature;
     }
     
-    function createUserOperation(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
+    function createUserOperation(uint _chainID, address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
       return
         this.createUserOperationWithPaymaster(
+          _chainID,
           _account,
           nonce,
           _privateKeyOwners,
@@ -95,7 +96,7 @@ abstract contract UserOp is Test {
         );
     }
 
-    function createUserOperationWithPaymaster(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
+    function createUserOperationWithPaymaster(uint _chainID, address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
       op = UserOperation({
         sender: _account,
         nonce: nonce,
@@ -109,7 +110,7 @@ abstract contract UserOp is Test {
         paymasterAndData: abi.encodePacked(_paymaster),
         signature: bytes('')
       });
-      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), 1, _privateKeyOwners);
+      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
       return op;
     }
 }
