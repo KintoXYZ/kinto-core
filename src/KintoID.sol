@@ -262,6 +262,7 @@ contract KintoID is Initializable, ERC1155Upgradeable, AccessControlUpgradeable,
 
     /* ============ View Functions ============ */
 
+    // TODO: If account is a wallet pierce through the owner
     /**
      * @dev Returns whether the account holder is KYCd
      * @param _account account to be checked.

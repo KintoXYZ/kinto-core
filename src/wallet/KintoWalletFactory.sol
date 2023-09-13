@@ -62,6 +62,7 @@ contract KintoWalletFactory {
      * @return ret address of the account
      */
     function createAccount(address owner,uint256 salt) public returns (KintoWallet ret) {
+        require(kintoID.isKYC(owner), 'KYC required');
         address addr = getAddress(owner, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
@@ -75,8 +76,9 @@ contract KintoWalletFactory {
         totalWallets++;
         // Emit event
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
-        require(kintoID.isKYC(owner), 'KYC required');
     }
+
+    // TODO: recover wallet when lost
 
     /* ============ View Functions ============ */
 
