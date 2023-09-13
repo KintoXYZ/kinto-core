@@ -123,10 +123,8 @@ contract SponsorPaymaster is BasePaymaster {
         (address account, uint256 gasPricePostOp) = abi.decode(context, (address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
-        if (mode != PostOpMode.postOpReverted) {
-            //in case above transferFrom failed, pay with deposit:
-            balances[account] -= ethCost;
-        }
+        // if (mode != PostOpMode.postOpReverted) {
+        balances[account] -= ethCost;
         contractSpent[account] += ethCost;
         balances[owner()] += ethCost;
     }
