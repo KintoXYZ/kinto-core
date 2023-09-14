@@ -10,7 +10,8 @@ import './KintoWallet.sol';
 /**
  * @title KintoWalletFactory
  * @dev A kinto wallet factory contract for KintoWallet
- *   A UserOperations "initCode" holds the address of the factory, and a method call (to createAccount, in this sample factory).
+ *   A UserOperations "initCode" holds the address of the factory,
+ *   and a method call (to createAccount, in this sample factory).
  *   The factory's createAccount returns the target account address even if it is already installed.
  *   This way, the entryPoint.getSenderAddress() can be called either before or after the account is created.
  */
@@ -56,7 +57,8 @@ contract KintoWalletFactory {
      * @dev Create an account, and return its address.
      * It returns the address even if the account is already deployed.
      * Note that during UserOperation execution, this method is called only if the account is not deployed.
-     * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after account creation
+     * This method returns an existing account address so that entryPoint.getSenderAddress()
+     * would work even after account creation
      * @param owner The owner address
      * @param salt The salt to use for the calculation
      * @return ret address of the account
