@@ -57,7 +57,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     KintoID _kintoIDv1;
     SponsorPaymaster _paymaster;
 
-    KintoWallet _kintoWalletv1;
+    IKintoWallet _kintoWalletv1;
     KintoWalletv2 _kintoWalletv2;
     UUPSProxy _proxy;
 
@@ -105,7 +105,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     }
 
     function testUp() public {
-        assertEq(address(_kintoWalletv1.entryPoint()), address(_entryPoint));
+        assertEq(address(_kintoWalletv1.factory()), address(_walletFactory));
         assertEq(_kintoWalletv1.owners(0), _owner);
     }
 
@@ -125,7 +125,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         userOps[0] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        _kintoWalletv2 = KintoWalletv2(payable(_kintoWalletv1));
+        _kintoWalletv2 = KintoWalletv2(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv2.newFunction(), 1);
         vm.stopPrank();
     }
@@ -145,7 +145,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         userOps[0] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        _kintoWalletv2 = KintoWalletv2(payable(_kintoWalletv1));
+        _kintoWalletv2 = KintoWalletv2(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv2.newFunction(), 1);
         vm.stopPrank();
     }

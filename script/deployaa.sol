@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import 'forge-std/Script.sol';
-import '../src/wallet/KintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/interfaces/IKintoID.sol';
+import '../src/interfaces/IKintoWallet.sol';
 import '@aa/interfaces/IEntryPoint.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import { SignatureChecker } from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
@@ -17,7 +17,7 @@ contract KintoAAInitialDeployScript is Script {
     IEntryPoint _entryPoint = IEntryPoint(0xB8E2e62b4d44EB2bd39d75FDF6de124b5f95F1Af);
     KintoWalletFactory _walletFactory;
 
-    KintoWallet _kintoWalletv1;
+    IKintoWallet _kintoWalletv1;
 
     function setUp() public {}
 

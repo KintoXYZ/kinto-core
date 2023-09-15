@@ -9,6 +9,8 @@ import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
 
 import '../interfaces/IKintoID.sol';
+import '../interfaces/IKintoWallet.sol';
+import '../interfaces/IKintoWalletFactory.sol';
 
 import 'forge-std/console2.sol';
 
@@ -22,7 +24,7 @@ import 'forge-std/console2.sol';
   *     has execute, eth handling methods and has a single signer 
   *     that can send requests through the entryPoint.
   */
-contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable {
+contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IKintoWallet {
     using ECDSA for bytes32;
 
     /* ============ Events ============ */
@@ -30,17 +32,20 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
 
     /* ============ State Variables ============ */
-    IKintoID public immutable kintoID;
+    IKintoID public override immutable kintoID;
+    IKintoWalletFactory override public immutable factory;
     IEntryPoint private immutable _entryPoint;
 
-    uint8 public constant MAX_SIGNERS = 3;
-    uint8 public constant SINGLE_SIGNER = 1;
-    uint8 public constant MINUS_ONE_SIGNER = 2;
-    uint8 public constant ALL_SIGNERS = 3;
+    uint8 public constant override MAX_SIGNERS = 3;
+    uint8 public constant override SINGLE_SIGNER = 1;
+    uint8 public constant override MINUS_ONE_SIGNER = 2;
+    uint8 public constant override ALL_SIGNERS = 3;
+    uint public constant override RECOVERY_TIME = 7 days;
 
-    uint8 public signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
+    uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
+    uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
-    address[] public owners;
+    address[] public override owners;
 
     /* ============ Modifiers ============ */
 
@@ -50,8 +55,18 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     }
     
     function _onlySelf() internal view {
-        //directly from EOA owner, or through the account itself (which gets redirected through execute())
-        require(msg.sender == address(this), 'only owner');
+        //directly through the account itself (which gets redirected through execute())
+        require(msg.sender == address(this), 'only self');
+    }
+
+    modifier onlyFactory() {
+        _onlyFactory();
+        _;
+    }
+
+    function _onlyFactory() internal view {
+        //directly through the factory
+        require(msg.sender == address(factory), 'only factory');
     }
 
     /* ============ Constructor & Initializers ============ */
@@ -59,6 +74,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     constructor(IEntryPoint __entryPoint, IKintoID _kintoID) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
+        factory = IKintoWalletFactory(msg.sender);
         _disableInitializers();
     }
 
@@ -128,7 +144,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     /**
      * execute a transaction (called directly from owner, or by entryPoint)
      */
-    function execute(address dest, uint256 value, bytes calldata func) external {
+    function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
         _call(dest, value, func);
     }
@@ -136,7 +152,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     /**
      * execute a sequence of transactions
      */
-    function executeBatch(address[] calldata dest, bytes[] calldata func) external {
+    function executeBatch(address[] calldata dest, bytes[] calldata func) external override {
         _requireFromEntryPoint();
         require(dest.length == func.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
@@ -164,7 +180,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Change the signer policy
      * @param policy new policy
      */
-    function setSignerPolicy(uint8 policy) public onlySelf {
+    function setSignerPolicy(uint8 policy) external override onlySelf {
         require(policy > 0 && policy < 4  && policy != signerPolicy, 'invalid policy');
         require(policy == 1 || owners.length > 1, 'invalid policy');
         emit WalletPolicyChanged(policy, signerPolicy);
@@ -175,15 +191,43 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Changed the signers
      * @param newSigners new signers array
      */
-    function resetSigners(address[] calldata newSigners) public onlySelf {
+    function resetSigners(address[] calldata newSigners) public override onlySelf {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
-        require(kintoID.isKYC(newSigners[0]), 'KYC Required');
+        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
         require(newSigners.length == 1 ||
             (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
             (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
                 (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
         owners = newSigners;
+    }
+
+    /* ============ Recovery Process ============ */
+
+    /**
+     * @dev Start the recovery process
+     * Can only be called by the factory through a privileged signer
+     */
+    function startRecovery() external override onlyFactory {
+        inRecovery = block.timestamp;
+    }
+
+    /**
+     * @dev Finish the recovery process and resets the signers
+     * Can only be called by the factory through a privileged signer\
+     * @param newSigners new signers array
+     */
+    function finishRecovery(address[] calldata newSigners) external override onlyFactory {
+        require(block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
+        this.resetSigners(newSigners);
+    }
+
+    /**
+     * @dev Cancel the recovery process
+     * Can only be called by the account holder if he regains access to his wallet
+     */
+    function cancelRecovery() external override onlySelf {
+        inRecovery = 0;
     }
 
     /* ============ View Functions ============ */
@@ -193,7 +237,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         return _entryPoint;
     }
 
-    function getOwnersCount() public view returns (uint) {
+    function getNonce() public view virtual override(BaseAccount, IKintoWallet) returns (uint) {
+        return this.getNonce();
+    }
+
+    function getOwnersCount() public view override returns (uint) {
         return owners.length;
     }
 
