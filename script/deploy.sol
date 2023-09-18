@@ -98,7 +98,7 @@ contract KintoAAInitialDeployScript is Script {
         console.log('Wallet factory deployed at', address(_walletFactory));
         // Set Wallet Factory in entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
-
+        console.log('Wallet factory set in entry point', _entryPoint.walletFactory());
         // address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
         //_kintoWalletv1 = _walletFactory.createAccount(deployerPublicKey, 0);
         // console.log('wallet deployed at', address(_kintoWalletv1));
