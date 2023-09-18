@@ -86,7 +86,10 @@ contract SponsorPaymaster is BasePaymaster {
      */
      // TODO: prevent reentrancy
     function withdrawTokensTo(address target, uint256 amount) public {
-        require(unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender], 'DepositPaymaster: must unlockTokenDeposit');
+        require(
+            unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
+            'DepositPaymaster: must unlockTokenDeposit'
+        );
         balances[msg.sender] -= amount;
         payable(target).transfer(amount);
     }
@@ -97,7 +100,11 @@ contract SponsorPaymaster is BasePaymaster {
      * Note that the sender's balance is not checked. If it fails to pay from its balance,
      * this deposit will be used to compensate the paymaster for the transaction.
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost) internal view override returns (bytes memory context, uint256 validationData) {
+    function _validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 maxCost
+    ) internal view override returns (bytes memory context, uint256 validationData) {
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
@@ -119,14 +126,11 @@ contract SponsorPaymaster is BasePaymaster {
      * this time in *postOpReverted* mode.
      * In this mode, we use the deposit to pay (which we validated to be large enough)
      */
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
+    function _postOp(PostOpMode /* mode */, bytes calldata context, uint256 actualGasCost) internal override {
         (address account, uint256 gasPricePostOp) = abi.decode(context, (address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
-        if (mode != PostOpMode.postOpReverted) {
-            //in case above transferFrom failed, pay with deposit:
-            balances[account] -= ethCost;
-        }
+        balances[account] -= ethCost;
         contractSpent[account] += ethCost;
         balances[owner()] += ethCost;
     }

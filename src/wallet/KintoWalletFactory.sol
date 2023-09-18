@@ -5,31 +5,33 @@ import '@openzeppelin/contracts/utils/Create2.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 import '../interfaces/IKintoID.sol';
+import '../interfaces/IKintoWalletFactory.sol';
 import './KintoWallet.sol';
 
 /**
  * @title KintoWalletFactory
  * @dev A kinto wallet factory contract for KintoWallet
- *   A UserOperations "initCode" holds the address of the factory, and a method call (to createAccount, in this sample factory).
+ *   A UserOperations "initCode" holds the address of the factory,
+ *   and a method call (to createAccount, in this sample factory).
  *   The factory's createAccount returns the target account address even if it is already installed.
  *   This way, the entryPoint.getSenderAddress() can be called either before or after the account is created.
  */
 
-// TODO: Needs to be upgradeable
-contract KintoWalletFactory {
+// TODO: Needs to be upgradeable??
+contract KintoWalletFactory is IKintoWalletFactory {
 
     /* ============ Events ============ */
     event KintoWalletFactoryCreation(address indexed account, address indexed owner, uint version);
     event KintoWalletFactoryUpgraded(address indexed oldImplementation, address indexed newImplementation);
 
     /* ============ State Variables ============ */
-    IKintoID immutable public kintoID;
-    address immutable public factoryOwner;
+    IKintoID immutable public override kintoID;
+    address immutable public override factoryOwner;
 
-    KintoWallet public accountImplementation;
-    mapping (address => uint256) public walletVersion;
-    uint256 public factoryWalletVersion;
-    uint256 public totalWallets;
+    IKintoWallet public override accountImplementation;
+    mapping (address => uint256) public override walletVersion;
+    uint256 public override factoryWalletVersion;
+    uint256 public override totalWallets;
 
     /* ============ Constructor ============ */
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID) {
@@ -43,7 +45,7 @@ contract KintoWalletFactory {
      * @dev Upgrade the wallet implementation
      * @param newImplementationWallet The new implementation
      */
-    function upgradeImplementation(KintoWallet newImplementationWallet) public {
+    function upgradeImplementation(IKintoWallet newImplementationWallet) public override {
         require(msg.sender == factoryOwner, 'only owner');
         require(address(newImplementationWallet) != address(0), 'invalid address');
         factoryWalletVersion++;
@@ -56,12 +58,13 @@ contract KintoWalletFactory {
      * @dev Create an account, and return its address.
      * It returns the address even if the account is already deployed.
      * Note that during UserOperation execution, this method is called only if the account is not deployed.
-     * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after account creation
+     * This method returns an existing account address so that entryPoint.getSenderAddress()
+     * would work even after account creation
      * @param owner The owner address
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner,uint256 salt) public returns (KintoWallet ret) {
+    function createAccount(address owner,uint256 salt) public override returns (IKintoWallet ret) {
         require(kintoID.isKYC(owner), 'KYC required');
         address addr = getAddress(owner, salt);
         uint codeSize = addr.code.length;
@@ -78,7 +81,34 @@ contract KintoWalletFactory {
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
-    // TODO: recover wallet when lost
+    /* ============ Recovery Functions ============ */
+
+    /**
+     * @dev Start the account recovery process
+     * @param _account The wallet account address
+     * After successful KYC again, the user can request to recover the account
+     */
+    function startAccountRecovery(address _account) public override {
+        require(msg.sender == factoryOwner, 'only owner');
+        require(walletVersion[_account] > 0, 'Not a valid account');
+        KintoWallet(payable(_account)).startRecovery();
+    }
+
+   /**
+     * @dev Finish the account recovery process
+     * @param _account The wallet account address
+     * @param _newOwner The new owner address (has to be KYC'd)
+     * After the recovery time has finished, the user can set a new owner on the account
+     * Old owner NFT has to be burned to prevent duplicate NFTs
+     */
+    function finishAccountRecovery(address _account, address _newOwner) public override {
+        require(msg.sender == factoryOwner, 'only owner');
+        require(walletVersion[_account] > 0, 'Not a valid account');
+        require(kintoID.isKYC(KintoWallet(payable(_account)).owners(0)), 'old KYC must be burned');
+        address[] memory newSigners = new address[](1);
+        newSigners[0] = _newOwner;
+        KintoWallet(payable(_account)).finishRecovery(newSigners);
+    }
 
     /* ============ View Functions ============ */
 
@@ -87,7 +117,7 @@ contract KintoWalletFactory {
      * @param wallet The wallet address
      * @return The version of the wallet. 0 if it is not a wallet
      */
-    function getWalletVersion(address wallet) external view returns (uint256) {
+    function getWalletVersion(address wallet) external view override returns (uint256) {
         return walletVersion[wallet];
     }
 
@@ -97,7 +127,7 @@ contract KintoWalletFactory {
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner,uint256 salt) public view returns (address) {
+    function getAddress(address owner,uint256 salt) public view override returns (address) {
         return Create2.computeAddress(bytes32(salt), keccak256(abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
