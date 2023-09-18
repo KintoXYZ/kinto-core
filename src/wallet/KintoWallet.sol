@@ -238,7 +238,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     }
 
     function getNonce() public view virtual override(BaseAccount, IKintoWallet) returns (uint) {
-        return this.getNonce();
+        return super.getNonce();
     }
 
     function getOwnersCount() public view override returns (uint) {

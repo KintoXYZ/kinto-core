@@ -89,6 +89,8 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _entryPoint = new EntryPoint{salt: 0}();
         //Deploy wallet factory
         _walletFactory = new KintoWalletFactory(_entryPoint, _kintoIDv1);
+        // Set the wallet factory in the entry point
+        // _entryPoint.setWalletFactory(address(_walletFactory));
         // Mint an nft to the owner
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(
             _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
