@@ -49,7 +49,10 @@ abstract contract UserOp is Test {
       );
     }
 
-    function _getUserOpHash (UserOperation memory op, IEntryPoint _entryPoint, uint256 chainID) internal pure returns (bytes32) {
+    function _getUserOpHash (
+      UserOperation memory op,
+      IEntryPoint _entryPoint, uint256 chainID
+    ) internal pure returns (bytes32) {
       bytes32 opHash = keccak256(_packUserOp(op, true));
       return keccak256(
         abi.encode(
@@ -82,9 +85,18 @@ abstract contract UserOp is Test {
       return signature;
     }
     
-    function createUserOperation(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value, bytes calldata _bytesOp) public view returns (UserOperation memory op) {
+    function createUserOperation(
+      uint _chainID,
+      address _account,
+      uint nonce,
+      uint256[] calldata _privateKeyOwners,
+      address _targetContract,
+      uint value,
+      bytes calldata _bytesOp
+    ) public view returns (UserOperation memory op) {
       return
         this.createUserOperationWithPaymaster(
+          _chainID,
           _account,
           nonce,
           _privateKeyOwners,
@@ -95,21 +107,30 @@ abstract contract UserOp is Test {
         );
     }
 
-    function createUserOperationWithPaymaster(address _account, uint nonce, uint256[] calldata _privateKeyOwners, address _targetContract, uint value,bytes calldata _bytesOp, address _paymaster) public view returns (UserOperation memory op) {
+    function createUserOperationWithPaymaster(
+      uint _chainID,
+      address _account,
+      uint nonce,
+      uint256[] calldata _privateKeyOwners,
+      address _targetContract,
+      uint value,
+      bytes calldata _bytesOp,
+      address _paymaster
+    ) public view returns (UserOperation memory op) {
       op = UserOperation({
         sender: _account,
         nonce: nonce,
         initCode: bytes(''),
         callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
         callGasLimit: 4000000, // generate from call simulation
-        verificationGasLimit: 150000, // default verification gas. will add create2 cost (3200+200*length) if initCode exists
+        verificationGasLimit: 150000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
         preVerificationGas: 21000, // should also cover calldata cost.
         maxFeePerGas: 1, // grab from current gas
         maxPriorityFeePerGas: 1e9, // grab from current gas
         paymasterAndData: abi.encodePacked(_paymaster),
         signature: bytes('')
       });
-      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), 1, _privateKeyOwners);
+      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
       return op;
     }
 }
