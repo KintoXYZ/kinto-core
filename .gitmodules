@@ -8,3 +8,6 @@
 	path = lib/openzeppelin-contracts-upgradeable
 	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
 
+[submodule "lib/account-abstraction"]
+	path = lib/account-abstraction
+	url = https://github.com/KintoXYZ/account-abstraction
