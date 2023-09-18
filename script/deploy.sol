@@ -21,31 +21,6 @@ contract UUPSProxy is ERC1967Proxy {
     {}
 }
 
-contract KintoInitialDeployScript is Script {
-
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    KintoID _implementation;
-    KintoID _kintoIDv1;
-    UUPSProxy _proxy;
-
-    function setUp() public {}
-
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        vm.startBroadcast(deployerPrivateKey);
-        _implementation = new KintoID();
-        // deploy proxy contract and point it to implementation
-        _proxy = new UUPSProxy(address(_implementation), '');
-        // wrap in ABI to support easier calls
-        _kintoIDv1 = KintoID(address(_proxy));
-        // Initialize proxy
-        _kintoIDv1.initialize();
-        vm.stopBroadcast();
-    }
-}
-
 contract KintoIDV2 is KintoID {
   constructor() KintoID() {}
 }
@@ -88,7 +63,9 @@ contract KintoAAInitialDeployScript is Script {
     KintoWalletFactory _walletFactory;
     EntryPoint _entryPoint;
     SponsorPaymaster _sponsorPaymaster;
-
+    KintoID _implementation;
+    KintoID _kintoIDv1;
+    UUPSProxy _proxy;
     IKintoWallet _kintoWalletv1;
 
     /// @notice Precompute a contract address deployed via CREATE2
@@ -112,7 +89,35 @@ contract KintoAAInitialDeployScript is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
-        bytes memory creationCode = abi.encodePacked(type(EntryPoint).creationCode);
+        // Kinto ID
+        bytes memory creationCode = abi.encodePacked(type(KintoID).creationCode);
+        address kintoIDAddr = address(
+            uint160(uint256(keccak256(abi.encodePacked(
+            bytes1(0xff),
+                CREATE2_DEPLOYER,
+                uint256(0),
+                keccak256(creationCode)
+            )
+            )))
+        );
+        if (isContract(kintoIDAddr)) {
+            _implementation = KintoID(payable(kintoIDAddr));
+            console.log('Already deployed Kinto ID implementation at', address(kintoIDAddr));
+        } else {
+            // Deploy Kinto ID implementation
+            _implementation = new KintoID{ salt: 0 }();
+            console.log('Kinto ID implementation deployed at', address(_implementation));
+            // deploy proxy contract and point it to implementation
+            _proxy = new UUPSProxy{salt: 0}(address(_implementation), '');
+            // wrap in ABI to support easier calls
+            _kintoIDv1 = KintoID(address(_proxy));
+            console.log('Kinto ID proxy deployed at ', address(_kintoIDv1));
+            // Initialize proxy
+            _kintoIDv1.initialize();
+        }
+
+        // Entry Point
+        creationCode = abi.encodePacked(type(EntryPoint).creationCode);
         address entryPointAddr = address(
             uint160(uint256(keccak256(abi.encodePacked(
             bytes1(0xff),
@@ -139,7 +144,7 @@ contract KintoAAInitialDeployScript is Script {
         console.log('walletFactory', walletFactory);
         if (walletFactory == address(0)) {
             //Deploy wallet factory
-            _walletFactory = new KintoWalletFactory{salt: 0}(_entryPoint, IKintoID(vm.envAddress('ID_PROXY_ADDRESS')));
+            _walletFactory = new KintoWalletFactory{salt: 0}(_entryPoint, _kintoIDv1);
             console.log('Wallet factory deployed at', address(_walletFactory));
             // Set Wallet Factory in entry point
             _entryPoint.setWalletFactory(address(_walletFactory));
