@@ -104,7 +104,8 @@ contract KintoWalletFactory is IKintoWalletFactory {
     function finishAccountRecovery(address _account, address _newOwner) public override {
         require(msg.sender == factoryOwner, 'only owner');
         require(walletVersion[_account] > 0, 'Not a valid account');
-        require(kintoID.isKYC(KintoWallet(payable(_account)).owners(0)), 'old KYC must be burned');
+        require(!kintoID.isKYC(KintoWallet(payable(_account)).owners(0)), 'Old KYC must be burned');
+        require(kintoID.isKYC(_newOwner), 'New KYC must be minted');
         address[] memory newSigners = new address[](1);
         newSigners[0] = _newOwner;
         KintoWallet(payable(_account)).finishRecovery(newSigners);

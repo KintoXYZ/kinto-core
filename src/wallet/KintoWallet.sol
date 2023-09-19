@@ -191,15 +191,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Changed the signers
      * @param newSigners new signers array
      */
-    function resetSigners(address[] calldata newSigners) public override onlySelf {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
-        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
-        require(newSigners.length == 1 ||
-            (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
-            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
-                (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
-            'duplicate owners');
-        owners = newSigners;
+    function resetSigners(address[] calldata newSigners) external override onlySelf {
+        _resetSigners(newSigners);
     }
 
     /* ============ Recovery Process ============ */
@@ -219,7 +212,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function finishRecovery(address[] calldata newSigners) external override onlyFactory {
         require(block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
-        this.resetSigners(newSigners);
+        _resetSigners(newSigners);
+        inRecovery = 0;
     }
 
     /**
@@ -282,6 +276,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
             mstore(add(signature, 0x40), s)
             mstore8(add(signature, 0x60), v)
         }
+    }
+
+    function _resetSigners(address[] calldata newSigners) private {
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
+        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
+        require(newSigners.length == 1 ||
+            (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
+            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
+                (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
+            'duplicate owners');
+        owners = newSigners;
     }
 
 }
