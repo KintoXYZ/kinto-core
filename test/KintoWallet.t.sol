@@ -422,7 +422,6 @@ contract KintoWalletTest is UserOp, KYCSignature {
 
     /* ============ Multisig Transactions ============ */
 
-
     function testMultisigTransaction() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
@@ -556,6 +555,8 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.inRecovery(), 0);
         assertEq(_kintoWalletv1.owners(0), _user);
     }
+
+    // TODO: Adds tests for failure cases
 
     /* ============ Helpers ============ */
 
