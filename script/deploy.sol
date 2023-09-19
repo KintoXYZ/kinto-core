@@ -25,7 +25,7 @@ contract KintoIDV2 is KintoID {
   constructor() KintoID() {}
 }
 
-contract KintoUpgradeScript is Script {
+contract KintoIDUpgradeScript is Script {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
@@ -52,7 +52,7 @@ contract KintoUpgradeScript is Script {
 
 }
 
-contract KintoAAInitialDeployScript is Script {
+contract KintoInitialDeployScript is Script {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
