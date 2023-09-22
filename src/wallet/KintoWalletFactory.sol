@@ -81,6 +81,27 @@ contract KintoWalletFactory is IKintoWalletFactory {
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
+    /* ============ Deploy Custom Contract ============ */
+
+    /**
+     * @dev Deploys a contract using `CREATE2`. The address where the contract
+     * will be deployed can be known in advance via {computeAddress}.
+     *
+     * The bytecode for a contract can be obtained from Solidity with
+     * `type(contractName).creationCode`.
+     *
+     * Requirements:
+     * -  sender myst be KYC'd
+     * - `bytecode` must not be empty.
+     * - `salt` must have not been used for `bytecode` already.
+     * - the factory must have a balance of at least `amount`.
+     * - if `amount` is non-zero, `bytecode` must have a `payable` constructor.
+     */
+    function deployContract(uint amount, bytes memory bytecode, bytes32 salt) public override returns (address) {
+        require(kintoID.isKYC(msg.sender), 'KYC required');
+        return Create2.deploy(amount, salt, bytecode);
+    }
+
     /* ============ Recovery Functions ============ */
 
     /**
@@ -128,7 +149,7 @@ contract KintoWalletFactory is IKintoWalletFactory {
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner,uint256 salt) public view override returns (address) {
+    function getAddress(address owner, uint256 salt) public view override returns (address) {
         return Create2.computeAddress(bytes32(salt), keccak256(abi.encodePacked(
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
@@ -136,5 +157,15 @@ contract KintoWalletFactory is IKintoWalletFactory {
                     abi.encodeCall(KintoWallet.initialize, (owner))
                 )
             )));
+    }
+
+    /**
+     * @dev Calculates the counterfactual address of this contract as it would be returned by deployContract()
+     * @param salt Salt used by CREATE2
+     * @param byteCodeHash The bytecode hash (keccack256) of the contract to deploy
+     * @return address of the contract to deploy
+     */
+    function getContractAddress(bytes32 salt, bytes32 byteCodeHash) public view override returns (address) {
+        return Create2.computeAddress(salt, byteCodeHash);
     }
 }
