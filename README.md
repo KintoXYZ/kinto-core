@@ -72,6 +72,15 @@ If it already exists, it won't deploy it.
 source .env && forge script script/deploy.sol:KintoDeployWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
 
+### Test Kinto Smart Account
+
+After you have deployed all core contracts and you have a wallet, you can call the following script to deploy an custom contract and execute an op through your smart account.
+If it already exists, it won't deploy it.
+
+```
+source .env && forge script script/deploy.sol:KintoDeployCounterTest --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+```
+
 ### Upgrade Kinto ID to a new version
 
 ```

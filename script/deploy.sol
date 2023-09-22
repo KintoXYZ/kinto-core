@@ -11,6 +11,7 @@ import { Create2Helper } from '../test/helpers/Create2Helper.sol';
 import { UUPSProxy } from '../test/helpers/UUPSProxy.sol';
 import { AASetup } from '../test/helpers/AASetup.sol';
 import { KYCSignature } from '../test/helpers/KYCSignature.sol';
+import { UserOp } from '../test/helpers/UserOp.sol';
 import '@aa/core/EntryPoint.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import { SignatureChecker } from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
@@ -196,25 +197,75 @@ contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
             console.log('Total Wallets:', _walletFactory.totalWallets());
         }
         vm.stopBroadcast();
-        // uint counterPaymasterBalance = _sponsorPaymaster.balances(address(_counter));
-        // console.log('paymaster balance for Counter contract:', counterPaymasterBalance);
-        // if(counterPaymasterBalance==0) {
-        //     console.log('depositing some eth into the Counter account');
-        //     console.log('_ethpriceisright address:', address(_counter));
-        //     _paymaster.addDepositFor{value: 0.01 ether}(address(_counter));
-        // }
+    }
+}
 
+contract Counter {
+
+    uint256 public count;
+
+    constructor() {
+      count = 0;
+    }
+
+    function increment() public {
+        count += 1;
+    }
+}
+
+contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoID _kintoID;
+    EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactory;
+    SponsorPaymaster _sponsorPaymaster;
+    IKintoWallet _newWallet;
+
+    function setUp() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        vm.startBroadcast(deployerPrivateKey);
+        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        vm.stopBroadcast();
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+        console.log('All AA setup is correct');
+        vm.startBroadcast(deployerPrivateKey);
+        uint salt = 0;
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        if (!isContract(newWallet)) {
+            console.log('ERROR: Wallet not deployed for owner', deployerPublicKey, 'at', newWallet);
+            revert();
+        }
+        address computed = _walletFactory.getContractAddress(
+            bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+        if (!isContract(computed)) {
+            address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+            console.log('Deployed Counter contract at', created);
+        } else {
+            console.log('Counter already deployed at', computed);
+        }
+        Counter counter = Counter(computed);
+        console.log('Before UserOp. Counter:', counter.count());
+        // Let's send a transaction to the counter contract through our wallet
+        // uint startingNonce = _newWallet.getNonce();
         // uint256[] memory privateKeys = new uint256[](1);
-        // privateKeys[0] = deployerPrivateKey;
-
+        // privateKeys[0] = 1;
         // UserOperation memory userOp = this.createUserOperationWithPaymaster(
-        //     42999, address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(_counter), 0,
+        //     block.chainid,
+        //     address(_newWallet), startingNonce, privateKeys, address(counter), 0,
         //     abi.encodeWithSignature('increment()'), address(_sponsorPaymaster));
         // UserOperation[] memory userOps = new UserOperation[](1);
         // userOps[0] = userOp;
-
+        // // Execute the transaction via the entry point
         // _entryPoint.handleOps(userOps, payable(deployerPublicKey));
-        // console.log('Count', _counter.count());
+        // console.log('After UserOp. Counter:', counter.count());
+        vm.stopBroadcast();
     }
 }
 
