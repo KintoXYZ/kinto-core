@@ -6,6 +6,7 @@ import '../src/wallet/KintoWalletFactory.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
 import '../src/KintoID.sol';
 import {UserOp} from './helpers/UserOp.sol';
+import {UUPSProxy} from './helpers/UUPSProxy.sol';
 import {KYCSignature} from './helpers/KYCSignature.sol';
 
 import '@aa/interfaces/IAccount.sol';
@@ -19,12 +20,6 @@ import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 import 'forge-std/Test.sol';
 import 'forge-std/console.sol';
-
-contract UUPSProxy is ERC1967Proxy {
-    constructor(address __implementation, bytes memory _data)
-        ERC1967Proxy(__implementation, _data)
-    {}
-}
 
 contract KintoWalletv2 is KintoWallet {
   constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}

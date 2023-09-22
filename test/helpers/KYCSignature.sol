@@ -15,7 +15,6 @@ abstract contract KYCSignature is Test {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    using ECDSAUpgradeable for bytes32;
     // Create a test for minting a KYC token
     function _auxCreateSignature(IKintoID _kintoIDv1, address _signer, address _account, uint256 _privateKey, uint256 _expiresAt) internal view returns (
         IKintoID.SignatureData memory signData

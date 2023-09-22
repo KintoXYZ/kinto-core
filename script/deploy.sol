@@ -7,6 +7,9 @@ import '../src/interfaces/IKintoID.sol';
 import '../src/interfaces/IKintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
+import { Create2Helper } from '../test/helpers/Create2Helper.sol';
+import { UUPSProxy } from '../test/helpers/UUPSProxy.sol';
+import { AASetup } from '../test/helpers/AASetup.sol';
 import '@aa/core/EntryPoint.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import { SignatureChecker } from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
@@ -15,11 +18,7 @@ import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
 
-contract UUPSProxy is ERC1967Proxy {
-    constructor(address _implementation, bytes memory _data)
-        ERC1967Proxy(_implementation, _data)
-    {}
-}
+
 
 contract KintoIDV2 is KintoID {
   constructor() KintoID() {}
@@ -52,13 +51,9 @@ contract KintoIDUpgradeScript is Script {
 
 }
 
-contract KintoInitialDeployScript is Script {
+contract KintoInitialDeployScript is Create2Helper,Script {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
-
-    /* solhint-disable var-name-mixedcase */
-    /* solhint-disable private-vars-leading-underscore */
-    address CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     KintoWalletFactory _walletFactory;
     EntryPoint _entryPoint;
@@ -67,24 +62,6 @@ contract KintoInitialDeployScript is Script {
     KintoID _kintoIDv1;
     UUPSProxy _proxy;
     IKintoWallet _kintoWalletv1;
-
-    /// @notice Precompute a contract address deployed via CREATE2
-    function computeAddress(uint256 salt, bytes memory creationCode) public view returns (address) {
-
-        return address(
-            uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), CREATE2_DEPLOYER, salt, keccak256(creationCode)))))
-        );
-    }
-
-    function isContract(address _addr) private view returns (bool){
-        uint32 size;
-        assembly {
-            size := extcodesize(_addr)
-        }
-        return (size > 0);
-    }
-
-
     function setUp() public {}
 
     function run() public {
@@ -177,6 +154,27 @@ contract KintoInitialDeployScript is Script {
         vm.stopBroadcast();
     }
 }
+
+contract KintoDeployWalletScript is AASetup, Script {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoID _kintoIDv1;
+    EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactory;
+    SponsorPaymaster _sponsorPaymaster;
+    IKintoWallet _newWallet;
+
+    function setUp() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        vm.startBroadcast(deployerPrivateKey);
+        (_kintoIDv1, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        vm.stopBroadcast();
+        console.log('All AA setup is correct');
+    }
+}
+
 
 
 contract KintoWalletv2 is KintoWallet {
