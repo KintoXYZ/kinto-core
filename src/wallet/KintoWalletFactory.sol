@@ -166,6 +166,6 @@ contract KintoWalletFactory is IKintoWalletFactory {
      * @return address of the contract to deploy
      */
     function getContractAddress(bytes32 salt, bytes32 byteCodeHash) public view override returns (address) {
-        return Create2.computeAddress(salt, byteCodeHash);
+        return Create2.computeAddress(salt, byteCodeHash, address(this));
     }
 }

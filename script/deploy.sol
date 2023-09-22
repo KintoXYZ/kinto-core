@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import 'forge-std/Script.sol';
 import '../src/KintoID.sol';
 import '../src/interfaces/IKintoID.sol';
+import '../src/sample/Counter.sol';
 import '../src/interfaces/IKintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
@@ -200,19 +201,6 @@ contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
     }
 }
 
-contract Counter {
-
-    uint256 public count;
-
-    constructor() {
-      count = 0;
-    }
-
-    function increment() public {
-        count += 1;
-    }
-}
-
 contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
 
     using ECDSAUpgradeable for bytes32;
@@ -242,6 +230,8 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
             console.log('ERROR: Wallet not deployed for owner', deployerPublicKey, 'at', newWallet);
             revert();
         }
+        _newWallet = IKintoWallet(newWallet);
+        // Counter contract
         address computed = _walletFactory.getContractAddress(
             bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
         if (!isContract(computed)) {
@@ -252,24 +242,37 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
         }
         Counter counter = Counter(computed);
         console.log('Before UserOp. Counter:', counter.count());
+        console.log('Balance paymaster', _sponsorPaymaster.balances(computed));
+        // We add the deposit to the counter contract in the paymaster
+        if (_sponsorPaymaster.balances(computed) <= 1e14) {
+            _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
+            console.log("Adding paymaster balance to counter", computed);
+        } else {
+            console.log("Counter already has balance to pay for tx", computed);
+        }
         // Let's send a transaction to the counter contract through our wallet
-        // uint startingNonce = _newWallet.getNonce();
-        // uint256[] memory privateKeys = new uint256[](1);
-        // privateKeys[0] = 1;
-        // UserOperation memory userOp = this.createUserOperationWithPaymaster(
-        //     block.chainid,
-        //     address(_newWallet), startingNonce, privateKeys, address(counter), 0,
-        //     abi.encodeWithSignature('increment()'), address(_sponsorPaymaster));
-        // UserOperation[] memory userOps = new UserOperation[](1);
-        // userOps[0] = userOp;
-        // // Execute the transaction via the entry point
+        uint startingNonce = _newWallet.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = deployerPrivateKey;
+        UserOperation memory userOp = this.createUserOperationWithPaymasterCustomGas(
+            block.chainid,
+            address(_newWallet),
+            startingNonce,
+            privateKeys,
+            address(counter),
+            0,
+            abi.encodeWithSignature('increment()'),
+            address(_sponsorPaymaster),
+            [uint256(500000), 1e19, 1]
+        );
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
         // _entryPoint.handleOps(userOps, payable(deployerPublicKey));
-        // console.log('After UserOp. Counter:', counter.count());
+        console.log('After UserOp. Counter:', counter.count());
         vm.stopBroadcast();
     }
 }
-
-
 
 contract KintoWalletv2 is KintoWallet {
   constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
