@@ -556,7 +556,95 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _user);
     }
 
-    // TODO: Adds tests for failure cases
+    function testFailRecoverWithoutBurningOldOwner() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        assertEq(_kintoWalletv1.owners(0), _owner);
+
+        // Start Recovery
+        _walletFactory.startAccountRecovery(address(_kintoWalletv1));
+        assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
+        vm.stopPrank();
+
+        // Mint NFT to new owner
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
+            _kintoIDv1, _user, _user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](0);
+        vm.startPrank(_kycProvider);
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.stopPrank();
+        vm.startPrank(_owner);
+        assertEq(_kintoIDv1.isKYC(_user), true);
+        // Pass recovery time
+        vm.warp(block.timestamp + _kintoWalletv1.RECOVERY_TIME() + 1);
+        // Monitor AML
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoIDv1.monitor(users, updates);
+        vm.prank(_owner);
+        _walletFactory.finishAccountRecovery(address(_kintoWalletv1), _user);
+    }
+
+    function testFailRecoverWithoutMintingNewOwner() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        assertEq(_kintoWalletv1.owners(0), _owner);
+
+        // Start Recovery
+        _walletFactory.startAccountRecovery(address(_kintoWalletv1));
+        assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
+        vm.stopPrank();
+
+        // Burn old owner NFT
+        vm.startPrank(_kycProvider);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
+            _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
+        _kintoIDv1.burnKYC(sigdata);
+        vm.stopPrank();
+        vm.startPrank(_owner);
+        assertEq(_kintoIDv1.isKYC(_user), true);
+        // Pass recovery time
+        vm.warp(block.timestamp + _kintoWalletv1.RECOVERY_TIME() + 1);
+        _walletFactory.finishAccountRecovery(address(_kintoWalletv1), _user);
+    }
+
+    function testFailRecoverNotEnoughTime() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        assertEq(_kintoWalletv1.owners(0), _owner);
+
+        // Start Recovery
+        _walletFactory.startAccountRecovery(address(_kintoWalletv1));
+        assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
+        vm.stopPrank();
+
+        // Mint NFT to new owner and burn old
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
+            _kintoIDv1, _user, _user, 3, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](0);
+        vm.startPrank(_kycProvider);
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        sigdata = _auxCreateSignature(_kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
+        _kintoIDv1.burnKYC(sigdata);
+        vm.stopPrank();
+        vm.startPrank(_owner);
+        assertEq(_kintoIDv1.isKYC(_user), true);
+        // Pass recovery time (not enough)
+        vm.warp(block.timestamp + _kintoWalletv1.RECOVERY_TIME() - 1);
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoIDv1.monitor(users, updates);
+        vm.prank(_owner);
+        _walletFactory.finishAccountRecovery(address(_kintoWalletv1), _user);
+    }
 
     /* ============ Helpers ============ */
 
