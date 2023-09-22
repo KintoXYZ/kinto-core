@@ -10,14 +10,13 @@ import '../src/paymasters/SponsorPaymaster.sol';
 import { Create2Helper } from '../test/helpers/Create2Helper.sol';
 import { UUPSProxy } from '../test/helpers/UUPSProxy.sol';
 import { AASetup } from '../test/helpers/AASetup.sol';
+import { KYCSignature } from '../test/helpers/KYCSignature.sol';
 import '@aa/core/EntryPoint.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import { SignatureChecker } from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
-
-
 
 
 contract KintoIDV2 is KintoID {
@@ -155,12 +154,12 @@ contract KintoInitialDeployScript is Create2Helper,Script {
     }
 }
 
-contract KintoDeployWalletScript is AASetup, Script {
+contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    KintoID _kintoIDv1;
+    KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _sponsorPaymaster;
@@ -169,9 +168,53 @@ contract KintoDeployWalletScript is AASetup, Script {
     function setUp() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
-        (_kintoIDv1, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
         vm.stopBroadcast();
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
         console.log('All AA setup is correct');
+        uint totalWalletsCreated =  _walletFactory.totalWallets();
+        vm.startBroadcast(deployerPrivateKey);
+        if(!_kintoID.isKYC(deployerPublicKey)) {
+            IKintoID.SignatureData memory sigdata = _auxCreateSignature(
+                _kintoID, deployerPublicKey, deployerPublicKey, deployerPrivateKey, block.timestamp + 1000);
+            uint8[] memory traits = new uint8[](0);
+            _kintoID.mintIndividualKyc(sigdata, traits);
+        }
+
+        console.log('This factory has', totalWalletsCreated, ' created');
+        uint salt = 0;
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        if (isContract(newWallet)) {
+            console.log('Wallet already deployed for owner', deployerPublicKey, 'at', newWallet);
+        } else {
+            IKintoWallet ikw = _walletFactory.createAccount(deployerPublicKey, salt);
+            console.log('Created wallet', address(ikw));
+            console.log('Total Wallets:', _walletFactory.totalWallets());
+        }
+        vm.stopBroadcast();
+        // uint counterPaymasterBalance = _sponsorPaymaster.balances(address(_counter));
+        // console.log('paymaster balance for Counter contract:', counterPaymasterBalance);
+        // if(counterPaymasterBalance==0) {
+        //     console.log('depositing some eth into the Counter account');
+        //     console.log('_ethpriceisright address:', address(_counter));
+        //     _paymaster.addDepositFor{value: 0.01 ether}(address(_counter));
+        // }
+
+        // uint256[] memory privateKeys = new uint256[](1);
+        // privateKeys[0] = deployerPrivateKey;
+
+        // UserOperation memory userOp = this.createUserOperationWithPaymaster(
+        //     42999, address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(_counter), 0,
+        //     abi.encodeWithSignature('increment()'), address(_sponsorPaymaster));
+        // UserOperation[] memory userOps = new UserOperation[](1);
+        // userOps[0] = userOp;
+
+        // _entryPoint.handleOps(userOps, payable(deployerPublicKey));
+        // console.log('Count', _counter.count());
     }
 }
 
@@ -197,14 +240,14 @@ contract KintoWalletUpgradeScript is Script {
     function setUp() public {}
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        vm.startBroadcast(deployerPrivateKey);
-        _oldKinto = KintoWallet(payable(vm.envAddress('WALLET_ADDRESS')));
-        console.log('deploying new implementation');
-        KintoWalletv2 implementationV2 = new KintoWalletv2(_entryPoint, IKintoID(vm.envAddress('ID_PROXY_ADDRESS')));
-        console.log('before upgrade');
-        _oldKinto.upgradeTo(address(implementationV2));
-        console.log('upgraded');
-        vm.stopBroadcast();
+        // uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        // vm.startBroadcast(deployerPrivateKey);
+        // _oldKinto = KintoWallet(payable(vm.envAddress('WALLET_ADDRESS')));
+        // console.log('deploying new implementation');
+        // // KintoWalletv2 implementationV2 = new KintoWalletv2(_entryPoint, IKintoID(vm.envAddress('ID_PROXY_ADDRESS')));
+        // console.log('before upgrade');
+        // _oldKinto.upgradeTo(address(implementationV2));
+        // console.log('upgraded');
+        // vm.stopBroadcast();
     }
 }

@@ -25,7 +25,7 @@ abstract contract AASetup is Create2Helper {
       KintoWalletFactory _walletFactory,
       SponsorPaymaster _sponsorPaymaster
     ) {
-              // Kinto ID
+        // Kinto ID
         address kintoIDImplAddr = computeAddress(0,
             abi.encodePacked(type(KintoID).creationCode));
         address kintoProxyAddr = computeAddress(

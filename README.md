@@ -63,6 +63,15 @@ Here is the code to deploy the Kinto ID and all the contracts required by accoun
 source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
 
+### Create Kinto Smart Account
+
+After you have deployed all core contracts, you can call the following script to deploy an account.
+If it already exists, it won't deploy it.
+
+```
+source .env && forge script script/deploy.sol:KintoDeployWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+```
+
 ### Upgrade Kinto ID to a new version
 
 ```
