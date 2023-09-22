@@ -91,13 +91,13 @@ contract KintoInitialDeployScript is Script {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
         // Kinto ID
-        address kintoIDImplAddr = computeAddress(0, abi.encodePacked(type(KintoID).creationCode));
+        address kintoIDImplAddr = computeAddress(7, abi.encodePacked(type(KintoID).creationCode));
         if (isContract(kintoIDImplAddr)) {
             _implementation = KintoID(payable(kintoIDImplAddr));
             console.log('Already deployed Kinto ID implementation at', address(kintoIDImplAddr));
         } else {
             // Deploy Kinto ID implementation
-            _implementation = new KintoID{ salt: 0 }();
+            _implementation = new KintoID{ salt: keccak256(abi.encode((7))) }();
             console.log('Kinto ID implementation deployed at', address(_implementation));
         }
         address kintoProxyAddr = computeAddress(0, abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(_implementation), '')));
