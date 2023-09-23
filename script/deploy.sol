@@ -5,6 +5,7 @@ import 'forge-std/Script.sol';
 import '../src/KintoID.sol';
 import '../src/interfaces/IKintoID.sol';
 import '../src/sample/Counter.sol';
+import '../src/ETHPriceIsRight.sol';
 import '../src/interfaces/IKintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
@@ -270,6 +271,83 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(deployerPublicKey));
         console.log('After UserOp. Counter:', counter.count());
+        vm.stopBroadcast();
+    }
+}
+
+contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoID _kintoID;
+    EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactory;
+    SponsorPaymaster _sponsorPaymaster;
+    IKintoWallet _newWallet;
+
+    function setUp() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        vm.startBroadcast(deployerPrivateKey);
+        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        vm.stopBroadcast();
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+        console.log('All AA setup is correct');
+        vm.startBroadcast(deployerPrivateKey);
+        uint salt = 0;
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        if (!isContract(newWallet)) {
+            console.log('ERROR: Wallet not deployed for owner', deployerPublicKey, 'at', newWallet);
+            revert();
+        }
+        _newWallet = IKintoWallet(newWallet);
+        // Counter contract
+        address computed = _walletFactory.getContractAddress(
+            bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode)));
+        if (!isContract(computed)) {
+            address created = _walletFactory.deployContract(0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0));
+            console.log('Deployed ETHPriceIsRight contract at', created);
+        } else {
+            console.log('ETHPriceIsRight already deployed at', computed);
+        }
+        ETHPriceIsRight ethpriceisright = ETHPriceIsRight(computed);
+        console.log('ETHPriceIsRight guess count', ethpriceisright.guessCount());
+        console.log('ETHPriceIsRight avg guess', ethpriceisright.avgGuess());
+
+        console.log('Balance paymaster', _sponsorPaymaster.balances(computed));
+        // We add the deposit to the counter contract in the paymaster
+        if (_sponsorPaymaster.balances(computed) <= 1e14) {
+            _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
+            console.log("Adding paymaster balance to ETHPriceIsRight", computed);
+            console.log('Balance paymaster', _sponsorPaymaster.balances(computed));
+        } else {
+            console.log("ETHPriceIsRight already has balance to pay for tx", computed);
+        }
+        // Let's send a transaction to the counter contract through our wallet
+        uint startingNonce = _newWallet.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = deployerPrivateKey;
+        UserOperation memory userOp = this.createUserOperationWithPaymasterCustomGas(
+            block.chainid,
+            address(_newWallet),
+            startingNonce,
+            privateKeys,
+            address(ethpriceisright),
+            0,
+            abi.encodeWithSignature('enterGuess(uint256)', 5000),
+            address(_sponsorPaymaster),
+            [uint256(5000000), 3, 3]
+        );
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(deployerPublicKey));
+        console.log('After UserOp. ETHPriceIsRight guess count', ethpriceisright.guessCount());
+        console.log('After UserOp. ETHPriceIsRight avg guess', ethpriceisright.avgGuess());
         vm.stopBroadcast();
     }
 }
