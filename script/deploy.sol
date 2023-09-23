@@ -263,12 +263,12 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
             0,
             abi.encodeWithSignature('increment()'),
             address(_sponsorPaymaster),
-            [uint256(500000), 1e19, 1]
+            [uint256(5000000), 1000, 3]
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
-        // _entryPoint.handleOps(userOps, payable(deployerPublicKey));
+        _entryPoint.handleOps(userOps, payable(deployerPublicKey));
         console.log('After UserOp. Counter:', counter.count());
         vm.stopBroadcast();
     }
