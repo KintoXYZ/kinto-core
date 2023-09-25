@@ -543,6 +543,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
         updates[0] = new IKintoID.MonitorUpdateData[](1);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.stopPrank();
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_owner);
