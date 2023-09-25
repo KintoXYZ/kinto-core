@@ -32,7 +32,9 @@ contract KintoInitialDeployScript is Create2Helper,Script {
     KintoID _implementation;
     KintoID _kintoIDv1;
     UUPSProxy _proxy;
+    IKintoWallet _walletImpl;
     IKintoWallet _kintoWalletv1;
+    UpgradeableBeacon _beacon;
 
     function setUp() public {}
 
@@ -81,16 +83,38 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             console.log('Entry point deployed at', address(_entryPoint));
         }
 
+        // Wallet Implementation for the beacon
+        address walletImplementationAddr = computeAddress(0, abi.encodePacked(type(KintoWallet).creationCode,
+            abi.encode(address(_entryPoint), address(_kintoIDv1))));
+        if (isContract(walletImplementationAddr)) {
+            _walletImpl = KintoWallet(payable(walletImplementationAddr));
+            console.log('Wallet Implementation already deployed at', address(walletImplementationAddr));
+        } else {
+            // Deploy Wallet Implementation
+            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+            console.log('Wallet Implementation deployed at', address(_entryPoint));
+        }
+
+        address beaconAddress = computeAddress(0,
+            abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(address(_walletImpl))));
+        if (isContract(beaconAddress)) {
+            console.log('Beacon Proxy already deployed at', address(beaconAddress));
+        } else {
+            // Deploy Upgradeable beacon
+            _beacon = new UpgradeableBeacon{salt: 0}(address(_walletImpl));
+            console.log('Beacon Proxy deployed at', address(_beacon));
+        }
+
         // Wallet Factory impl
         address walletfImplAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode));
+            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(beaconAddress))));
         if (isContract(walletfImplAddr)) {
             _walletFactoryI = KintoWalletFactory(payable(walletfImplAddr));
             console.log('Already deployed Kinto Factory implementation at',
                 address(walletfImplAddr));
         } else {
             // Deploy Kinto ID implementation
-            _walletFactoryI = new KintoWalletFactory{ salt: 0 }();
+            _walletFactoryI = new KintoWalletFactory{ salt: 0 }(_beacon);
             console.log('Kinto Factory implementation deployed at', address(walletfImplAddr));
         }
 
@@ -108,7 +132,7 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             _walletFactory = KintoWalletFactory(address(_proxy));
             console.log('Wallet Factory proxy deployed at ', address(_walletFactory));
             // Initialize proxy
-            _walletFactory.initialize(_entryPoint, _kintoIDv1);
+            _walletFactory.initialize(_kintoIDv1);
         }
 
         address walletFactory = EntryPoint(payable(entryPointAddr)).walletFactory();
@@ -238,9 +262,9 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
         // We add the deposit to the counter contract in the paymaster
         if (_sponsorPaymaster.balances(computed) <= 1e14) {
             _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
-            console.log("Adding paymaster balance to counter", computed);
+            console.log('Adding paymaster balance to counter', computed);
         } else {
-            console.log("Counter already has balance to pay for tx", computed);
+            console.log('Counter already has balance to pay for tx', computed);
         }
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _newWallet.getNonce();
@@ -314,10 +338,10 @@ contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
         // We add the deposit to the counter contract in the paymaster
         if (_sponsorPaymaster.balances(computed) <= 1e14) {
             _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
-            console.log("Adding paymaster balance to ETHPriceIsRight", computed);
+            console.log('Adding paymaster balance to ETHPriceIsRight', computed);
             console.log('Balance paymaster', _sponsorPaymaster.balances(computed));
         } else {
-            console.log("ETHPriceIsRight already has balance to pay for tx", computed);
+            console.log('ETHPriceIsRight already has balance to pay for tx', computed);
         }
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _newWallet.getNonce();

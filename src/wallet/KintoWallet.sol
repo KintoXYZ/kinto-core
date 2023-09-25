@@ -29,7 +29,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /* ============ State Variables ============ */
     IKintoID public override immutable kintoID;
-    IKintoWalletFactory override public immutable factory;
     IEntryPoint private immutable _entryPoint;
 
     uint8 public constant override MAX_SIGNERS = 3;
@@ -38,6 +37,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     uint8 public constant override ALL_SIGNERS = 3;
     uint public constant override RECOVERY_TIME = 7 days;
 
+    IKintoWalletFactory override public factory;
     uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
     uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
@@ -65,7 +65,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     constructor(IEntryPoint __entryPoint, IKintoID _kintoID) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
-        factory = IKintoWalletFactory(msg.sender);
         _disableInitializers();
     }
 
@@ -81,6 +80,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         __UUPSUpgradeable_init();
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
+        factory = IKintoWalletFactory(msg.sender);
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 

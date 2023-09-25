@@ -10,7 +10,7 @@ interface IKintoWalletFactory {
 
     /* ============ State Change ============ */
 
-    function upgradeWalletImplementation(IKintoWallet newImplementationWallet) external;
+    function upgradeAllWalletImplementations(IKintoWallet newImplementationWallet) external;
 
     function createAccount(address owner,uint256 salt) external returns (IKintoWallet ret);
 
@@ -35,11 +35,9 @@ interface IKintoWalletFactory {
     function kintoID() external view returns (IKintoID);
     
     function factoryOwner() external view returns (address);
-    
-    function accountImplementation() external view returns (IKintoWallet);
-    
+
     function factoryWalletVersion() external view returns (uint);
-    
+
     function totalWallets() external view returns (uint);
 
 }

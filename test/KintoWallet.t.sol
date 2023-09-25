@@ -14,6 +14,7 @@ import '@aa/interfaces/INonceManager.sol';
 import '@aa/interfaces/IEntryPoint.sol';
 import '@aa/core/EntryPoint.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
+import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
@@ -53,10 +54,12 @@ contract KintoWalletTest is UserOp, KYCSignature {
     KintoID _kintoIDv1;
     SponsorPaymaster _paymaster;
 
+    KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWalletv1;
     KintoWalletv2 _kintoWalletv2;
     UUPSProxy _proxy;
     UUPSProxy _proxyf;
+    UpgradeableBeacon _beacon;
 
     uint256 _chainID = 1;
 
@@ -84,11 +87,15 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _kintoIDv1.initialize();
         _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         _entryPoint = new EntryPoint{salt: 0}();
+        // Deploy wallet implementation
+        _kintoWalletImpl = new KintoWallet(_entryPoint, _kintoIDv1);
+        // Deploy beacon
+        _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
         //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory();
+        _walletFactoryI = new KintoWalletFactory(_beacon);
         _proxyf = new UUPSProxy(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxyf));
-        _walletFactory.initialize(_entryPoint, _kintoIDv1);
+        _walletFactory.initialize(_kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
         // Mint an nft to the owner
@@ -113,7 +120,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
     }
 
     /* ============ Upgrade Tests ============ */
-    function testOwnerCanUpgrade() public {
+
+    // TODO: test factory can upgrade
+
+    function testFailOwnerCannotUpgrade() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         uint startingNonce = _kintoWalletv1.getNonce();
