@@ -19,6 +19,8 @@ interface IKintoWallet {
 
   function resetSigners(address[] calldata newSigners) external;
 
+  function resetWithdrawalWhitelist(address[] calldata newWhitelist) external;
+
   function startRecovery() external;
 
   function finishRecovery(address[] calldata newSigners) external;
@@ -41,6 +43,8 @@ interface IKintoWallet {
   
   function owners(uint _index) external view returns (address);
   
+  function withdrawalWhitelist(uint _index) external view returns (address);
+
   function signerPolicy() external view returns (uint8);
 
   /* solhint-disable func-name-mixedcase */

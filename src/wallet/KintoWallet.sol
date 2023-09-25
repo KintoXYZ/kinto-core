@@ -27,10 +27,6 @@ import 'forge-std/console2.sol';
 contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IKintoWallet {
     using ECDSA for bytes32;
 
-    /* ============ Events ============ */
-    event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
-    event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
-
     /* ============ State Variables ============ */
     IKintoID public override immutable kintoID;
     IKintoWalletFactory override public immutable factory;
@@ -46,6 +42,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
     address[] public override owners;
+    address[] public override withdrawalWhitelist;
+
+    /* ============ Events ============ */
+    event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
+    event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
 
     /* ============ Modifiers ============ */
 
@@ -53,20 +54,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         _onlySelf();
         _;
     }
-    
-    function _onlySelf() internal view {
-        //directly through the account itself (which gets redirected through execute())
-        require(msg.sender == address(this), 'only self');
-    }
 
     modifier onlyFactory() {
         _onlyFactory();
         _;
-    }
-
-    function _onlyFactory() internal view {
-        //directly through the factory
-        require(msg.sender == address(factory), 'only factory');
     }
 
     /* ============ Constructor & Initializers ============ */
@@ -78,66 +69,21 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         _disableInitializers();
     }
 
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
+
     /**
      * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner) public virtual initializer {
+    function initialize(address anOwner) external virtual initializer {
         __UUPSUpgradeable_init();
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 
-    /**
-     * @dev Authorize the upgrade. Only by an owner.
-     * @param newImplementation address of the new implementation
-     */
-    // This function is called by the proxy contract when the implementation is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        (newImplementation);
-        _onlySelf();
-    }
-
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {}
-  
-    /* ============ IAccountOverrides ============ */
-
-    /// implement template method of BaseAccount
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
-        internal override virtual returns (uint256 validationData) {
-        // We don't want to do requires here as it would revert the whole transaction
-        // Check first owner of this account is still KYC'ed
-        if (!kintoID.isKYC(owners[0])) {
-            return SIG_VALIDATION_FAILED;
-        }
-        if (userOp.signature.length != 65 * owners.length) {
-            return SIG_VALIDATION_FAILED;
-        }
-        bytes32 hash = userOpHash.toEthSignedMessageHash();
-        // Single signer
-        if (signerPolicy == 1 && owners.length == 1) {
-            if (owners[0] != hash.recover(userOp.signature))
-                return SIG_VALIDATION_FAILED;
-            return 0;
-        }
-        uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
-        bytes[] memory signatures = new bytes[](owners.length);
-        // Split signature from userOp.signature
-        if (owners.length == 2) {
-            (signatures[0], signatures[1]) = _extractTwoSignatures(userOp.signature);
-        } else {
-            (signatures[0], signatures[1], signatures[2]) = _extractThreeSignatures(userOp.signature);
-        }
-        for (uint i = 0; i < owners.length; i++) {
-            if (owners[i] == hash.recover(signatures[i])) {
-                requiredSigners--;
-            }
-        }
-        return requiredSigners;
-    }
 
     /* ============ Execution methods ============ */
     
@@ -160,20 +106,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         }
     }
 
-    /**
-     * @dev Executes a transaction, and send the value to the last destination
-     * @param target target contract address
-     * @param value eth value to send to the target
-     * @param data calldata
-     */
-    function _call(address target, uint256 value, bytes memory data) internal {
-        (bool success, bytes memory result) = target.call{value : value}(data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
-    }
     /* ============ Signer Management ============ */
     
     /**
@@ -193,6 +125,16 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function resetSigners(address[] calldata newSigners) external override onlySelf {
         _resetSigners(newSigners);
+    }
+
+    /* ============ Whitelist Management ============ */
+
+    /**
+     * @dev Changed the valid withdrawal addresses
+     * @param newWhitelist new signers array
+     */
+    function resetWithdrawalWhitelist(address[] calldata newWhitelist) external override onlySelf {
+        withdrawalWhitelist = newWhitelist;
     }
 
     /* ============ Recovery Process ============ */
@@ -239,7 +181,92 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         return owners.length;
     }
 
+    /* ============ IAccountOverrides ============ */
+
+    /// implement template method of BaseAccount
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+        internal override virtual returns (uint256 validationData) {
+        // We don't want to do requires here as it would revert the whole transaction
+        // Check first owner of this account is still KYC'ed
+        if (!kintoID.isKYC(owners[0])) {
+            return SIG_VALIDATION_FAILED;
+        }
+        if (userOp.signature.length != 65 * owners.length) {
+            return SIG_VALIDATION_FAILED;
+        }
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        // Single signer
+        if (signerPolicy == 1 && owners.length == 1) {
+            if (owners[0] != hash.recover(userOp.signature))
+                return SIG_VALIDATION_FAILED;
+            return 0;
+        }
+        uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
+        bytes[] memory signatures = new bytes[](owners.length);
+        // Split signature from userOp.signature
+        if (owners.length == 2) {
+            (signatures[0], signatures[1]) = _extractTwoSignatures(userOp.signature);
+        } else {
+            (signatures[0], signatures[1], signatures[2]) = _extractThreeSignatures(userOp.signature);
+        }
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == hash.recover(signatures[i])) {
+                requiredSigners--;
+            }
+        }
+        return requiredSigners;
+    }
+
+    /* ============ Private Functions ============ */
+
+    function _resetSigners(address[] calldata newSigners) internal {
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
+        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
+        require(newSigners.length == 1 ||
+            (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
+            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
+                (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
+            'duplicate owners');
+        owners = newSigners;
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the implementation is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        (newImplementation);
+        _onlySelf();
+    }
+
+    function _onlySelf() internal view {
+        //directly through the account itself (which gets redirected through execute())
+        require(msg.sender == address(this), 'only self');
+    }
+
+    function _onlyFactory() internal view {
+        //directly through the factory
+        require(msg.sender == address(factory), 'only factory');
+    }
+
     /* ============ Helpers (Move to Library) ============ */
+
+    /**
+     * @dev Executes a transaction, and send the value to the last destination
+     * @param target target contract address
+     * @param value eth value to send to the target
+     * @param data calldata
+     */
+    function _call(address target, uint256 value, bytes memory data) internal {
+        (bool success, bytes memory result) = target.call{value : value}(data);
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+    }
+
     function _extractTwoSignatures(bytes memory _fullSignature)
         internal pure
         returns (bytes memory signature1, bytes memory signature2) {
@@ -276,17 +303,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
             mstore(add(signature, 0x40), s)
             mstore8(add(signature, 0x60), v)
         }
-    }
-
-    function _resetSigners(address[] calldata newSigners) private {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
-        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
-        require(newSigners.length == 1 ||
-            (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
-            (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
-                (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
-            'duplicate owners');
-        owners = newSigners;
     }
 
 }
