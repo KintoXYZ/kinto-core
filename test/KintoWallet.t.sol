@@ -47,6 +47,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     using SignatureChecker for address;
 
     EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactoryI;
     KintoWalletFactory _walletFactory;
     KintoID _implementation;
     KintoID _kintoIDv1;
@@ -55,6 +56,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     IKintoWallet _kintoWalletv1;
     KintoWalletv2 _kintoWalletv2;
     UUPSProxy _proxy;
+    UUPSProxy _proxyf;
 
     uint256 _chainID = 1;
 
@@ -82,8 +84,11 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _kintoIDv1.initialize();
         _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         _entryPoint = new EntryPoint{salt: 0}();
-        //Deploy wallet factory
-        _walletFactory = new KintoWalletFactory(_entryPoint, _kintoIDv1);
+        //Deploy wallet factory implementation
+        _walletFactoryI = new KintoWalletFactory();
+        _proxyf = new UUPSProxy(address(_walletFactoryI), '');
+        _walletFactory = KintoWalletFactory(address(_proxyf));
+        _walletFactory.initialize(_entryPoint, _kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
         // Mint an nft to the owner
@@ -96,6 +101,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.startPrank(_owner);
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, 0);
+        console.log('wallet address ', address(_kintoWalletv1));
         // deploy the paymaster
         _paymaster = new SponsorPaymaster(_entryPoint);
         vm.stopPrank();
@@ -116,8 +122,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
-            abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
+            address(_kintoWalletv1), startingNonce, privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('upgradeTo(address)',
+            address(_implementationV2)), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
@@ -136,8 +144,10 @@ contract KintoWalletTest is UserOp, KYCSignature {
         privateKeys[0] = 3;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_user), startingNonce, privateKeys, address(_kintoWalletv1), 0,
-            abi.encodeWithSignature('upgradeTo(address)',address(_implementationV2)), address(_paymaster));
+            address(_user), startingNonce, privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('upgradeTo(address)',
+            address(_implementationV2)), address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point

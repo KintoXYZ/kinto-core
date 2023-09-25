@@ -10,7 +10,7 @@ interface IKintoWalletFactory {
 
     /* ============ State Change ============ */
 
-    function upgradeImplementation(IKintoWallet newImplementationWallet) external;
+    function upgradeWalletImplementation(IKintoWallet newImplementationWallet) external;
 
     function createAccount(address owner,uint256 salt) external returns (IKintoWallet ret);
 

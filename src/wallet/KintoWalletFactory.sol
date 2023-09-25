@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/utils/Create2.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 import '../interfaces/IKintoID.sol';
@@ -11,45 +13,56 @@ import './KintoWallet.sol';
 /**
  * @title KintoWalletFactory
  * @dev A kinto wallet factory contract for KintoWallet
+ *   Sits behind a proxy. It's upgradeable.
  *   A UserOperations "initCode" holds the address of the factory,
  *   and a method call (to createAccount, in this sample factory).
  *   The factory's createAccount returns the target account address even if it is already installed.
- *   This way, the entryPoint.getSenderAddress() can be called either before or after the account is created.
+ *   This way, the entryPoint.getSenderAddress() can be called either
+ *   before or after the account is created.
  */
-
-// TODO: Needs to be upgradeable??
-contract KintoWalletFactory is IKintoWalletFactory {
-
-    /* ============ Events ============ */
-    event KintoWalletFactoryCreation(address indexed account, address indexed owner, uint version);
-    event KintoWalletFactoryUpgraded(address indexed oldImplementation, address indexed newImplementation);
+contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFactory {
 
     /* ============ State Variables ============ */
-    IKintoID immutable public override kintoID;
     address immutable public override factoryOwner;
 
+    IKintoID public override kintoID;
     IKintoWallet public override accountImplementation;
     mapping (address => uint256) public override walletVersion;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
 
+    /* ============ Events ============ */
+    event KintoWalletFactoryCreation(address indexed account, address indexed owner, uint version);
+    event KintoWalletFactoryUpgraded(address indexed oldImplementation,
+        address indexed newImplementation);
+
     /* ============ Constructor ============ */
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) {
-        accountImplementation = new KintoWallet(_entryPoint, _kintoID);
-        kintoID = _kintoID;
-        factoryWalletVersion = 1;
+    constructor() {
         factoryOwner = msg.sender;
+        _disableInitializers();
+    }
+
+    /**
+     * @dev Upgrade calling `upgradeTo()`
+     */
+    function initialize(IEntryPoint _entryPoint, IKintoID _kintoID) external virtual initializer {
+        __UUPSUpgradeable_init();
+        factoryWalletVersion = 1;
+        kintoID = _kintoID;
+        accountImplementation = new KintoWallet(_entryPoint, kintoID);
     }
 
     /**
      * @dev Upgrade the wallet implementation
      * @param newImplementationWallet The new implementation
      */
-    function upgradeImplementation(IKintoWallet newImplementationWallet) public override {
+    function upgradeWalletImplementation(IKintoWallet newImplementationWallet)
+        external override {
         require(msg.sender == factoryOwner, 'only owner');
         require(address(newImplementationWallet) != address(0), 'invalid address');
         factoryWalletVersion++;
-        emit KintoWalletFactoryUpgraded(address(accountImplementation), address(newImplementationWallet));
+        emit KintoWalletFactoryUpgraded(address(accountImplementation),
+            address(newImplementationWallet));
         accountImplementation = newImplementationWallet;
     }
 
@@ -57,14 +70,17 @@ contract KintoWalletFactory is IKintoWalletFactory {
      *
      * @dev Create an account, and return its address.
      * It returns the address even if the account is already deployed.
-     * Note that during UserOperation execution, this method is called only if the account is not deployed.
+     * Note that during UserOperation execution,
+     * this method is called only if the account is not deployed.
      * This method returns an existing account address so that entryPoint.getSenderAddress()
      * would work even after account creation
      * @param owner The owner address
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner,uint256 salt) public override returns (IKintoWallet ret) {
+    function createAccount(address owner,uint256 salt) external override returns (
+        IKintoWallet ret
+    ) {
         require(kintoID.isKYC(owner), 'KYC required');
         address addr = getAddress(owner, salt);
         uint codeSize = addr.code.length;
@@ -97,7 +113,11 @@ contract KintoWalletFactory is IKintoWalletFactory {
      * - the factory must have a balance of at least `amount`.
      * - if `amount` is non-zero, `bytecode` must have a `payable` constructor.
      */
-    function deployContract(uint amount, bytes memory bytecode, bytes32 salt) public override returns (address) {
+    function deployContract(
+        uint amount,
+        bytes memory bytecode,
+        bytes32 salt
+    ) external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
         return Create2.deploy(amount, salt, bytecode);
     }
@@ -109,7 +129,7 @@ contract KintoWalletFactory is IKintoWalletFactory {
      * @param _account The wallet account address
      * After successful KYC again, the user can request to recover the account
      */
-    function startAccountRecovery(address _account) public override {
+    function startAccountRecovery(address _account) external override {
         require(msg.sender == factoryOwner, 'only owner');
         require(walletVersion[_account] > 0, 'Not a valid account');
         KintoWallet(payable(_account)).startRecovery();
@@ -122,7 +142,7 @@ contract KintoWalletFactory is IKintoWalletFactory {
      * After the recovery time has finished, the user can set a new owner on the account
      * Old owner NFT has to be burned to prevent duplicate NFTs
      */
-    function finishAccountRecovery(address _account, address _newOwner) public override {
+    function finishAccountRecovery(address _account, address _newOwner) external override {
         require(msg.sender == factoryOwner, 'only owner');
         require(walletVersion[_account] > 0, 'Not a valid account');
         require(!kintoID.isKYC(KintoWallet(payable(_account)).owners(0)), 'Old KYC must be burned');
@@ -144,7 +164,8 @@ contract KintoWalletFactory is IKintoWalletFactory {
     }
 
     /**
-     * @dev Calculates the counterfactual address of this account as it would be returned by createAccount()
+     * @dev Calculates the counterfactual address of this account
+     * as it would be returned by createAccount()
      * @param owner The owner address
      * @param salt The salt to use for the calculation
      * @return The address of the account
@@ -160,12 +181,26 @@ contract KintoWalletFactory is IKintoWalletFactory {
     }
 
     /**
-     * @dev Calculates the counterfactual address of this contract as it would be returned by deployContract()
+     * @dev Calculates the counterfactual address of this contract as it
+     * would be returned by deployContract()
      * @param salt Salt used by CREATE2
      * @param byteCodeHash The bytecode hash (keccack256) of the contract to deploy
      * @return address of the contract to deploy
      */
-    function getContractAddress(bytes32 salt, bytes32 byteCodeHash) public view override returns (address) {
+    function getContractAddress(
+        bytes32 salt,
+        bytes32 byteCodeHash
+    ) public view override returns (address) {
         return Create2.computeAddress(salt, byteCodeHash, address(this));
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the factory is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        (newImplementation);
+        require(msg.sender == factoryOwner, 'only owner');
     }
 }

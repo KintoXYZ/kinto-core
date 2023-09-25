@@ -21,42 +21,11 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-
-contract KintoIDV2 is KintoID {
-  constructor() KintoID() {}
-}
-
-contract KintoIDUpgradeScript is Script {
-
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    KintoID _implementation;
-    KintoID _oldKinto;
-
-    function setUp() public {}
-
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        vm.startBroadcast(deployerPrivateKey);
-        console.log('address proxy', vm.envAddress('ID_PROXY_ADDRESS'));
-        _oldKinto = KintoID(payable(vm.envAddress('ID_PROXY_ADDRESS')));
-        console.log(_oldKinto.name());
-        console.log('deploying new implementation');
-        KintoIDV2 implementationV2 = new KintoIDV2();
-        console.log('before upgrade');
-        _oldKinto.upgradeTo(address(implementationV2));
-        // re-wrap the proxy
-        console.log('upgraded');
-        vm.stopBroadcast();
-    }
-
-}
-
 contract KintoInitialDeployScript is Create2Helper,Script {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
+    KintoWalletFactory _walletFactoryI;
     KintoWalletFactory _walletFactory;
     EntryPoint _entryPoint;
     SponsorPaymaster _sponsorPaymaster;
@@ -64,8 +33,10 @@ contract KintoInitialDeployScript is Create2Helper,Script {
     KintoID _kintoIDv1;
     UUPSProxy _proxy;
     IKintoWallet _kintoWalletv1;
+
     function setUp() public {}
 
+    // solhint-disable code-complexity
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
@@ -110,17 +81,34 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             console.log('Entry point deployed at', address(_entryPoint));
         }
 
+        // Wallet Factory impl
+        address walletfImplAddr = computeAddress(0,
+            abi.encodePacked(type(KintoWalletFactory).creationCode));
+        if (isContract(walletfImplAddr)) {
+            _walletFactoryI = KintoWalletFactory(payable(walletfImplAddr));
+            console.log('Already deployed Kinto Factory implementation at',
+                address(walletfImplAddr));
+        } else {
+            // Deploy Kinto ID implementation
+            _walletFactoryI = new KintoWalletFactory{ salt: 0 }();
+            console.log('Kinto Factory implementation deployed at', address(walletfImplAddr));
+        }
+
         // Check Wallet Factory
-        address walletFactoryAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode,
-            abi.encode(address(_entryPoint), address(_kintoIDv1))));
+        address walletFactoryAddr = computeAddress(
+            0, abi.encodePacked(type(UUPSProxy).creationCode,
+            abi.encode(address(walletfImplAddr), '')));
         if (isContract(walletFactoryAddr)) {
             _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
-            console.log('Wallet factory already deployed at', address(_walletFactory));
+            console.log('Wallet factory proxy already deployed at', address(walletFactoryAddr));
         } else {
-            //Deploy wallet factory
-            _walletFactory = new KintoWalletFactory{salt: 0}(_entryPoint, _kintoIDv1);
-            console.log('Wallet factory deployed at', address(_walletFactory));
+            // deploy proxy contract and point it to implementation
+            _proxy = new UUPSProxy{salt: 0}(address(walletfImplAddr), '');
+            // wrap in ABI to support easier calls
+            _walletFactory = KintoWalletFactory(address(_proxy));
+            console.log('Wallet Factory proxy deployed at ', address(_walletFactory));
+            // Initialize proxy
+            _walletFactory.initialize(_entryPoint, _kintoIDv1);
         }
 
         address walletFactory = EntryPoint(payable(entryPointAddr)).walletFactory();
@@ -133,7 +121,8 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             if (walletFactory != walletFactoryAddr) {
                 console.log('WARN: Wallet Factory & Entry Point do not match');
             } else {
-                console.log('Wallet factory already deployed and set in entry point', walletFactory);
+                console.log('Wallet factory already deployed and set in entry point',
+                    walletFactory);
             }
         }
 
@@ -183,7 +172,9 @@ contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
         vm.startBroadcast(deployerPrivateKey);
         if(!_kintoID.isKYC(deployerPublicKey)) {
             IKintoID.SignatureData memory sigdata = _auxCreateSignature(
-                _kintoID, deployerPublicKey, deployerPublicKey, deployerPrivateKey, block.timestamp + 1000);
+                _kintoID, deployerPublicKey,
+                deployerPublicKey,
+                deployerPrivateKey, block.timestamp + 1000);
             uint8[] memory traits = new uint8[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
@@ -236,14 +227,14 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
         address computed = _walletFactory.getContractAddress(
             bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
         if (!isContract(computed)) {
-            address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+            address created = _walletFactory.deployContract(0,
+                abi.encodePacked(type(Counter).creationCode), bytes32(0));
             console.log('Deployed Counter contract at', created);
         } else {
             console.log('Counter already deployed at', computed);
         }
         Counter counter = Counter(computed);
         console.log('Before UserOp. Counter:', counter.count());
-        console.log('Balance paymaster', _sponsorPaymaster.balances(computed));
         // We add the deposit to the counter contract in the paymaster
         if (_sponsorPaymaster.balances(computed) <= 1e14) {
             _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
@@ -309,7 +300,8 @@ contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
         address computed = _walletFactory.getContractAddress(
             bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode)));
         if (!isContract(computed)) {
-            address created = _walletFactory.deployContract(0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0));
+            address created = _walletFactory.deployContract(0,
+                abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0));
             console.log('Deployed ETHPriceIsRight contract at', created);
         } else {
             console.log('ETHPriceIsRight already deployed at', computed);
@@ -352,6 +344,7 @@ contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
     }
 }
 
+
 contract KintoWalletv2 is KintoWallet {
   constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
 
@@ -376,10 +369,42 @@ contract KintoWalletUpgradeScript is Script {
         // vm.startBroadcast(deployerPrivateKey);
         // _oldKinto = KintoWallet(payable(vm.envAddress('WALLET_ADDRESS')));
         // console.log('deploying new implementation');
-        // // KintoWalletv2 implementationV2 = new KintoWalletv2(_entryPoint, IKintoID(vm.envAddress('ID_PROXY_ADDRESS')));
+        // KintoWalletv2 implementationV2 =
+        //      new KintoWalletv2(_entryPoint, IKintoID(vm.envAddress('ID_PROXY_ADDRESS')));
         // console.log('before upgrade');
         // _oldKinto.upgradeTo(address(implementationV2));
         // console.log('upgraded');
         // vm.stopBroadcast();
     }
+}
+
+contract KintoIDV2 is KintoID {
+  constructor() KintoID() {}
+}
+
+contract KintoIDUpgradeScript is Script {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoID _implementation;
+    KintoID _oldKinto;
+
+    function setUp() public {}
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        vm.startBroadcast(deployerPrivateKey);
+        console.log('address proxy', vm.envAddress('ID_PROXY_ADDRESS'));
+        _oldKinto = KintoID(payable(vm.envAddress('ID_PROXY_ADDRESS')));
+        console.log(_oldKinto.name());
+        console.log('deploying new implementation');
+        KintoIDV2 implementationV2 = new KintoIDV2();
+        console.log('before upgrade');
+        _oldKinto.upgradeTo(address(implementationV2));
+        // re-wrap the proxy
+        console.log('upgraded');
+        vm.stopBroadcast();
+    }
+
 }

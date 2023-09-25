@@ -35,12 +35,23 @@ contract Counter {
     }
 }
 
+contract KintoWalletFactoryV2 is KintoWalletFactory {
+  constructor() KintoWalletFactory() {
+
+  }
+  function newFunction() public pure returns (uint256) {
+      return 1;
+  }
+}
+
 contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
+    KintoWalletFactory _walletFactoryI;
+    KintoWalletFactoryV2 _walletFactoryv2;
     KintoID _implementation;
     KintoID _kintoIDv1;
     SponsorPaymaster _paymaster;
@@ -75,7 +86,10 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         _entryPoint = new EntryPoint{salt: 0}();
         //Deploy wallet factory
-        _walletFactory = new KintoWalletFactory(_entryPoint, _kintoIDv1);
+        _walletFactoryI = new KintoWalletFactory();
+        _proxy = new UUPSProxy(address(_walletFactoryI), '');
+        _walletFactory = KintoWalletFactory(address(_proxy));
+        _walletFactory.initialize(_entryPoint, _kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
         // Mint an nft to the owner
@@ -86,25 +100,43 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         vm.stopPrank();
         vm.startPrank(_owner);
-        // deploy walletv1 through wallet factory and initializes it
-        _kintoWalletv1 = _walletFactory.createAccount(_owner, 0);
         // deploy the paymaster
         _paymaster = new SponsorPaymaster(_entryPoint);
         vm.stopPrank();
     }
 
     function testUp() public {
-        assertEq(address(_kintoWalletv1.factory()), address(_walletFactory));
-        assertEq(_kintoWalletv1.owners(0), _owner);
+        assertEq(_walletFactory.factoryWalletVersion(), 1);
     }
 
     /* ============ Upgrade Tests ============ */
+
+    function testOwnerCanUpgrade() public {
+        vm.startPrank(_owner);
+        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2();
+        _walletFactory.upgradeTo(address(_implementationV2));
+        // re-wrap the _proxy
+        _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
+        assertEq(_walletFactoryv2.newFunction(), 1);
+        vm.stopPrank();
+    }
+
+    function testFailOthersCannotUpgrade() public {
+        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2();
+        _kintoIDv1.upgradeTo(address(_implementationV2));
+        // re-wrap the _proxy
+        _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
+        assertEq(_walletFactoryv2.newFunction(), 1);
+    }
+
+    /* ============ Deploy Tests ============ */
     function testDeployCustomContract() public {
         // _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         address computed = _walletFactory.getContractAddress(
           bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
-        address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+        address created = _walletFactory.deployContract(0,
+            abi.encodePacked(type(Counter).creationCode), bytes32(0));
         assertEq(computed, created);
         assertEq(Counter(created).count(), 0);
         Counter(created).increment();
