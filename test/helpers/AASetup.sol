@@ -43,13 +43,18 @@ abstract contract AASetup is Create2Helper {
             revert('Entry Point not deployed');
         }
         _entryPoint = EntryPoint(payable(entryPointAddr));
+
+        // Wallet Factory Impl
+
+        address walletFImplAddr = computeAddress(0,
+            abi.encodePacked(type(KintoWalletFactory).creationCode));
         // Wallet Factory
-        address walletFactoryAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode,
-            abi.encode(address(_entryPoint), address(_kintoIDv1))));
+        address walletFactoryAddr = computeAddress(
+            0, abi.encodePacked(type(UUPSProxy).creationCode,
+            abi.encode(address(walletFImplAddr), '')));
         if (!isContract(walletFactoryAddr)) {
-            console.log('Wallet factory not deployed at', address(walletFactoryAddr));
-            revert('Wallet Factory not deployed');
+            console.log('Wallet factory proxy not deployed at', address(walletFactoryAddr));
+            revert('Wallet Factory Proxy not deployed');
         }
         _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
         // Sponsor Paymaster
