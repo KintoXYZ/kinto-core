@@ -330,7 +330,7 @@ contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
             privateKeys,
             address(ethpriceisright),
             0,
-            abi.encodeWithSignature('enterGuess(uint256)', 5000),
+            abi.encodeWithSignature('enterGuess(uint256)', 7000),
             address(_sponsorPaymaster),
             [uint256(5000000), 3, 3]
         );
