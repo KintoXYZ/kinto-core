@@ -42,6 +42,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
     address[] public override owners;
+    address public override recoverer;
     address[] public override withdrawalWhitelist;
 
     /* ============ Events ============ */
@@ -57,6 +58,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     modifier onlyFactory() {
         _onlyFactory();
+        _;
+    }
+
+    modifier onlyRecoverer() {
+        _onlyRecoverer();
         _;
     }
 
@@ -76,10 +82,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner) external virtual initializer {
+    function initialize(address anOwner, address _recoverer) external virtual initializer {
+        // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
         __UUPSUpgradeable_init();
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
+        recoverer = _recoverer;
         factory = IKintoWalletFactory(msg.sender);
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
@@ -143,7 +151,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Start the recovery process
      * Can only be called by the factory through a privileged signer
      */
-    function startRecovery() external override onlyFactory {
+    function startRecovery() external override onlyRecoverer {
         inRecovery = block.timestamp;
     }
 
@@ -152,8 +160,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * Can only be called by the factory through a privileged signer\
      * @param newSigners new signers array
      */
-    function finishRecovery(address[] calldata newSigners) external override onlyFactory {
+    function finishRecovery(address[] calldata newSigners) external override onlyRecoverer {
         require(block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
+        require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
+        require(kintoID.isKYC(newSigners[0]), 'New KYC must be minted');
         _resetSigners(newSigners);
         inRecovery = 0;
     }
@@ -250,8 +260,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         require(msg.sender == address(factory), 'only factory');
     }
 
-    /* ============ Helpers (Move to Library) ============ */
+    function _onlyRecoverer() internal view {
+        //directly through the factory
+        require(msg.sender == address(recoverer), 'only recoverer');
+    }
 
+    /* ============ Helpers  ============ */
+    // TODO: (Move to Library)
     /**
      * @dev Executes a transaction, and send the value to the last destination
      * @param target target contract address

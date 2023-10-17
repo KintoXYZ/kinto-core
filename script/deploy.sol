@@ -205,11 +205,11 @@ contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
 
         console.log('This factory has', totalWalletsCreated, ' created');
         uint salt = 0;
-        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
         if (isContract(newWallet)) {
             console.log('Wallet already deployed for owner', deployerPublicKey, 'at', newWallet);
         } else {
-            IKintoWallet ikw = _walletFactory.createAccount(deployerPublicKey, salt);
+            IKintoWallet ikw = _walletFactory.createAccount(deployerPublicKey, deployerPublicKey, salt);
             console.log('Created wallet', address(ikw));
             console.log('Total Wallets:', _walletFactory.totalWallets());
         }
@@ -241,7 +241,7 @@ contract KintoDeployCounterTest is AASetup,KYCSignature, UserOp, Script {
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
-        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
         if (!isContract(newWallet)) {
             console.log('ERROR: Wallet not deployed for owner', deployerPublicKey, 'at', newWallet);
             revert();
@@ -314,7 +314,7 @@ contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
-        address newWallet = _walletFactory.getAddress(deployerPublicKey, salt);
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
         if (!isContract(newWallet)) {
             console.log('ERROR: Wallet not deployed for owner', deployerPublicKey, 'at', newWallet);
             revert();

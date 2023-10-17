@@ -43,6 +43,8 @@ interface IKintoWallet {
   
   function owners(uint _index) external view returns (address);
   
+  function recoverer() external view returns (address);
+
   function withdrawalWhitelist(uint _index) external view returns (address);
 
   function signerPolicy() external view returns (uint8);

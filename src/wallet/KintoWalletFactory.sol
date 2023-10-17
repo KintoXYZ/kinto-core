@@ -79,29 +79,28 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      * This method returns an existing account address so that entryPoint.getSenderAddress()
      * would work even after account creation
      * @param owner The owner address
+     * @param recoverer The recoverer address
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner, uint256 salt) external override returns (
+    function createAccount(address owner, address recoverer, uint256 salt) external override returns (
         IKintoWallet ret
     ) {
         require(kintoID.isKYC(owner), 'KYC required');
-        address addr = getAddress(owner, salt);
+        address addr = getAddress(owner, recoverer, salt);
         uint codeSize = addr.code.length;
+
         if (codeSize > 0) {
             return KintoWallet(payable(addr));
         }
-        // ret = KintoWallet(payable(new ERC1967Proxy{salt : bytes32(salt)}(
-        //         address(accountImplementation),
-        //         abi.encodeCall(KintoWallet.initialize, (owner))
-        //     )));
 
         ret = KintoWallet(payable(
             new SafeBeaconProxy{salt : bytes32(salt)}(
                     address(_beacon),
                     abi.encodeWithSelector(
                         KintoWallet.initialize.selector,
-                        owner
+                        owner,
+                        recoverer
                     )
                 )
         ));
@@ -137,36 +136,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         return Create2.deploy(amount, salt, bytecode);
     }
 
-    /* ============ Recovery Functions ============ */
-
-    /**
-     * @dev Start the account recovery process
-     * @param _account The wallet account address
-     * After successful KYC again, the user can request to recover the account
-     */
-    function startAccountRecovery(address _account) external override {
-        require(msg.sender == factoryOwner, 'only owner');
-        require(walletVersion[_account] > 0, 'Not a valid account');
-        KintoWallet(payable(_account)).startRecovery();
-    }
-
-   /**
-     * @dev Finish the account recovery process
-     * @param _account The wallet account address
-     * @param _newOwner The new owner address (has to be KYC'd)
-     * After the recovery time has finished, the user can set a new owner on the account
-     * Old owner NFT has to be burned to prevent duplicate NFTs
-     */
-    function finishAccountRecovery(address _account, address _newOwner) external override {
-        require(msg.sender == factoryOwner, 'only owner');
-        require(walletVersion[_account] > 0, 'Not a valid account');
-        require(!kintoID.isKYC(KintoWallet(payable(_account)).owners(0)), 'Old KYC must be burned');
-        require(kintoID.isKYC(_newOwner), 'New KYC must be minted');
-        address[] memory newSigners = new address[](1);
-        newSigners[0] = _newOwner;
-        KintoWallet(payable(_account)).finishRecovery(newSigners);
-    }
-
     /* ============ View Functions ============ */
 
     /**
@@ -182,15 +151,16 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      * @dev Calculates the counterfactual address of this account
      * as it would be returned by createAccount()
      * @param owner The owner address
+     * @param recoverer The address that can recover the account in an emergency
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner, uint256 salt) public view override returns (address) {
+    function getAddress(address owner, address recoverer, uint256 salt) public view override returns (address) {
         return Create2.computeAddress(bytes32(salt), keccak256(abi.encodePacked(
                 type(SafeBeaconProxy).creationCode,
                 abi.encode(
                     address(_beacon),
-                    abi.encodeCall(KintoWallet.initialize, (owner))
+                    abi.encodeCall(KintoWallet.initialize, (owner, recoverer))
                 )
             )));
     }

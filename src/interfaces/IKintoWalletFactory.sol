@@ -12,17 +12,13 @@ interface IKintoWalletFactory {
 
     function upgradeAllWalletImplementations(IKintoWallet newImplementationWallet) external;
 
-    function createAccount(address owner,uint256 salt) external returns (IKintoWallet ret);
+    function createAccount(address owner, address recoverer, uint256 salt) external returns (IKintoWallet ret);
 
     function deployContract(uint amount, bytes memory bytecode, bytes32 salt) external returns (address);
 
-    function startAccountRecovery(address _account) external;
-    
-    function finishAccountRecovery(address _account, address _newOwner) external;
-
     /* ============ Basic Viewers ============ */
 
-    function getAddress(address owner,uint256 salt) external view returns (address);
+    function getAddress(address owner, address recoverer, uint256 salt) external view returns (address);
 
     function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);
 
