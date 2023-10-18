@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
@@ -27,6 +28,7 @@ import 'forge-std/console2.sol';
   */
 contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IKintoWallet {
     using ECDSA for bytes32;
+    using Address for address;
 
     /* ============ State Variables ============ */
     IKintoID public override immutable kintoID;
@@ -101,17 +103,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        _call(dest, value, func);
+        dest.functionCallWithValue(func, value);
     }
 
     /**
      * execute a sequence of transactions
      */
-    function executeBatch(address[] calldata dest, bytes[] calldata func) external override {
+    function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external override {
         _requireFromEntryPoint();
         require(dest.length == func.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
-            _call(dest[i], 0, func[i]);
+            dest[i].functionCallWithValue(func[i], values[i]);
         }
     }
 
@@ -264,23 +266,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function _onlyRecoverer() internal view {
         //directly through the factory
         require(msg.sender == address(recoverer), 'only recoverer');
-    }
-
-    /* ============ Helpers  ============ */
-    // TODO: (Move to Library)
-    /**
-     * @dev Executes a transaction, and send the value to the last destination
-     * @param target target contract address
-     * @param value eth value to send to the target
-     * @param data calldata
-     */
-    function _call(address target, uint256 value, bytes memory data) internal {
-        (bool success, bytes memory result) = target.call{value : value}(data);
-        if (!success) {
-            assembly {
-                revert(add(result, 32), mload(result))
-            }
-        }
     }
 }
 

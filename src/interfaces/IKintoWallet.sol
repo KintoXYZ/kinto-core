@@ -13,7 +13,7 @@ interface IKintoWallet {
 
   function execute(address dest, uint256 value, bytes calldata func) external;
 
-  function executeBatch(address[] calldata dest, bytes[] calldata func) external;
+  function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external;
 
   function setSignerPolicy(uint8 policy) external;
 
