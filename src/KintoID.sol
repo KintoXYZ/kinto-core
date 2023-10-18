@@ -52,6 +52,7 @@ contract KintoID is Initializable,
 
     // 256 traits max
     // 256 countries max. Currently, 192 countries exist
+    // TODO: Define in docs trait ids and sanction ids
 
     /* ============ Modifiers ============ */
 
@@ -276,7 +277,6 @@ contract KintoID is Initializable,
 
     /* ============ View Functions ============ */
 
-    // TODO: If account is a wallet pierce through the owner
     /**
      * @dev Returns whether the account holder is KYCd
      * @param _account account to be checked.

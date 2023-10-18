@@ -9,6 +9,7 @@ import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
 
 import '../interfaces/IKintoID.sol';
+import '../libraries/ByteSignature.sol';
 import '../interfaces/IKintoWallet.sol';
 import '../interfaces/IKintoWalletFactory.sol';
 
@@ -215,9 +216,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
         if (owners.length == 2) {
-            (signatures[0], signatures[1]) = _extractTwoSignatures(userOp.signature);
+            (signatures[0], signatures[1]) = ByteSignature.extractTwoSignatures(userOp.signature);
         } else {
-            (signatures[0], signatures[1], signatures[2]) = _extractThreeSignatures(userOp.signature);
+            (signatures[0], signatures[1], signatures[2]) = ByteSignature.extractThreeSignatures(userOp.signature);
         }
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
@@ -281,44 +282,5 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
             }
         }
     }
-
-    function _extractTwoSignatures(bytes memory _fullSignature)
-        internal pure
-        returns (bytes memory signature1, bytes memory signature2) {
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 0),
-            _extractECDASignatureFromBytes(_fullSignature, 1));
-    }
-
-    function _extractThreeSignatures(bytes memory _fullSignature)
-        internal pure returns (bytes memory signature1, bytes memory signature2, bytes memory signature3) {
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-        signature3 = new bytes(65);
-        return (_extractECDASignatureFromBytes(_fullSignature, 0),
-            _extractECDASignatureFromBytes(_fullSignature, 1),
-            _extractECDASignatureFromBytes(_fullSignature, 2));
-    }
-
-    function _extractECDASignatureFromBytes(bytes memory _fullSignature, uint position)
-        internal pure returns (bytes memory signature) {
-        signature = new bytes(65);
-        // Copying the first signature. Note, that we need an offset of 0x20
-        // since it is where the length of the `_fullSignature` is stored
-        uint firstIndex = (position * 0x40) + 0x20 + position;
-        uint secondIndex = (position * 0x40) + 0x40 + position;
-        uint thirdIndex = (position * 0x40) + 0x41 + position;
-        assembly {
-            let r := mload(add(_fullSignature, firstIndex))
-            let s := mload(add(_fullSignature, secondIndex))
-            let v := and(mload(add(_fullSignature, thirdIndex)), 0xff)
-
-            mstore(add(signature, 0x20), r)
-            mstore(add(signature, 0x40), s)
-            mstore8(add(signature, 0x60), v)
-        }
-    }
-
 }
 
