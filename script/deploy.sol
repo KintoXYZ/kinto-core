@@ -161,7 +161,7 @@ contract KintoInitialDeployScript is Create2Helper,Script {
         } else {
             // Deploy paymaster implementation
             _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(sponsorImplAddr)));
-            console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymaster));
+            console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymasterImpl));
         }
 
         // Check Sponsor Paymaster Proxy
