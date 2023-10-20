@@ -60,6 +60,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWalletv1;
     UUPSProxy _proxy;
+    UUPSProxy _proxys;
     UpgradeableBeacon _beacon;
 
     uint256 _chainID = 1;
@@ -109,6 +110,12 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         vm.startPrank(_owner);
         // deploy the paymaster
         _paymaster = new SponsorPaymaster(_entryPoint);
+        // deploy _proxy contract and point it to _implementation
+        _proxys = new UUPSProxy(address(_paymaster), '');
+        // wrap in ABI to support easier calls
+        _paymaster = SponsorPaymaster(address(_proxys));
+        // Initialize proxy
+        _paymaster.initialize();
         vm.stopPrank();
     }
 

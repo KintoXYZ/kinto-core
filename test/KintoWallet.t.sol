@@ -59,6 +59,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
     KintoWalletv2 _kintoWalletv2;
     UUPSProxy _proxy;
     UUPSProxy _proxyf;
+    UUPSProxy _proxys;
     UpgradeableBeacon _beacon;
 
     uint256 _chainID = 1;
@@ -112,6 +113,12 @@ contract KintoWalletTest is UserOp, KYCSignature {
         console.log('wallet address ', address(_kintoWalletv1));
         // deploy the paymaster
         _paymaster = new SponsorPaymaster(_entryPoint);
+        // deploy _proxy contract and point it to _implementation
+        _proxys = new UUPSProxy(address(_paymaster), '');
+        // wrap in ABI to support easier calls
+        _paymaster = SponsorPaymaster(address(_proxys));
+        // Initialize proxy
+        _paymaster.initialize();
         vm.stopPrank();
     }
 

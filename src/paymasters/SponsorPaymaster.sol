@@ -5,11 +5,12 @@ pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import '@aa/core/BasePaymaster.sol';
 import 'forge-std/console2.sol';
 
-// TODO: Needs to be upgradeable??
 /**
  * An ETH-based paymaster that accepts ETH deposits
  * The deposit is only a safeguard: the user pays with his ETH deposited in the entry point if any.
@@ -18,7 +19,7 @@ import 'forge-std/console2.sol';
  *
  * paymasterAndData holds the paymaster address followed by the token address to use.
  */
-contract SponsorPaymaster is BasePaymaster {
+contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
 
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
@@ -30,9 +31,29 @@ contract SponsorPaymaster is BasePaymaster {
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
 
-    constructor(IEntryPoint _entryPoint) BasePaymaster(_entryPoint) {
+    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+        _disableInitializers();
+    }
+
+    /**
+     * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
+     * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
+     * the implementation by calling `upgradeTo()`
+     */
+    function initialize() external virtual initializer {
+        __UUPSUpgradeable_init();
         // unlocks owner
         unlockTokenDeposit();
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the implementation is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override {
+        require(msg.sender == owner(), 'SponsorPaymaster: not owner');
+        (newImplementation);
     }
 
     /**
