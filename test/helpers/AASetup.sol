@@ -79,13 +79,20 @@ abstract contract AASetup is Create2Helper {
         // Sponsor Paymaster
         bytes memory creationCodePaymaster = abi.encodePacked(
             type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint)));
-        address paymasterAddr = computeAddress(0, creationCodePaymaster);
+        address paymasterAddrImpl = computeAddress(0, creationCodePaymaster);
         // Check Paymaster
-        if (!isContract(paymasterAddr)) {
-            console.log('Paymaster not deployed at', address(paymasterAddr));
-            revert('Paymaster not deployed');
+        if (!isContract(paymasterAddrImpl)) {
+            console.log('Paymaster impl not deployed at', address(paymasterAddrImpl));
+            revert('Paymaster impl not deployed');
         }
-        _sponsorPaymaster = SponsorPaymaster(payable(paymasterAddr));
+        address sponsorProxyAddr = computeAddress(
+            0, abi.encodePacked(type(UUPSProxy).creationCode,
+            abi.encode(address(paymasterAddrImpl), '')));
+        if (!isContract(sponsorProxyAddr)) {
+            console.log('Paymaster proxy not deployed at', address(sponsorProxyAddr));
+            revert('Paymaster proxy not deployed');
+        }
+        _sponsorPaymaster = SponsorPaymaster(payable(sponsorProxyAddr));
     }
 
 }
