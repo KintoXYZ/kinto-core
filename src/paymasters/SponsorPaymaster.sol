@@ -31,8 +31,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
 
-    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, address _owner) BasePaymaster(__entryPoint) {
         _disableInitializers();
+        _transferOwnership(_owner);
     }
 
     /**

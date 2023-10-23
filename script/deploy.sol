@@ -42,6 +42,8 @@ contract KintoInitialDeployScript is Create2Helper,Script {
     // solhint-disable code-complexity
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+
         vm.startBroadcast(deployerPrivateKey);
         // Kinto ID
         address kintoIDImplAddr = computeAddress(0,
@@ -153,14 +155,14 @@ contract KintoInitialDeployScript is Create2Helper,Script {
 
         // Sponsor Paymaster Implementation
         bytes memory creationCodePaymaster = abi.encodePacked(
-            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint)));
+            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint), address(deployerPublicKey)));
         address sponsorImplAddr = computeAddress(0, creationCodePaymaster);
         // Check Paymaster implementation
         if (isContract(sponsorImplAddr)) {
             console.log('Paymaster implementation already deployed at', address(sponsorImplAddr));
         } else {
             // Deploy paymaster implementation
-            _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(_entryPoint)));
+            _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(_entryPoint)), address(deployerPublicKey));
             console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymasterImpl));
         }
 

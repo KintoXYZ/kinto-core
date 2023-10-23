@@ -109,7 +109,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         vm.stopPrank();
         vm.startPrank(_owner);
         // deploy the paymaster
-        _paymaster = new SponsorPaymaster(_entryPoint);
+        _paymaster = new SponsorPaymaster(_entryPoint, _owner);
         // deploy _proxy contract and point it to _implementation
         _proxys = new UUPSProxy(address(_paymaster), '');
         // wrap in ABI to support easier calls
