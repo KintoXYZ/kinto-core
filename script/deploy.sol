@@ -155,14 +155,14 @@ contract KintoInitialDeployScript is Create2Helper,Script {
 
         // Sponsor Paymaster Implementation
         bytes memory creationCodePaymaster = abi.encodePacked(
-            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint), address(deployerPublicKey)));
+            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint)));
         address sponsorImplAddr = computeAddress(0, creationCodePaymaster);
         // Check Paymaster implementation
         if (isContract(sponsorImplAddr)) {
             console.log('Paymaster implementation already deployed at', address(sponsorImplAddr));
         } else {
             // Deploy paymaster implementation
-            _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(_entryPoint)), address(deployerPublicKey));
+            _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(_entryPoint)));
             console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymasterImpl));
         }
 
@@ -180,7 +180,7 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             _sponsorPaymaster = SponsorPaymaster(address(_proxy));
             console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
             // Initialize proxy
-            _sponsorPaymaster.initialize();
+            _sponsorPaymaster.initialize(address(deployerPublicKey));
         }
 
         // address deployerPublicKey = vm.envAddress('PUBLIC_KEY');

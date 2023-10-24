@@ -5,8 +5,10 @@ pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import '../interfaces/ISponsorPaymaster.sol';
 
 import '@aa/core/BasePaymaster.sol';
 import 'forge-std/console2.sol';
@@ -19,7 +21,7 @@ import 'forge-std/console2.sol';
  *
  * paymasterAndData holds the paymaster address followed by the token address to use.
  */
-contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
+contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, ReentrancyGuard, ISponsorPaymaster {
 
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
@@ -31,9 +33,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
 
-    constructor(IEntryPoint __entryPoint, address _owner) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
         _disableInitializers();
-        _transferOwnership(_owner);
     }
 
     /**
@@ -41,8 +42,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize() external virtual initializer {
+    function initialize(address _owner) external virtual initializer {
         __UUPSUpgradeable_init();
+        _transferOwnership(_owner);
         // unlocks owner
         unlockTokenDeposit();
     }
@@ -65,7 +67,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
      * @param account the account to deposit for.
      * msg.value the amount of token to deposit.
      */
-    function addDepositFor(address account) payable external {
+    function addDepositFor(address account) payable external override {
         require(msg.value > 0, 'requires a deposit');
         //(sender must have approval for the paymaster)
         balances[account] += msg.value;
@@ -76,19 +78,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
     }
 
     /**
-     * @return amount - the amount of given token deposited to the Paymaster.
-     * @return _unlockBlock - the block height at which the deposit can be withdrawn.
-     */
-    function depositInfo(address account) public view returns (uint256 amount, uint256 _unlockBlock) {
-        amount = balances[account];
-        _unlockBlock = unlockBlock[account];
-    }
-
-    /**
      * Unlocks deposit, so that it can be withdrawn.
      * can't be called in the same block as withdrawTo()
      */
-    function unlockTokenDeposit() public {
+    function unlockTokenDeposit() public override {
         unlockBlock[msg.sender] = block.number;
     }
 
@@ -96,7 +89,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
      * Lock the ETH deposited for this account so they can be used to pay for gas.
      * after calling unlockTokenDeposit(), the account can't use this paymaster until the deposit is locked.
      */
-    function lockTokenDeposit() public {
+    function lockTokenDeposit() public override {
         unlockBlock[msg.sender] = 0;
     }
 
@@ -106,14 +99,26 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable {
      * @param target address to send to
      * @param amount amount to withdraw
      */
-     // TODO: prevent reentrancy
-    function withdrawTokensTo(address target, uint256 amount) public {
+    function withdrawTokensTo(address target, uint256 amount) external override nonReentrant() {
         require(
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             'DepositPaymaster: must unlockTokenDeposit'
         );
         balances[msg.sender] -= amount;
         payable(target).transfer(amount);
+    }
+
+    /*******************************
+      Viewers *********************
+    *******************************/
+
+    /**
+     * @return amount - the amount of given token deposited to the Paymaster.
+     * @return _unlockBlock - the block height at which the deposit can be withdrawn.
+     */
+    function depositInfo(address account) public view returns (uint256 amount, uint256 _unlockBlock) {
+        amount = balances[account];
+        _unlockBlock = unlockBlock[account];
     }
 
     /**

@@ -78,7 +78,7 @@ abstract contract AASetup is Create2Helper {
         _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
         // Sponsor Paymaster
         bytes memory creationCodePaymaster = abi.encodePacked(
-            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint), address(msg.sender)));
+            type(SponsorPaymaster).creationCode, abi.encode(address(_entryPoint)));
         address paymasterAddrImpl = computeAddress(0, creationCodePaymaster);
         // Check Paymaster
         if (!isContract(paymasterAddrImpl)) {

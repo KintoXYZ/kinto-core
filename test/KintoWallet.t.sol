@@ -112,13 +112,13 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
         console.log('wallet address ', address(_kintoWalletv1));
         // deploy the paymaster
-        _paymaster = new SponsorPaymaster(_entryPoint, _owner);
+        _paymaster = new SponsorPaymaster(_entryPoint);
         // deploy _proxy contract and point it to _implementation
         _proxys = new UUPSProxy(address(_paymaster), '');
         // wrap in ABI to support easier calls
         _paymaster = SponsorPaymaster(address(_proxys));
         // Initialize proxy
-        _paymaster.initialize();
+        _paymaster.initialize(_owner);
         vm.stopPrank();
     }
 
