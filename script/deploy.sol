@@ -120,8 +120,8 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             // Deploy Kinto ID implementation
             _walletFactoryI = new KintoWalletFactory{ salt: 0 }(_beacon);
             // Transfer beacon ownership
-            _beacon.transferOwnership(address(_walletFactory));
-            console.log('Kinto Factory implementation deployed at', address(walletfImplAddr));
+            _beacon.transferOwnership(address(_walletFactoryI));
+            console.log('Kinto Factory implementation deployed at', address(_walletFactoryI));
         }
 
         // Check Wallet Factory
