@@ -21,23 +21,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoWalletV2 is KintoWallet {
-  constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
-
-  function newWalletFunction() public pure returns (uint256) {
-      return 1;
-  }
-}
-
-contract KintoWalletFactoryV2 is KintoWalletFactory {
-  constructor(UpgradeableBeacon _beacon) KintoWalletFactory(_beacon) {
-
-  }
-  function newFactoryFunction() public pure returns (uint256) {
-      return 1;
-  }
-}
-
 contract KintoWalletFactoryUpgradeScript is Script {
 
     using ECDSAUpgradeable for bytes32;
@@ -95,11 +78,11 @@ contract KintoIDUpgradeScript is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
-        console.log('address proxy', vm.envAddress('ID_PROXY_ADDRESS'));
-        _oldKinto = KintoID(payable(vm.envAddress('ID_PROXY_ADDRESS')));
-        KintoIDV2 implementationV2 = new KintoIDV2();
-        _oldKinto.upgradeTo(address(implementationV2));
-        console.log('KintoID upgraded to implementation', address(implementationV2));
+        // console.log('address proxy', vm.envAddress('ID_PROXY_ADDRESS'));
+        // _oldKinto = KintoID(payable(vm.envAddress('ID_PROXY_ADDRESS')));
+        // KintoIDV2 implementationV2 = new KintoIDV2();
+        // _oldKinto.upgradeTo(address(implementationV2));
+        // console.log('KintoID upgraded to implementation', address(implementationV2));
         vm.stopBroadcast();
     }
 
