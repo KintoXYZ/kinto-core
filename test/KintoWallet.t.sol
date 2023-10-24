@@ -97,6 +97,9 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _walletFactoryI = new KintoWalletFactory(_beacon);
         _proxyf = new UUPSProxy(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxyf));
+        // Transfer beacon ownership
+        _beacon.transferOwnership(address(_walletFactory));
+        // Initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
@@ -128,8 +131,6 @@ contract KintoWalletTest is UserOp, KYCSignature {
     }
 
     /* ============ Upgrade Tests ============ */
-
-    // TODO: test factory can upgrade
 
     function testFailOwnerCannotUpgrade() public {
         _setPaymasterForContract(address(_kintoWalletv1));

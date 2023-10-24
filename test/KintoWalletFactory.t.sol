@@ -23,6 +23,14 @@ import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/Test.sol';
 import 'forge-std/console.sol';
 
+contract KintoWalletV2 is KintoWallet {
+  constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
+
+  function walletFunction() public pure returns (uint256) {
+      return 1;
+  }
+}
+
 contract Counter {
 
     uint256 public count;
@@ -59,6 +67,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
 
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWalletv1;
+    KintoWalletV2 _kintoWalletv2;
     UUPSProxy _proxy;
     UUPSProxy _proxys;
     UpgradeableBeacon _beacon;
@@ -97,6 +106,8 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         _walletFactoryI = new KintoWalletFactory(_beacon);
         _proxy = new UUPSProxy(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxy));
+        // Transfer beacon ownership
+        _beacon.transferOwnership(address(_walletFactory));
         _walletFactory.initialize(_kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
@@ -125,7 +136,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
 
     /* ============ Upgrade Tests ============ */
 
-    function testOwnerCanUpgrade() public {
+    function testOwnerCanUpgradeFactory() public {
         vm.startPrank(_owner);
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_beacon);
         _walletFactory.upgradeTo(address(_implementationV2));
@@ -135,7 +146,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgrade() public {
+    function testFailOthersCannotUpgradeFactory() public {
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_beacon);
         _kintoIDv1.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
@@ -143,12 +154,31 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         assertEq(_walletFactoryv2.newFunction(), 1);
     }
 
-    // TODO: test factory can upgrade all wallet implementations
-    // function testWalletsUpgrade() public {
-    //     vm.startPrank(_owner);
-    //     _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
-    //     vm.stopPrank();
-    // }
+    function testAllWalletsUpgrade() public {
+        vm.startPrank(_owner);
+
+        // Deploy wallet implementation
+        _kintoWalletImpl = new KintoWalletV2(_entryPoint, _kintoIDv1);
+
+        // deploy walletv1 through wallet factory and initializes it
+        _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
+
+        // Upgrade all implementations
+        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
+
+        KintoWalletV2 walletV2 = KintoWalletV2(payable(address(_kintoWalletv1)));
+        assertEq(walletV2.walletFunction(), 1);
+        vm.stopPrank();
+    }
+
+    function testFailOthersCannotUpgradeWallets() public {
+        // Deploy wallet implementation
+        _kintoWalletImpl = new KintoWalletV2(_entryPoint, _kintoIDv1);
+        // deploy walletv1 through wallet factory and initializes it
+        _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
+        // Upgrade all implementations
+        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
+    }
 
     /* ============ Deploy Tests ============ */
     function testDeployCustomContract() public {

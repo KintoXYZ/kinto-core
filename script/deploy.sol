@@ -101,6 +101,7 @@ contract KintoInitialDeployScript is Create2Helper,Script {
         address beaconAddress = computeAddress(0,
             abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(address(_walletImpl))));
         if (isContract(beaconAddress)) {
+            _beacon = UpgradeableBeacon(payable(beaconAddress));
             console.log('Beacon Proxy already deployed at', address(beaconAddress));
         } else {
             // Deploy Upgradeable beacon
@@ -118,6 +119,8 @@ contract KintoInitialDeployScript is Create2Helper,Script {
         } else {
             // Deploy Kinto ID implementation
             _walletFactoryI = new KintoWalletFactory{ salt: 0 }(_beacon);
+            // Transfer beacon ownership
+            _beacon.transferOwnership(address(_walletFactory));
             console.log('Kinto Factory implementation deployed at', address(walletfImplAddr));
         }
 
