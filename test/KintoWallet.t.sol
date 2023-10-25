@@ -82,7 +82,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         // Deploy Kinto ID
         _implementation = new KintoID();
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy(address(_implementation), '');
+        _proxy = new UUPSProxy{salt: 0}(address(_implementation), '');
         // wrap in ABI to support easier calls
         _kintoIDv1 = KintoID(address(_proxy));
         // Initialize _proxy
@@ -90,12 +90,12 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         _entryPoint = new EntryPoint{salt: 0}();
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet(_entryPoint, _kintoIDv1);
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
         // Deploy beacon
         _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
         //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory(_beacon);
-        _proxyf = new UUPSProxy(address(_walletFactoryI), '');
+        _walletFactoryI = new KintoWalletFactory{salt: 0}(_beacon);
+        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxyf));
         // Transfer beacon ownership
         _beacon.transferOwnership(address(_walletFactory));
@@ -115,7 +115,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
         console.log('wallet address ', address(_kintoWalletv1));
         // deploy the paymaster
-        _paymaster = new SponsorPaymaster(_entryPoint);
+        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
         // deploy _proxy contract and point it to _implementation
         _proxys = new UUPSProxy(address(_paymaster), '');
         // wrap in ABI to support easier calls
