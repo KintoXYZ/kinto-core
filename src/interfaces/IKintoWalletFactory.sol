@@ -24,9 +24,9 @@ interface IKintoWalletFactory {
 
     function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);
 
-    function walletVersion(address _account) external view returns (uint256);
+    function walletTs(address _account) external view returns (uint256);
 
-    function getWalletVersion(address wallet) external view returns (uint256);
+    function getWalletTimestamp(address wallet) external view returns (uint256);
 
     /* ============ Constants and attrs ============ */
 

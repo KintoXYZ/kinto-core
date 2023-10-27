@@ -28,7 +28,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     UpgradeableBeacon public immutable beacon;
 
     IKintoID public override kintoID;
-    mapping (address => uint256) public override walletVersion;
+    mapping (address => uint256) public override walletTs;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
 
@@ -105,7 +105,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
                 )
         ));
 
-        walletVersion[address(ret)] = factoryWalletVersion;
+        walletTs[address(ret)] = block.timestamp;
         totalWallets++;
         // Emit event
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
@@ -139,12 +139,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     /* ============ View Functions ============ */
 
     /**
-     * @dev Gets the version of a current wallet
+     * @dev Gets the creation timestamp of a current wallet
      * @param wallet The wallet address
-     * @return The version of the wallet. 0 if it is not a wallet
+     * @return The timestamp of the wallet. 0 if it is not a wallet
      */
-    function getWalletVersion(address wallet) external view override returns (uint256) {
-        return walletVersion[wallet];
+    function getWalletTimestamp(address wallet) external view override returns (uint256) {
+        return walletTs[wallet];
     }
 
     /**
