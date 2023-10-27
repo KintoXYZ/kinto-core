@@ -60,7 +60,7 @@ Now we should have the proxy live at `0x4e59b44847b379578588920ca78fbf26c0b4956c
 Here is the code to deploy the Kinto ID and all the contracts required by account abstraction under the PUBLIC_KEY/PRIVATE_KEY signer:
 
 ```
-source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv --skip-simulation --slow
 ```
 
 ### Create Kinto Smart Account
