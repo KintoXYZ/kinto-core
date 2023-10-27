@@ -204,7 +204,7 @@ contract KintoDeployWalletScript is AASetup,KYCSignature, Script {
                 _kintoID, deployerPublicKey,
                 deployerPublicKey,
                 deployerPrivateKey, block.timestamp + 1000);
-            uint8[] memory traits = new uint8[](0);
+            uint16[] memory traits = new uint16[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
 

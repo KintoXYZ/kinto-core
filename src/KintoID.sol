@@ -26,10 +26,10 @@ contract KintoID is Initializable,
     using SignatureChecker for address;
 
     /* ============ Events ============ */
-    event TraitAdded(address indexed _to, uint8 _traitIndex, uint256 _timestamp);
-    event TraitRemoved(address indexed _to, uint8 _traitIndex, uint256 _timestamp);
-    event SanctionAdded(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
-    event SanctionRemoved(address indexed _to, uint8 _sanctionIndex, uint256 _timestamp);
+    event TraitAdded(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
+    event TraitRemoved(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
+    event SanctionAdded(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
+    event SanctionRemoved(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
     event AccountsMonitoredAt(address indexed _signer, uint256 _accountsCount, uint256 _timestamp);
 
     /* ============ Constants ============ */
@@ -49,10 +49,6 @@ contract KintoID is Initializable,
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
-
-    // 256 traits max
-    // 256 countries max. Currently, 192 countries exist
-    // TODO: Define in docs trait ids and sanction ids
 
     /* ============ Modifiers ============ */
 
@@ -116,7 +112,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint8[] memory _traits)
+    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData,_traits, true);
     }
@@ -126,7 +122,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint8[] memory _traits)
+    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData, _traits, false);
     }
@@ -141,7 +137,7 @@ contract KintoID is Initializable,
     function _mintTo(
         uint8 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
-        uint8[] memory _traits,
+        uint16[] memory _traits,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
@@ -199,7 +195,7 @@ contract KintoID is Initializable,
             require(balanceOf(_accounts[i], 1) > 0, 'Invalid account address');
             Metadata storage meta = _kycmetas[_accounts[i]];
             meta.updatedAt = block.timestamp;
-            for (uint8 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
+            for (uint16 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
                 IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
                 if (updateData.isTrait && updateData.isSet) {
                     addTrait(_accounts[i], updateData.index);
@@ -221,7 +217,7 @@ contract KintoID is Initializable,
      * @param _account  account to be added the trait to.
      * @param _traitId trait id to be added.
      */
-    function addTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = _kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
           meta.traits.set(_traitId);
@@ -235,7 +231,7 @@ contract KintoID is Initializable,
      * @param _account  account to be removed the trait from.
      * @param _traitId trait id to be removed.
      */
-    function removeTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = _kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -250,7 +246,7 @@ contract KintoID is Initializable,
      * @param _account  account to be added the sanction to.
      * @param _countryId country id to be added.
      */
-    function addSanction(address _account, uint8 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -265,7 +261,7 @@ contract KintoID is Initializable,
      * @param _account  account to be removed the sanction from.
      * @param _countryId country id to be removed.
      */
-    function removeSanction(address _account, uint8 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
@@ -310,7 +306,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be checked.
      * @return true if the account is sanctions safe in a given country.
      */
-    function isSanctionsSafeIn(address _account, uint8 _countryId) external view override returns (bool) {
+    function isSanctionsSafeIn(address _account, uint16 _countryId) external view override returns (bool) {
         return isSanctionsMonitored(7) && !_kycmetas[_account].sanctions.get(_countryId);
     }
 
@@ -347,7 +343,7 @@ contract KintoID is Initializable,
      * @param index index of the trait to be checked.
      * @return true if the account has the trait.
      */
-    function hasTrait(address _account, uint8 index) external view override returns (bool) {
+    function hasTrait(address _account, uint16 index) external view override returns (bool) {
         return _kycmetas[_account].traits.get(index);
     }
 

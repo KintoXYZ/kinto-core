@@ -114,7 +114,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         // Mint an nft to the owner
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(
             _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         vm.stopPrank();
