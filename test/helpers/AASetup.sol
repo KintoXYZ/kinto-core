@@ -52,21 +52,20 @@ abstract contract AASetup is Create2Helper {
             console.log('Wallet impl not deployed at', address(kintoWalletImplAddress));
             revert('Wallet impl not deployed');
         }
+        // Wallet Factory Impl
+        address walletFImplAddr = address(0);
+        if (!isContract(walletFImplAddr)) {
+            console.log('Wallet Factory Impl not deployed at', address(walletFImplAddr));
+            revert('Wallet Factory Impl not deployed');
+        }
+
         // Upgradeable beacon
-        address beaconAddress = computeAddress(0,
-            abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(address(kintoWalletImplAddress))));
+        address beaconAddress = address(KintoWalletFactory(walletFImplAddr).beacon());
         if (!isContract(beaconAddress)) {
             console.log('Beacon Proxy not deployed at', address(beaconAddress));
             revert('Beacon Proxy not deployed');
         }
 
-        // Wallet Factory Impl
-        address walletFImplAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(beaconAddress))));
-        if (!isContract(walletFImplAddr)) {
-            console.log('Wallet Factory Impl not deployed at', address(walletFImplAddr));
-            revert('Wallet Factory Impl not deployed');
-        }
         // Wallet Factory
         address walletFactoryAddr = computeAddress(
             0, abi.encodePacked(type(UUPSProxy).creationCode,
@@ -85,9 +84,7 @@ abstract contract AASetup is Create2Helper {
             console.log('Paymaster impl not deployed at', address(paymasterAddrImpl));
             revert('Paymaster impl not deployed');
         }
-        address sponsorProxyAddr = computeAddress(
-            0, abi.encodePacked(type(UUPSProxy).creationCode,
-            abi.encode(address(paymasterAddrImpl), '')));
+        address sponsorProxyAddr = address(0);
         if (!isContract(sponsorProxyAddr)) {
             console.log('Paymaster proxy not deployed at', address(sponsorProxyAddr));
             revert('Paymaster proxy not deployed');

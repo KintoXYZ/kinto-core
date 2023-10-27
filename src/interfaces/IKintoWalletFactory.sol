@@ -3,6 +3,8 @@ pragma solidity ^0.8.13;
 
 import { IKintoWallet } from './IKintoWallet.sol';
 import { IKintoID } from './IKintoID.sol';
+import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
+
 
 interface IKintoWalletFactory {
 
@@ -30,6 +32,8 @@ interface IKintoWalletFactory {
 
     function kintoID() external view returns (IKintoID);
     
+    function beacon() external view returns (UpgradeableBeacon);
+
     function factoryOwner() external view returns (address);
 
     function factoryWalletVersion() external view returns (uint);

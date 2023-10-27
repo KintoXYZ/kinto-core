@@ -25,7 +25,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
 
     /* ============ State Variables ============ */
     address immutable public override factoryOwner;
-    UpgradeableBeacon private immutable _beacon;
+    UpgradeableBeacon public immutable beacon;
 
     IKintoID public override kintoID;
     mapping (address => uint256) public override walletVersion;
@@ -40,7 +40,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     /* ============ Constructor ============ */
     constructor(UpgradeableBeacon _beaconp) {
         factoryOwner = msg.sender;
-        _beacon = _beaconp;
+        beacon = _beaconp;
         _disableInitializers();
     }
 
@@ -67,7 +67,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         factoryWalletVersion++;
         emit KintoWalletFactoryUpgraded(address(newImplementationWallet),
             address(newImplementationWallet));
-        _beacon.upgradeTo(address(newImplementationWallet));
+        beacon.upgradeTo(address(newImplementationWallet));
     }
 
     /**
@@ -96,7 +96,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
 
         ret = KintoWallet(payable(
             new SafeBeaconProxy{salt : bytes32(salt)}(
-                    address(_beacon),
+                    address(beacon),
                     abi.encodeWithSelector(
                         KintoWallet.initialize.selector,
                         owner,
@@ -159,7 +159,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         return Create2.computeAddress(bytes32(salt), keccak256(abi.encodePacked(
                 type(SafeBeaconProxy).creationCode,
                 abi.encode(
-                    address(_beacon),
+                    address(beacon),
                     abi.encodeCall(KintoWallet.initialize, (owner, recoverer))
                 )
             )));
