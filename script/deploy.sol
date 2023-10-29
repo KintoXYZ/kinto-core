@@ -10,6 +10,7 @@ import '../src/interfaces/IKintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
 import { Create2Helper } from '../test/helpers/Create2Helper.sol';
+import { ArtifactsReader } from '../test/helpers/ArtifactsReader.sol';
 import { UUPSProxy } from '../test/helpers/UUPSProxy.sol';
 import { AASetup } from '../test/helpers/AASetup.sol';
 import { KYCSignature } from '../test/helpers/KYCSignature.sol';
@@ -21,7 +22,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoInitialDeployScript is Create2Helper,Script {
+contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
@@ -39,29 +40,12 @@ contract KintoInitialDeployScript is Create2Helper,Script {
 
     function setUp() public {}
 
-    function _getAddressesFile() internal view returns (string memory) {
-        string memory root = vm.projectRoot();
-        return string.concat(root, "/test/artifacts/", vm.toString(block.chainid), "/addresses.json");
-    }
-
-    function _getChainDeployment() internal returns (address) {
-        try vm.readFile(_getAddressesFile()) returns (string memory json){
-            try vm.parseJsonAddress(json, '.KintoID') returns (address addr) {
-                return addr;
-            } catch {
-                return address(0);
-            } 
-        } catch {
-            return address(0);
-        }
-    }
-
     // solhint-disable code-complexity
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
         console.log('RUNNING ON CHAIN WITH ID', vm.toString(block.chainid));
-        address kintoIDAddress = _getChainDeployment();
+        address kintoIDAddress = _getChainDeployment('KintoID');
         if (kintoIDAddress != address(0)) {
             console.log('Already deployed Kinto ID at', kintoIDAddress);
             return;
