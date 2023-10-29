@@ -69,7 +69,7 @@ After you have deployed all core contracts, you can call the following script to
 If it already exists, it won't deploy it.
 
 ```
-source .env && forge script script/test.sol:KintoDeployTestWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+source .env && forge script script/test.sol:KintoDeployTestWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
 ```
 
 ### Test Kinto Smart Account with Counter contract
@@ -78,7 +78,7 @@ After you have deployed all core contracts and you have a wallet, you can call t
 If it already exists, it won't deploy it.
 
 ```
-source .env && forge script script/test.sol:KintoDeployTestCounter --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+source .env && forge script script/test.sol:KintoDeployTestCounter --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
 ```
 
 ### Upgrade Kinto ID to a new version
