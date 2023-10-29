@@ -21,7 +21,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoDeployTestWalletScript is AASetup,KYCSignature, Script {
+contract KintoDeployTestWalletScript is AASetup, KYCSignature {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
@@ -68,7 +68,7 @@ contract KintoDeployTestWalletScript is AASetup,KYCSignature, Script {
     }
 }
 
-contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp, Script {
+contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
@@ -141,7 +141,7 @@ contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp, Script {
     }
 }
 
-contract KintoDeployETHPriceIsRight is AASetup,KYCSignature, UserOp, Script {
+contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
 
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
