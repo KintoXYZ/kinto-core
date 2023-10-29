@@ -3,7 +3,7 @@
 "KintoID-impl": "0x84fea28Df6f469408c24F94e33177745263b6D80",
 "EntryPoint": "0xfCe5B1d3c420D00DDF79C65189889aF3DD8e754f",
 "KintoWallet-impl": "?",
-"KintoWallet-beacon": "?",
+"KintoWallet-beacon": "0x5f02fecbd867a7463fa09de198d55d18c72e4f75",
 "KintoWalletFactory-impl": "0x146FBF563E6ce82150AC4bc5fBE029C4504Ee819",
 "KintoWalletFactory": "0x4847bD5DC38194185579E3aE627140462D46Df00",
 "SponsorPaymaster": "0x3B760a9216E4adcA51dA7EB8b7B0F6D62288f9e6",
