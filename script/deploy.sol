@@ -39,11 +39,33 @@ contract KintoInitialDeployScript is Create2Helper,Script {
 
     function setUp() public {}
 
+    function _getAddressesFile() internal view returns (string memory) {
+        string memory root = vm.projectRoot();
+        return string.concat(root, "/test/artifacts/", vm.toString(block.chainid), "/addresses.json");
+    }
+
+    function _getChainDeployment() internal returns (address) {
+        try vm.readFile(_getAddressesFile()) returns (string memory json){
+            try vm.parseJsonAddress(json, '.KintoID') returns (address addr) {
+                return addr;
+            } catch {
+                return address(0);
+            } 
+        } catch {
+            return address(0);
+        }
+    }
+
     // solhint-disable code-complexity
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
-
+        console.log('RUNNING ON CHAIN WITH ID', vm.toString(block.chainid));
+        address kintoIDAddress = _getChainDeployment();
+        if (kintoIDAddress != address(0)) {
+            console.log('Already deployed Kinto ID at', kintoIDAddress);
+            return;
+        }
         vm.startBroadcast(deployerPrivateKey);
         // Kinto ID
         address kintoIDImplAddr = computeAddress(0,
@@ -95,7 +117,7 @@ contract KintoInitialDeployScript is Create2Helper,Script {
         } else {
             // Deploy Wallet Implementation
             _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-            console.log('Wallet Implementation deployed at', address(_entryPoint));
+            console.log('Wallet Implementation deployed at', address(_walletImpl));
         }
 
         // Deploys New Upgradeable beacon
@@ -106,14 +128,14 @@ contract KintoInitialDeployScript is Create2Helper,Script {
             abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(_beacon))));
         if (isContract(walletfImplAddr)) {
             _walletFactoryI = KintoWalletFactory(payable(walletfImplAddr));
-            console.log('Already deployed Kinto Factory implementation at',
+            console.log('Already deployed Kinto Wallet Factory implementation at',
                 address(walletfImplAddr));
         } else {
-            // Deploy Kinto ID implementation
+            // Deploy Wallet Factory implementation
             _walletFactoryI = new KintoWalletFactory{ salt: 0 }(_beacon);
             // Transfer beacon ownership
             _beacon.transferOwnership(address(_walletFactoryI));
-            console.log('Kinto Factory implementation deployed at', address(_walletFactoryI));
+            console.log('Kinto Wallet Factory implementation deployed at', address(_walletFactoryI));
         }
 
         // Check Wallet Factory
@@ -155,22 +177,33 @@ contract KintoInitialDeployScript is Create2Helper,Script {
         // Check Paymaster implementation
         if (isContract(sponsorImplAddr)) {
             console.log('Paymaster implementation already deployed at', address(sponsorImplAddr));
+            _sponsorPaymasterImpl = SponsorPaymaster(payable(sponsorImplAddr));
         } else {
             // Deploy paymaster implementation
             _sponsorPaymasterImpl = new SponsorPaymaster{salt: 0}(IEntryPoint(address(_entryPoint)));
             console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymasterImpl));
-            // deploy proxy contract and point it to implementation
-            _proxy = new UUPSProxy(address(_sponsorPaymasterImpl), '');
-            // wrap in ABI to support easier calls
-            _sponsorPaymaster = SponsorPaymaster(address(_proxy));
-            console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
-            // Initialize proxy
-            _sponsorPaymaster.initialize(address(deployerPublicKey));
         }
 
-        // address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
-        //_kintoWalletv1 = _walletFactory.createAccount(deployerPublicKey, 0);
-        // console.log('wallet deployed at', address(_kintoWalletv1));
+        // deploy proxy contract and point it to implementation
+        _proxy = new UUPSProxy(address(_sponsorPaymasterImpl), '');
+        // wrap in ABI to support easier calls
+        _sponsorPaymaster = SponsorPaymaster(address(_proxy));
+        console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
+        // Initialize proxy
+        _sponsorPaymaster.initialize(address(deployerPublicKey));
+
         vm.stopBroadcast();
+        // Writes the addresses to a file
+        vm.writeFile(_getAddressesFile(), '{\n');
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoID": "', vm.toString(address(_kintoIDv1)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoID-impl": "', vm.toString(address(_implementation)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"EntryPoint": "', vm.toString(address(_entryPoint)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoWallet-impl": "', vm.toString(address(_walletImpl)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoWallet-beacon": "', vm.toString(address(_beacon)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoWalletFactory-impl": "', vm.toString(address(_walletFactoryI)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoWalletFactory": "', vm.toString(address(_walletFactory)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"SponsorPaymaster": "', vm.toString(address(_sponsorPaymaster)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"SponsorPaymaster-impl": "', vm.toString(address(_sponsorPaymasterImpl)), '"'));
+        vm.writeLine(_getAddressesFile(), '}\n');
     }
 }

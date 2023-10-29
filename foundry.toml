@@ -4,7 +4,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 eth_rpc_url = 'https://eth-mainnet.alchemyapi.io/v2/PToNmBre9DOHilhG0OcK7I3w5V4lY47L'
-
+fs_permissions = [{ access = "read-write", path = "./"}]
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [rpc_endpoints]

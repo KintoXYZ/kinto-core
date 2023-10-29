@@ -128,3 +128,9 @@ cast call $ID_PROXY_ADDRESS "isKYC(address)(bool)" 0xa8beb41cf4721121ea58837ebdb
 ```
 cast send <ENTRYPOINT_ADDRESS> "addDepositFor(address)" <ADDR> --value 0.1ether
 ```
+
+### Exporting contracts ABI for frontend
+
+```
+yarn run export-testnet
+```
