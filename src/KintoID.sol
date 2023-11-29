@@ -151,8 +151,8 @@ contract KintoID is Initializable,
            meta.traits.set(_traits[i]);
        }
 
-       _mint(_signatureData.account, _tokenId, 1, '');
        nonces[_signatureData.account]++;
+       _mint(_signatureData.account, _tokenId, 1, '');
     }
 
     /* ============ Burn ============ */
@@ -175,8 +175,8 @@ contract KintoID is Initializable,
         SignatureData calldata _signatureData
     ) private onlySignerVerified(_tokenId, _signatureData) {
         require(balanceOf(_signatureData.account, _tokenId) > 0, 'Nothing to burn');
-        _burn(_signatureData.account, _tokenId, 1);
         nonces[_signatureData.account] += 1;
+        _burn(_signatureData.account, _tokenId, 1);
         require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance after burn must be 0');
     }
 

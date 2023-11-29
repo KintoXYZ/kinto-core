@@ -104,8 +104,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             'DepositPaymaster: must unlockTokenDeposit'
         );
+        withdrawTo(payable(target), amount);
         balances[msg.sender] -= amount;
-        payable(target).transfer(amount);
     }
 
     /*******************************
@@ -143,7 +143,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 gasPriceUserOp = userOp.gasPrice();
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
         require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
-        return (abi.encode(targetAccount, gasPriceUserOp),0);
+        return (abi.encode(targetAccount, gasPriceUserOp), 0);
     }
 
     /**

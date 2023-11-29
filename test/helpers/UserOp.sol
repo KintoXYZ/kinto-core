@@ -74,7 +74,7 @@ abstract contract UserOp is Test {
 
       bytes memory signature;
       for (uint i = 0; i < privateKeys.length; i++) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[0], hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
         if (i == 0) {
           signature = abi.encodePacked(r, s, v);
         } else {

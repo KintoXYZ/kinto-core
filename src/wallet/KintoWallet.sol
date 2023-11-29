@@ -14,7 +14,7 @@ import '../libraries/ByteSignature.sol';
 import '../interfaces/IKintoWallet.sol';
 import '../interfaces/IKintoWalletFactory.sol';
 
-import 'forge-std/console2.sol';
+// import 'forge-std/console2.sol';
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
@@ -164,7 +164,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @param newSigners new signers array
      */
     function finishRecovery(address[] calldata newSigners) external override onlyRecoverer {
-        require(block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
+        require(inRecovery > 0 && block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
         require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
         require(kintoID.isKYC(newSigners[0]), 'New KYC must be minted');
         _resetSigners(newSigners);
@@ -209,12 +209,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
-        if (signerPolicy == 1 && owners.length == 1) {
+        if (signerPolicy == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
             return 0;
         }
-        uint requiredSigners = signerPolicy == 1 ? owners.length : owners.length - 1;
+        uint requiredSigners = signerPolicy == 3 ? owners.length : owners.length - 1;
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
         if (owners.length == 2) {
