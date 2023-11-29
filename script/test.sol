@@ -68,6 +68,36 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
     }
 }
 
+contract KintoMonitoringTest is AASetup,KYCSignature, UserOp {
+
+    using ECDSAUpgradeable for bytes32;
+    using SignatureChecker for address;
+
+    KintoID _kintoID;
+    EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactory;
+    SponsorPaymaster _sponsorPaymaster;
+    IKintoWallet _newWallet;
+
+    function setUp() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        vm.startBroadcast(deployerPrivateKey);
+        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        vm.stopBroadcast();
+    }
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        console.log('All AA setup is correct');
+        vm.startBroadcast(deployerPrivateKey);
+        address[] memory _addressesToMonitor = new address[](0);
+        IKintoID.MonitorUpdateData[][] memory _traitsAndSanctions = new IKintoID.MonitorUpdateData[][](0);
+        console.log('Update monitoring - no traits or sanctions update');
+        _kintoID.monitor(_addressesToMonitor, _traitsAndSanctions);
+        vm.stopBroadcast();
+    }
+}
+
 contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp {
 
     using ECDSAUpgradeable for bytes32;
