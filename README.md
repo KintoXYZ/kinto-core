@@ -5,7 +5,7 @@ Kinto ID gives developers all the functionality to verify on-chain whether a giv
 
 ## Docs
 
-Check to our gitbook to see all the documentation.
+Check our gitbook to see all the documentation.
 
 [Docs](https://docs.kinto.xyz/developers)
 
