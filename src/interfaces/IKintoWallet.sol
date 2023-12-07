@@ -17,7 +17,7 @@ interface IKintoWallet {
 
   function setSignerPolicy(uint8 policy) external;
 
-  function resetSigners(address[] calldata newSigners) external;
+  function resetSigners(address[] calldata newSigners, uint8 policy) external;
 
   function resetWithdrawalWhitelist(address[] calldata newWhitelist) external;
 

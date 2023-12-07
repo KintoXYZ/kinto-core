@@ -123,7 +123,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Change the signer policy
      * @param policy new policy
      */
-    function setSignerPolicy(uint8 policy) external override onlySelf {
+    function setSignerPolicy(uint8 policy) public override onlySelf {
         require(policy > 0 && policy < 4  && policy != signerPolicy, 'invalid policy');
         require(policy == 1 || owners.length > 1, 'invalid policy');
         emit WalletPolicyChanged(policy, signerPolicy);
@@ -134,8 +134,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Changed the signers
      * @param newSigners new signers array
      */
-    function resetSigners(address[] calldata newSigners) external override onlySelf {
-        _resetSigners(newSigners);
+    function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
+        _resetSigners(newSigners, policy);
     }
 
     /* ============ Whitelist Management ============ */
@@ -167,7 +167,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         require(inRecovery > 0 && block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
         require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
         require(kintoID.isKYC(newSigners[0]), 'New KYC must be minted');
-        _resetSigners(newSigners);
+        _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
 
@@ -232,7 +232,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
 
     /* ============ Private Functions ============ */
 
-    function _resetSigners(address[] calldata newSigners) internal {
+    function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
         require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
         require(newSigners.length == 1 ||
@@ -241,6 +241,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
                 (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
         owners = newSigners;
+        // Change policy if needed
+        if (_policy != signerPolicy) {
+            setSignerPolicy(_policy);
+        }
     }
 
     /**
