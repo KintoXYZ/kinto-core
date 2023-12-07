@@ -60,7 +60,7 @@ contract KintoID is Initializable,
         _disableInitializers();
     }
 
-    function initialize() initializer public {
+    function initialize() initializer external {
         __ERC1155_init('https://mamorilabs.com/metadata/{id}.json'); // pinata, ipfs
         __AccessControl_init();
         __ERC1155Supply_init();

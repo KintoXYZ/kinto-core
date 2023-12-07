@@ -189,7 +189,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         return super.getNonce();
     }
 
-    function getOwnersCount() public view override returns (uint) {
+    function getOwnersCount() external view override returns (uint) {
         return owners.length;
     }
 

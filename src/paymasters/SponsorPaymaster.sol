@@ -116,7 +116,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @return amount - the amount of given token deposited to the Paymaster.
      * @return _unlockBlock - the block height at which the deposit can be withdrawn.
      */
-    function depositInfo(address account) public view returns (uint256 amount, uint256 _unlockBlock) {
+    function depositInfo(address account) external view returns (uint256 amount, uint256 _unlockBlock) {
         amount = balances[account];
         _unlockBlock = unlockBlock[account];
     }
