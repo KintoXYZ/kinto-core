@@ -146,7 +146,7 @@ contract KintoID is Initializable,
        meta.mintedAt = block.timestamp;
        meta.individual = _indiv;
 
-       for (uint16 i = 0; i < _traits.length; i++) {
+       for (uint256 i = 0; i < _traits.length; i++) {
            meta.traits.set(_traits[i]);
        }
 
@@ -190,11 +190,11 @@ contract KintoID is Initializable,
     ) external override onlyRole(KYC_PROVIDER_ROLE) {
         require(_accounts.length == _traitsAndSanctions.length, 'Length mismatch');
         require(_accounts.length <= 200, 'Too many accounts to monitor at once');
-        for (uint8 i = 0; i < _accounts.length; i+= 1) {
+        for (uint i = 0; i < _accounts.length; i+= 1) {
             require(balanceOf(_accounts[i], 1) > 0, 'Invalid account address');
             Metadata storage meta = _kycmetas[_accounts[i]];
             meta.updatedAt = block.timestamp;
-            for (uint16 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
+            for (uint j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
                 IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
                 if (updateData.isTrait && updateData.isSet) {
                     addTrait(_accounts[i], updateData.index);
