@@ -137,7 +137,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
 
         bytes calldata paymasterAndData = userOp.paymasterAndData;
-        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must be empty');
+        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
         // Get the contract deployed address from the first 20 bytes of the paymasterAndData
         address targetAccount =  address(bytes20(userOp.callData[16:]));
         uint256 gasPriceUserOp = userOp.gasPrice();
