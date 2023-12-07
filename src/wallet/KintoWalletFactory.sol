@@ -97,10 +97,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         ret = KintoWallet(payable(
             new SafeBeaconProxy{salt : bytes32(salt)}(
                     address(beacon),
-                    abi.encodeWithSelector(
-                        KintoWallet.initialize.selector,
-                        owner,
-                        recoverer
+                    abi.encodeCall(
+                        KintoWallet.initialize,
+                        (
+                            owner,
+                            recoverer
+                        )
                     )
                 )
         ));
