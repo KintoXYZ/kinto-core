@@ -74,7 +74,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (msg.sender == account) {
             lockTokenDeposit();
         }
-        this.deposit{value: msg.value}();
+        deposit();
     }
 
     /**
