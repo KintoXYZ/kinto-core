@@ -111,7 +111,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external override {
         _requireFromEntryPoint();
-        require(dest.length == func.length, 'wrong array lengths');
+        require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
             dest[i].functionCallWithValue(func[i], values[i]);
         }
