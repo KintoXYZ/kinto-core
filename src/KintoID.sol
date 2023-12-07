@@ -65,10 +65,9 @@ contract KintoID is Initializable,
         __AccessControl_init();
         __ERC1155Supply_init();
         __UUPSUpgradeable_init();
-
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(KYC_PROVIDER_ROLE, msg.sender);
-        _setupRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(KYC_PROVIDER_ROLE, msg.sender);
+        _grantRole(UPGRADER_ROLE, msg.sender);
         lastMonitoredAt = block.timestamp;
     }
 
