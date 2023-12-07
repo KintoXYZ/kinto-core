@@ -65,7 +65,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         require(msg.sender == factoryOwner, 'only owner');
         require(address(newImplementationWallet) != address(0), 'invalid address');
         factoryWalletVersion++;
-        emit KintoWalletFactoryUpgraded(address(newImplementationWallet),
+        emit KintoWalletFactoryUpgraded(address(beacon.implementation()),
             address(newImplementationWallet));
         beacon.upgradeTo(address(newImplementationWallet));
     }
