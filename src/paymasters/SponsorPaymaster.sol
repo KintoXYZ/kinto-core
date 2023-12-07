@@ -11,7 +11,6 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '../interfaces/ISponsorPaymaster.sol';
 
 import '@aa/core/BasePaymaster.sol';
-import 'forge-std/console2.sol';
 
 /**
  * An ETH-based paymaster that accepts ETH deposits

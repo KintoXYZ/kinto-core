@@ -12,8 +12,6 @@ import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/Signa
 import '@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol';
 import {IKintoID} from './interfaces/IKintoID.sol';
 
-// import "forge-std/console2.sol";
-
 
 /**
  * @title Kinto ID
