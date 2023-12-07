@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
@@ -26,7 +25,7 @@ import '../interfaces/IKintoWalletFactory.sol';
   *     has execute, eth handling methods and has a single signer 
   *     that can send requests through the entryPoint.
   */
-contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IKintoWallet {
+contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKintoWallet {
     using ECDSA for bytes32;
     using Address for address;
 
@@ -87,7 +86,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function initialize(address anOwner, address _recoverer) external virtual initializer {
         // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
-        __UUPSUpgradeable_init();
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
@@ -244,16 +242,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         }
-    }
-
-    /**
-     * @dev Authorize the upgrade. Only by an owner.
-     * @param newImplementation address of the new implementation
-     */
-    // This function is called by the proxy contract when the implementation is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        (newImplementation);
-        _onlySelf();
     }
 
     function _onlySelf() internal view {
