@@ -416,7 +416,7 @@ contract KintoID is Initializable,
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         require(
           (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
           'Only mint or burn transfers are allowed'
