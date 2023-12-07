@@ -151,7 +151,7 @@ contract KintoID is Initializable,
        }
 
        nonces[_signatureData.account]++;
-       _mint(_signatureData.account, _tokenId, 1, '');
+       _mint(_signatureData.account, _tokenId, KYC_TOKEN_ID, '');
     }
 
     /* ============ Burn ============ */
@@ -175,7 +175,7 @@ contract KintoID is Initializable,
     ) private onlySignerVerified(_tokenId, _signatureData) {
         require(balanceOf(_signatureData.account, _tokenId) > 0, 'Nothing to burn');
         nonces[_signatureData.account] += 1;
-        _burn(_signatureData.account, _tokenId, 1);
+        _burn(_signatureData.account, _tokenId, KYC_TOKEN_ID);
         require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance after burn must be 0');
     }
 
