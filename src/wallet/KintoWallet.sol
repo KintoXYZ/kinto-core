@@ -166,7 +166,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function finishRecovery(address[] calldata newSigners) external override onlyRecoverer {
         require(inRecovery > 0 && block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
         require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
-        require(kintoID.isKYC(newSigners[0]), 'New KYC must be minted');
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
