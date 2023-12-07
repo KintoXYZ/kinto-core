@@ -33,9 +33,9 @@ interface IKintoID {
     /* ============ State Change ============ */
 
 
-    function mintIndividualKyc(SignatureData calldata _signatureData, uint16[] memory _traits) external;
+    function mintIndividualKyc(SignatureData calldata _signatureData, uint16[] calldata _traits) external;
 
-    function mintCompanyKyc(SignatureData calldata _signatureData, uint16[] memory _traits) external;
+    function mintCompanyKyc(SignatureData calldata _signatureData, uint16[] calldata _traits) external;
 
     function burnKYC(SignatureData calldata _signatureData) external;
 
@@ -49,7 +49,7 @@ interface IKintoID {
 
     function removeSanction(address _account, uint16 _countryId) external;
 
-    function monitor(address[] memory _accounts, MonitorUpdateData[][] memory _traitsAndSanctions) external;
+    function monitor(address[] calldata _accounts, MonitorUpdateData[][] calldata _traitsAndSanctions) external;
 
     /* ============ Basic Viewers ============ */
 

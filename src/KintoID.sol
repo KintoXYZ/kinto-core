@@ -111,7 +111,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
+    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData,_traits, true);
     }
@@ -121,7 +121,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
+    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData, _traits, false);
     }
@@ -136,7 +136,7 @@ contract KintoID is Initializable,
     function _mintTo(
         uint8 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
-        uint16[] memory _traits,
+        uint16[] calldata _traits,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
@@ -185,8 +185,8 @@ contract KintoID is Initializable,
      * @dev Monitors the account. Only by the KYC provider role.
      */
     function monitor(
-        address[] memory _accounts,
-        IKintoID.MonitorUpdateData[][] memory _traitsAndSanctions
+        address[] calldata _accounts,
+        IKintoID.MonitorUpdateData[][] calldata _traitsAndSanctions
     ) external override onlyRole(KYC_PROVIDER_ROLE) {
         require(_accounts.length == _traitsAndSanctions.length, 'Length mismatch');
         require(_accounts.length <= 200, 'Too many accounts to monitor at once');
