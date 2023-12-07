@@ -26,6 +26,7 @@ contract KintoID is Initializable,
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+    event URIChanged(string _URI);
     event TraitAdded(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event TraitRemoved(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
@@ -102,6 +103,7 @@ contract KintoID is Initializable,
      */
     function setURI(string memory newuri) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(newuri);
+        emit URIChanged(newuri);
     }
 
     /* ============ Mint & Burn ============ */
