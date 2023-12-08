@@ -282,9 +282,9 @@ contract KintoID is Initializable,
     }
 
     /**
-     * @dev Returns whether the account has been monitored in the last x days.
+     * @dev Returns whether the account was monitored in the last x days.
      * @param _days Days to be checked.
-     * @return true if the account has been monitored in the last x days.
+     * @return true if the account was monitored in the last x days.
     */
     function isSanctionsMonitored(uint32 _days) public view override returns(bool) {
         return block.timestamp - lastMonitoredAt < _days * (1 days);
