@@ -161,4 +161,31 @@ abstract contract UserOp is Test {
       op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
       return op;
     }
+
+    function createUserOperationBatchWithPaymaster(
+      uint _chainID,
+      address _account,
+      uint nonce,
+      uint256[] calldata _privateKeyOwners,
+      address[] calldata _targetContracts,
+      uint[] calldata values,
+      bytes[] calldata _bytesOps,
+      address _paymaster
+    ) public view returns (UserOperation memory op) {
+      op = UserOperation({
+        sender: _account,
+        nonce: nonce,
+        initCode: bytes(''),
+        callData: abi.encodeCall(KintoWallet.executeBatch, (_targetContracts, values, _bytesOps)),
+        callGasLimit: 4000000, // generate from call simulation
+        verificationGasLimit: 150000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+        preVerificationGas: 21000, // should also cover calldata cost.
+        maxFeePerGas: 1, // grab from current gas
+        maxPriorityFeePerGas: 1e9, // grab from current gas
+        paymasterAndData: abi.encodePacked(_paymaster),
+        signature: bytes('')
+      });
+      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
+      return op;
+    }
 }

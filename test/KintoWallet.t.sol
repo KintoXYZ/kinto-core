@@ -252,6 +252,80 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.stopPrank();
     }
 
+    function testMultipleTransactionsExecuteBatchPaymaster() public {
+        vm.startPrank(_owner);
+        // Let's deploy the counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        vm.stopPrank();
+        _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
+        address[] memory targets = new address[](2);
+        targets[0] = address(counter);
+        targets[1] = address(counter);
+        uint[] memory values = new uint[](2);
+        values[0] = 0;
+        values[1] = 0;
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature('increment()');
+        calls[1] = abi.encodeWithSignature('increment()');
+        // Let's send both transactions via batch
+        UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys,
+            targets,
+            values,
+            calls,
+            address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 2);
+        vm.stopPrank();
+    }
+
+    function testFailMultipleTransactionsExecuteBatchPaymasterRefuses() public {
+        vm.startPrank(_owner);
+        // Let's deploy the counter contract
+        Counter counter = new Counter();
+        Counter counter2 = new Counter();
+        assertEq(counter.count(), 0);
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        vm.stopPrank();
+        _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
+        address[] memory targets = new address[](2);
+        targets[0] = address(counter);
+        targets[1] = address(counter2);
+        uint[] memory values = new uint[](2);
+        values[0] = 0;
+        values[1] = 0;
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature('increment()');
+        calls[1] = abi.encodeWithSignature('increment()');
+        // Let's send both transactions via batch
+        UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys,
+            targets,
+            values,
+            calls,
+            address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+        assertEq(counter2.count(), 1);
+        vm.stopPrank();
+    }
+
     /* ============ Signers & Policy Tests ============ */
 
     function testAddingOneSigner() public {
