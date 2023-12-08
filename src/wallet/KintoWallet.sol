@@ -209,7 +209,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (signerPolicy == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
-            return 0;
+            return _packValidationData(false, 0, 0);
         }
         uint requiredSigners = signerPolicy == 3 ? owners.length : owners.length - 1;
         bytes[] memory signatures = new bytes[](owners.length);
@@ -224,7 +224,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 requiredSigners--;
             }
         }
-        return requiredSigners;
+        return _packValidationData(requiredSigners != 0, 0, 0);
     }
 
     /* ============ Private Functions ============ */
