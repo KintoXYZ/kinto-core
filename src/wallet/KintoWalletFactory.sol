@@ -119,6 +119,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      * @dev Deploys a contract using `CREATE2`. The address where the contract
      * will be deployed can be known in advance via {computeAddress}.
      *
+     * This can be called directly by a developer for ease of use.
      * The bytecode for a contract can be obtained from Solidity with
      * `type(contractName).creationCode`.
      *
@@ -135,6 +136,21 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         bytes32 salt
     ) external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
+        return Create2.deploy(amount, salt, bytecode);
+    }
+
+    /**
+     * @dev Deploys a contract using `CREATE2`. The address where the contract
+     * will be deployed can be known in advance via {computeAddress}.
+     *
+     * Same as above but this one goes through the Kinto Wallet.
+     */
+    function deployContractByWallet(
+        uint amount,
+        bytes memory bytecode,
+        bytes32 salt
+    ) external override returns (address) {
+        require(kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
         return Create2.deploy(amount, salt, bytecode);
     }
 
