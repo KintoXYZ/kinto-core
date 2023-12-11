@@ -418,7 +418,7 @@ contract KintoID is Initializable,
         );
     }
 
-    function _hashSignatureData(SignatureData memory signatureData) internal view returns (bytes32) {
+    function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
