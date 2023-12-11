@@ -12,8 +12,6 @@ import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/Signa
 import '@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol';
 import {IKintoID} from './interfaces/IKintoID.sol';
 
-// import "forge-std/console2.sol";
-
 
 /**
  * @title Kinto ID
@@ -26,6 +24,7 @@ contract KintoID is Initializable,
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+    event URIChanged(string _URI);
     event TraitAdded(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event TraitRemoved(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
@@ -60,15 +59,14 @@ contract KintoID is Initializable,
         _disableInitializers();
     }
 
-    function initialize() initializer public {
+    function initialize() initializer external {
         __ERC1155_init('https://mamorilabs.com/metadata/{id}.json'); // pinata, ipfs
         __AccessControl_init();
         __ERC1155Supply_init();
         __UUPSUpgradeable_init();
-
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(KYC_PROVIDER_ROLE, msg.sender);
-        _setupRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(KYC_PROVIDER_ROLE, msg.sender);
+        _grantRole(UPGRADER_ROLE, msg.sender);
         lastMonitoredAt = block.timestamp;
     }
 
@@ -103,6 +101,7 @@ contract KintoID is Initializable,
      */
     function setURI(string memory newuri) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(newuri);
+        emit URIChanged(newuri);
     }
 
     /* ============ Mint & Burn ============ */
@@ -112,7 +111,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
+    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData,_traits, true);
     }
@@ -122,7 +121,7 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] memory _traits)
+    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
         _mintTo(KYC_TOKEN_ID, _signatureData, _traits, false);
     }
@@ -137,7 +136,7 @@ contract KintoID is Initializable,
     function _mintTo(
         uint8 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
-        uint16[] memory _traits,
+        uint16[] calldata _traits,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
@@ -145,14 +144,15 @@ contract KintoID is Initializable,
 
        Metadata storage meta = _kycmetas[_signatureData.account];
        meta.mintedAt = block.timestamp;
+       meta.updatedAt = block.timestamp;
        meta.individual = _indiv;
 
-       for (uint16 i = 0; i < _traits.length; i++) {
+       for (uint256 i = 0; i < _traits.length; i++) {
            meta.traits.set(_traits[i]);
        }
 
        nonces[_signatureData.account]++;
-       _mint(_signatureData.account, _tokenId, 1, '');
+       _mint(_signatureData.account, _tokenId, KYC_TOKEN_ID, '');
     }
 
     /* ============ Burn ============ */
@@ -176,26 +176,35 @@ contract KintoID is Initializable,
     ) private onlySignerVerified(_tokenId, _signatureData) {
         require(balanceOf(_signatureData.account, _tokenId) > 0, 'Nothing to burn');
         nonces[_signatureData.account] += 1;
-        _burn(_signatureData.account, _tokenId, 1);
+        _burn(_signatureData.account, _tokenId, KYC_TOKEN_ID);
         require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance after burn must be 0');
+        // Update metadata after burning the token
+        Metadata storage meta = _kycmetas[_signatureData.account];
+        meta.mintedAt = 0;
     }
 
     /* ============ Sanctions & traits ============ */
 
     /**
-     * @dev Monitors the account. Only by the KYC provider role.
+     * @dev Updates the accounts that have flags or sanctions. Only by the KYC provider role.
+     * This method will be called with empty accounts if there are not traits/sanctions to add.
+     * Realistically only 1% of the accounts will ever be flagged and a small % of this will happen in the same day.
+     * As a consequence, 200 accounts should be enough even when we have 100k users.
+     * 200 accounts should fit in the 8M gas limit.
+     * @param _accounts  accounts to be updated.
+     * @param _traitsAndSanctions traits and sanctions to be updated.
      */
     function monitor(
-        address[] memory _accounts,
-        IKintoID.MonitorUpdateData[][] memory _traitsAndSanctions
+        address[] calldata _accounts,
+        IKintoID.MonitorUpdateData[][] calldata _traitsAndSanctions
     ) external override onlyRole(KYC_PROVIDER_ROLE) {
         require(_accounts.length == _traitsAndSanctions.length, 'Length mismatch');
         require(_accounts.length <= 200, 'Too many accounts to monitor at once');
-        for (uint8 i = 0; i < _accounts.length; i+= 1) {
+        for (uint i = 0; i < _accounts.length; i+= 1) {
             require(balanceOf(_accounts[i], 1) > 0, 'Invalid account address');
             Metadata storage meta = _kycmetas[_accounts[i]];
             meta.updatedAt = block.timestamp;
-            for (uint16 j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
+            for (uint j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
                 IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
                 if (updateData.isTrait && updateData.isSet) {
                     addTrait(_accounts[i], updateData.index);
@@ -218,6 +227,8 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be added.
      */
     function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+
         Metadata storage meta = _kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
           meta.traits.set(_traitId);
@@ -232,6 +243,7 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be removed.
      */
     function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -247,6 +259,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be added.
      */
     function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -262,6 +275,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be removed.
      */
     function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
@@ -283,9 +297,9 @@ contract KintoID is Initializable,
     }
 
     /**
-     * @dev Returns whether the account has been monitored in the last x days.
+     * @dev Returns whether the account was monitored in the last x days.
      * @param _days Days to be checked.
-     * @return true if the account has been monitored in the last x days.
+     * @return true if the account was monitored in the last x days.
     */
     function isSanctionsMonitored(uint32 _days) public view override returns(bool) {
         return block.timestamp - lastMonitoredAt < _days * (1 days);
@@ -376,26 +390,52 @@ contract KintoID is Initializable,
         require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
 
-        bytes32 hash = keccak256(
-          abi.encodePacked(
-            '\x19\x01',   // EIP-191 header
-            keccak256(abi.encode(
-                _signature.signer,
-                address(this),
-                _signature.account,
-                _id,
-                _signature.expiresAt,
-                nonces[_signature.signer],
-                bytes32(block.chainid)
-            ))
-          )
-        ).toEthSignedMessageHash();
-
+        bytes32 eip712MessageHash = _getEIP712Message(_signature);
         require(
-          _signature.signer.isValidSignatureNow(hash, _signature.signature),
-          'Invalid Signer'
+            _signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature),
+            'Invalid Signer'
         );
         _;
+    }
+
+    function _getEIP712Message(SignatureData memory signatureData) internal view returns (bytes32) {
+        bytes32 domainSeparator = _domainSeparator();
+        bytes32 structHash = _hashSignatureData(signatureData);
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    }
+
+    /* ============ EIP-712 Helpers ============ */
+
+    function _domainSeparator() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256(bytes("KintoID")), // this contract's name
+                keccak256(bytes("1")), // version
+                _getChainID(),
+                address(this)
+            )
+        );
+    }
+
+    function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
+                signatureData.signer,
+                signatureData.account,
+                signatureData.nonce,
+                signatureData.expiresAt
+            )
+        );
+    }
+
+    function _getChainID() internal view returns (uint256) {
+        uint256 chainID;
+        assembly {
+            chainID := chainid()
+        }
+        return chainID;
     }
 
     /* ============ Disable token transfers ============ */
@@ -416,7 +456,7 @@ contract KintoID is Initializable,
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) internal override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         require(
           (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
           'Only mint or burn transfers are allowed'

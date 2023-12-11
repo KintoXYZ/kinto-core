@@ -65,7 +65,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         require(msg.sender == factoryOwner, 'only owner');
         require(address(newImplementationWallet) != address(0), 'invalid address');
         factoryWalletVersion++;
-        emit KintoWalletFactoryUpgraded(address(newImplementationWallet),
+        emit KintoWalletFactoryUpgraded(address(beacon.implementation()),
             address(newImplementationWallet));
         beacon.upgradeTo(address(newImplementationWallet));
     }
@@ -97,10 +97,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         ret = KintoWallet(payable(
             new SafeBeaconProxy{salt : bytes32(salt)}(
                     address(beacon),
-                    abi.encodeWithSelector(
-                        KintoWallet.initialize.selector,
-                        owner,
-                        recoverer
+                    abi.encodeCall(
+                        KintoWallet.initialize,
+                        (
+                            owner,
+                            recoverer
+                        )
                     )
                 )
         ));
@@ -117,6 +119,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      * @dev Deploys a contract using `CREATE2`. The address where the contract
      * will be deployed can be known in advance via {computeAddress}.
      *
+     * This can be called directly by a developer for ease of use.
      * The bytecode for a contract can be obtained from Solidity with
      * `type(contractName).creationCode`.
      *
@@ -133,6 +136,21 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         bytes32 salt
     ) external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
+        return Create2.deploy(amount, salt, bytecode);
+    }
+
+    /**
+     * @dev Deploys a contract using `CREATE2`. The address where the contract
+     * will be deployed can be known in advance via {computeAddress}.
+     *
+     * Same as above but this one goes through the Kinto Wallet.
+     */
+    function deployContractByWallet(
+        uint amount,
+        bytes memory bytecode,
+        bytes32 salt
+    ) external override returns (address) {
+        require(kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
         return Create2.deploy(amount, salt, bytecode);
     }
 
@@ -175,7 +193,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     function getContractAddress(
         bytes32 salt,
         bytes32 byteCodeHash
-    ) public view override returns (address) {
+    ) external view override returns (address) {
         return Create2.computeAddress(salt, byteCodeHash, address(this));
     }
 

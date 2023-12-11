@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
@@ -26,7 +25,7 @@ import '../interfaces/IKintoWalletFactory.sol';
   *     has execute, eth handling methods and has a single signer 
   *     that can send requests through the entryPoint.
   */
-contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IKintoWallet {
+contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKintoWallet {
     using ECDSA for bytes32;
     using Address for address;
 
@@ -51,6 +50,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
+    event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
 
     /* ============ Modifiers ============ */
 
@@ -87,7 +87,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function initialize(address anOwner, address _recoverer) external virtual initializer {
         // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
-        __UUPSUpgradeable_init();
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
@@ -111,7 +110,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      */
     function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external override {
         _requireFromEntryPoint();
-        require(dest.length == func.length, 'wrong array lengths');
+        require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
             dest[i].functionCallWithValue(func[i], values[i]);
         }
@@ -123,7 +122,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Change the signer policy
      * @param policy new policy
      */
-    function setSignerPolicy(uint8 policy) external override onlySelf {
+    function setSignerPolicy(uint8 policy) public override onlySelf {
         require(policy > 0 && policy < 4  && policy != signerPolicy, 'invalid policy');
         require(policy == 1 || owners.length > 1, 'invalid policy');
         emit WalletPolicyChanged(policy, signerPolicy);
@@ -134,8 +133,18 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
      * @dev Changed the signers
      * @param newSigners new signers array
      */
-    function resetSigners(address[] calldata newSigners) external override onlySelf {
-        _resetSigners(newSigners);
+    function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
+        _resetSigners(newSigners, policy);
+    }
+
+    /**
+     * @dev Change the recoverer
+     * @param newRecoverer new recoverer address
+     */
+    function changeRecoverer(address newRecoverer) external override onlySelf {
+        require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
+        emit RecovererChanged(newRecoverer, recoverer);
+        recoverer = newRecoverer;
     }
 
     /* ============ Whitelist Management ============ */
@@ -166,8 +175,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
     function finishRecovery(address[] calldata newSigners) external override onlyRecoverer {
         require(inRecovery > 0 && block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
         require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
-        require(kintoID.isKYC(newSigners[0]), 'New KYC must be minted');
-        _resetSigners(newSigners);
+        _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
 
@@ -190,7 +198,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         return super.getNonce();
     }
 
-    function getOwnersCount() public view override returns (uint) {
+    function getOwnersCount() external view override returns (uint) {
         return owners.length;
     }
 
@@ -212,7 +220,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
         if (signerPolicy == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
-            return 0;
+            return _packValidationData(false, 0, 0);
         }
         uint requiredSigners = signerPolicy == 3 ? owners.length : owners.length - 1;
         bytes[] memory signatures = new bytes[](owners.length);
@@ -227,12 +235,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
                 requiredSigners--;
             }
         }
-        return requiredSigners;
+        return _packValidationData(requiredSigners != 0, 0, 0);
     }
 
     /* ============ Private Functions ============ */
 
-    function _resetSigners(address[] calldata newSigners) internal {
+    function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
         require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
         require(newSigners.length == 1 ||
@@ -241,16 +249,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, UUPSUp
                 (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
         owners = newSigners;
-    }
-
-    /**
-     * @dev Authorize the upgrade. Only by an owner.
-     * @param newImplementation address of the new implementation
-     */
-    // This function is called by the proxy contract when the implementation is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        (newImplementation);
-        _onlySelf();
+        // Change policy if needed
+        if (_policy != signerPolicy) {
+            setSignerPolicy(_policy);
+        }
     }
 
     function _onlySelf() internal view {

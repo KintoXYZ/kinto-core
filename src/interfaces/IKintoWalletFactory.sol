@@ -18,6 +18,12 @@ interface IKintoWalletFactory {
 
     function deployContract(uint amount, bytes memory bytecode, bytes32 salt) external returns (address);
 
+    function deployContractByWallet(
+        uint amount,
+        bytes memory bytecode,
+        bytes32 salt
+    ) external returns (address);
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, uint256 salt) external view returns (address);

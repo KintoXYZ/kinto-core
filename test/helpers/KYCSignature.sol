@@ -16,35 +16,31 @@ abstract contract KYCSignature is Test {
     using SignatureChecker for address;
 
     // Create a test for minting a KYC token
-    function _auxCreateSignature(IKintoID _kintoIDv1, address _signer, address _account, uint256 _privateKey, uint256 _expiresAt) internal view returns (
-        IKintoID.SignatureData memory signData
-    ) {
-        bytes32 dataHash = keccak256(
-            abi.encode(
-                _signer,
-                address(_kintoIDv1),
-                _account,
-                _kintoIDv1.KYC_TOKEN_ID(),
-                _expiresAt,
-                _kintoIDv1.nonces(_signer),
-                bytes32(block.chainid)
-            ));
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                dataHash
-            )
-        ).toEthSignedMessageHash();
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, hash);
+    function _auxCreateSignature(
+        IKintoID _kintoIDv1,
+        address _signer,
+        address _account,
+        uint256 _privateKey,
+        uint256 _expiresAt
+    ) internal view returns (IKintoID.SignatureData memory signData) {
+        signData = IKintoID.SignatureData({
+            signer: _signer,
+            account: _account,
+            nonce: _kintoIDv1.nonces(_signer),
+            expiresAt: _expiresAt,
+            signature: ""
+        });
+
+        // generate EIP-712 hash
+        bytes32 eip712Hash = _getEIP712Message(signData, address(_kintoIDv1));
+
+        // sign the hash
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
         bytes memory signature = abi.encodePacked(r, s, v);
-        return IKintoID.SignatureData(
-                _signer,
-                _account,
-                _kintoIDv1.nonces(_signer),
-                _expiresAt,
-                signature
-            );
+
+        // update & return SignatureData
+        signData.signature = signature;
+        return signData;
     }
 
     function _auxDappSignature(IKintoID _kintoIDv1, IKintoID.SignatureData memory signData) internal view returns (bool) {
@@ -71,5 +67,49 @@ abstract contract KYCSignature is Test {
         bytes memory newsignature = abi.encodePacked(r, s, v);
         bool valid = signData.signer.isValidSignatureNow(hash, newsignature);
         return valid;
+    }
+
+    /* ============ EIP-712 Helpers ============ */
+
+    function _getEIP712Message(IKintoID.SignatureData memory signatureData, address contractInstance)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 domainSeparator = _domainSeparator(contractInstance);
+        bytes32 structHash = _hashSignatureData(signatureData);
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    }
+
+    function _domainSeparator(address contractInstance) internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("KintoID")), // this contract's name
+                keccak256(bytes("1")), // version
+                _getChainID(),
+                contractInstance // kintoID contract address
+            )
+        );
+    }
+
+    function _getChainID() internal view returns (uint256) {
+        uint256 chainID;
+        assembly {
+            chainID := chainid()
+        }
+        return chainID;
+    }
+
+    function _hashSignatureData(IKintoID.SignatureData memory signatureData) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
+                signatureData.signer,
+                signatureData.account,
+                signatureData.nonce,
+                signatureData.expiresAt
+            )
+        );
     }
 }

@@ -8,10 +8,9 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '../interfaces/ISponsorPaymaster.sol';
-
 import '@aa/core/BasePaymaster.sol';
-import 'forge-std/console2.sol';
+import '../interfaces/ISponsorPaymaster.sol';
+import '../interfaces/IKintoWallet.sol';
 
 /**
  * An ETH-based paymaster that accepts ETH deposits
@@ -74,7 +73,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (msg.sender == account) {
             lockTokenDeposit();
         }
-        this.deposit{value: msg.value}();
+        deposit();
     }
 
     /**
@@ -116,7 +115,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @return amount - the amount of given token deposited to the Paymaster.
      * @return _unlockBlock - the block height at which the deposit can be withdrawn.
      */
-    function depositInfo(address account) public view returns (uint256 amount, uint256 _unlockBlock) {
+    function depositInfo(address account) external view returns (uint256 amount, uint256 _unlockBlock) {
         amount = balances[account];
         _unlockBlock = unlockBlock[account];
     }
@@ -135,11 +134,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
-
         bytes calldata paymasterAndData = userOp.paymasterAndData;
-        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must be empty');
-        // Get the contract deployed address from the first 20 bytes of the paymasterAndData
-        address targetAccount =  address(bytes20(userOp.callData[16:]));
+        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
+        // Get the contract called from calldata
+        address targetAccount =  _getFirstTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
         require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
@@ -160,6 +158,30 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
         balances[owner()] += ethCost;
+    }
+
+    // Function to extract the first target contract
+    function _getFirstTargetContract(bytes calldata callData) private pure returns (address firstTargetContract) {
+        // Extract the function selector from the callData
+        bytes4 selector = bytes4(callData[:4]);
+
+        // Compare the selector with the known function selectors
+        if (selector == IKintoWallet.executeBatch.selector) {
+            // Decode callData for executeBatch
+            (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            firstTargetContract = targetContracts[0];
+            // Contract only pays if all calls are to the same contract
+            for (uint i = 0; i < targetContracts.length; i++) {
+                require(targetContracts[i] == firstTargetContract, "executeBatch: all target contracts must be the same");
+            }
+        } else if (selector == IKintoWallet.execute.selector) {
+            // Decode callData for execute
+            (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            firstTargetContract = targetContract;
+        } else {
+            // Handle unknown function or error
+            revert("Unknown function selector");
+        }
     }
     
 }
