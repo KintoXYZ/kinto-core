@@ -50,6 +50,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint newPolicy, uint oldPolicy);
+    event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
 
     /* ============ Modifiers ============ */
 
@@ -134,6 +135,16 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
         _resetSigners(newSigners, policy);
+    }
+
+    /**
+     * @dev Change the recoverer
+     * @param newRecoverer new recoverer address
+     */
+    function changeRecoverer(address newRecoverer) external override onlySelf {
+        require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
+        emit RecovererChanged(newRecoverer, recoverer);
+        recoverer = newRecoverer;
     }
 
     /* ============ Whitelist Management ============ */

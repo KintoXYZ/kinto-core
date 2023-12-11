@@ -21,6 +21,8 @@ interface IKintoWallet {
 
   function resetWithdrawalWhitelist(address[] calldata newWhitelist) external;
 
+  function changeRecoverer(address newRecoverer) external;
+
   function startRecovery() external;
 
   function finishRecovery(address[] calldata newSigners) external;
