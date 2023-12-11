@@ -177,6 +177,9 @@ contract KintoID is Initializable,
         nonces[_signatureData.account] += 1;
         _burn(_signatureData.account, _tokenId, KYC_TOKEN_ID);
         require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance after burn must be 0');
+        // Update metadata after burning the token
+        Metadata storage meta = _kycmetas[_signatureData.account];
+        meta.mintedAt = 0;
     }
 
     /* ============ Sanctions & traits ============ */
@@ -223,6 +226,8 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be added.
      */
     function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+
         Metadata storage meta = _kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
           meta.traits.set(_traitId);
@@ -237,6 +242,7 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be removed.
      */
     function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -252,6 +258,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be added.
      */
     function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -267,6 +274,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be removed.
      */
     function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
+        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
