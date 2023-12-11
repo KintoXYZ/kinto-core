@@ -144,6 +144,7 @@ contract KintoID is Initializable,
 
        Metadata storage meta = _kycmetas[_signatureData.account];
        meta.mintedAt = block.timestamp;
+       meta.updatedAt = block.timestamp;
        meta.individual = _indiv;
 
        for (uint256 i = 0; i < _traits.length; i++) {
