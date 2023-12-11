@@ -375,26 +375,52 @@ contract KintoID is Initializable,
         require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
 
-        bytes32 hash = keccak256(
-          abi.encodePacked(
-            '\x19\x01',   // EIP-191 header
-            keccak256(abi.encode(
-                _signature.signer,
-                address(this),
-                _signature.account,
-                _id,
-                _signature.expiresAt,
-                nonces[_signature.signer],
-                bytes32(block.chainid)
-            ))
-          )
-        ).toEthSignedMessageHash();
-
+        bytes32 eip712MessageHash = _getEIP712Message(_signature);
         require(
-          _signature.signer.isValidSignatureNow(hash, _signature.signature),
-          'Invalid Signer'
+            _signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature),
+            'Invalid Signer'
         );
         _;
+    }
+
+    function _getEIP712Message(SignatureData memory signatureData) internal view returns (bytes32) {
+        bytes32 domainSeparator = _domainSeparator();
+        bytes32 structHash = _hashSignatureData(signatureData);
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    }
+
+    /* ============ EIP-712 Helpers ============ */
+
+    function _domainSeparator() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256(bytes("KintoID")), // this contract's name
+                keccak256(bytes("1")), // version
+                _getChainID(),
+                address(this)
+            )
+        );
+    }
+
+    function _hashSignatureData(SignatureData memory signatureData) internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
+                signatureData.signer,
+                signatureData.account,
+                signatureData.nonce,
+                signatureData.expiresAt
+            )
+        );
+    }
+
+    function _getChainID() internal view returns (uint256) {
+        uint256 chainID;
+        assembly {
+            chainID := chainid()
+        }
+        return chainID;
     }
 
     /* ============ Disable token transfers ============ */
