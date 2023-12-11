@@ -182,7 +182,13 @@ contract KintoID is Initializable,
     /* ============ Sanctions & traits ============ */
 
     /**
-     * @dev Monitors the account. Only by the KYC provider role.
+     * @dev Updates the accounts that have flags or sanctions. Only by the KYC provider role.
+     * This method will be called with empty accounts if there are not traits/sanctions to add.
+     * Realistically only 1% of the accounts will ever be flagged and a small % of this will happen in the same day.
+     * As a consequence, 200 accounts should be enough even when we have 100k users.
+     * 200 accounts should fit in the 8M gas limit.
+     * @param _accounts  accounts to be updated.
+     * @param _traitsAndSanctions traits and sanctions to be updated.
      */
     function monitor(
         address[] calldata _accounts,
