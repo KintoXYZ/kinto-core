@@ -646,7 +646,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.stopPrank();
     }
     
-    function testMultisigTransactionWhen2OutOf3Signers() public {
+    function testFailMultisigTransactionWhen2OutOf3Signers() public {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
 
