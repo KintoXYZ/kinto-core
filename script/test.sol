@@ -43,7 +43,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
         address recipientWallet = vm.envAddress('TEST_PUBLIC_KEY');
         uint256 recipientKey = vm.envUint('TEST_PRIVATE_KEY');
-        
+
         console.log('All AA setup is correct');
         uint totalWalletsCreated =  _walletFactory.totalWallets();
         vm.startBroadcast(deployerPrivateKey);
@@ -63,54 +63,6 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
             console.log('Wallet already deployed for owner', recipientWallet, 'at', newWallet);
         } else {
             IKintoWallet ikw = _walletFactory.createAccount(recipientWallet, recipientWallet, salt);
-            console.log('Created wallet', address(ikw));
-            console.log('Total Wallets:', _walletFactory.totalWallets());
-        }
-        vm.stopBroadcast();
-    }
-}
-
-contract KintoDeployTestAddressWalletScript is AASetup, KYCSignature {
-
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    KintoID _kintoID;
-    EntryPoint _entryPoint;
-    KintoWalletFactory _walletFactory;
-    SponsorPaymaster _sponsorPaymaster;
-    IKintoWallet _newWallet;
-
-    function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        vm.startBroadcast(deployerPrivateKey);
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        vm.stopBroadcast();
-    }
-
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        address testPublicKey = vm.envAddress('TEST_PUBLIC_KEY');
-        uint256 testPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
-        console.log('All AA setup is correct');
-        uint totalWalletsCreated =  _walletFactory.totalWallets();
-        vm.startBroadcast(deployerPrivateKey);
-        if(!_kintoID.isKYC(testPublicKey)) {
-            IKintoID.SignatureData memory sigdata = _auxCreateSignature(
-                _kintoID, testPublicKey,
-                testPublicKey,
-                testPrivateKey, block.timestamp + 1000);
-            uint16[] memory traits = new uint16[](0);
-            _kintoID.mintIndividualKyc(sigdata, traits);
-        }
-
-        console.log('This factory has', totalWalletsCreated, ' created');
-        uint salt = 0;
-        address newWallet = _walletFactory.getAddress(testPublicKey, testPublicKey, salt);
-        if (isContract(newWallet)) {
-            console.log('Wallet already deployed for owner', testPublicKey, 'at', newWallet);
-        } else {
-            IKintoWallet ikw = _walletFactory.createAccount(testPublicKey, testPublicKey, salt);
             console.log('Created wallet', address(ikw));
             console.log('Total Wallets:', _walletFactory.totalWallets());
         }
@@ -160,15 +112,15 @@ contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
         vm.stopBroadcast();
     }
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+        uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('TEST_PUBLIC_KEY');
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
@@ -233,15 +185,15 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
         vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
         vm.stopBroadcast();
     }
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+        uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
+        address deployerPublicKey = vm.envAddress('TEST_PUBLIC_KEY');
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
