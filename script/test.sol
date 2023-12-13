@@ -41,8 +41,8 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        address recipientWallet = vm.envAddress('TEST_PUBLIC_KEY');
         uint256 recipientKey = vm.envUint('TEST_PRIVATE_KEY');
+        address recipientWallet = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
 
         console.log('All AA setup is correct');
         uint totalWalletsCreated =  _walletFactory.totalWallets();
@@ -120,7 +120,7 @@ contract KintoDeployTestCounter is AASetup,KYCSignature, UserOp {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
-        address deployerPublicKey = vm.envAddress('TEST_PUBLIC_KEY');
+        address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
@@ -193,7 +193,7 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint('TEST_PRIVATE_KEY');
-        address deployerPublicKey = vm.envAddress('TEST_PUBLIC_KEY');
+        address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
         console.log('All AA setup is correct');
         vm.startBroadcast(deployerPrivateKey);
         uint salt = 0;
