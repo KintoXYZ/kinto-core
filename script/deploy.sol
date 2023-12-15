@@ -104,21 +104,16 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             console.log('Wallet Implementation deployed at', address(_walletImpl));
         }
 
-        // Deploys New Upgradeable beacon
-        _beacon = new UpgradeableBeacon(address(_walletImpl));
-
         // Wallet Factory impl
         address walletfImplAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(_beacon))));
+            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(walletImplementationAddr))));
         if (isContract(walletfImplAddr)) {
             _walletFactoryI = KintoWalletFactory(payable(walletfImplAddr));
             console.log('Already deployed Kinto Wallet Factory implementation at',
                 address(walletfImplAddr));
         } else {
             // Deploy Wallet Factory implementation
-            _walletFactoryI = new KintoWalletFactory{ salt: 0 }(_beacon);
-            // Transfer beacon ownership
-            _beacon.transferOwnership(address(_walletFactoryI));
+            _walletFactoryI = new KintoWalletFactory{ salt: 0 }(KintoWallet(payable(walletImplementationAddr)));
             console.log('Kinto Wallet Factory implementation deployed at', address(_walletFactoryI));
         }
 
@@ -168,13 +163,24 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             console.log('Sponsor paymaster implementation deployed at', address(_sponsorPaymasterImpl));
         }
 
-        // deploy proxy contract and point it to implementation
-        _proxy = new UUPSProxy(address(_sponsorPaymasterImpl), '');
-        // wrap in ABI to support easier calls
-        _sponsorPaymaster = SponsorPaymaster(address(_proxy));
-        console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
-        // Initialize proxy
-        _sponsorPaymaster.initialize(address(deployerPublicKey));
+
+        // Check Paymaster Proxy
+        address paymasterProxy = computeAddress(
+            0, abi.encodePacked(type(UUPSProxy).creationCode,
+            abi.encode(address(_sponsorPaymasterImpl), '')));
+        if (isContract(paymasterProxy)) {
+            _sponsorPaymaster = SponsorPaymaster(payable(paymasterProxy));
+            console.log('Paymaster proxy already deployed at', address(walletFactoryAddr));
+        } else {
+            // deploy proxy contract and point it to implementation
+            _proxy = new UUPSProxy{ salt: 0}(address(_sponsorPaymasterImpl), '');
+            // wrap in ABI to support easier calls
+            _sponsorPaymaster = SponsorPaymaster(address(_proxy));
+            console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
+            // Initialize proxy
+            _sponsorPaymaster.initialize(address(deployerPublicKey));
+        }
+
 
         vm.stopBroadcast();
         // Writes the addresses to a file

@@ -94,11 +94,9 @@ contract KintoWalletTest is UserOp, KYCSignature {
         // Deploy beacon
         _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
         //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(_beacon);
+        _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
         _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxyf));
-        // Transfer beacon ownership
-        _beacon.transferOwnership(address(_walletFactory));
         // Initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
         // Set the wallet factory in the entry point

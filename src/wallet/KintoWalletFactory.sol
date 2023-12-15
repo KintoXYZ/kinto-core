@@ -24,11 +24,11 @@ import './KintoWallet.sol';
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFactory {
 
     /* ============ State Variables ============ */
-    address immutable public override factoryOwner;
-    UpgradeableBeacon public immutable beacon;
-
+    UpgradeableBeacon public beacon;
+    KintoWallet public immutable implAddress;
     IKintoID public override kintoID;
     mapping (address => uint256) public override walletTs;
+    address public override factoryOwner;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
 
@@ -38,10 +38,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         address indexed newImplementation);
 
     /* ============ Constructor ============ */
-    constructor(UpgradeableBeacon _beaconp) {
-        factoryOwner = msg.sender;
-        beacon = _beaconp;
+    constructor(KintoWallet _implAddress) {
         _disableInitializers();
+        implAddress = _implAddress;
     }
 
     /**
@@ -51,6 +50,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         IKintoID _kintoID
     ) external virtual initializer {
         __UUPSUpgradeable_init();
+        beacon = new UpgradeableBeacon(address(implAddress));
+        factoryOwner = msg.sender;
         factoryWalletVersion = 1;
         kintoID = _kintoID;
     }

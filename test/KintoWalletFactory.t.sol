@@ -45,7 +45,7 @@ contract Counter {
 }
 
 contract KintoWalletFactoryV2 is KintoWalletFactory {
-  constructor(UpgradeableBeacon _beacon) KintoWalletFactory(_beacon) {
+  constructor(KintoWallet _impl) KintoWalletFactory(_impl) {
 
   }
   function newFunction() public pure returns (uint256) {
@@ -103,11 +103,9 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         // Deploy beacon
         _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
         //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(_beacon);
+        _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
         _proxy = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
         _walletFactory = KintoWalletFactory(address(_proxy));
-        // Transfer beacon ownership
-        _beacon.transferOwnership(address(_walletFactory));
         _walletFactory.initialize(_kintoIDv1);
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
@@ -138,7 +136,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
 
     function testOwnerCanUpgradeFactory() public {
         vm.startPrank(_owner);
-        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_beacon);
+        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
         _walletFactory.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
         _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
@@ -147,7 +145,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
     }
 
     function testFailOthersCannotUpgradeFactory() public {
-        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_beacon);
+        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
         _kintoIDv1.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
         _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
