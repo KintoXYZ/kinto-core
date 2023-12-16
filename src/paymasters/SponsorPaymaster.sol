@@ -49,7 +49,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         // unlocks owner
-        unlockTokenDeposit();
+        unlockBlock[_owner] = block.number;
     }
 
     /**
