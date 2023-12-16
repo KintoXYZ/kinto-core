@@ -157,7 +157,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
-        balances[owner()] += ethCost;
     }
 
     // Function to extract the first target contract
