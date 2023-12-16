@@ -27,10 +27,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     //calculated cost of the postOp
     uint256 constant public COST_OF_POST = 35000;
+    uint256 constant public RATE_LIMIT_PERIOD = 5 minutes;
+    uint256 constant public RATE_LIMIT_THRESHOLD = 10;
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
+    // A mapping for rate limiting data: account => contract => RateLimitData
+    mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) private rateLimit;
 
     constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
         _disableInitializers();
@@ -139,9 +143,16 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // Get the contract called from calldata
         address targetAccount =  _getFirstTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
+
+        // Check rate limiting
+        ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
+        if (block.timestamp < data.lastOperationTime + RATE_LIMIT_PERIOD) {
+            require(data.operationCount < RATE_LIMIT_THRESHOLD, "Rate limit exceeded");
+        }
+
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
         require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
-        return (abi.encode(targetAccount, gasPriceUserOp), 0);
+        return (abi.encode(targetAccount, userOp.sender, gasPriceUserOp), 0);
     }
 
     /**
@@ -152,11 +163,19 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * In this mode, we use the deposit to pay (which we validated to be large enough)
      */
     function _postOp(PostOpMode /* mode */, bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, uint256 gasPricePostOp) = abi.decode(context, (address, uint256));
+        (address account, address userAccount, uint256 gasPricePostOp) = abi.decode(context, (address, address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
+        // Updates rate limiting
+        ISponsorPaymaster.RateLimitData storage data = rateLimit[userAccount][account];
+        if (block.timestamp > data.lastOperationTime + RATE_LIMIT_PERIOD) {
+            data.lastOperationTime = block.timestamp;
+            data.operationCount = 1;
+        } else {
+            data.operationCount += 1;
+        }
     }
 
     // Function to extract the first target contract
