@@ -135,8 +135,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         uint amount,
         bytes calldata bytecode,
         bytes32 salt
-    ) external override returns (address) {
+    ) payable external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
+        require(amount == msg.value, 'amount mismatch');
         _preventCreationBytecode(bytecode);
         return Create2.deploy(amount, salt, bytecode);
     }
@@ -151,7 +152,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         uint amount,
         bytes calldata bytecode,
         bytes32 salt
-    ) external override returns (address) {
+    ) payable external override returns (address) {
+        require(amount == msg.value, 'amount mismatch');
         require(kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
         _preventCreationBytecode(bytecode);
         return Create2.deploy(amount, salt, bytecode);
