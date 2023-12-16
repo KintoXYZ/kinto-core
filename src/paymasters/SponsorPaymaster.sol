@@ -107,8 +107,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             'DepositPaymaster: must unlockTokenDeposit'
         );
-        withdrawTo(payable(target), amount);
         balances[msg.sender] -= amount;
+        withdrawTo(payable(target), amount);
     }
 
     /*******************************
