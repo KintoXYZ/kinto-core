@@ -39,8 +39,6 @@ interface IKintoWallet {
   
   function kintoID() external view returns (IKintoID);
   
-  function factory() external view returns (IKintoWalletFactory);
-  
   function inRecovery() external view returns (uint);
   
   function owners(uint _index) external view returns (address);

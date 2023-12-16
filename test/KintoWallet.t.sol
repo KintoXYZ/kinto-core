@@ -124,7 +124,6 @@ contract KintoWalletTest is UserOp, KYCSignature {
     }
 
     function testUp() public {
-        assertEq(address(_kintoWalletv1.factory()), address(_walletFactory));
         assertEq(_kintoWalletv1.owners(0), _owner);
     }
 

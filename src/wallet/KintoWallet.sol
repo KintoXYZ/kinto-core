@@ -39,7 +39,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint8 public constant override ALL_SIGNERS = 3;
     uint public constant override RECOVERY_TIME = 7 days;
 
-    IKintoWalletFactory override public factory;
     uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
     uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
@@ -56,11 +55,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     modifier onlySelf() {
         _onlySelf();
-        _;
-    }
-
-    modifier onlyFactory() {
-        _onlyFactory();
         _;
     }
 
@@ -90,7 +84,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
-        factory = IKintoWalletFactory(msg.sender);
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 
@@ -262,11 +255,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _onlySelf() internal view {
         //directly through the account itself (which gets redirected through execute())
         require(msg.sender == address(this), 'only self');
-    }
-
-    function _onlyFactory() internal view {
-        //directly through the factory
-        require(msg.sender == address(factory), 'only factory');
     }
 
     function _onlyRecoverer() internal view {
