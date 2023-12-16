@@ -193,6 +193,24 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         vm.stopPrank();
     }
 
+    function testFailCreateWalletThroughDeploy() public {
+        vm.prank(_owner);
+        bytes memory a = abi.encodeWithSelector(
+            KintoWallet.initialize.selector,
+            _owner,
+            _owner
+        );
+        _walletFactory.deployContract(
+            0,
+            abi.encodePacked(
+                type(SafeBeaconProxy).creationCode,
+                abi.encode(address(_beacon), a)
+            ),
+            bytes32(0)
+        );
+        vm.stopPrank();
+    }
+
     /* ============ Helpers ============ */
 
     function _setPaymasterForContract(address _contract) private {

@@ -133,10 +133,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      */
     function deployContract(
         uint amount,
-        bytes memory bytecode,
+        bytes calldata bytecode,
         bytes32 salt
     ) external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
+        _preventCreationBytecode(bytecode);
         return Create2.deploy(amount, salt, bytecode);
     }
 
@@ -148,10 +149,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      */
     function deployContractByWallet(
         uint amount,
-        bytes memory bytecode,
+        bytes calldata bytecode,
         bytes32 salt
     ) external override returns (address) {
         require(kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
+        _preventCreationBytecode(bytecode);
         return Create2.deploy(amount, salt, bytecode);
     }
 
@@ -206,5 +208,16 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
         require(msg.sender == factoryOwner, 'only owner');
+    }
+
+    /* ============ Internal Functions ============ */
+
+    function _preventCreationBytecode(bytes calldata _bytes) pure internal {
+        // Prevent direct deployment of KintoWallet contracts
+        bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
+        require(
+            bytes4(_bytes[:4]) != bytes4(keccak256(walletInitCode)),
+            "Direct KintoWallet deployment not allowed"
+        );
     }
 }
