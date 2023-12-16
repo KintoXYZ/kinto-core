@@ -134,6 +134,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
+        require(newSigners[0] == owners[0], 'first signer must be the same unless done through recovery');
         _resetSigners(newSigners, policy);
     }
 
