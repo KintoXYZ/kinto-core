@@ -234,6 +234,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
                 requiredSigners--;
+                if (requiredSigners == 0) {
+                    break;
+                }
             }
         }
         return _packValidationData(requiredSigners != 0, 0, 0);
