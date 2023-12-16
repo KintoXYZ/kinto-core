@@ -64,9 +64,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         IKintoWallet newImplementationWallet
     ) external override {
         require(msg.sender == factoryOwner, 'only owner');
-        require(address(newImplementationWallet) != address(0), 'invalid address');
+        require(address(newImplementationWallet) != address(0) &&
+            address(newImplementationWallet) != beacon.implementation(), 'invalid address');
         factoryWalletVersion++;
-        emit KintoWalletFactoryUpgraded(address(beacon.implementation()),
+        emit KintoWalletFactoryUpgraded(beacon.implementation(),
             address(newImplementationWallet));
         beacon.upgradeTo(address(newImplementationWallet));
     }
