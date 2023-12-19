@@ -26,7 +26,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using SafeERC20 for IERC20;
 
     //calculated cost of the postOp
-    uint256 constant public COST_OF_POST = 35000;
+    uint256 constant public COST_OF_POST = 35_000;
+    uint256 constant public MAX_COST_OF_VERIFICATION = 50_000;
     uint256 constant public RATE_LIMIT_PERIOD = 5 minutes;
     uint256 constant public RATE_LIMIT_THRESHOLD = 10;
 
@@ -138,6 +139,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
+        require(userOp.preVerificationGas < MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata

@@ -135,7 +135,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Change the recoverer
      * @param newRecoverer new recoverer address
      */
-    function changeRecoverer(address newRecoverer) external override onlySelf {
+    function changeRecoverer(address newRecoverer) external override onlyRecoverer() {
         require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
         emit RecovererChanged(newRecoverer, recoverer);
         recoverer = newRecoverer;
