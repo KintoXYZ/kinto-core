@@ -211,12 +211,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
-        if (signerPolicy == 1) {
+        if (signerPolicy == 1 && owners.length == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
             return _packValidationData(false, 0, 0);
         }
-        uint requiredSigners = signerPolicy == 3 ? owners.length : owners.length - 1;
+        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
         if (owners.length == 2) {
