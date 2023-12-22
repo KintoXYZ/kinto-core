@@ -24,6 +24,12 @@ interface IKintoWalletFactory {
         bytes32 salt
     ) payable external returns (address);
 
+    function startWalletRecovery(address payable wallet) external;
+
+    function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external;
+
+    function changeWalletRecoverer(address payable wallet, address _newRecoverer) external;
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, uint256 salt) external view returns (address);

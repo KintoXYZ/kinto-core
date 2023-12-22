@@ -37,7 +37,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
     event KintoWalletFactoryUpgraded(address indexed oldImplementation,
         address indexed newImplementation);
 
-    /* ============ Constructor ============ */
+    /* ============ Constructor & Upgrades ============ */
     constructor(KintoWallet _implAddress) {
         _disableInitializers();
         implAddress = _implAddress;
@@ -71,6 +71,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
             address(newImplementationWallet));
         beacon.upgradeTo(address(newImplementationWallet));
     }
+
+    /* ============ Create Wallet ============ */
 
     /**
      *
@@ -115,6 +117,31 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
+    /* ============ Modify Wallet ============ */
+
+    /**
+     * @dev Starts wallet recovery process. Only the wallet recoverer can do it.
+     * @param wallet The wallet address
+     */
+    function startWalletRecovery(address payable wallet) external override {
+        require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
+        KintoWallet(wallet).startRecovery();
+    }
+
+    /**
+     * @dev Completes wallet recovery process. Only the wallet recoverer can do it.
+     * @param wallet The wallet address
+     * @param newSigners new signers array
+     */
+    function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
+        require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
+        KintoWallet(wallet).finishRecovery(newSigners);
+    }
+
+    function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
+        require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
+        KintoWallet(wallet).changeRecoverer(_newRecoverer);
+    }
     /* ============ Deploy Custom Contract ============ */
 
     /**

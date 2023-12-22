@@ -707,7 +707,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -733,7 +733,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_recoverer);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
         assertEq(_kintoWalletv1.inRecovery(), 0);
         assertEq(_kintoWalletv1.owners(0), _user);
     }
@@ -742,6 +742,14 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         assertEq(_kintoWalletv1.owners(0), _owner);
+
+        // Start Recovery
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
+    }
+
+    function testFailDirectCall() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_recoverer);
 
         // Start Recovery
         _kintoWalletv1.startRecovery();
@@ -753,7 +761,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -777,7 +785,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_recoverer);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     function testFailRecoverWithoutMintingNewOwner() public {
@@ -786,7 +794,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -802,7 +810,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.warp(block.timestamp + _kintoWalletv1.RECOVERY_TIME() + 1);
         address[] memory users = new address[](1);
         users[0] = _user;
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     function testFailRecoverNotEnoughTime() public {
@@ -811,7 +819,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -836,7 +844,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_owner);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     /* ============ Helpers ============ */
