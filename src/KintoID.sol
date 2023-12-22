@@ -387,7 +387,7 @@ contract KintoID is Initializable,
       IKintoID.SignatureData calldata _signature
     ) {
         require(block.timestamp < _signature.expiresAt, 'Signature has expired');
-        require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
+        require(nonces[_signature.account] == _signature.nonce, 'Invalid Nonce');
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
 
         bytes32 eip712MessageHash = _getEIP712Message(_signature);
