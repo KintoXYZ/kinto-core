@@ -27,15 +27,19 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     //calculated cost of the postOp
     uint256 constant public COST_OF_POST = 35_000;
-    uint256 constant public MAX_COST_OF_VERIFICATION = 50_000;
+    uint256 constant public MAX_COST_OF_VERIFICATION = 125_000;
+    uint256 constant public MAX_COST_OF_PREVERIFICATION = 50_000;
+
     uint256 constant public RATE_LIMIT_PERIOD = 5 minutes;
-    uint256 constant public RATE_LIMIT_THRESHOLD = 10;
+    uint256 constant public RATE_LIMIT_THRESHOLD_SINGLE = 10;
+    uint256 constant public RATE_LIMIT_THRESHOLD_TOTAL = 50;
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
     // A mapping for rate limiting data: account => contract => RateLimitData
-    mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) private rateLimit;
+    mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
 
     constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
         _disableInitializers();
@@ -138,18 +142,23 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     ) internal view override returns (bytes memory context, uint256 validationData) {
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
-        require(userOp.preVerificationGas < MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas too high for verification');
+        require(userOp.verificationGasLimit > COST_OF_POST && userOp.verificationGasLimit < MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas too low for postOp');
+        require(userOp.preVerificationGas < MAX_COST_OF_PREVERIFICATION, 'DepositPaymaster: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata
         address targetAccount =  _getFirstTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
 
-        // Check rate limiting
+        // Check app rate limiting
         ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
         if (block.timestamp < data.lastOperationTime + RATE_LIMIT_PERIOD) {
-            require(data.operationCount < RATE_LIMIT_THRESHOLD, "Rate limit exceeded");
+            require(data.operationCount < RATE_LIMIT_THRESHOLD_SINGLE, "App Rate limit exceeded");
+        }
+        // Check Kinto rate limiting
+        ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
+        if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
+            require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "Kinto Rate limit exceeded");
         }
 
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
@@ -177,6 +186,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             data.operationCount = 1;
         } else {
             data.operationCount += 1;
+        }
+        ISponsorPaymaster.RateLimitData storage globalData = totalRateLimit[userAccount];
+        if (block.timestamp > globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
+            globalData.lastOperationTime = block.timestamp;
+            globalData.operationCount = 1;
+        } else {
+            globalData.operationCount += 1;
         }
     }
 
