@@ -64,7 +64,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     address payable _owner = payable(vm.addr(1));
     address _secondowner = address(2);
-    address _user = vm.addr(3);
+    address payable _user = payable(vm.addr(3));
     address _user2 = address(4);
     address _upgrader = address(5);
     address _kycProvider = address(6);
@@ -201,6 +201,15 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         vm.expectRevert('Invalid wallet or funder');
         _walletFactory.fundWallet{value: 1e18}(payable(address(0)));
+    }
+
+    function testRandomSignerCannotFundWallet() public {
+        vm.startPrank(address(1));
+        _user.transfer(1e18);
+        vm.stopPrank();
+        vm.startPrank(_user);
+        vm.expectRevert('Invalid wallet or funder');
+        _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWalletv1)));
     }
 
     function testSignerCannotFundWalletWithoutEth() public {
