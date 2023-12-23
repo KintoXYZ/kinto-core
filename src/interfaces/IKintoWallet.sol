@@ -19,7 +19,7 @@ interface IKintoWallet {
 
   function resetSigners(address[] calldata newSigners, uint8 policy) external;
 
-  function resetWithdrawalWhitelist(address[] calldata newWhitelist) external;
+  function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external;
 
   function changeRecoverer(address newRecoverer) external;
 
@@ -45,7 +45,9 @@ interface IKintoWallet {
   
   function recoverer() external view returns (address);
 
-  function withdrawalWhitelist(uint _index) external view returns (address);
+  function funderWhitelist(address funder) external view returns (bool);
+
+  function isFunderWhitelisted(address funder) external view returns (bool);
 
   function signerPolicy() external view returns (uint8);
 

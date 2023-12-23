@@ -7,7 +7,7 @@ import '../src/paymasters/SponsorPaymaster.sol';
 import '../src/KintoID.sol';
 import {UserOp} from './helpers/UserOp.sol';
 import {UUPSProxy} from './helpers/UUPSProxy.sol';
-import {KYCSignature} from './helpers/KYCSignature.sol';
+import {AATestScaffolding} from './helpers/AATestScaffolding.sol';
 import {Create2Helper} from './helpers/Create2Helper.sol';
 
 import '@aa/interfaces/IAccount.sol';
@@ -53,24 +53,12 @@ contract KintoWalletFactoryV2 is KintoWalletFactory {
   }
 }
 
-contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
+contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    EntryPoint _entryPoint;
-    KintoWalletFactory _walletFactory;
-    KintoWalletFactory _walletFactoryI;
     KintoWalletFactoryV2 _walletFactoryv2;
-    KintoID _implementation;
-    KintoID _kintoIDv1;
-    SponsorPaymaster _paymaster;
-
-    KintoWallet _kintoWalletImpl;
-    IKintoWallet _kintoWalletv1;
     KintoWalletV2 _kintoWalletv2;
-    UUPSProxy _proxy;
-    UUPSProxy _proxys;
-    UpgradeableBeacon _beacon;
 
     uint256 _chainID = 1;
 
@@ -80,6 +68,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
     address _user2 = address(4);
     address _upgrader = address(5);
     address _kycProvider = address(6);
+    address _recoverer = address(7);
 
 
     function setUp() public {
@@ -87,49 +76,13 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        vm.startPrank(_owner);
-        // Deploy Kinto ID
-        _implementation = new KintoID{salt: 0}();
-        // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy{salt: 0}(address(_implementation), '');
-        // wrap in ABI to support easier calls
-        _kintoIDv1 = KintoID(address(_proxy));
-        // Initialize _proxy
-        _kintoIDv1.initialize();
-        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
-        _entryPoint = new EntryPoint{salt: 0}();
-        // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-        // Deploy beacon
-        _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
-        //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
-        _proxy = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
-        _walletFactory = KintoWalletFactory(address(_proxy));
-        _walletFactory.initialize(_kintoIDv1);
-        // Set the wallet factory in the entry point
-        _entryPoint.setWalletFactory(address(_walletFactory));
-        // Mint an nft to the owner
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
-            _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](0);
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.stopPrank();
-        vm.startPrank(_owner);
-        // deploy the paymaster
-        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
-        // deploy _proxy contract and point it to _implementation
-        _proxys = new UUPSProxy(address(_paymaster), '');
-        // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxys));
-        // Initialize proxy
-        _paymaster.initialize(_owner);
-        vm.stopPrank();
+        deployAAScaffolding(_owner, _kycProvider, _recoverer);
     }
 
     function testUp() public {
         assertEq(_walletFactory.factoryWalletVersion(), 1);
+        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
+        assertEq(_entryPoint.kintoOwner(), address(_owner));
     }
 
     /* ============ Upgrade Tests ============ */
@@ -139,14 +92,14 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, KYCSignature {
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
         _walletFactory.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
-        _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
+        _walletFactoryv2 = KintoWalletFactoryV2(address(_walletFactory));
         assertEq(_walletFactoryv2.newFunction(), 1);
         vm.stopPrank();
     }
 
     function testFailOthersCannotUpgradeFactory() public {
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
-        _kintoIDv1.upgradeTo(address(_implementationV2));
+        _walletFactory.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
         _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
         assertEq(_walletFactoryv2.newFunction(), 1);

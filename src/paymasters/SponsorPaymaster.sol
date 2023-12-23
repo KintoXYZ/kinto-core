@@ -142,8 +142,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     ) internal view override returns (bytes memory context, uint256 validationData) {
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(userOp.verificationGasLimit > COST_OF_POST && userOp.verificationGasLimit < MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas too low for postOp');
-        require(userOp.preVerificationGas < MAX_COST_OF_PREVERIFICATION, 'DepositPaymaster: gas too high for verification');
+        require(userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas outside of range for postOp');
+        require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, 'DepositPaymaster: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata

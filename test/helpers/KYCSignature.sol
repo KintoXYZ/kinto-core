@@ -28,7 +28,7 @@ abstract contract KYCSignature is Test {
             account: _account,
             nonce: _kintoIDv1.nonces(_signer),
             expiresAt: _expiresAt,
-            signature: ""
+            signature: ''
         });
 
         // generate EIP-712 hash
@@ -43,7 +43,8 @@ abstract contract KYCSignature is Test {
         return signData;
     }
 
-    function _auxDappSignature(IKintoID _kintoIDv1, IKintoID.SignatureData memory signData) internal view returns (bool) {
+    function _auxDappSignature(IKintoID _kintoIDv1,
+        IKintoID.SignatureData memory signData) internal view returns (bool) {
         bytes32 dataHash = keccak256(abi.encode(
             signData.signer,
             0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,

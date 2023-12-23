@@ -30,6 +30,8 @@ interface IKintoWalletFactory {
 
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external;
 
+    function fundWallet(address payable wallet) payable external;
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, uint256 salt) external view returns (address);

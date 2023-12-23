@@ -46,7 +46,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     address[] public override owners;
     address public override recoverer;
-    address[] public override withdrawalWhitelist;
+    mapping(address => bool) public override funderWhitelist;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -137,11 +137,29 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Whitelist Management ============ */
 
     /**
-     * @dev Changed the valid withdrawal addresses
-     * @param newWhitelist new signers array
+     * @dev Changed the valid funderWhitelist addresses
+     * @param newWhitelist new funders array
+     * @param flags whether to allow or disallow the funder
      */
-    function resetWithdrawalWhitelist(address[] calldata newWhitelist) external override onlySelf {
-        withdrawalWhitelist = newWhitelist;
+    function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external override onlySelf {
+        require(newWhitelist.length == flags.length, 'invalid array');
+        for (uint i = 0; i < newWhitelist.length; i++) {
+            funderWhitelist[newWhitelist[i]] = flags[i];
+        }
+    }
+
+    /**
+     * @dev Check if a funder is whitelisted or an owner
+     * @param funder funder address
+     * @return whether the funder is whitelisted
+     */
+    function isFunderWhitelisted(address funder) external view override returns (bool) {
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == funder) {
+                return true;
+            }
+        }
+        return funderWhitelist[funder];
     }
 
     /* ============ Recovery Process ============ */

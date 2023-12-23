@@ -187,6 +187,20 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         return Create2.deploy(amount, salt, bytecode);
     }
 
+    /**
+    * @dev Fund a wallet through the factory given chain restrictions
+    * @param wallet The wallet address to send eth to
+    */
+    function fundWallet(address payable wallet) payable external override {
+        require(
+            msg.value > 0 &&
+            walletTs[wallet] > 0 &&
+            kintoID.isKYC(KintoWallet(wallet).owners(0)) &&
+            KintoWallet(payable(wallet)).isFunderWhitelisted(msg.sender),
+                'Invalid wallet or funder');
+        wallet.transfer(msg.value);
+    }
+
     /* ============ View Functions ============ */
 
     /**
