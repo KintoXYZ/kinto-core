@@ -69,6 +69,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     address _upgrader = address(5);
     address _kycProvider = address(6);
     address _recoverer = address(7);
+    address payable _funder = payable(vm.addr(8));
 
 
     function setUp() public {
@@ -162,6 +163,50 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
             bytes32(0)
         );
         vm.stopPrank();
+    }
+
+    function testSignerCanFundWallet() public {
+        vm.startPrank(_owner);
+        _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWalletv1)));
+        assertEq(address(_kintoWalletv1).balance, 1e18);
+    }
+
+    function testWhitelistedSignerCanFundWallet() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_owner);
+        uint startingNonce = _kintoWalletv1.getNonce();
+        address[] memory funders = new address[](1);
+        funders[0] = _funder;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setFunderWhitelist(address[],bool[])',funders, flags), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        vm.startPrank(address(1));
+        _funder.transfer(1e17);
+        vm.stopPrank();
+        vm.startPrank(_funder);
+        _walletFactory.fundWallet{value: 1e17}(payable(address(_kintoWalletv1)));
+        assertEq(address(_kintoWalletv1).balance, 1e17);
+    }
+
+    function testSignerCannotFundInvalidWallet() public {
+        vm.startPrank(_owner);
+        vm.expectRevert('Invalid wallet or funder');
+        _walletFactory.fundWallet{value: 1e18}(payable(address(0)));
+    }
+
+    function testSignerCannotFundWalletWithoutEth() public {
+        vm.startPrank(_owner);
+        vm.expectRevert('Invalid wallet or funder');
+        _walletFactory.fundWallet{value: 0}(payable(address(_kintoWalletv1)));
     }
 
     /* ============ Helpers ============ */
