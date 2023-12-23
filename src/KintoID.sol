@@ -390,6 +390,14 @@ contract KintoID is Initializable,
         require(nonces[_signature.account] == _signature.nonce, 'Invalid Nonce');
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
 
+        // Ensure signer is an EOA
+        uint256 size;
+        address signer = _signature.signer;
+        assembly {
+            size := extcodesize(signer)
+        }
+        require(size == 0, "Signer must be an EOA");
+
         bytes32 eip712MessageHash = _getEIP712Message(_signature);
         require(
             _signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature),
