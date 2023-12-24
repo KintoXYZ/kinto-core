@@ -78,7 +78,6 @@ abstract contract AATestScaffolding is KYCSignature {
     vm.startPrank(_owner);
     // deploy walletv1 through wallet factory and initializes it
     _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
-    console.log('wallet address ', address(_kintoWalletv1));
     // deploy the paymaster
     _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
     // deploy _proxy contract and point it to _implementation
