@@ -44,7 +44,6 @@ contract KintoEntryPointTest is AATestScaffolding, UserOp {
 
     function testUp() public {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
-        assertEq(_entryPoint.kintoOwner(), address(_owner));
     }
 
     /* ============ Deployment Tests ============ */
@@ -54,30 +53,6 @@ contract KintoEntryPointTest is AATestScaffolding, UserOp {
       vm.expectRevert('AA36 wallet factory already set');
       _entryPoint.setWalletFactory(address(0));
       vm.stopPrank();
-    }
-
-    function testOwnerCanSetBeneficiary() public {
-      vm.startPrank(_owner);
-      _entryPoint.setBeneficiary(_secondowner, true);
-      assertEq(_entryPoint.isValidBeneficiary(_secondowner), true);
-      _entryPoint.setBeneficiary(_secondowner, false);
-      assertEq(_entryPoint.isValidBeneficiary(_secondowner), false);
-    }
-
-    function testRandomCannotSetBeneficiary() public {
-      vm.expectRevert('AA37 only kinto owner');
-      _entryPoint.setBeneficiary(_secondowner, true);
-    }
-
-    function testChangeKintoOwner() public {
-      vm.startPrank(_owner);
-      _entryPoint.changeKintoOwner(_secondowner);
-      assertEq(_entryPoint.kintoOwner(), _secondowner);
-    }
-
-    function testRandomCannotChangeKintoOwner() public {
-      vm.expectRevert('AA37 only kinto owner');
-      _entryPoint.changeKintoOwner(_secondowner);
     }
 
 }

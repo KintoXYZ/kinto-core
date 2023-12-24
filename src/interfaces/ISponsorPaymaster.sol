@@ -9,6 +9,7 @@ interface ISponsorPaymaster {
     struct RateLimitData {
         uint256 lastOperationTime;
         uint256 operationCount;
+        uint256 ethCostCount;
     }
 
     /* ============ State Change ============ */
@@ -34,5 +35,7 @@ interface ISponsorPaymaster {
     function contractSpent(address account) external view returns (uint256 amount);
     
     function unlockBlock(address account) external view returns (uint256 block);
+
+    function appUserLimit(address user, address app) external view returns (uint256, uint256, uint256, uint256);
 
 }

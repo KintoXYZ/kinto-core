@@ -67,7 +67,6 @@ abstract contract AATestScaffolding is KYCSignature {
     _walletFactory.initialize(_kintoIDv1);
     // Set the wallet factory in the entry point
     _entryPoint.setWalletFactory(address(_walletFactory));
-    _entryPoint.setBeneficiary(_owner, true);
     // Mint an nft to the owner
     IKintoID.SignatureData memory sigdata = _auxCreateSignature(
         _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);

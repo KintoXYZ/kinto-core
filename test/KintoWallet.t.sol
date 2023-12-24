@@ -72,7 +72,6 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     function testUp() public {
         assertEq(_kintoWalletv1.owners(0), _owner);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
-        assertEq(_entryPoint.kintoOwner(), address(_owner));
     }
 
     /* ============ Upgrade Tests ============ */

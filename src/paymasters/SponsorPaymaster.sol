@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@aa/core/BasePaymaster.sol';
+import '@aa/core/UserOperationLib.sol';
 import '../interfaces/ISponsorPaymaster.sol';
 import '../interfaces/IKintoWallet.sol';
 
@@ -26,20 +27,26 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using SafeERC20 for IERC20;
 
     //calculated cost of the postOp
-    uint256 constant public COST_OF_POST = 35_000;
-    uint256 constant public MAX_COST_OF_VERIFICATION = 125_000;
+    uint256 constant public COST_OF_POST = 50_000;
+    uint256 constant public MAX_COST_OF_VERIFICATION = 150_000;
     uint256 constant public MAX_COST_OF_PREVERIFICATION = 50_000;
 
-    uint256 constant public RATE_LIMIT_PERIOD = 5 minutes;
+    uint256 constant public RATE_LIMIT_PERIOD = 1 minutes;
     uint256 constant public RATE_LIMIT_THRESHOLD_SINGLE = 10;
     uint256 constant public RATE_LIMIT_THRESHOLD_TOTAL = 50;
+
+    uint256 constant public GAS_LIMIT_PERIOD = 30 days;
+    uint256 constant public GAS_LIMIT_THRESHOLD_SINGLE = 1e15; // 0.01 ETH
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
     // A mapping for rate limiting data: account => contract => RateLimitData
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
     mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
+
+    // ========== Constructor & Upgrades ============
 
     constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
         _disableInitializers();
@@ -63,9 +70,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
-        require(msg.sender == owner(), 'SponsorPaymaster: not owner');
+        require(msg.sender == owner(), 'SP: not owner');
         (newImplementation);
     }
+
+    // ========== Deposit Mgmt ============
 
     /**
      * ETH value that a specific account can use to pay for gas.
@@ -76,7 +85,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * msg.value the amount of token to deposit.
      */
     function addDepositFor(address account) payable external override {
-        require(msg.value > 0, 'requires a deposit');
+        require(msg.value > 0, 'SP: requires a deposit');
         //(sender must have approval for the paymaster)
         balances[account] += msg.value;
         if (msg.sender == account) {
@@ -110,17 +119,16 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     function withdrawTokensTo(address target, uint256 amount) external override nonReentrant() {
         require(
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
-            'DepositPaymaster: must unlockTokenDeposit'
+            'SP: must unlockTokenDeposit'
         );
         balances[msg.sender] -= amount;
         withdrawTo(payable(target), amount);
     }
 
-    /*******************************
-      Viewers *********************
-    *******************************/
+    /********* Viewers & validation *********/
 
     /**
+     * Return the deposit info for the account
      * @return amount - the amount of given token deposited to the Paymaster.
      * @return _unlockBlock - the block height at which the deposit can be withdrawn.
      */
@@ -130,10 +138,28 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
+     * Return the current user limits for the app
+     * @param user - the user account
+     * @param app - the app contract
+     * @return operationCount - the number of operations performed by the user for the app
+     *         lastOperationTime - the timestamp of when the tx threshold was last started
+     *         costLimit - the maximum cost of operations for the user for the app
+     *         lastOperationTime - the timestamp of when the gas threshold was last started
+     */
+    function appUserLimit(address user,
+        address app) external view override returns (uint256, uint256, uint256, uint256) {
+        return (
+            rateLimit[user][app].operationCount,
+            rateLimit[user][app].lastOperationTime,
+            costLimit[user][app].ethCostCount,
+            costLimit[user][app].lastOperationTime
+        );
+    }
+
+    /**
      * Validate the request:
-     * The sender should have enough deposit to pay the max possible cost.
-     * Note that the sender's balance is not checked. If it fails to pay from its balance,
-     * this deposit will be used to compensate the paymaster for the transaction.
+     * The sender should have enough txs left to be gasless.
+     * The contract developer funds the contract for its users and rate limits the app.
      */
     function _validatePaymasterUserOp(
         UserOperation calldata userOp,
@@ -142,57 +168,73 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     ) internal view override returns (bytes memory context, uint256 validationData) {
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas outside of range for postOp');
-        require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, 'DepositPaymaster: gas too high for verification');
+        require(userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION,
+            'SP: gas outside of range for postOp');
+        require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION,
+            'SP: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
-        require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
+        require(paymasterAndData.length == 20, 'SP: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata
         address targetAccount =  _getFirstTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
+        uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
 
         // Check app rate limiting
         ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
         if (block.timestamp < data.lastOperationTime + RATE_LIMIT_PERIOD) {
-            require(data.operationCount < RATE_LIMIT_THRESHOLD_SINGLE, "App Rate limit exceeded");
+            require(data.operationCount < RATE_LIMIT_THRESHOLD_SINGLE, 'SP: App Rate limit exceeded');
         }
+
+        // Check Kinto Gas limit app
+        ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
+        if (block.timestamp < gasLimit.lastOperationTime + GAS_LIMIT_PERIOD) {
+            require((gasLimit.ethCostCount + ethMaxCost) <= GAS_LIMIT_THRESHOLD_SINGLE,
+                'SP: Kinto Gas App limit exceeded');
+        }   
+
         // Check Kinto rate limiting
         ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
         if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
-            require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "Kinto Rate limit exceeded");
-        }
+            require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, 'SP: Kinto Rate limit exceeded');
+        } 
 
-        require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
-        require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
+        require(unlockBlock[targetAccount] == 0, 'SP: deposit not locked');
+        require(balances[targetAccount] >= maxCost, 'SP: deposit too low');
         return (abi.encode(targetAccount, userOp.sender, gasPriceUserOp), 0);
     }
 
     /**
-     * perform the post-operation to charge the sender for the gas.
-     * in normal mode, use transferFrom to withdraw enough tokens from the sender's balance.
-     * in case the transferFrom fails, the _postOp reverts and the entryPoint will call it again,
-     * this time in *postOpReverted* mode.
-     * In this mode, we use the deposit to pay (which we validated to be large enough)
+     * perform the post-operation to charge the account contract for the gas.
      */
     function _postOp(PostOpMode /* mode */, bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, address userAccount, uint256 gasPricePostOp) = abi.decode(context, (address, address, uint256));
+        (address account, address userAccount, uint256 gasPricePostOp) =
+            abi.decode(context, (address, address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
-        // Updates rate limiting
-        ISponsorPaymaster.RateLimitData storage data = rateLimit[userAccount][account];
-        if (block.timestamp > data.lastOperationTime + RATE_LIMIT_PERIOD) {
-            data.lastOperationTime = block.timestamp;
-            data.operationCount = 1;
+        // Updates app rate limiting
+        ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[userAccount][account];
+        if (block.timestamp > appTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
+            appTxLimit.lastOperationTime = block.timestamp;
+            appTxLimit.operationCount = 1;
         } else {
-            data.operationCount += 1;
+            appTxLimit.operationCount += 1;
         }
-        ISponsorPaymaster.RateLimitData storage globalData = totalRateLimit[userAccount];
-        if (block.timestamp > globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
-            globalData.lastOperationTime = block.timestamp;
-            globalData.operationCount = 1;
+        // App gas limit
+        ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
+        if (block.timestamp > costApp.lastOperationTime + GAS_LIMIT_PERIOD) {
+            costApp.ethCostCount = ethCost;
         } else {
-            globalData.operationCount += 1;
+            costApp.ethCostCount += ethCost;
+        }
+        // Global network rate limit
+        ISponsorPaymaster.RateLimitData storage globalTxLimit = totalRateLimit[userAccount];
+        if (block.timestamp > globalTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
+            globalTxLimit.lastOperationTime = block.timestamp;
+            globalTxLimit.operationCount = 1;
+        } else {
+            globalTxLimit.operationCount += 1;
         }
     }
 
@@ -208,7 +250,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             firstTargetContract = targetContracts[0];
             // Contract only pays if all calls are to the same contract
             for (uint i = 0; i < targetContracts.length; i++) {
-                require(targetContracts[i] == firstTargetContract, "executeBatch: all target contracts must be the same");
+                require(targetContracts[i] == firstTargetContract,
+                    'SP: all target contracts must be the same');
             }
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
@@ -216,7 +259,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             firstTargetContract = targetContract;
         } else {
             // Handle unknown function or error
-            revert("Unknown function selector");
+            revert('SP: Unknown function selector');
         }
     }
     

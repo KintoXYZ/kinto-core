@@ -58,7 +58,7 @@ contract SponsorPaymasterTest is KYCSignature {
     }
 
     function testUp() public {
-        assertEq(_paymaster.COST_OF_POST(), 35000);
+        assertEq(_paymaster.COST_OF_POST(), 50000);
     }
 
     // Upgrade Tests
