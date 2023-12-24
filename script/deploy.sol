@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import 'forge-std/Script.sol';
 import '../src/KintoID.sol';
+import '../src/viewers/KYCViewer.sol';
 import '../src/interfaces/IKintoID.sol';
 import '../src/sample/Counter.sol';
 import '../src/ETHPriceIsRight.sol';
@@ -37,6 +38,8 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
     IKintoWallet _walletImpl;
     IKintoWallet _kintoWalletv1;
     UpgradeableBeacon _beacon;
+    KYCViewer _kycViewer;
+    KYCViewer _kycViewerImpl;
 
     function setUp() public {}
 
@@ -181,6 +184,36 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _sponsorPaymaster.initialize(address(deployerPublicKey));
         }
 
+        // KYC Viewer
+        address kycViewerAddr = computeAddress(0,
+            abi.encodePacked(type(KYCViewer).creationCode,
+                abi.encode(address(_walletFactory))));
+        if (isContract(kycViewerAddr)) {
+            _kycViewerImpl = KYCViewer(payable(kycViewerAddr));
+            console.log('Already deployed KYCViwer implementation at', address(kycViewerAddr));
+        } else {
+            // Deploy KYCViewer implementation
+            _kycViewerImpl = new KYCViewer{ salt: 0 }(address(_walletFactory));
+            console.log('KYC Viewer implementation deployed at', address(_kycViewerImpl));
+        }
+        address kycViewerProxyAddr = computeAddress(
+            0, abi.encodePacked(type(UUPSProxy).creationCode,
+            abi.encode(address(_kycViewerImpl), '')));
+        if (isContract(kycViewerProxyAddr)) {
+            _proxy = UUPSProxy(payable(kycViewerProxyAddr));
+            console.log('Already deployed KYC Viewer proxy at', address(kycViewerProxyAddr));
+            _kycViewer = KYCViewer(address(_proxy));
+        } else {
+            // deploy proxy contract and point it to implementation
+            _proxy = new UUPSProxy{salt: 0}(address(_kycViewerImpl), '');
+            // wrap in ABI to support easier calls
+            _kycViewer = KYCViewer(address(_proxy));
+            console.log('KYCViewer proxy deployed at ', address(_kycViewer));
+            // Initialize proxy
+            _kycViewer.initialize();
+        }
+        _kycViewer = KYCViewer(address(_proxy));
+
 
         vm.stopBroadcast();
         // Writes the addresses to a file
@@ -194,6 +227,8 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
         vm.writeLine(_getAddressesFile(), string.concat('"KintoWalletFactory": "', vm.toString(address(_walletFactory)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"SponsorPaymaster": "', vm.toString(address(_sponsorPaymaster)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"SponsorPaymaster-impl": "', vm.toString(address(_sponsorPaymasterImpl)), '"'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KYCViewer": "', vm.toString(address(_kycViewer)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KYCViewer-impl": "', vm.toString(address(_kycViewerImpl)), '"'));
         vm.writeLine(_getAddressesFile(), '}\n');
     }
 }
