@@ -53,6 +53,7 @@ contract Faucet is Ownable, IFaucet{
     */
     function withdrawAll() external override onlyOwner {
         payable(msg.sender).transfer(address(this).balance);
+        active = false;
     }
 
     /**

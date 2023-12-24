@@ -233,6 +233,7 @@ contract KintoID is Initializable,
         if (!meta.traits.get(_traitId)) {
           meta.traits.set(_traitId);
           meta.updatedAt = block.timestamp;
+          lastMonitoredAt = block.timestamp;
           emit TraitAdded(_account, _traitId, block.timestamp);
         }
     }
@@ -249,6 +250,7 @@ contract KintoID is Initializable,
         if (meta.traits.get(_traitId)) {
             meta.traits.unset(_traitId);
             meta.updatedAt = block.timestamp;
+            lastMonitoredAt = block.timestamp;
             emit TraitRemoved(_account, _traitId, block.timestamp);
         }
     }
@@ -265,6 +267,7 @@ contract KintoID is Initializable,
             meta.sanctions.set(_countryId);
             meta.sanctionsCount += 1;
             meta.updatedAt = block.timestamp;
+            lastMonitoredAt = block.timestamp;
             emit SanctionAdded(_account, _countryId, block.timestamp);
         }
     }
@@ -281,6 +284,7 @@ contract KintoID is Initializable,
             meta.sanctions.unset(_countryId);
             meta.sanctionsCount -= 1;
             meta.updatedAt = block.timestamp;
+            lastMonitoredAt = block.timestamp;
             emit SanctionRemoved(_account, _countryId, block.timestamp);
         }
     }

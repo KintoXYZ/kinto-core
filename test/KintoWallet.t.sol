@@ -8,6 +8,7 @@ import '../src/KintoID.sol';
 import {UserOp} from './helpers/UserOp.sol';
 import {UUPSProxy} from './helpers/UUPSProxy.sol';
 import {KYCSignature} from './helpers/KYCSignature.sol';
+import {AATestScaffolding} from './helpers/AATestScaffolding.sol';
 
 import '@aa/interfaces/IAccount.sol';
 import '@aa/interfaces/INonceManager.sol';
@@ -43,24 +44,11 @@ contract Counter {
     }
 }
 
-contract KintoWalletTest is UserOp, KYCSignature {
+contract KintoWalletTest is AATestScaffolding, UserOp {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    EntryPoint _entryPoint;
-    KintoWalletFactory _walletFactoryI;
-    KintoWalletFactory _walletFactory;
-    KintoID _implementation;
-    KintoID _kintoIDv1;
-    SponsorPaymaster _paymaster;
-
-    KintoWallet _kintoWalletImpl;
-    IKintoWallet _kintoWalletv1;
     KintoWalletv2 _kintoWalletv2;
-    UUPSProxy _proxy;
-    UUPSProxy _proxyf;
-    UUPSProxy _proxys;
-    UpgradeableBeacon _beacon;
 
     uint256 _chainID = 1;
 
@@ -78,54 +66,13 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        vm.startPrank(_owner);
-        // Deploy Kinto ID
-        _implementation = new KintoID();
-        // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy{salt: 0}(address(_implementation), '');
-        // wrap in ABI to support easier calls
-        _kintoIDv1 = KintoID(address(_proxy));
-        // Initialize _proxy
-        _kintoIDv1.initialize();
-        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
-        _entryPoint = new EntryPoint{salt: 0}();
-        // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-        // Deploy beacon
-        _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
-        //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
-        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
-        _walletFactory = KintoWalletFactory(address(_proxyf));
-        // Initialize wallet factory
-        _walletFactory.initialize(_kintoIDv1);
-        // Set the wallet factory in the entry point
-        _entryPoint.setWalletFactory(address(_walletFactory));
-        // Mint an nft to the owner
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
-            _kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](0);
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.stopPrank();
-        vm.startPrank(_owner);
-        // deploy walletv1 through wallet factory and initializes it
-        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
-        console.log('wallet address ', address(_kintoWalletv1));
-        // deploy the paymaster
-        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
-        // deploy _proxy contract and point it to _implementation
-        _proxys = new UUPSProxy(address(_paymaster), '');
-        // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxys));
-        // Initialize proxy
-        _paymaster.initialize(_owner);
-        vm.stopPrank();
+        deployAAScaffolding(_owner, _kycProvider, _recoverer);
     }
 
     function testUp() public {
-        assertEq(address(_kintoWalletv1.factory()), address(_walletFactory));
         assertEq(_kintoWalletv1.owners(0), _owner);
+        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
+        assertEq(_entryPoint.kintoOwner(), address(_owner));
     }
 
     /* ============ Upgrade Tests ============ */
@@ -708,7 +655,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -734,7 +681,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_recoverer);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
         assertEq(_kintoWalletv1.inRecovery(), 0);
         assertEq(_kintoWalletv1.owners(0), _user);
     }
@@ -743,6 +690,14 @@ contract KintoWalletTest is UserOp, KYCSignature {
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         assertEq(_kintoWalletv1.owners(0), _owner);
+
+        // Start Recovery
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
+    }
+
+    function testFailDirectCall() public {
+        _setPaymasterForContract(address(_kintoWalletv1));
+        vm.startPrank(_recoverer);
 
         // Start Recovery
         _kintoWalletv1.startRecovery();
@@ -754,7 +709,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -778,7 +733,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_recoverer);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     function testFailRecoverWithoutMintingNewOwner() public {
@@ -787,7 +742,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -803,7 +758,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.warp(block.timestamp + _kintoWalletv1.RECOVERY_TIME() + 1);
         address[] memory users = new address[](1);
         users[0] = _user;
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     function testFailRecoverNotEnoughTime() public {
@@ -812,7 +767,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
-        _kintoWalletv1.startRecovery();
+        _walletFactory.startWalletRecovery(payable(address(_kintoWalletv1)));
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
         vm.stopPrank();
 
@@ -837,7 +792,7 @@ contract KintoWalletTest is UserOp, KYCSignature {
         vm.prank(_kycProvider);
         _kintoIDv1.monitor(users, updates);
         vm.prank(_owner);
-        _kintoWalletv1.finishRecovery(users);
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
     /* ============ Helpers ============ */

@@ -8,7 +8,9 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
 
+
 import '../interfaces/IKintoID.sol';
+import '../interfaces/IKintoEntryPoint.sol';
 import '../libraries/ByteSignature.sol';
 import '../interfaces/IKintoWallet.sol';
 import '../interfaces/IKintoWalletFactory.sol';
@@ -39,13 +41,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint8 public constant override ALL_SIGNERS = 3;
     uint public constant override RECOVERY_TIME = 7 days;
 
-    IKintoWalletFactory override public factory;
     uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
     uint public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
 
     address[] public override owners;
     address public override recoverer;
-    address[] public override withdrawalWhitelist;
+    mapping(address => bool) public override funderWhitelist;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -61,11 +62,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     modifier onlyFactory() {
         _onlyFactory();
-        _;
-    }
-
-    modifier onlyRecoverer() {
-        _onlyRecoverer();
         _;
     }
 
@@ -90,7 +86,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
-        factory = IKintoWalletFactory(msg.sender);
         emit KintoWalletInitialized(_entryPoint, anOwner);
     }
 
@@ -134,27 +129,37 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
+        require(newSigners[0] == owners[0], 'first signer must be the same unless done through recovery');
         _resetSigners(newSigners, policy);
     }
 
-    /**
-     * @dev Change the recoverer
-     * @param newRecoverer new recoverer address
-     */
-    function changeRecoverer(address newRecoverer) external override onlySelf {
-        require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
-        emit RecovererChanged(newRecoverer, recoverer);
-        recoverer = newRecoverer;
-    }
 
     /* ============ Whitelist Management ============ */
 
     /**
-     * @dev Changed the valid withdrawal addresses
-     * @param newWhitelist new signers array
+     * @dev Changed the valid funderWhitelist addresses
+     * @param newWhitelist new funders array
+     * @param flags whether to allow or disallow the funder
      */
-    function resetWithdrawalWhitelist(address[] calldata newWhitelist) external override onlySelf {
-        withdrawalWhitelist = newWhitelist;
+    function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external override onlySelf {
+        require(newWhitelist.length == flags.length, 'invalid array');
+        for (uint i = 0; i < newWhitelist.length; i++) {
+            funderWhitelist[newWhitelist[i]] = flags[i];
+        }
+    }
+
+    /**
+     * @dev Check if a funder is whitelisted or an owner
+     * @param funder funder address
+     * @return whether the funder is whitelisted
+     */
+    function isFunderWhitelisted(address funder) external view override returns (bool) {
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == funder) {
+                return true;
+            }
+        }
+        return funderWhitelist[funder];
     }
 
     /* ============ Recovery Process ============ */
@@ -163,20 +168,30 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Start the recovery process
      * Can only be called by the factory through a privileged signer
      */
-    function startRecovery() external override onlyRecoverer {
+    function startRecovery() external override onlyFactory {
         inRecovery = block.timestamp;
     }
 
     /**
      * @dev Finish the recovery process and resets the signers
-     * Can only be called by the factory through a privileged signer\
+     * Can only be called by the factory through a privileged signer
      * @param newSigners new signers array
      */
-    function finishRecovery(address[] calldata newSigners) external override onlyRecoverer {
+    function finishRecovery(address[] calldata newSigners) external override onlyFactory {
         require(inRecovery > 0 && block.timestamp > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
         require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
+    }
+
+    /**
+     * @dev Change the recoverer
+     * @param newRecoverer new recoverer address
+     */
+    function changeRecoverer(address newRecoverer) external override onlyFactory() {
+        require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
+        emit RecovererChanged(newRecoverer, recoverer);
+        recoverer = newRecoverer;
     }
 
     /**
@@ -217,12 +232,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
-        if (signerPolicy == 1) {
+        if (signerPolicy == 1 && owners.length == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
             return _packValidationData(false, 0, 0);
         }
-        uint requiredSigners = signerPolicy == 3 ? owners.length : owners.length - 1;
+        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
         if (owners.length == 2) {
@@ -233,6 +248,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
                 requiredSigners--;
+                if (requiredSigners == 0) {
+                    break;
+                }
             }
         }
         return _packValidationData(requiredSigners != 0, 0, 0);
@@ -262,12 +280,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _onlyFactory() internal view {
         //directly through the factory
-        require(msg.sender == address(factory), 'only factory');
-    }
-
-    function _onlyRecoverer() internal view {
-        //directly through the factory
-        require(msg.sender == address(recoverer), 'only recoverer');
+        require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), 'only factory');
     }
 }
 

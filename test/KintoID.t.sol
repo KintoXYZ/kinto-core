@@ -258,6 +258,7 @@ contract KintoIDTest is KYCSignature {
         uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
     function testFailProviderCanAddTraitUnknownUser() public {
         vm.startPrank(_kycProvider);
@@ -284,6 +285,7 @@ contract KintoIDTest is KYCSignature {
         assertEq(_kintoIDv1.hasTrait(_user,1), true);
         _kintoIDv1.removeTrait(_user, 1);
         assertEq(_kintoIDv1.hasTrait(_user,1), false);
+        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testFailUserCannotRemoveTrait() public {
@@ -309,6 +311,7 @@ contract KintoIDTest is KYCSignature {
         _kintoIDv1.addSanction(_user, 1);
         assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
         assertEq(_kintoIDv1.isSanctionsSafe(_user), false);
+        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testProviderCanRemoveSancion() public {
@@ -322,6 +325,7 @@ contract KintoIDTest is KYCSignature {
         _kintoIDv1.removeSanction(_user, 1);
         assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), true);
         assertEq(_kintoIDv1.isSanctionsSafe(_user), true);
+        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testFailUserCannotAddSanction() public {

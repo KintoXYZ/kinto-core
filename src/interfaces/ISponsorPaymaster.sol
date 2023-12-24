@@ -3,6 +3,14 @@ pragma solidity ^0.8.13;
 
 interface ISponsorPaymaster {
 
+    /* ============ Structs ============ */
+
+    // A structure to hold rate limiting data
+    struct RateLimitData {
+        uint256 lastOperationTime;
+        uint256 operationCount;
+    }
+
     /* ============ State Change ============ */
 
     function initialize(address owner) external;

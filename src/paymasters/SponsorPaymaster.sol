@@ -26,11 +26,20 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using SafeERC20 for IERC20;
 
     //calculated cost of the postOp
-    uint256 constant public COST_OF_POST = 35000;
+    uint256 constant public COST_OF_POST = 35_000;
+    uint256 constant public MAX_COST_OF_VERIFICATION = 125_000;
+    uint256 constant public MAX_COST_OF_PREVERIFICATION = 50_000;
+
+    uint256 constant public RATE_LIMIT_PERIOD = 5 minutes;
+    uint256 constant public RATE_LIMIT_THRESHOLD_SINGLE = 10;
+    uint256 constant public RATE_LIMIT_THRESHOLD_TOTAL = 50;
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
+    // A mapping for rate limiting data: account => contract => RateLimitData
+    mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
 
     constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
         _disableInitializers();
@@ -45,7 +54,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
         // unlocks owner
-        unlockTokenDeposit();
+        unlockBlock[_owner] = block.number;
     }
 
     /**
@@ -103,8 +112,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             'DepositPaymaster: must unlockTokenDeposit'
         );
-        withdrawTo(payable(target), amount);
         balances[msg.sender] -= amount;
+        withdrawTo(payable(target), amount);
     }
 
     /*******************************
@@ -133,15 +142,28 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     ) internal view override returns (bytes memory context, uint256 validationData) {
         (userOpHash);
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(userOp.verificationGasLimit > COST_OF_POST, 'DepositPaymaster: gas too low for postOp');
+        require(userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION, 'DepositPaymaster: gas outside of range for postOp');
+        require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, 'DepositPaymaster: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'DepositPaymaster: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata
         address targetAccount =  _getFirstTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
+
+        // Check app rate limiting
+        ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
+        if (block.timestamp < data.lastOperationTime + RATE_LIMIT_PERIOD) {
+            require(data.operationCount < RATE_LIMIT_THRESHOLD_SINGLE, "App Rate limit exceeded");
+        }
+        // Check Kinto rate limiting
+        ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
+        if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
+            require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "Kinto Rate limit exceeded");
+        }
+
         require(unlockBlock[targetAccount] == 0, 'DepositPaymaster: deposit not locked');
         require(balances[targetAccount] >= maxCost, 'DepositPaymaster: deposit too low');
-        return (abi.encode(targetAccount, gasPriceUserOp), 0);
+        return (abi.encode(targetAccount, userOp.sender, gasPriceUserOp), 0);
     }
 
     /**
@@ -152,12 +174,26 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * In this mode, we use the deposit to pay (which we validated to be large enough)
      */
     function _postOp(PostOpMode /* mode */, bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, uint256 gasPricePostOp) = abi.decode(context, (address, uint256));
+        (address account, address userAccount, uint256 gasPricePostOp) = abi.decode(context, (address, address, uint256));
         //use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
-        balances[owner()] += ethCost;
+        // Updates rate limiting
+        ISponsorPaymaster.RateLimitData storage data = rateLimit[userAccount][account];
+        if (block.timestamp > data.lastOperationTime + RATE_LIMIT_PERIOD) {
+            data.lastOperationTime = block.timestamp;
+            data.operationCount = 1;
+        } else {
+            data.operationCount += 1;
+        }
+        ISponsorPaymaster.RateLimitData storage globalData = totalRateLimit[userAccount];
+        if (block.timestamp > globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
+            globalData.lastOperationTime = block.timestamp;
+            globalData.operationCount = 1;
+        } else {
+            globalData.operationCount += 1;
+        }
     }
 
     // Function to extract the first target contract
