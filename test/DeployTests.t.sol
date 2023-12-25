@@ -73,7 +73,7 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
     address _recoverer = address(7);
     address payable _funder = payable(vm.addr(8));
     
-    UUPSProxy _proxyViewer;
+    UUPSProxy _proxyc;
     Counter _counter;
     CounterInitializable _counterInit;
 
@@ -91,12 +91,19 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
 
         created = _walletFactory.deployContract(0,
             abi.encodePacked(type(CounterInitializable).creationCode), bytes32(0));
-        _counterInit = CounterInitializable(created);
+
+        // deploy _proxy contract and point it to _implementation
+        _proxyc = new UUPSProxy{salt: 0 }(address(created), '');
+        // wrap in ABI to support easier calls
+        _counterInit = CounterInitializable(address(_proxyc));
+        // Initialize proxy
+        _counterInit.initialize(_user2);
         vm.stopPrank();
     }
 
     function testUp() public {
         assertEq(address(_owner), _counter.owner());
+        assertEq(_user2, _counterInit.owner());
     }
 
     /* ============ Deploy Tests ============ */
