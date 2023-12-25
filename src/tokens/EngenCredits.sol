@@ -8,6 +8,7 @@ import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUp
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
+
 /// @custom:security-contact security@mamorilabs.com
 contract EngenCredits is Initializable, ERC20Upgradeable,
   ERC20BurnableUpgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
@@ -26,14 +27,14 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
         _disableInitializers();
     }
 
-    function initialize() initializer public {
-        transfersEnabled = false;
-        burnsEnabled = false;
+    function initialize() external initializer {
         __ERC20_init(_NAME, _SYMBOL);
         __ERC20Burnable_init();
         __Ownable_init();
         __ERC20Permit_init(_NAME);
         __UUPSUpgradeable_init();
+        transfersEnabled = false;
+        burnsEnabled = false;
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
