@@ -122,7 +122,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             'SP: must unlockTokenDeposit'
         );
         balances[msg.sender] -= amount;
-        withdrawTo(payable(target), amount);
+        entryPoint.withdrawTo(payable(target), amount);
     }
 
     /********* Viewers & validation *********/
