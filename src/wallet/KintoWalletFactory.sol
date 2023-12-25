@@ -26,7 +26,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
 
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
-    KintoWallet public immutable implAddress;
+    KintoWallet private immutable _implAddress;
     IKintoID public override kintoID;
     mapping (address => uint256) public override walletTs;
     uint256 public override factoryWalletVersion;
@@ -38,9 +38,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         address indexed newImplementation);
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(KintoWallet _implAddress) {
+    constructor(KintoWallet _implAddressP) {
         _disableInitializers();
-        implAddress = _implAddress;
+        _implAddress = _implAddressP;
     }
 
     /**
@@ -51,7 +51,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
     ) external virtual initializer {
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
-        beacon = new UpgradeableBeacon(address(implAddress));
+        beacon = new UpgradeableBeacon(address(_implAddress));
         factoryWalletVersion = 1;
         kintoID = _kintoID;
     }
@@ -190,7 +190,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         bytes32 salt
     ) payable external override returns (address) {
         require(amount == msg.value, 'amount mismatch');
-        require(kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
+        require(walletTs[msg.sender] > 0 && kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
         _preventCreationBytecode(bytecode);
         return Create2.deploy(amount, salt, bytecode);
     }

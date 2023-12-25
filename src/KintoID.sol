@@ -201,7 +201,6 @@ contract KintoID is Initializable,
         require(_accounts.length == _traitsAndSanctions.length, 'Length mismatch');
         require(_accounts.length <= 200, 'Too many accounts to monitor at once');
         for (uint i = 0; i < _accounts.length; i+= 1) {
-            require(balanceOf(_accounts[i], 1) > 0, 'Invalid account address');
             Metadata storage meta = _kycmetas[_accounts[i]];
             meta.updatedAt = block.timestamp;
             for (uint j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
