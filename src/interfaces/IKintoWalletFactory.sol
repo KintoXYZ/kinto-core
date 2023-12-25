@@ -48,8 +48,6 @@ interface IKintoWalletFactory {
     
     function beacon() external view returns (UpgradeableBeacon);
 
-    function factoryOwner() external view returns (address);
-
     function factoryWalletVersion() external view returns (uint);
 
     function totalWallets() external view returns (uint);

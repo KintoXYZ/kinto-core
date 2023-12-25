@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/utils/Create2.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
@@ -21,14 +22,13 @@ import './KintoWallet.sol';
  *   This way, the entryPoint.getSenderAddress() can be called either
  *   before or after the account is created.
  */
-contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFactory {
+contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWalletFactory {
 
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
     KintoWallet public immutable implAddress;
     IKintoID public override kintoID;
     mapping (address => uint256) public override walletTs;
-    address public override factoryOwner;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
 
@@ -50,8 +50,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         IKintoID _kintoID
     ) external virtual initializer {
         __UUPSUpgradeable_init();
+        _transferOwnership(msg.sender);
         beacon = new UpgradeableBeacon(address(implAddress));
-        factoryOwner = msg.sender;
         factoryWalletVersion = 1;
         kintoID = _kintoID;
     }
@@ -62,14 +62,22 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
      */
     function upgradeAllWalletImplementations(
         IKintoWallet newImplementationWallet
-    ) external override {
-        require(msg.sender == factoryOwner, 'only owner');
+    ) external override onlyOwner {
         require(address(newImplementationWallet) != address(0) &&
             address(newImplementationWallet) != beacon.implementation(), 'invalid address');
         factoryWalletVersion++;
         emit KintoWalletFactoryUpgraded(beacon.implementation(),
             address(newImplementationWallet));
         beacon.upgradeTo(address(newImplementationWallet));
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the factory is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        (newImplementation);
     }
 
     /* ============ Create Wallet ============ */
@@ -242,16 +250,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, IKintoWalletFacto
         bytes32 byteCodeHash
     ) external view override returns (address) {
         return Create2.computeAddress(salt, byteCodeHash, address(this));
-    }
-
-    /**
-     * @dev Authorize the upgrade. Only by an owner.
-     * @param newImplementation address of the new implementation
-     */
-    // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        (newImplementation);
-        require(msg.sender == factoryOwner, 'only owner');
     }
 
     /* ============ Internal Functions ============ */
