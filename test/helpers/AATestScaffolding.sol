@@ -15,7 +15,6 @@ import '../../src/wallet/KintoWalletFactory.sol';
 import '../../src/paymasters/SponsorPaymaster.sol';
 
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
@@ -39,7 +38,6 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxy;
     UUPSProxy _proxyf;
     UUPSProxy _proxys;
-    UpgradeableBeacon _beacon;
 
 
   function deployAAScaffolding(address _owner, address _kycProvider, address _recoverer) public {
@@ -57,8 +55,6 @@ abstract contract AATestScaffolding is KYCSignature {
     _entryPoint = IKintoEntryPoint(address(entry));
     // Deploy wallet implementation
     _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-    // Deploy beacon
-    _beacon = new UpgradeableBeacon(address(_kintoWalletImpl));
     //Deploy wallet factory implementation
     _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
     _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');

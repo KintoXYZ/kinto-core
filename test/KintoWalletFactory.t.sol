@@ -157,7 +157,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
             0,
             abi.encodePacked(
                 type(SafeBeaconProxy).creationCode,
-                abi.encode(address(_beacon), a)
+                abi.encode(address(0), a)
             ),
             bytes32(0)
         );

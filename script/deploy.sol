@@ -45,15 +45,19 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
 
     // solhint-disable code-complexity
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        address deployerPublicKey = vm.envAddress('PUBLIC_KEY');
+
         console.log('RUNNING ON CHAIN WITH ID', vm.toString(block.chainid));
+        // If not using ledger, replace
+        // uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        // vm.startBroadcast(deployerPrivateKey);
+        console.log('Executing with address', msg.sender);
+        vm.startBroadcast();
         address kintoIDAddress = _getChainDeployment('KintoID');
         if (kintoIDAddress != address(0)) {
             console.log('Already deployed Kinto ID at', kintoIDAddress);
             return;
         }
-        vm.startBroadcast(deployerPrivateKey);
+
         // Kinto ID
         address kintoIDImplAddr = computeAddress(0,
             abi.encodePacked(type(KintoID).creationCode));
@@ -109,27 +113,28 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
 
         // Wallet Factory impl
         address walletfImplAddr = computeAddress(0,
-            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(walletImplementationAddr))));
+            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(KintoWallet(payable(address(_walletImpl))))));
+        console.log('checking factory impl add', walletfImplAddr);
         if (isContract(walletfImplAddr)) {
             _walletFactoryI = KintoWalletFactory(payable(walletfImplAddr));
             console.log('Already deployed Kinto Wallet Factory implementation at',
                 address(walletfImplAddr));
         } else {
             // Deploy Wallet Factory implementation
-            _walletFactoryI = new KintoWalletFactory{ salt: 0 }(KintoWallet(payable(walletImplementationAddr)));
+            _walletFactoryI = new KintoWalletFactory{ salt: 0 }(KintoWallet(payable(address(_walletImpl))));
             console.log('Kinto Wallet Factory implementation deployed at', address(_walletFactoryI));
         }
 
         // Check Wallet Factory
         address walletFactoryAddr = computeAddress(
             0, abi.encodePacked(type(UUPSProxy).creationCode,
-            abi.encode(address(walletfImplAddr), '')));
+            abi.encode(address(_walletFactoryI), '')));
         if (isContract(walletFactoryAddr)) {
             _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
             console.log('Wallet factory proxy already deployed at', address(walletFactoryAddr));
         } else {
             // deploy proxy contract and point it to implementation
-            _proxy = new UUPSProxy{salt: 0}(address(walletfImplAddr), '');
+            _proxy = new UUPSProxy{salt: 0}(address(_walletFactoryI), '');
             // wrap in ABI to support easier calls
             _walletFactory = KintoWalletFactory(address(_proxy));
             console.log('Wallet Factory proxy deployed at ', address(_walletFactory));
@@ -137,7 +142,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _walletFactory.initialize(_kintoIDv1);
         }
 
-        address walletFactory = EntryPoint(payable(entryPointAddr)).walletFactory();
+        address walletFactory = _entryPoint.walletFactory();
         if (walletFactory == address(0)) {
             // Set Wallet Factory in entry point
             _entryPoint.setWalletFactory(address(_walletFactory));
@@ -181,7 +186,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _sponsorPaymaster = SponsorPaymaster(address(_proxy));
             console.log('Paymaster proxy deployed at ', address(_sponsorPaymaster));
             // Initialize proxy
-            _sponsorPaymaster.initialize(address(deployerPublicKey));
+            _sponsorPaymaster.initialize(address(msg.sender));
         }
 
         // KYC Viewer
@@ -213,9 +218,8 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _kycViewer.initialize();
         }
         _kycViewer = KYCViewer(address(_proxy));
-
-
         vm.stopBroadcast();
+
         // Writes the addresses to a file
         vm.writeFile(_getAddressesFile(), '{\n');
         vm.writeLine(_getAddressesFile(), string.concat('"KintoID": "', vm.toString(address(_kintoIDv1)), '",'));

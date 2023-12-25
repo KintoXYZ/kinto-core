@@ -40,7 +40,6 @@ contract KYCViewer is Initializable, UUPSUpgradeable, IKYCViewer, Ownable {
     function initialize() external initializer {
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
-        console2.log('setting owner to', msg.sender);
     }
 
         /**
