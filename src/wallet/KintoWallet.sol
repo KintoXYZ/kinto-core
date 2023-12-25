@@ -93,7 +93,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Execution methods ============ */
     
     /**
-     * execute a transaction (called directly from owner, or by entryPoint)
+     * execute a transaction (called directly from entryPoint)
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();

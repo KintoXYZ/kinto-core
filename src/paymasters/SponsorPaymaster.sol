@@ -157,8 +157,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
-     * Validate the request:
-     * The sender should have enough txs left to be gasless.
+     * Validate the request from the sender to fund it.
+     * The sender should have enough txs and gas left to be gasless.
      * The contract developer funds the contract for its users and rate limits the app.
      */
     function _validatePaymasterUserOp(
