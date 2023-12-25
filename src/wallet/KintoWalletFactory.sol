@@ -173,9 +173,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         bytes32 salt
     ) payable external override returns (address) {
         require(kintoID.isKYC(msg.sender), 'KYC required');
-        require(amount == msg.value, 'amount mismatch');
-        _preventCreationBytecode(bytecode);
-        return Create2.deploy(amount, salt, bytecode);
+        return _deployAndAssignOwnership(amount, bytecode, salt);
     }
 
     /**
@@ -189,10 +187,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         bytes calldata bytecode,
         bytes32 salt
     ) payable external override returns (address) {
-        require(amount == msg.value, 'amount mismatch');
-        require(walletTs[msg.sender] > 0 && kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
-        _preventCreationBytecode(bytecode);
-        return Create2.deploy(amount, salt, bytecode);
+        require(walletTs[msg.sender] > 0 &&
+            kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), 'KYC required');
+        return _deployAndAssignOwnership(amount, bytecode, salt);
     }
 
     /**
@@ -259,7 +256,24 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
         require(
             bytes4(_bytes[:4]) != bytes4(keccak256(walletInitCode)),
-            "Direct KintoWallet deployment not allowed"
+            'Direct KintoWallet deployment not allowed'
         );
+    }
+
+    function _deployAndAssignOwnership(
+        uint amount,
+        bytes calldata bytecode,
+        bytes32 salt
+    ) internal returns (address) {
+        require(amount == msg.value, 'amount mismatch');
+        _preventCreationBytecode(bytecode);
+        address created = Create2.deploy(amount, salt, bytecode);
+        // Assign ownership to the deployer if needed
+        try Ownable(created).owner() returns (address owner) {
+            if (owner == address(this)) {
+                Ownable(created).transferOwnership(msg.sender);
+            }
+        } catch {}
+        return created;
     }
 }
