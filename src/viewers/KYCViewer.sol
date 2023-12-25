@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/utils/Create2.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
@@ -18,7 +18,7 @@ import 'forge-std/console2.sol';
  * @dev A viewer class that helps developers to check if an address is KYC'd
  *      Abstracts complexity by checking both wallet and EOA.
  */
-contract KYCViewer is Initializable, UUPSUpgradeable, IKYCViewer, Ownable {
+contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCViewer  {
 
     /* ============ State Variables ============ */
 
@@ -38,7 +38,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, IKYCViewer, Ownable {
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __UUPSUpgradeable_init();
+        __Ownable_init();
         _transferOwnership(msg.sender);
     }
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import '@openzeppelin/contracts/utils/Create2.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
@@ -22,7 +22,7 @@ import './KintoWallet.sol';
  *   This way, the entryPoint.getSenderAddress() can be called either
  *   before or after the account is created.
  */
-contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWalletFactory {
+contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
 
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
@@ -49,8 +49,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
     function initialize(
         IKintoID _kintoID
     ) external virtual initializer {
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
         beacon = new UpgradeableBeacon(address(_implAddress));
         factoryWalletVersion = 1;
         kintoID = _kintoID;
@@ -269,9 +269,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, Ownable, IKintoWa
         _preventCreationBytecode(bytecode);
         address created = Create2.deploy(amount, salt, bytecode);
         // Assign ownership to the deployer if needed
-        try Ownable(created).owner() returns (address owner) {
+        try OwnableUpgradeable(created).owner() returns (address owner) {
             if (owner == address(this)) {
-                Ownable(created).transferOwnership(msg.sender);
+                OwnableUpgradeable(created).transferOwnership(msg.sender);
             }
         } catch {}
         return created;
