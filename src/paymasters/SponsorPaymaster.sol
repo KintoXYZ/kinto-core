@@ -118,6 +118,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function withdrawTokensTo(address target, uint256 amount) external override nonReentrant() {
         require(
+            balances[msg.sender] >= amount &&
             unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             'SP: must unlockTokenDeposit'
         );
