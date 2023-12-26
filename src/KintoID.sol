@@ -140,9 +140,9 @@ contract KintoID is Initializable,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
-       require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance before mint must be 0');
+       require(balanceOf(_signatureData.signer, _tokenId) == 0, 'Balance before mint must be 0');
 
-       Metadata storage meta = _kycmetas[_signatureData.account];
+       Metadata storage meta = _kycmetas[_signatureData.signer];
        meta.mintedAt = block.timestamp;
        meta.updatedAt = block.timestamp;
        meta.individual = _indiv;
@@ -151,8 +151,8 @@ contract KintoID is Initializable,
            meta.traits.set(_traits[i]);
        }
 
-       nonces[_signatureData.account]++;
-       _mint(_signatureData.account, _tokenId, KYC_TOKEN_ID, '');
+       nonces[_signatureData.signer]++;
+       _mint(_signatureData.signer, _tokenId, KYC_TOKEN_ID, '');
     }
 
     /* ============ Burn ============ */
@@ -174,12 +174,12 @@ contract KintoID is Initializable,
         uint256 _tokenId,
         SignatureData calldata _signatureData
     ) private onlySignerVerified(_tokenId, _signatureData) {
-        require(balanceOf(_signatureData.account, _tokenId) > 0, 'Nothing to burn');
-        nonces[_signatureData.account] += 1;
-        _burn(_signatureData.account, _tokenId, KYC_TOKEN_ID);
-        require(balanceOf(_signatureData.account, _tokenId) == 0, 'Balance after burn must be 0');
+        require(balanceOf(_signatureData.signer, _tokenId) > 0, 'Nothing to burn');
+        nonces[_signatureData.signer] += 1;
+        _burn(_signatureData.signer, _tokenId, KYC_TOKEN_ID);
+        require(balanceOf(_signatureData.signer, _tokenId) == 0, 'Balance after burn must be 0');
         // Update metadata after burning the token
-        Metadata storage meta = _kycmetas[_signatureData.account];
+        Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
     }
 
@@ -390,7 +390,7 @@ contract KintoID is Initializable,
       IKintoID.SignatureData calldata _signature
     ) {
         require(block.timestamp < _signature.expiresAt, 'Signature has expired');
-        require(nonces[_signature.account] == _signature.nonce, 'Invalid Nonce');
+        require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
 
         // Ensure signer is an EOA
@@ -421,8 +421,8 @@ contract KintoID is Initializable,
         return keccak256(
             abi.encode(
                 keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
-                keccak256(bytes("KintoID")), // this contract's name
-                keccak256(bytes("1")), // version
+                keccak256(bytes('KintoID')), // this contract's name
+                keccak256(bytes('1')), // version
                 _getChainID(),
                 address(this)
             )
@@ -432,9 +432,8 @@ contract KintoID is Initializable,
     function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
+                keccak256('SignatureData(address signer,uint256 nonce,uint256 expiresAt)'),
                 signatureData.signer,
-                signatureData.account,
                 signatureData.nonce,
                 signatureData.expiresAt
             )

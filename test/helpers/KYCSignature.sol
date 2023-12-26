@@ -25,7 +25,6 @@ abstract contract KYCSignature is Test {
     ) internal view returns (IKintoID.SignatureData memory signData) {
         signData = IKintoID.SignatureData({
             signer: _signer,
-            account: _account,
             nonce: _kintoIDv1.nonces(_signer),
             expiresAt: _expiresAt,
             signature: ''
@@ -48,7 +47,6 @@ abstract contract KYCSignature is Test {
         bytes32 dataHash = keccak256(abi.encode(
             signData.signer,
             0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,
-            signData.account,
             _kintoIDv1.KYC_TOKEN_ID(),
             signData.expiresAt,
             _kintoIDv1.nonces(signData.signer),
@@ -105,9 +103,8 @@ abstract contract KYCSignature is Test {
     function _hashSignatureData(IKintoID.SignatureData memory signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256("SignatureData(address signer,address account,uint256 nonce,uint256 expiresAt)"),
+                keccak256('SignatureData(address signer,uint256 nonce,uint256 expiresAt)'),
                 signatureData.signer,
-                signatureData.account,
                 signatureData.nonce,
                 signatureData.expiresAt
             )

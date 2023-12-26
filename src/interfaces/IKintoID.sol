@@ -18,7 +18,6 @@ interface IKintoID {
 
     struct SignatureData {
         address signer;
-        address account;
         uint256 nonce;
         uint256 expiresAt;
         bytes signature;
