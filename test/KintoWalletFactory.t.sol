@@ -133,7 +133,6 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     /* ============ Deploy Tests ============ */
     function testDeployCustomContract() public {
-        // _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         address computed = _walletFactory.getContractAddress(
           bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
@@ -171,8 +170,8 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function testWhitelistedSignerCanFundWallet() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         uint startingNonce = _kintoWalletv1.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;
@@ -215,15 +214,5 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         vm.expectRevert('Invalid wallet or funder');
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWalletv1)));
-    }
-
-    /* ============ Helpers ============ */
-
-    function _setPaymasterForContract(address _contract) private {
-        vm.startPrank(_owner);
-        vm.deal(_owner, 1e20);
-        // We add the deposit to the counter contract in the paymaster
-        _paymaster.addDepositFor{value: 5e18}(address(_contract));
-        vm.stopPrank();
     }
 }

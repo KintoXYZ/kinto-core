@@ -81,7 +81,13 @@ abstract contract AATestScaffolding is KYCSignature {
     _paymaster = SponsorPaymaster(address(_proxys));
     // Initialize proxy
     _paymaster.initialize(_owner);
+    vm.deal(_owner, 1e20);
     vm.stopPrank();
+  }
+
+  function _setPaymasterForContract(address _contract) internal {
+    // We add the deposit to the counter contract in the paymaster
+    _paymaster.addDepositFor{value: 5e18}(address(_contract));
   }
 
 

@@ -176,8 +176,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         vm.stopPrank();
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
@@ -205,8 +205,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         vm.stopPrank();
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
         address[] memory targets = new address[](2);
         targets[0] = address(counter);
         targets[1] = address(counter);
@@ -242,8 +242,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         vm.stopPrank();
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
         address[] memory targets = new address[](2);
         targets[0] = address(counter);
         targets[1] = address(counter2);
@@ -273,8 +273,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     /* ============ Signers & Policy Tests ============ */
 
     function testAddingOneSigner() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -294,8 +294,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailWithDuplicateSigner() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _owner;
@@ -315,8 +315,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
      function testFailWithEmptyArray() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](0);
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -334,8 +334,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
      function testFailWithManyOwners() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
@@ -357,8 +357,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailWithoutKYCSigner() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
@@ -377,8 +377,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testChangingPolicyWithTwoSigners() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -399,8 +399,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testChangingPolicyWithThreeSigners() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](3);
         owners[0] = _owner;
         owners[1] = _user;
@@ -423,8 +423,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailChangingPolicyWithoutRightSigners() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -453,8 +453,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     /* ============ Multisig Transactions ============ */
 
     function testMultisigTransaction() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -476,8 +476,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
         vm.stopPrank();
         // Fund counter contract
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
         // Create counter increment transaction
         userOps = new UserOperation[](1);
         privateKeys = new uint256[](2);
@@ -494,8 +494,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailMultisigTransaction() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -517,8 +517,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
         vm.stopPrank();
         // Fund counter contract
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
         // Create counter increment transaction
         userOps = new UserOperation[](1);
         privateKeys = new uint256[](1);
@@ -534,8 +534,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testMultisigTransactionWith3Signers() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
 
         // set 3 owners
         address[] memory owners = new address[](3);
@@ -568,8 +568,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
 
         // Fund counter contract
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
 
         // Create counter increment transaction
         userOps = new UserOperation[](1);
@@ -591,8 +591,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
     
     function testFailMultisigTransactionWhen2OutOf3Signers() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
 
         // set 3 owners
         address[] memory owners = new address[](3);
@@ -625,8 +625,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
 
         // Fund counter contract
-        _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
 
         // Create counter increment transaction
         userOps = new UserOperation[](1);
@@ -649,7 +649,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     /* ============ Recovery Process ============ */
 
     function testRecoverAccountSuccessfully() public {
+        vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
+        vm.stopPrank();
         vm.startPrank(_recoverer);
         assertEq(_kintoWalletv1.owners(0), _owner);
 
@@ -686,8 +688,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailRecoverNotRecoverer() public {
-        _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
         assertEq(_kintoWalletv1.owners(0), _owner);
 
         // Start Recovery
@@ -695,6 +697,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailDirectCall() public {
+        vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_recoverer);
 
@@ -703,6 +706,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailRecoverWithoutBurningOldOwner() public {
+        vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_recoverer);
         assertEq(_kintoWalletv1.owners(0), _owner);
@@ -736,6 +740,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailRecoverWithoutMintingNewOwner() public {
+        vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_recoverer);
         assertEq(_kintoWalletv1.owners(0), _owner);
@@ -761,6 +766,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     function testFailRecoverNotEnoughTime() public {
+        vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_recoverer);
         assertEq(_kintoWalletv1.owners(0), _owner);
@@ -792,16 +798,6 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _kintoIDv1.monitor(users, updates);
         vm.prank(_owner);
         _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
-    }
-
-    /* ============ Helpers ============ */
-
-    function _setPaymasterForContract(address _contract) private {
-        vm.startPrank(_owner);
-        vm.deal(_owner, 1e20);
-        // We add the deposit to the counter contract in the paymaster
-        _paymaster.addDepositFor{value: 5e18}(address(_contract));
-        vm.stopPrank();
     }
 
 }
