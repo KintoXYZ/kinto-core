@@ -53,7 +53,9 @@ contract SponsorPaymasterTest is KYCSignature {
         _paymaster = SponsorPaymaster(address(_proxy));
         // Initialize proxy
         _paymaster.initialize(_owner);
-        console.log('owner paymaster', _paymaster.owner());
+        vm.deal(_owner, 1e20);
+        vm.deal(_user, 1e20);
+
         vm.stopPrank();
     }
 
@@ -79,5 +81,65 @@ contract SponsorPaymasterTest is KYCSignature {
         // re-wrap the _proxy
         _paymasterv2 = SponsorPaymasterV2(address(_proxy));
         assertEq(_paymasterv2.newFunction(), 1);
+    }
+
+    // Deposit & Stake
+    function testOwnerCanDepositStakeAndWithdraw() public {
+        vm.startPrank(_owner);
+        uint balance = address(_owner).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        assertEq(address(_owner).balance, balance - 5e18);
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.timestamp + 1);
+        _paymaster.withdrawTokensTo(address(_owner), 5e18);
+        assertEq(address(_owner).balance, balance);
+        vm.stopPrank();
+    }
+
+    function testUserCanDepositStakeAndWithdraw() public {
+        vm.startPrank(_user);
+        uint balance = address(_user).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+        assertEq(address(_user).balance, balance - 5e18);
+        _paymaster.unlockTokenDeposit();
+        // advance block to allow withdraw
+        vm.roll(block.timestamp + 1);
+        _paymaster.withdrawTokensTo(address(_user), 5e18);
+        assertEq(address(_user).balance, balance);
+        vm.stopPrank();
+    }
+
+    function testFailUserCanDepositStakeAndWithdrawWithoutRoll() public {
+        vm.startPrank(_user);
+        uint balance = address(_user).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+        assertEq(address(_user).balance, balance - 5e18);
+        _paymaster.unlockTokenDeposit();
+        _paymaster.withdrawTokensTo(address(_user), 5e18);
+        assertEq(address(_user).balance, balance);
+        vm.stopPrank();
+    }
+
+    function testOwnerCanWithdrawAllInEmergency() public {
+        vm.startPrank(_user);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+        vm.startPrank(_owner);
+        uint balance = address(_owner).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        _paymaster.withdrawTo(payable(_owner), address(_entryPoint).balance);
+        assertEq(address(_paymaster).balance, 0);
+        assertEq(address(_owner).balance, balance + 5e18);
+        vm.stopPrank();
+    }
+
+    function testFailUserCanWithdrawAllInEmergency() public {
+        vm.startPrank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        vm.startPrank(_user);
+        uint balance = address(_user).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+        _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
+        assertEq(address(_user).balance, balance + 5e18);
+        vm.stopPrank();
     }
 }
