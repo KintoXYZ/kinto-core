@@ -176,7 +176,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'SP: paymasterAndData must contain only paymaster');
         // Get the contract called from calldata
-        address targetAccount =  _getFirstTargetContract(userOp.callData);
+        address targetAccount =  _getLastTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
 
@@ -240,7 +240,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     // Function to extract the first target contract
-    function _getFirstTargetContract(bytes calldata callData) private pure returns (address firstTargetContract) {
+    function _getLastTargetContract(bytes calldata callData) private pure returns (address lastTargetContract) {
         // Extract the function selector from the callData
         bytes4 selector = bytes4(callData[:4]);
 
@@ -248,16 +248,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            firstTargetContract = targetContracts[0];
-            // Contract only pays if all calls are to the same contract
-            for (uint i = 0; i < targetContracts.length; i++) {
-                require(targetContracts[i] == firstTargetContract,
-                    'SP: all target contracts must be the same');
-            }
+            lastTargetContract = targetContracts[targetContracts.length - 1];
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            firstTargetContract = targetContract;
+            lastTargetContract = targetContract;
         } else {
             // Handle unknown function or error
             revert('SP: Unknown function selector');

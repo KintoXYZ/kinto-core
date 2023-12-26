@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts/interfaces/IERC20.sol';
 
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
@@ -47,6 +48,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address[] public override owners;
     address public override recoverer;
     mapping(address => bool) public override funderWhitelist;
+    mapping(address => mapping (address => uint256)) public override tokenApprovals;
+    mapping(address => address) public override appSigner;
+    mapping(address => bool) public override appWhitelist;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -97,7 +101,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
+        _checkAppWhitelist(dest);
         dest.functionCallWithValue(func, value);
+        // If can transact, cancel recovery
+        cancelRecovery();
     }
 
     /**
@@ -107,8 +114,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
+            _checkAppWhitelist(dest[i]);
             dest[i].functionCallWithValue(func[i], values[i]);
         }
+        // If can transact, cancel recovery
+        cancelRecovery();
     }
 
     /* ============ Signer Management ============ */
@@ -162,6 +172,59 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return funderWhitelist[funder];
     }
 
+    /* ============ Token Approvals ============ */
+
+    /**
+     * @dev Approve tokens to a specific app
+     * @param app app address
+     * @param tokens tokens array
+     * @param amount amount array
+     */
+    function approveTokens(
+        address app,
+        address[] calldata tokens,
+        uint256[] calldata amount)
+        external override onlySelf 
+    {
+        require(tokens.length == amount.length, 'invalid array');
+        for (uint i = 0; i < tokens.length; i++) {
+            if (tokenApprovals[app][tokens[i]] > 0) {
+                IERC20(tokens[i]).approve(app, 0);
+            }
+            tokenApprovals[app][tokens[i]] = amount[i];
+            IERC20(tokens[i]).approve(app, amount[i]);
+        }
+    }
+
+    /**
+     * @dev Revoke token approvals given to a specific app
+     * @param app app address
+     * @param tokens tokens array
+     */
+    function revokeTokens(
+        address app,
+        address[] calldata tokens)
+        external override onlySelf
+    {
+        for (uint i = 0; i < tokens.length; i++) {
+            tokenApprovals[app][tokens[i]] = 0;
+            IERC20(tokens[i]).approve(app, 0);
+        }
+    }
+
+    /* ============ App Keys ============ */
+
+    /**
+     * @dev Set the app key for a specific app
+     * @param app app address
+     * @param key signer for the app
+     */
+    function setAppKey(address app, address key) external override onlySelf {
+        require(app != address(0) && key != address(0), 'invalid address');
+        require(appSigner[app] != key, 'same key');
+        appSigner[app] = key;
+    }
+
     /* ============ Recovery Process ============ */
 
     /**
@@ -198,8 +261,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Cancel the recovery process
      * Can only be called by the account holder if he regains access to his wallet
      */
-    function cancelRecovery() external override onlySelf {
-        inRecovery = 0;
+    function cancelRecovery() public override onlySelf {
+        if (inRecovery > 0) {
+            inRecovery = 0;
+        }
     }
 
     /* ============ View Functions ============ */
@@ -227,9 +292,18 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (!kintoID.isKYC(owners[0])) {
             return SIG_VALIDATION_FAILED;
         }
+        // If there is only one signature and there is an app Key, check it
+        address app = address(0);
+        if (userOp.signature.length == 65 && appSigner[app]) {
+            if (appSigner[app] != userOpHash.recover(userOp.signature)) {
+                return SIG_VALIDATION_FAILED;
+            }
+        }
         if (userOp.signature.length != 65 * owners.length) {
             return SIG_VALIDATION_FAILED;
         }
+        // Prevents direct approval
+        _preventDirectApproval(userOp.data);
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
         if (signerPolicy == 1 && owners.length == 1) {
@@ -271,6 +345,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         }
+    }
+
+    function _preventDirectApproval(bytes calldata _bytes) pure internal {
+        // Prevent direct deployment of KintoWallet contracts
+        bytes memory approvalBytes = type(IERC20).approve.selector.toBytes();
+        require(
+            bytes4(_bytes[:4]) != bytes4(keccak256(approvalBytes)),
+            'Direct ERC20 approval not allowed'
+        );
+    }
+
+    function _checkAppWhitelist(address app) internal view {
+        require(appWhitelist[app], 'app not whitelisted');
     }
 
     function _onlySelf() internal view {
