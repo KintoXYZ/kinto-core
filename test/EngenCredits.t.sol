@@ -4,7 +4,12 @@ pragma solidity ^0.8.12;
 import '../src/tokens/EngenCredits.sol';
 import 'forge-std/Test.sol';
 import 'forge-std/console.sol';
+import {UserOp} from './helpers/UserOp.sol';
 import {UUPSProxy} from './helpers/UUPSProxy.sol';
+import {AATestScaffolding} from './helpers/AATestScaffolding.sol';
+import {Create2Helper} from './helpers/Create2Helper.sol';
+import '@aa/core/EntryPoint.sol';
+
 
 contract EngenCreditsV2 is EngenCredits {
     function newFunction() external pure returns (uint256) {
@@ -13,23 +18,31 @@ contract EngenCreditsV2 is EngenCredits {
     constructor() EngenCredits() {}
 }
 
-contract EngenCreditsTest is Test {
+contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     EngenCredits _engenCredits;
     EngenCreditsV2 _engenCreditsV2;
-    UUPSProxy _proxy;
+    UUPSProxy _proxycredit;
 
-    address _owner = address(1);
+    uint256 _chainID = 1;
+
+    address payable _owner = payable(vm.addr(1));
     address _user = vm.addr(3);
     address _user2 = vm.addr(4);
+    address _kycProvider = address(6);
+    address _recoverer = address(7);
 
     function setUp() public {
+        vm.chainId(1);
+        vm.startPrank(address(1));
+        _owner.transfer(1e18);
+        vm.stopPrank();
+        deployAAScaffolding(_owner, _kycProvider, _recoverer);
         vm.startPrank(_owner);
-
         EngenCredits _imp = new EngenCredits{salt: 0}();
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy{salt: 0 }(address(_imp), '');
+        _proxycredit = new UUPSProxy{salt: 0 }(address(_imp), '');
         // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxy));
+        _engenCredits = EngenCredits(address(_proxycredit));
         // Initialize kyc viewer _proxy
         _engenCredits.initialize();
         vm.stopPrank();
@@ -80,7 +93,7 @@ contract EngenCreditsTest is Test {
     function testNobodyCanTransfer() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert('Engen Transfers Disabled');
+        vm.expectRevert('EC: Transfers not enabled');
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -88,7 +101,7 @@ contract EngenCreditsTest is Test {
     function testNobodyCanBurn() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_user, 100);
-        vm.expectRevert('Engen Transfers Disabled');
+        vm.expectRevert('EC: Transfers not enabled');
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -109,6 +122,84 @@ contract EngenCreditsTest is Test {
         _engenCredits.setBurnsEnabled(true);
         _engenCredits.burn(100);
         assertEq(_engenCredits.balanceOf(_owner), 0);
+        vm.stopPrank();
+    }
+
+    /* ============ Engen Tests ============ */
+
+    function testWalletCanGetPoints() public {
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_engenCredits));
+        // Let's send a transaction to the counter contract through our wallet
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
+        vm.stopPrank();
+    }
+
+    function testWalletCanGetPointsWithOverride() public {
+        vm.startPrank(_owner);
+        uint256[] memory points = new uint256[](1);
+        points[0] = 10;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWalletv1);
+        _engenCredits.setPhase1Override(addresses, points);
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 20);
+        _setPaymasterForContract(address(_engenCredits));
+        // Let's send a transaction to the counter contract through our wallet
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 20);
+        vm.stopPrank();
+    }
+
+    function testWalletCannotGetPointsTwice() public {
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_engenCredits));
+        // Let's send a transaction to the counter contract through our wallet
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
+        // call again
+        userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
+            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+        userOps[0] = userOp;
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
         vm.stopPrank();
     }
 

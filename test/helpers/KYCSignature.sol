@@ -19,7 +19,7 @@ abstract contract KYCSignature is Test {
     function _auxCreateSignature(
         IKintoID _kintoIDv1,
         address _signer,
-        address _account,
+        address /* _account */,
         uint256 _privateKey,
         uint256 _expiresAt
     ) internal view returns (IKintoID.SignatureData memory signData) {
