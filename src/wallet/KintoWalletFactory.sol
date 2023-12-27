@@ -255,7 +255,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         // Prevent direct deployment of KintoWallet contracts
         bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
         require(
-            bytes4(_bytes[:4]) != bytes4(keccak256(walletInitCode)),
+            bytes4(keccak256(_bytes[:4])) != bytes4(keccak256(walletInitCode)),
             'Direct KintoWallet deployment not allowed'
         );
     }
