@@ -2,10 +2,11 @@
 pragma solidity ^0.8.12;
 
 /* External Imports */
-import '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
@@ -17,14 +18,12 @@ import {IKintoID} from './interfaces/IKintoID.sol';
  * @title Kinto ID
  * @dev The Kinto ID predeploy provides an interface to access all the ID functionality from the L2.
  */
-contract KintoID is Initializable,
-    ERC1155Upgradeable, AccessControlUpgradeable, ERC1155SupplyUpgradeable, UUPSUpgradeable, IKintoID {
+contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721BurnableUpgradeable, AccessControlUpgradeable, UUPSUpgradeable, IKintoID {
     using BitMapsUpgradeable for BitMapsUpgradeable.BitMap;
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     /* ============ Events ============ */
-    event URIChanged(string _URI);
     event TraitAdded(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event TraitRemoved(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
@@ -35,12 +34,12 @@ contract KintoID is Initializable,
     bytes32 public override constant KYC_PROVIDER_ROLE = keccak256('KYC_PROVIDER_ROLE');
     bytes32 public override constant UPGRADER_ROLE = keccak256('UPGRADER_ROLE');
 
-    uint8 public override constant KYC_TOKEN_ID = 1;
-
-    // We'll monitor the whole list every single day and update it
-    uint256 public override lastMonitoredAt;
-
     /* ============ State Variables ============ */
+
+    uint256 private _nextTokenId;
+
+   // We'll monitor the whole list every single day and update it
+    uint256 public override lastMonitoredAt;
 
     // Metadata for each minted token
     mapping(address => IKintoID.Metadata) private _kycmetas;
@@ -60,9 +59,10 @@ contract KintoID is Initializable,
     }
 
     function initialize() initializer external {
-        __ERC1155_init('https://mamorilabs.com/metadata/{id}.json'); // pinata, ipfs
+        __ERC721_init("Kinto ID", "KINTOID");
+        __ERC721Enumerable_init();
+        __ERC721Burnable_init();
         __AccessControl_init();
-        __ERC1155Supply_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(KYC_PROVIDER_ROLE, msg.sender);
@@ -83,25 +83,24 @@ contract KintoID is Initializable,
      * @dev Gets the token name.
      * @return string representing the token name
      */
-    function name() external pure override returns (string memory) {
-        return 'Kinto ID';
+    function name() public pure override(ERC721Upgradeable, IKintoID) returns (string memory) {
+        return "Kinto ID";
     }
 
     /**
      * @dev Gets the token symbol.
      * @return string representing the token symbol
      */
-    function symbol() external pure override returns (string memory) {
-        return 'KINID';
+    function symbol() public pure override(ERC721Upgradeable, IKintoID) returns (string memory) {
+        return "KINTOID";
     }
 
     /**
-     * @dev Sets the token URI. Only by the admin role.
-     * @param newuri representing the token URI.
+     * @dev Returns the base token URI. ID is appended
+     * @return token URI.
      */
-    function setURI(string memory newuri) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setURI(newuri);
-        emit URIChanged(newuri);
+    function _baseURI() internal pure override returns (string memory) {
+        return "https://kinto.xyz/metadata/kintoid/";
     }
 
     /* ============ Mint & Burn ============ */
@@ -113,7 +112,8 @@ contract KintoID is Initializable,
      */
     function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
-        _mintTo(KYC_TOKEN_ID, _signatureData,_traits, true);
+        _nextTokenId++;
+        _mintTo(_nextTokenId, _signatureData,_traits, true);
     }
 
     /**
@@ -123,7 +123,8 @@ contract KintoID is Initializable,
      */
     function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external override {
-        _mintTo(KYC_TOKEN_ID, _signatureData, _traits, false);
+        _nextTokenId++;
+        _mintTo(_nextTokenId, _signatureData, _traits, false);
     }
 
     /**
@@ -134,13 +135,13 @@ contract KintoID is Initializable,
      * @param _indiv Whether the account is individual or a company.
     */
     function _mintTo(
-        uint8 _tokenId,
+        uint256 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
         uint16[] calldata _traits,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
-       require(balanceOf(_signatureData.signer, _tokenId) == 0, 'Balance before mint must be 0');
+       require(balanceOf(_signatureData.signer) == 0, 'Balance before mint must be 0');
 
        Metadata storage meta = _kycmetas[_signatureData.signer];
        meta.mintedAt = block.timestamp;
@@ -152,7 +153,8 @@ contract KintoID is Initializable,
        }
 
        nonces[_signatureData.signer]++;
-       _mint(_signatureData.signer, _tokenId, KYC_TOKEN_ID, '');
+       uint256 tokenId = _nextTokenId++;
+       _safeMint(_signatureData.signer, tokenId);
     }
 
     /* ============ Burn ============ */
@@ -162,22 +164,23 @@ contract KintoID is Initializable,
      * @param _signatureData Signature data
      */
     function burnKYC(SignatureData calldata _signatureData) external override {
-        _burnp(KYC_TOKEN_ID, _signatureData);
+        require(balanceOf(_signatureData.signer) > 0, 'Nothing to burn');
+
+        _burnp(tokenOfOwnerByIndex(_signatureData.signer, 0), _signatureData);
     }
 
     /**
      * @dev Burns a token.
-     * @param _tokenId  token ID to be burned
+     * @param _tokenId Token ID to be burned
      * @param _signatureData Signature data
      */
     function _burnp(
         uint256 _tokenId,
         SignatureData calldata _signatureData
     ) private onlySignerVerified(_tokenId, _signatureData) {
-        require(balanceOf(_signatureData.signer, _tokenId) > 0, 'Nothing to burn');
         nonces[_signatureData.signer] += 1;
-        _burn(_signatureData.signer, _tokenId, KYC_TOKEN_ID);
-        require(balanceOf(_signatureData.signer, _tokenId) == 0, 'Balance after burn must be 0');
+        _burn(_tokenId);
+        require(balanceOf(_signatureData.signer) == 0, 'Balance after burn must be 0');
         // Update metadata after burning the token
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
@@ -226,7 +229,7 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be added.
      */
     function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+        require(balanceOf(_account) > 0, 'Account must have a KYC token');
 
         Metadata storage meta = _kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
@@ -243,7 +246,7 @@ contract KintoID is Initializable,
      * @param _traitId trait id to be removed.
      */
     function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+        require(balanceOf(_account) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -260,7 +263,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be added.
      */
     function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+        require(balanceOf(_account) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -277,7 +280,7 @@ contract KintoID is Initializable,
      * @param _countryId country id to be removed.
      */
     function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account, KYC_TOKEN_ID) > 0, 'Account must have a KYC token');
+        require(balanceOf(_account) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
@@ -296,7 +299,7 @@ contract KintoID is Initializable,
      * @return true if the account has KYC token.
      */
     function isKYC(address _account) external view override returns (bool) {
-        return balanceOf(_account, KYC_TOKEN_ID) > 0 && isSanctionsSafe(_account);
+        return balanceOf(_account) > 0 && isSanctionsSafe(_account);
     }
 
     /**
@@ -452,26 +455,16 @@ contract KintoID is Initializable,
 
     /**
      * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
-     * @param operator address which called `safeTransferFrom` function
      * @param from source address
      * @param to target address
-     * @param ids ids of the token type
-     * @param amounts transfer amounts
-     * @param data additional data with no specified format
+     * @param batchSize The first id
      */
-    function _beforeTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override(ERC721Upgradeable, ERC721EnumerableUpgradeable) {
         require(
           (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
           'Only mint or burn transfers are allowed'
         );
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
     /* ============ Interface ============ */
@@ -481,9 +474,12 @@ contract KintoID is Initializable,
      * @param interfaceId id of the interface to be checked.
      * @return true if the contract implements the interface defined by the id.
     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable, AccessControlUpgradeable)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 }

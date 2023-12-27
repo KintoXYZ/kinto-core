@@ -47,7 +47,7 @@ abstract contract KYCSignature is Test {
         bytes32 dataHash = keccak256(abi.encode(
             signData.signer,
             0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,
-            _kintoIDv1.KYC_TOKEN_ID(),
+            1,
             signData.expiresAt,
             _kintoIDv1.nonces(signData.signer),
             bytes32(block.chainid)

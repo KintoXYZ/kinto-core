@@ -38,8 +38,6 @@ interface IKintoID {
 
     function burnKYC(SignatureData calldata _signatureData) external;
 
-    function setURI(string memory newuri) external;
-
     function addTrait(address _account, uint16 _traitId) external;
 
     function removeTrait(address _account, uint16 _traitId) external;
@@ -77,8 +75,6 @@ interface IKintoID {
     // function balanceOf(address _account, uint256) external view returns(uint256);
 
     /* ============ Constants and attrs ============ */
-
-    function KYC_TOKEN_ID() external view returns (uint8);
 
     function KYC_PROVIDER_ROLE() external view returns (bytes32);
 

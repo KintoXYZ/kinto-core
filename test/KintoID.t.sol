@@ -54,8 +54,7 @@ contract KintoIDTest is KYCSignature {
     function testUp() public {
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
         assertEq(_kintoIDv1.name(), 'Kinto ID');
-        assertEq(_kintoIDv1.symbol(), 'KINID');
-        assertEq(_kintoIDv1.KYC_TOKEN_ID(), 1);
+        assertEq(_kintoIDv1.symbol(), 'KINTOID');
     }
 
     // Upgrade Tests
@@ -107,7 +106,7 @@ contract KintoIDTest is KYCSignature {
         assertEq(_kintoIDv1.mintedAt(_user), block.timestamp);
         assertEq(_kintoIDv1.hasTrait(_user, 1), false);
         assertEq(_kintoIDv1.hasTrait(_user, 2), false);
-        assertEq(_kintoIDv1.balanceOf(_user, _kintoIDv1.KYC_TOKEN_ID()), 1);
+        assertEq(_kintoIDv1.balanceOf(_user), 1);
     }
 
     function testMintCompanyKYC() public {
@@ -123,7 +122,7 @@ contract KintoIDTest is KYCSignature {
         assertEq(_kintoIDv1.hasTrait(_user, 1), false);
         assertEq(_kintoIDv1.hasTrait(_user, 2), true);
         assertEq(_kintoIDv1.hasTrait(_user, 5), true);
-        assertEq(_kintoIDv1.balanceOf(_user, _kintoIDv1.KYC_TOKEN_ID()), 1);
+        assertEq(_kintoIDv1.balanceOf(_user), 1);
     }
 
     function testMintIndividualKYCWithInvalidSender() public {
@@ -174,7 +173,7 @@ contract KintoIDTest is KYCSignature {
         assertEq(_kintoIDv1.isKYC(_user), true);
         sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
         _kintoIDv1.burnKYC(sigdata);
-        assertEq(_kintoIDv1.balanceOf(_user, _kintoIDv1.KYC_TOKEN_ID()), 0);
+        assertEq(_kintoIDv1.balanceOf(_user), 0);
     }
 
     function testOnlyProviderCanBurnKYC() public {
@@ -357,9 +356,9 @@ contract KintoIDTest is KYCSignature {
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         vm.stopPrank();
         vm.startPrank(_user);
-        _kintoIDv1.safeTransferFrom(_user, _user2, _kintoIDv1.KYC_TOKEN_ID(), 1, '0x0');
-        assertEq(_kintoIDv1.balanceOf(_user, _kintoIDv1.KYC_TOKEN_ID()), 0);
-        assertEq(_kintoIDv1.balanceOf(_user2, _kintoIDv1.KYC_TOKEN_ID()), 1);
+        _kintoIDv1.safeTransferFrom(_user, _user2, _kintoIDv1.tokenOfOwnerByIndex(_user, 0));
+        assertEq(_kintoIDv1.balanceOf(_user), 0);
+        assertEq(_kintoIDv1.balanceOf(_user2), 1);
 
     }
 
