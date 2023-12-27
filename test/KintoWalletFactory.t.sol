@@ -146,7 +146,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function testFailCreateWalletThroughDeploy() public {
-        vm.prank(_owner);
+        vm.startPrank(_owner);
         bytes memory a = abi.encodeWithSelector(
             KintoWallet.initialize.selector,
             _owner,
@@ -156,7 +156,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
             0,
             abi.encodePacked(
                 type(SafeBeaconProxy).creationCode,
-                abi.encode(address(0), a)
+                abi.encode(address(_walletFactory.beacon()), a)
             ),
             bytes32(0)
         );

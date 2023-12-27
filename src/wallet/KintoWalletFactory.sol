@@ -251,13 +251,21 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Internal Functions ============ */
 
-    function _preventCreationBytecode(bytes calldata _bytes) pure internal {
+    function _preventCreationBytecode(bytes calldata _bytes) view internal {
         // Prevent direct deployment of KintoWallet contracts
         bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
-        require(
-            bytes4(keccak256(_bytes[:4])) != bytes4(keccak256(walletInitCode)),
-            'Direct KintoWallet deployment not allowed'
-        );
+        if (_bytes.length > walletInitCode.length + 32) {
+            // Make sure this beacon cannot be called with creation code
+            uint256 offset = 12 + walletInitCode.length;
+            address beaconAddress = address(0);
+            bytes memory slice = _bytes[offset:offset + 20];
+            assembly {
+                beaconAddress := mload(add(slice,20))
+            }
+            // Compare the extracted beacon address with the disallowed address
+            require(beaconAddress != address(beacon), 'Direct KintoWallet deployment not allowed');
+        }
+
     }
 
     function _deployAndAssignOwnership(

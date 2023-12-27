@@ -81,7 +81,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner, address _recoverer) external virtual initializer {
+    function initialize(address anOwner, address _recoverer) external virtual initializer onlyFactory {
         // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
