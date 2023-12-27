@@ -48,7 +48,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address[] public override owners;
     address public override recoverer;
     mapping(address => bool) public override funderWhitelist;
-    mapping(address => mapping (address => uint256)) public override tokenApprovals;
+    mapping(address => mapping (address => uint256)) private tokenApprovals;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
 
@@ -101,8 +101,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        _checkAppWhitelist(dest);
-        dest.functionCallWithValue(func, value);
+        _execute(dest, value, func);
         // If can transact, cancel recovery
         cancelRecovery();
     }
@@ -114,8 +113,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
-            _checkAppWhitelist(dest[i]);
-            dest[i].functionCallWithValue(func[i], values[i]);
+            _execute(dest[i], values[i], func[i]);
         }
         // If can transact, cancel recovery
         cancelRecovery();
@@ -217,12 +215,24 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /**
      * @dev Set the app key for a specific app
      * @param app app address
-     * @param key signer for the app
+     * @param signer signer for the app
      */
-    function setAppKey(address app, address key) external override onlySelf {
-        require(app != address(0) && key != address(0), 'invalid address');
-        require(appSigner[app] != key, 'same key');
-        appSigner[app] = key;
+    function setAppKey(address app, address signer) external override onlySelf {
+        require(app != address(0) && signer != address(0), 'invalid address');
+        require(appSigner[app] != signer, 'same key');
+        appSigner[app] = signer;
+    }
+
+    /**
+     * @dev Allos the wallet to transact with a specific app
+     * @param apps apps array
+     * @param flags whether to allow or disallow the app
+     */
+    function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external override onlySelf {
+        require(apps.length == flags.length, 'invalid array');
+        for (uint i = 0; i < apps.length; i++) {
+            appWhitelist[apps[i]] = flags[i];
+        }
     }
 
     /* ============ Recovery Process ============ */
@@ -293,17 +303,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             return SIG_VALIDATION_FAILED;
         }
         // If there is only one signature and there is an app Key, check it
-        address app = address(0);
-        if (userOp.signature.length == 65 && appSigner[app]) {
-            if (appSigner[app] != userOpHash.recover(userOp.signature)) {
-                return SIG_VALIDATION_FAILED;
+        address app = _getLastTargetContract(userOp.callData);
+        if (userOp.signature.length == 65 && appSigner[app] != address(0)) {
+            if (appSigner[app] == userOpHash.recover(userOp.signature)) {
+                return _packValidationData(false, 0, 0);
             }
         }
         if (userOp.signature.length != 65 * owners.length) {
             return SIG_VALIDATION_FAILED;
         }
-        // Prevents direct approval
-        _preventDirectApproval(userOp.data);
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // Single signer
         if (signerPolicy == 1 && owners.length == 1) {
@@ -349,9 +357,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _preventDirectApproval(bytes calldata _bytes) pure internal {
         // Prevent direct deployment of KintoWallet contracts
-        bytes memory approvalBytes = type(IERC20).approve.selector.toBytes();
+        bytes4 approvalBytes = bytes4(keccak256(bytes("approve(address,uint256)")));
         require(
-            bytes4(_bytes[:4]) != bytes4(keccak256(approvalBytes)),
+            bytes4(keccak256(_bytes[:4])) != approvalBytes,
             'Direct ERC20 approval not allowed'
         );
     }
@@ -368,6 +376,36 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _onlyFactory() internal view {
         //directly through the factory
         require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), 'only factory');
+    }
+
+    function _execute(address dest, uint256 value, bytes calldata func) internal {
+        _requireFromEntryPoint();
+        _checkAppWhitelist(dest);
+        // Prevents direct approval
+        _preventDirectApproval(func);
+        dest.functionCallWithValue(func, value);
+        // If can transact, cancel recovery
+        cancelRecovery();
+    }
+
+    // Function to extract the first target contract
+    function _getLastTargetContract(bytes calldata callData) private pure returns (address lastTargetContract) {
+        // Extract the function selector from the callData
+        bytes4 selector = bytes4(callData[:4]);
+
+        // Compare the selector with the known function selectors
+        if (selector == IKintoWallet.executeBatch.selector) {
+            // Decode callData for executeBatch
+            (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            lastTargetContract = targetContracts[targetContracts.length - 1];
+        } else if (selector == IKintoWallet.execute.selector) {
+            // Decode callData for execute
+            (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            lastTargetContract = targetContract;
+        } else {
+            // Handle unknown function or error
+            revert('SP: Unknown function selector');
+        }
     }
 }
 
