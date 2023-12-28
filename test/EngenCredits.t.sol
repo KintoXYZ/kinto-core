@@ -46,6 +46,9 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         // Initialize kyc viewer _proxy
         _engenCredits.initialize();
         vm.stopPrank();
+        _setPaymasterForContract(address(_engenCredits));
+        _setPaymasterForContract(address(_kintoWalletv1));
+
     }
 
     function testUp() public {
@@ -131,7 +134,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
         vm.startPrank(_owner);
-        _setPaymasterForContract(address(_engenCredits));
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -165,7 +167,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         _engenCredits.setPhase1Override(addresses, points);
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 20);
-        _setPaymasterForContract(address(_engenCredits));
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -194,7 +195,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
         vm.startPrank(_owner);
-        _setPaymasterForContract(address(_engenCredits));
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -219,8 +219,9 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         // call again
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(_engenCredits), 0,
+            address(_kintoWalletv1), startingNonce + 2, privateKeys, address(_engenCredits), 0,
             abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+        userOps = new UserOperation[](1);
         userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
