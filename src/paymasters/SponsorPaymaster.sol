@@ -30,13 +30,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     uint256 constant public COST_OF_POST = 60_000;
     uint256 constant public MAX_COST_OF_VERIFICATION = 180_000;
     uint256 constant public MAX_COST_OF_PREVERIFICATION = 50_000;
+    uint256 constant public MAX_COST_OF_USEROP = 3e15; // 0.03 ETH
 
     uint256 constant public RATE_LIMIT_PERIOD = 1 minutes;
     uint256 constant public RATE_LIMIT_THRESHOLD_SINGLE = 10;
     uint256 constant public RATE_LIMIT_THRESHOLD_TOTAL = 50;
 
     uint256 constant public GAS_LIMIT_PERIOD = 30 days;
-    uint256 constant public GAS_LIMIT_THRESHOLD_SINGLE = 1e15; // 0.01 ETH
+    uint256 constant public GAS_LIMIT_THRESHOLD_SINGLE = 1e16; // 0.01 ETH
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
@@ -175,10 +176,12 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             'SP: gas too high for verification');
         bytes calldata paymasterAndData = userOp.paymasterAndData;
         require(paymasterAndData.length == 20, 'SP: paymasterAndData must contain only paymaster');
+
         // Get the contract called from calldata
         address targetAccount =  _getLastTargetContract(userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
+        require(ethMaxCost <= MAX_COST_OF_USEROP, 'SP: gas too high for user op');
 
         // Check app rate limiting
         ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
@@ -189,9 +192,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // Check Kinto Gas limit app
         ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
         if (block.timestamp < gasLimit.lastOperationTime + GAS_LIMIT_PERIOD) {
+            console2.log('SP: gasLimit.ethCostCount', gasLimit.ethCostCount, ethMaxCost,GAS_LIMIT_THRESHOLD_SINGLE);
             require((gasLimit.ethCostCount + ethMaxCost) <= GAS_LIMIT_THRESHOLD_SINGLE,
                 'SP: Kinto Gas App limit exceeded');
-        }   
+        } else {
+            // First time need to be checked
+            require(ethMaxCost <= GAS_LIMIT_THRESHOLD_SINGLE, 'SP: Kinto Gas App limit exceeded');
+        }
 
         // Check Kinto rate limiting
         ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
