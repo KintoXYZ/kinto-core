@@ -261,7 +261,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         values[2] = 0;
         bytes[] memory calls = new bytes[](3);
         address[] memory apps = new address[](1);
-        targets[0] = address(_kintoWalletv1);
+        apps[0] = address(counter);
         bool[] memory flags = new bool[](1);
         flags[0] = true;
         calls[0] = abi.encodeWithSignature('setAppWhitelist(address[],bool[])',apps, flags);
@@ -304,7 +304,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         values[2] = 0;
         bytes[] memory calls = new bytes[](3);
         address[] memory apps = new address[](1);
-        targets[0] = address(_kintoWalletv1);
+        apps[0] = address(counter);
         bool[] memory flags = new bool[](1);
         flags[0] = true;
         calls[0] = abi.encodeWithSignature('setAppWhitelist(address[],bool[])',apps, flags);
