@@ -226,7 +226,6 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
         vm.writeLine(_getAddressesFile(), string.concat('"KintoID-impl": "', vm.toString(address(_implementation)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"EntryPoint": "', vm.toString(address(_entryPoint)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"KintoWallet-impl": "', vm.toString(address(_walletImpl)), '",'));
-        vm.writeLine(_getAddressesFile(), string.concat('"KintoWallet-beacon": "', vm.toString(address(_beacon)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"KintoWalletFactory-impl": "', vm.toString(address(_walletFactoryI)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"KintoWalletFactory": "', vm.toString(address(_walletFactory)), '",'));
         vm.writeLine(_getAddressesFile(), string.concat('"SponsorPaymaster": "', vm.toString(address(_sponsorPaymaster)), '",'));
