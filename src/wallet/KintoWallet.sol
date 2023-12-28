@@ -48,7 +48,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address[] public override owners;
     address public override recoverer;
     mapping(address => bool) public override funderWhitelist;
-    mapping(address => mapping (address => uint256)) private tokenApprovals;
+    mapping(address => mapping (address => uint256)) private _tokenApprovals;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
 
@@ -111,7 +111,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external override {
         _requireFromEntryPoint();
-        require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
+        require(dest.length == func.length && values.length == dest.length, 'KW-eb: wrong array length');
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i]);
         }
@@ -126,7 +126,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param policy new policy
      */
     function setSignerPolicy(uint8 policy) public override onlySelf {
-        require(policy > 0 && policy < 4  && policy != signerPolicy, 'invalid policy');
+        require(policy > 0 && policy < 4  && policy != signerPolicy, 'KW-sp: invalid policy');
         require(policy == 1 || owners.length > 1, 'invalid policy');
         emit WalletPolicyChanged(policy, signerPolicy);
         signerPolicy = policy;
@@ -137,7 +137,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
-        require(newSigners[0] == owners[0], 'first signer must be the same unless done through recovery');
+        require(newSigners[0] == owners[0], 'KW-rs: first signer must same unless recovery');
         _resetSigners(newSigners, policy);
     }
 
@@ -150,7 +150,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param flags whether to allow or disallow the funder
      */
     function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external override onlySelf {
-        require(newWhitelist.length == flags.length, 'invalid array');
+        require(newWhitelist.length == flags.length, 'KW-sfw: invalid array');
         for (uint i = 0; i < newWhitelist.length; i++) {
             funderWhitelist[newWhitelist[i]] = flags[i];
         }
@@ -184,12 +184,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         uint256[] calldata amount)
         external override onlySelf 
     {
-        require(tokens.length == amount.length, 'invalid array');
+        require(tokens.length == amount.length, 'KW-at: invalid array');
+        require(appWhitelist[app], 'KW-at: app not whitelisted');
         for (uint i = 0; i < tokens.length; i++) {
-            if (tokenApprovals[app][tokens[i]] > 0) {
+            if (_tokenApprovals[app][tokens[i]] > 0) {
                 IERC20(tokens[i]).approve(app, 0);
             }
-            tokenApprovals[app][tokens[i]] = amount[i];
+            _tokenApprovals[app][tokens[i]] = amount[i];
             IERC20(tokens[i]).approve(app, amount[i]);
         }
     }
@@ -204,8 +205,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address[] calldata tokens)
         external override onlySelf
     {
+        require(appWhitelist[app], 'KW-rt: app not whitelisted');
         for (uint i = 0; i < tokens.length; i++) {
-            tokenApprovals[app][tokens[i]] = 0;
+            _tokenApprovals[app][tokens[i]] = 0;
             IERC20(tokens[i]).approve(app, 0);
         }
     }
@@ -218,8 +220,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param signer signer for the app
      */
     function setAppKey(address app, address signer) external override onlySelf {
-        require(app != address(0) && signer != address(0), 'invalid address');
-        require(appSigner[app] != signer, 'same key');
+        // Allow 0 in signer to allow revoking the appkey
+        require(app != address(0) && appWhitelist[app], 'KW-apk: invalid address');
+        require(appSigner[app] != signer, 'KW-apk: same key');
         appSigner[app] = signer;
     }
 
@@ -229,7 +232,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param flags whether to allow or disallow the app
      */
     function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external override onlySelf {
-        require(apps.length == flags.length, 'invalid array');
+        require(apps.length == flags.length, 'KW-apw: invalid array');
         for (uint i = 0; i < apps.length; i++) {
             appWhitelist[apps[i]] = flags[i];
         }
@@ -251,8 +254,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function finishRecovery(address[] calldata newSigners) external override onlyFactory {
-        require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'too early');
-        require(!kintoID.isKYC(owners[0]), 'Old KYC must be burned');
+        require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), 'KW-fr: too early');
+        require(!kintoID.isKYC(owners[0]), 'KW-fr: Old KYC must be burned');
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
@@ -262,7 +265,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newRecoverer new recoverer address
      */
     function changeRecoverer(address newRecoverer) external override onlyFactory() {
-        require(newRecoverer != address(0) && newRecoverer != recoverer, 'invalid address');
+        require(newRecoverer != address(0) && newRecoverer != recoverer, 'KW-cr: invalid address');
         emit RecovererChanged(newRecoverer, recoverer);
         recoverer = newRecoverer;
     }
@@ -304,7 +307,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
-        if (userOp.signature.length == 65 && appSigner[app] != address(0)) {
+        if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
             if (appSigner[app] == userOpHash.recover(userOp.signature)) {
                 return _packValidationData(false, 0, 0);
             }
@@ -341,8 +344,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Private Functions ============ */
 
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'invalid array');
-        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KYC Required');
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, 'KW-rs: invalid array');
+        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), 'KW-rs: KYC Required');
         require(newSigners.length == 1 ||
             (newSigners.length == 2 && newSigners[0] != newSigners[1]) ||
             (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
@@ -353,7 +356,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         } else {
-            require(_policy == 1 || newSigners.length > 1, 'invalid policy');
+            require(_policy == 1 || newSigners.length > 1, 'KW-rs: invalid policy');
         }
     }
 
@@ -362,22 +365,22 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes4 approvalBytes = bytes4(keccak256(bytes("approve(address,uint256)")));
         require(
             bytes4(keccak256(_bytes[:4])) != approvalBytes,
-            'Direct ERC20 approval not allowed'
+            'KW: Direct ERC20 approval not allowed'
         );
     }
 
     function _checkAppWhitelist(address app) internal view {
-        require(appWhitelist[app] || app == address(this), 'app not whitelisted');
+        require(appWhitelist[app] || app == address(this), 'KW: app not whitelisted');
     }
 
     function _onlySelf() internal view {
         // directly through the account itself (which gets redirected through execute())
-        require(msg.sender == address(this), 'only self');
+        require(msg.sender == address(this), 'KW: only self');
     }
 
     function _onlyFactory() internal view {
         //directly through the factory
-        require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), 'only factory');
+        require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), 'KW: only factory');
     }
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
@@ -398,7 +401,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
             address lastTargetContract = targetContracts[targetContracts.length - 1];
             for (uint i = 0; i < targetContracts.length; i++) {
-                if (targetContracts[i] != lastTargetContract && targetContracts[i] != address(this)) {
+                // App signer should only be valid for the app itself and its tokens
+                // It is important that wallet calls are not allowed through the app signer
+                if (targetContracts[i] != lastTargetContract && // same contract
+                    _tokenApprovals[lastTargetContract][targetContracts[i]] == 0) {
                     return address(0);
                 }
             }

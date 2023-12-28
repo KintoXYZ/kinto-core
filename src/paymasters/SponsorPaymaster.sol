@@ -178,7 +178,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         require(paymasterAndData.length == 20, 'SP: paymasterAndData must contain only paymaster');
 
         // Get the contract called from calldata
-        address targetAccount =  _getLastTargetContract(userOp.callData);
+        address targetAccount =  _getLastTargetContract(userOp.sender, userOp.callData);
         uint256 gasPriceUserOp = userOp.gasPrice();
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, 'SP: gas too high for user op');
@@ -248,7 +248,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     // Function to extract the first target contract
-    function _getLastTargetContract(bytes calldata callData) private pure returns (address lastTargetContract) {
+    function _getLastTargetContract(address sender, bytes calldata callData) private pure returns (address lastTargetContract) {
         // Extract the function selector from the callData
         bytes4 selector = bytes4(callData[:4]);
 
@@ -257,6 +257,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
             lastTargetContract = targetContracts[targetContracts.length - 1];
+            for (uint256 i = 0; i < targetContracts.length - 1; i++) {
+                if (targetContracts[i] != lastTargetContract && targetContracts[i] != sender) {
+                    revert('SP: executeBatch must come from same contract or sender wallet');
+                }
+            }
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
