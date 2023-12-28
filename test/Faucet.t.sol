@@ -17,14 +17,13 @@ contract FaucetTest is Test {
     address _user = vm.addr(3);
 
     // Create a aux function to create a signature for claiming kinto ETH from the faucet
-    function _auxCreateSignature(address _signer, address _account, uint256 _privateKey, uint256 _expiresAt) private view returns (
+    function _auxCreateSignature(address _signer, uint256 _privateKey, uint256 _expiresAt) private view returns (
         IFaucet.SignatureData memory signData
     ) {
         bytes32 dataHash = keccak256(
             abi.encode(
                 _signer,
                 address(_faucet),
-                _account,
                 _expiresAt,
                 _faucet.nonces(_signer),
                 bytes32(block.chainid)
@@ -40,7 +39,6 @@ contract FaucetTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v);
         return IFaucet.SignatureData(
                 _signer,
-                _account,
                 _faucet.nonces(_signer),
                 _expiresAt,
                 signature
@@ -105,7 +103,7 @@ contract FaucetTest is Test {
     }
 
     function testClaimOnBehalf() public {
-        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_user, _user, 3, block.timestamp + 1000);
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_user, 3, block.timestamp + 1000);
         vm.startPrank(_owner);
         _faucet.startFaucet{value: 1 ether}();
         assertEq(_faucet.claimed(_user), false);

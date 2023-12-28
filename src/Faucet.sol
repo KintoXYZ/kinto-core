@@ -44,8 +44,8 @@ contract Faucet is Ownable, IFaucet{
     */
     function claimOnBehalf(IFaucet.SignatureData calldata _signatureData) external
       onlyOwner onlySignerVerified(_signatureData) {
-       _privateClaim(_signatureData.account);
-       nonces[_signatureData.account]++;
+       _privateClaim(_signatureData.signer);
+       nonces[_signatureData.signer]++;
     }
 
     /**
@@ -100,7 +100,6 @@ contract Faucet is Ownable, IFaucet{
             keccak256(abi.encode(
                 _signature.signer,
                 address(this),
-                _signature.account,
                 _signature.expiresAt,
                 nonces[_signature.signer],
                 bytes32(block.chainid)
