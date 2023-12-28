@@ -90,5 +90,4 @@ abstract contract AATestScaffolding is KYCSignature {
     _paymaster.addDepositFor{value: 5e18}(address(_contract));
   }
 
-
 }

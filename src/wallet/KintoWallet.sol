@@ -303,7 +303,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             return SIG_VALIDATION_FAILED;
         }
         // If there is only one signature and there is an app Key, check it
-        address app = _getLastTargetContract(userOp.callData);
+        address app = _getAppContract(userOp.callData);
         if (userOp.signature.length == 65 && appSigner[app] != address(0)) {
             if (appSigner[app] == userOpHash.recover(userOp.signature)) {
                 return _packValidationData(false, 0, 0);
@@ -365,7 +365,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     function _checkAppWhitelist(address app) internal view {
-        require(appWhitelist[app], 'app not whitelisted');
+        require(appWhitelist[app] || app == address(this), 'app not whitelisted');
     }
 
     function _onlySelf() internal view {
@@ -389,7 +389,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     // Function to extract the first target contract
-    function _getLastTargetContract(bytes calldata callData) private pure returns (address lastTargetContract) {
+    function _getAppContract(bytes calldata callData) private view returns (address) {
         // Extract the function selector from the callData
         bytes4 selector = bytes4(callData[:4]);
 
@@ -397,14 +397,20 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            lastTargetContract = targetContracts[targetContracts.length - 1];
+            address lastTargetContract = targetContracts[targetContracts.length - 1];
+            for (uint i = 0; i < targetContracts.length; i++) {
+                if (targetContracts[i] != lastTargetContract && targetContracts[i] != address(this)) {
+                    return address(0);
+                }
+            }
+            return lastTargetContract;
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            lastTargetContract = targetContract;
+            return targetContract;
         } else {
             // Handle unknown function or error
-            revert('SP: Unknown function selector');
+            return address(0);
         }
     }
 }
