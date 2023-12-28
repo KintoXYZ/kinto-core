@@ -67,6 +67,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _owner.transfer(1e18);
         vm.stopPrank();
         deployAAScaffolding(_owner, _kycProvider, _recoverer);
+        _setPaymasterForContract(address(_kintoWalletv1));
     }
 
     function testUp() public {
@@ -143,7 +144,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
     }
 
-    function testTransactionViaPaymaster() public {
+    function testFailTransactionViaPaymasterNoapproval() public {
         vm.startPrank(_owner);
         // Let's deploy the counter contract
         Counter counter = new Counter();
@@ -162,6 +163,41 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
+        vm.expectRevert();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+        vm.stopPrank();
+    }
+
+    function testTransactionViaPaymaster() public {
+        vm.startPrank(_owner);
+        // Let's deploy the counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        vm.stopPrank();
+        _setPaymasterForContract(address(counter));
+        vm.startPrank(_owner);
+        // Let's send a transaction to the counter contract through our wallet
+        uint startingNonce = _kintoWalletv1.getNonce();
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(counter), 0,
+            abi.encodeWithSignature('increment()'), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] =  createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
+        userOps[1] = userOp2;
+        // Execute the transactions via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
         vm.stopPrank();
@@ -181,15 +217,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(counter), 0,
+            address(_kintoWalletv1), startingNonce + 2, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
-        UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = userOp;
-        userOps[1] = userOp2;
+        UserOperation[] memory userOps = new UserOperation[](3);
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            startingNonce,
+            address(counter),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
+        userOps[2] = userOp2;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 2);
@@ -207,16 +251,22 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
         vm.startPrank(_owner);
         _setPaymasterForContract(address(counter));
-        address[] memory targets = new address[](2);
-        targets[0] = address(counter);
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWalletv1);
         targets[1] = address(counter);
-        uint[] memory values = new uint[](2);
+        targets[2] = address(counter);
+        uint[] memory values = new uint[](3);
         values[0] = 0;
         values[1] = 0;
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSignature('increment()');
+        values[2] = 0;
+        bytes[] memory calls = new bytes[](3);
+        address[] memory apps = new address[](1);
+        apps[0] = address(counter);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        calls[0] = abi.encodeWithSignature('setAppWhitelist(address[],bool[])',apps, flags);
         calls[1] = abi.encodeWithSignature('increment()');
-        // Let's send both transactions via batch
+        calls[2] = abi.encodeWithSignature('increment()');
         UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
             _chainID,
             address(_kintoWalletv1), startingNonce, privateKeys,
@@ -244,15 +294,22 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
         vm.startPrank(_owner);
         _setPaymasterForContract(address(counter));
-        address[] memory targets = new address[](2);
-        targets[0] = address(counter);
-        targets[1] = address(counter2);
-        uint[] memory values = new uint[](2);
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWalletv1);
+        targets[1] = address(counter);
+        targets[2] = address(counter2);
+        uint[] memory values = new uint[](3);
         values[0] = 0;
         values[1] = 0;
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSignature('increment()');
+        values[2] = 0;
+        bytes[] memory calls = new bytes[](3);
+        address[] memory apps = new address[](1);
+        apps[0] = address(counter);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        calls[0] = abi.encodeWithSignature('setAppWhitelist(address[],bool[])',apps, flags);
         calls[1] = abi.encodeWithSignature('increment()');
+        calls[2] = abi.encodeWithSignature('increment()');
         // Let's send both transactions via batch
         UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
             _chainID,
@@ -479,15 +536,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.startPrank(_owner);
         _setPaymasterForContract(address(counter));
         // Create counter increment transaction
-        userOps = new UserOperation[](1);
+        userOps = new UserOperation[](2);
         privateKeys = new uint256[](2);
         privateKeys[0] = 1;
         privateKeys[1] = 3;
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce() +1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
-        userOps[0] = userOp;
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
         vm.stopPrank();
@@ -520,14 +585,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.startPrank(_owner);
         _setPaymasterForContract(address(counter));
         // Create counter increment transaction
-        userOps = new UserOperation[](1);
+        userOps = new UserOperation[](2);
         privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce() + 1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
-        userOps[0] = userOp;
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
+        
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
         vm.stopPrank();
@@ -572,17 +646,24 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _setPaymasterForContract(address(counter));
 
         // Create counter increment transaction
-        userOps = new UserOperation[](1);
+        userOps = new UserOperation[](2);
         privateKeys = new uint256[](3);
         privateKeys[0] = 1;
         privateKeys[1] = 3;
         privateKeys[2] = 5;
-
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce() +1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
-        userOps[0] = userOp;
+        userOps[1] = userOp;
 
         // execute
         _entryPoint.handleOps(userOps, payable(_owner));
@@ -629,14 +710,22 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _setPaymasterForContract(address(counter));
 
         // Create counter increment transaction
-        userOps = new UserOperation[](1);
+        userOps = new UserOperation[](2);
         privateKeys = new uint256[](2);
         privateKeys[0] = 1;
         privateKeys[1] = 3;
 
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(counter), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce() + 1, privateKeys, address(counter), 0,
             abi.encodeWithSignature('increment()'), address(_paymaster));
         userOps[0] = userOp;
 

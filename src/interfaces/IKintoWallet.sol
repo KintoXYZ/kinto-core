@@ -7,59 +7,78 @@ import { IKintoID } from './IKintoID.sol';
 
 interface IKintoWallet {
 
-  /* ============ Structs ============ */
+    /* ============ Structs ============ */
 
-  /* ============ State Change ============ */
+    /* ============ State Change ============ */
 
-  function execute(address dest, uint256 value, bytes calldata func) external;
+    function execute(address dest, uint256 value, bytes calldata func) external;
 
-  function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external;
+    function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external;
 
-  function setSignerPolicy(uint8 policy) external;
+    function setSignerPolicy(uint8 policy) external;
 
-  function resetSigners(address[] calldata newSigners, uint8 policy) external;
+    function resetSigners(address[] calldata newSigners, uint8 policy) external;
 
-  function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external;
+    function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external;
 
-  function changeRecoverer(address newRecoverer) external;
+    function changeRecoverer(address newRecoverer) external;
 
-  function startRecovery() external;
+    function startRecovery() external;
 
-  function finishRecovery(address[] calldata newSigners) external;
-  
-  function cancelRecovery() external;
+    function finishRecovery(address[] calldata newSigners) external;
 
-  /* ============ Basic Viewers ============ */
+    function cancelRecovery() external;
 
-  function getOwnersCount() external view returns (uint);
+    function approveTokens(
+        address app,
+        address[] calldata tokens,
+        uint256[] calldata amount)
+        external;
+
+    function revokeTokens(
+        address app,
+        address[] calldata tokens)
+        external;
     
-  function getNonce() external view returns (uint);
+    function setAppKey(address app, address signer) external;
 
-  /* ============ Constants and attrs ============ */
-  
-  function kintoID() external view returns (IKintoID);
-  
-  function inRecovery() external view returns (uint);
-  
-  function owners(uint _index) external view returns (address);
-  
-  function recoverer() external view returns (address);
+    function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external;
 
-  function funderWhitelist(address funder) external view returns (bool);
+    /* ============ Basic Viewers ============ */
 
-  function isFunderWhitelisted(address funder) external view returns (bool);
+    function getOwnersCount() external view returns (uint);
 
-  function signerPolicy() external view returns (uint8);
+    function getNonce() external view returns (uint);
 
-  /* solhint-disable func-name-mixedcase */
-  function MAX_SIGNERS() external view returns (uint8);
-  
-  function SINGLE_SIGNER() external view returns (uint8);
+    /* ============ Constants and attrs ============ */
 
-  function MINUS_ONE_SIGNER() external view returns (uint8);
-  
-  function ALL_SIGNERS() external view returns (uint8);
-  
-  function RECOVERY_TIME() external view returns (uint);
+    function kintoID() external view returns (IKintoID);
+
+    function inRecovery() external view returns (uint);
+
+    function owners(uint _index) external view returns (address);
+
+    function recoverer() external view returns (address);
+
+    function funderWhitelist(address funder) external view returns (bool);
+
+    function isFunderWhitelisted(address funder) external view returns (bool);
+
+    function appSigner(address app) external view returns (address);
+
+    function appWhitelist(address app) external view returns (bool);
+
+    function signerPolicy() external view returns (uint8);
+
+    /* solhint-disable func-name-mixedcase */
+    function MAX_SIGNERS() external view returns (uint8);
+
+    function SINGLE_SIGNER() external view returns (uint8);
+
+    function MINUS_ONE_SIGNER() external view returns (uint8);
+
+    function ALL_SIGNERS() external view returns (uint8);
+
+    function RECOVERY_TIME() external view returns (uint);
 
 }
