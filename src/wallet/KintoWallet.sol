@@ -101,7 +101,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        _execute(dest, value, func);
+        _executeInner(dest, value, func);
         // If can transact, cancel recovery
         cancelRecovery();
     }
@@ -113,7 +113,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         require(dest.length == func.length && values.length == dest.length, 'wrong array lengths');
         for (uint256 i = 0; i < dest.length; i++) {
-            _execute(dest[i], values[i], func[i]);
+            _executeInner(dest[i], values[i], func[i]);
         }
         // If can transact, cancel recovery
         cancelRecovery();
@@ -369,7 +369,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     function _onlySelf() internal view {
-        //directly through the account itself (which gets redirected through execute())
+        // directly through the account itself (which gets redirected through execute())
         require(msg.sender == address(this), 'only self');
     }
 
@@ -378,14 +378,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), 'only factory');
     }
 
-    function _execute(address dest, uint256 value, bytes calldata func) internal {
-        _requireFromEntryPoint();
+    function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         _checkAppWhitelist(dest);
         // Prevents direct approval
         _preventDirectApproval(func);
         dest.functionCallWithValue(func, value);
-        // If can transact, cancel recovery
-        cancelRecovery();
     }
 
     // Function to extract the first target contract
@@ -408,10 +405,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
             return targetContract;
-        } else {
-            // Handle unknown function or error
-            return address(0);
         }
+        return address(0);
     }
 }
 
