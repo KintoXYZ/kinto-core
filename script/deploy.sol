@@ -88,14 +88,14 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
         _kintoIDv1 = KintoID(address(_proxy));
 
         // Entry Point
-        address entryPointAddr = computeAddress(0, abi.encodePacked(type(EntryPoint).creationCode));
+        address entryPointAddr = computeAddress(1, abi.encodePacked(type(EntryPoint).creationCode));
         // Check Entry Point
         if (isContract(entryPointAddr)) {
             _entryPoint = EntryPoint(payable(entryPointAddr));
             console.log('Entry Point already deployed at', address(_entryPoint));
         } else {
             // Deploy Entry point
-            _entryPoint = new EntryPoint{salt: 0}();
+            _entryPoint = new EntryPoint{salt: "1"}();
             console.log('Entry point deployed at', address(_entryPoint));
         }
 
