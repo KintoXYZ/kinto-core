@@ -110,7 +110,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
+    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint8[] calldata _traits)
         external override {
         _nextTokenId++;
         _mintTo(_nextTokenId, _signatureData,_traits, true);
@@ -121,7 +121,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
+    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint8[] calldata _traits)
         external override {
         _nextTokenId++;
         _mintTo(_nextTokenId, _signatureData, _traits, false);
@@ -137,7 +137,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
     function _mintTo(
         uint256 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
-        uint16[] calldata _traits,
+        uint8[] calldata _traits,
         bool _indiv
     ) private
       onlySignerVerified(_tokenId, _signatureData) {
@@ -184,6 +184,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
         // Update metadata after burning the token
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
+        meta.updatedAt = 0;
     }
 
     /* ============ Sanctions & traits ============ */
@@ -209,9 +210,9 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
             for (uint j = 0; j < _traitsAndSanctions[i].length; j+= 1) {
                 IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
                 if (updateData.isTrait && updateData.isSet) {
-                    addTrait(_accounts[i], updateData.index);
+                    addTrait(_accounts[i], uint8(updateData.index));
                 } else if (updateData.isTrait && !updateData.isSet) {
-                    removeTrait(_accounts[i], updateData.index);
+                    removeTrait(_accounts[i], uint8(updateData.index));
                 } else if (!updateData.isTrait && updateData.isSet) {
                     addSanction(_accounts[i], updateData.index);
                 } else {
@@ -228,7 +229,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
      * @param _account  account to be added the trait to.
      * @param _traitId trait id to be added.
      */
-    function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function addTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         require(balanceOf(_account) > 0, 'Account must have a KYC token');
 
         Metadata storage meta = _kycmetas[_account];
@@ -245,7 +246,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
      * @param _account  account to be removed the trait from.
      * @param _traitId trait id to be removed.
      */
-    function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         require(balanceOf(_account) > 0, 'Account must have a KYC token');
         Metadata storage meta = _kycmetas[_account];
 
@@ -363,7 +364,7 @@ contract KintoID is Initializable, ERC721Upgradeable, ERC721EnumerableUpgradeabl
      * @param index index of the trait to be checked.
      * @return true if the account has the trait.
      */
-    function hasTrait(address _account, uint16 index) external view override returns (bool) {
+    function hasTrait(address _account, uint8 index) external view override returns (bool) {
         return _kycmetas[_account].traits.get(index);
     }
 

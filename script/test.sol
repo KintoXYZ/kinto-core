@@ -52,7 +52,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
                 _kintoID, recipientWallet,
                 recipientWallet,
                 recipientKey, block.timestamp + 1000);
-            uint16[] memory traits = new uint16[](0);
+            uint8[] memory traits = new uint8[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
 
