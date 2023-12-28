@@ -349,9 +349,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
         owners = newSigners;
-        // Change policy if needed
+        // Change policy if needed.
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
+        } else {
+            require(_policy == 1 || newSigners.length > 1, 'invalid policy');
         }
     }
 

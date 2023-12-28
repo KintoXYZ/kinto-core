@@ -225,6 +225,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // App gas limit
         ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
         if (block.timestamp > costApp.lastOperationTime + GAS_LIMIT_PERIOD) {
+            costApp.lastOperationTime = block.timestamp;
             costApp.ethCostCount = ethCost;
         } else {
             costApp.ethCostCount += ethCost;
