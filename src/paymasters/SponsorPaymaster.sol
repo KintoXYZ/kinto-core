@@ -192,7 +192,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // Check Kinto Gas limit app
         ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
         if (block.timestamp < gasLimit.lastOperationTime + GAS_LIMIT_PERIOD) {
-            console2.log('SP: gasLimit.ethCostCount', gasLimit.ethCostCount, ethMaxCost,GAS_LIMIT_THRESHOLD_SINGLE);
             require((gasLimit.ethCostCount + ethMaxCost) <= GAS_LIMIT_THRESHOLD_SINGLE,
                 'SP: Kinto Gas App limit exceeded');
         } else {
