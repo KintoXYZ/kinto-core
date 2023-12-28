@@ -27,8 +27,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using SafeERC20 for IERC20;
 
     //calculated cost of the postOp
-    uint256 constant public COST_OF_POST = 50_000;
-    uint256 constant public MAX_COST_OF_VERIFICATION = 150_000;
+    uint256 constant public COST_OF_POST = 60_000;
+    uint256 constant public MAX_COST_OF_VERIFICATION = 180_000;
     uint256 constant public MAX_COST_OF_PREVERIFICATION = 50_000;
 
     uint256 constant public RATE_LIMIT_PERIOD = 1 minutes;

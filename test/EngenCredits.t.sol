@@ -145,7 +145,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
-            1,
+            privateKeys,
             address(_kintoWalletv1),
             _kintoWalletv1.getNonce(),
             address(_engenCredits),
@@ -178,7 +178,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
-            1,
+            privateKeys,
             address(_kintoWalletv1),
             _kintoWalletv1.getNonce(),
             address(_engenCredits),
@@ -206,7 +206,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
-            1,
+            privateKeys,
             address(_kintoWalletv1),
             _kintoWalletv1.getNonce(),
             address(_engenCredits),

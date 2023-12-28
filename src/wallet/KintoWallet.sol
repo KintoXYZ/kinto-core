@@ -103,7 +103,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         _executeInner(dest, value, func);
         // If can transact, cancel recovery
-        cancelRecovery();
+        inRecovery = 0;
     }
 
     /**
@@ -116,7 +116,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             _executeInner(dest[i], values[i], func[i]);
         }
         // If can transact, cancel recovery
-        cancelRecovery();
+        inRecovery = 0;
     }
 
     /* ============ Signer Management ============ */

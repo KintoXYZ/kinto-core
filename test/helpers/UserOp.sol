@@ -191,21 +191,19 @@ abstract contract UserOp is Test {
 
   function createApprovalUserOp(
     uint _chainId,
-    uint pk,
+    uint256[] memory pk,
     address wallet,
     uint startingNonce,
     address app,
     address _paymaster
   ) public view  returns (UserOperation memory userOp) {
-    uint256[] memory privateKeys = new uint256[](1);
-    privateKeys[0] = pk;
     address[] memory targets = new address[](1);
     targets[0] = address(app);
     bool[] memory flags = new bool[](1);
     flags[0] = true;
     return this.createUserOperationWithPaymaster(
       _chainId,
-      address(wallet), startingNonce, privateKeys, address(wallet), 0,
+      address(wallet), startingNonce, pk, address(wallet), 0,
       abi.encodeWithSignature('setAppWhitelist(address[],bool[])',targets, flags), address(_paymaster));
   }
 }
