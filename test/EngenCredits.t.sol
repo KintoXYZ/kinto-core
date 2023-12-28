@@ -138,10 +138,18 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
             abi.encodeWithSignature('mintCredits()'), address(_paymaster));
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            1,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(_engenCredits),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
@@ -164,10 +172,18 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
             abi.encodeWithSignature('mintCredits()'), address(_paymaster));
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            1,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(_engenCredits),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 20);
@@ -185,17 +201,25 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(_engenCredits), 0,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
             abi.encodeWithSignature('mintCredits()'), address(_paymaster));
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            1,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(_engenCredits),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
         // call again
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys, address(_engenCredits), 0,
             abi.encodeWithSignature('mintCredits()'), address(_paymaster));
         userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));

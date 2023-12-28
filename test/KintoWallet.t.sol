@@ -168,34 +168,32 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         vm.stopPrank();
     }
 
-    function testTransactionViaPaymasterNoapproval() public {
+    function testTransactionViaPaymaster() public {
         vm.startPrank(_owner);
         // Let's deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
         vm.stopPrank();
+        _setPaymasterForContract(address(_kintoWalletv1));
         _setPaymasterForContract(address(counter));
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
         uint startingNonce = _kintoWalletv1.getNonce();
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+        // UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+        //     _chainID,
+        //     address(_kintoWalletv1), startingNonce, privateKeys, address(counter), 0,
+        //     abi.encodeWithSignature('increment()'), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] =  this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(counter), 0,
-            abi.encodeWithSignature('increment()'), address(_paymaster));
-        UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createApprovalUserOp(
-            _chainID,
-            1,
-            address(_kintoWalletv1),
-            startingNonce,
-            address(counter),
-            address(_paymaster)
-        );
-        userOps[1] = userOp2;
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setAppWhitelist(address[],bool[])',privateKeys, true), address(_paymaster));
+        // userOps[0] = userOp2;
         // Execute the transactions via the entry point
-        vm.expectRevert();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
         vm.stopPrank();

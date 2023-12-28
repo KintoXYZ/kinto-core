@@ -87,7 +87,7 @@ abstract contract AATestScaffolding is KYCSignature {
 
   function _setPaymasterForContract(address _contract) internal {
     // We add the deposit to the counter contract in the paymaster
-    _paymaster.addDepositFor{value: 5e18}(address(_contract));
+    _paymaster.addDepositFor{value: 1e19}(address(_contract));
   }
 
 }
