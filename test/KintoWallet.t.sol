@@ -889,4 +889,43 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
+    function testVulnerabilityWithMinusOneSignerPolicy() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+
+        address[] memory onlyOneOwner = new address[](1);
+        onlyOneOwner[0] = _owner;
+
+        uint startingNonce = _kintoWalletv1.getNonce();
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.SINGLE_SIGNER());
+
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[],uint8)',owners, _kintoWalletv1.MINUS_ONE_SIGNER()), address(_paymaster));
+        
+        UserOperation memory userOp2 = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[],uint8)',onlyOneOwner, _kintoWalletv1.MINUS_ONE_SIGNER()), address(_paymaster));
+
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = userOp;
+        userOps[1] = userOp2;
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.owners(0), _owner);
+        assertEq(_kintoWalletv1.owners(1), _user); // second user op failed and therefore this is still owner(1)
+
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.MINUS_ONE_SIGNER());
+
+        vm.stopPrank();
+    }
+
 }
