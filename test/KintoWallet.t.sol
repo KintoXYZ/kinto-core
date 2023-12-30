@@ -722,7 +722,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             address(counter),
             address(_paymaster)
         );
-        console.log("eo");
+
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
             address(_kintoWalletv1), _kintoWalletv1.getNonce() +1, privateKeys, address(counter), 0,
