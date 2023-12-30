@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.12;
 
-import {IETHPriceIsRight} from "./interfaces/IETHPriceIsRight.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IETHPriceIsRight} from './interfaces/IETHPriceIsRight.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 
 /**
  * @title ETHPriceIsRight
@@ -30,8 +30,8 @@ contract ETHPriceIsRight is Ownable, IETHPriceIsRight{
     * @dev Allows users to enter a guess of the price of ETH
     */
     function enterGuess(uint256 guess) external override {
-        require(block.timestamp < END_ENTER_TIMESTAMP, "You cannot enter guesses anymore");
-        require(guess > 0, "Guess must be greater than 0");
+        require(block.timestamp < END_ENTER_TIMESTAMP, 'You cannot enter guesses anymore');
+        require(guess > 0, 'Guess must be greater than 0');
         // Remove previous guess from the calculation if any
         if (guesses[msg.sender] > 0) {
             guessCount--;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
+import '@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol';
 
 interface IETHPriceIsRight {
 
