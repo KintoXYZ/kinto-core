@@ -9,14 +9,12 @@ import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
 
-
 import '../interfaces/IKintoID.sol';
 import '../interfaces/IKintoEntryPoint.sol';
 import '../libraries/ByteSignature.sol';
 import '../interfaces/IKintoWallet.sol';
 import '../interfaces/IKintoWalletFactory.sol';
 
-// import 'forge-std/console2.sol';
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
@@ -325,10 +323,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
-        if (owners.length == 2) {
+        if (requiredSigners == 2) {
             (signatures[0], signatures[1]) = ByteSignature.extractTwoSignatures(userOp.signature);
-        } else {
+        } else if (requiredSigners == 3) {
             (signatures[0], signatures[1], signatures[2]) = ByteSignature.extractThreeSignatures(userOp.signature);
+        } else {
+            signatures[0] = userOp.signature;
         }
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
