@@ -311,7 +311,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             }
         }
         uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
-        if (userOp.signature.length < 65 * requiredSigners) {
+        if (userOp.signature.length != 65 * requiredSigners) {
             return SIG_VALIDATION_FAILED;
         }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
