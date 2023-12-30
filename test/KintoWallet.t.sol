@@ -670,6 +670,70 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 1);
         vm.stopPrank();
     }
+
+    function testMultisigTransactionWith1SignerButSeveralOwners() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+
+        // set 3 owners
+        address[] memory owners = new address[](3);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+
+        // get nonce
+        uint startingNonce = _kintoWalletv1.getNonce();
+
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        // generate the user operation wihch changes the policy to ALL_SIGNERS
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('resetSigners(address[],uint8)', owners, _kintoWalletv1.SINGLE_SIGNER()), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.owners(1), _user);
+        assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.SINGLE_SIGNER());
+
+        // Deploy Counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+        vm.stopPrank();
+
+        // Fund counter contract
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(counter));
+
+        // Create counter increment transaction
+        userOps = new UserOperation[](2);
+        privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        userOps[0] = createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(counter),
+            address(_paymaster)
+        );
+        console.log("eo");
+        userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce() +1, privateKeys, address(counter), 0,
+            abi.encodeWithSignature('increment()'), address(_paymaster));
+        userOps[1] = userOp;
+
+        // execute
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+        vm.stopPrank();
+    }
     
     function testFailMultisigTransactionWhen2OutOf3Signers() public {
         vm.startPrank(_owner);

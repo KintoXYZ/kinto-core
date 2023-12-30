@@ -312,7 +312,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 return _packValidationData(false, 0, 0);
             }
         }
-        if (userOp.signature.length != 65 * owners.length) {
+        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
+        if (userOp.signature.length < 65 * requiredSigners) {
             return SIG_VALIDATION_FAILED;
         }
         bytes32 hash = userOpHash.toEthSignedMessageHash();
@@ -322,7 +323,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 return SIG_VALIDATION_FAILED;
             return _packValidationData(false, 0, 0);
         }
-        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
         if (owners.length == 2) {
