@@ -23,7 +23,7 @@ import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/Test.sol';
 import 'forge-std/console.sol';
 
-contract KintoWalletV2 is KintoWallet {
+contract KintoWalletV999 is KintoWallet {
   constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
 
   function walletFunction() public pure returns (uint256) {
@@ -58,7 +58,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     using SignatureChecker for address;
 
     KintoWalletFactoryV2 _walletFactoryv2;
-    KintoWalletV2 _kintoWalletv2;
+    KintoWalletV999 _kintoWalletv2;
 
     uint256 _chainID = 1;
 
@@ -109,7 +109,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
 
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWalletV2(_entryPoint, _kintoIDv1);
+        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1);
 
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
@@ -117,14 +117,14 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         // Upgrade all implementations
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
 
-        KintoWalletV2 walletV2 = KintoWalletV2(payable(address(_kintoWalletv1)));
+        KintoWalletV999 walletV2 = KintoWalletV999(payable(address(_kintoWalletv1)));
         assertEq(walletV2.walletFunction(), 1);
         vm.stopPrank();
     }
 
     function testFailOthersCannotUpgradeWallets() public {
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWalletV2(_entryPoint, _kintoIDv1);
+        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1);
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
         // Upgrade all implementations
