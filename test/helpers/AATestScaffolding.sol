@@ -11,6 +11,7 @@ import {UUPSProxy} from '../helpers/UUPSProxy.sol';
 import {KYCSignature} from '../helpers/KYCSignature.sol';
 
 import '../../src/wallet/KintoWallet.sol';
+import '../../src/tokens/EngenCredits.sol';
 import '../../src/wallet/KintoWalletFactory.sol';
 import '../../src/paymasters/SponsorPaymaster.sol';
 
@@ -38,6 +39,8 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxy;
     UUPSProxy _proxyf;
     UUPSProxy _proxys;
+    UUPSProxy _proxycredit;
+    EngenCredits _engenCredits;
 
 
   function deployAAScaffolding(address _owner, address _kycProvider, address _recoverer) public {
@@ -81,6 +84,15 @@ abstract contract AATestScaffolding is KYCSignature {
     _paymaster = SponsorPaymaster(address(_proxys));
     // Initialize proxy
     _paymaster.initialize(_owner);
+    // Deploy engen credits
+    EngenCredits _imp = new EngenCredits{salt: 0}();
+    // deploy _proxy contract and point it to _implementation
+    _proxycredit = new UUPSProxy{salt: 0 }(address(_imp), '');
+    // wrap in ABI to support easier calls
+    _engenCredits = EngenCredits(address(_proxycredit));
+    // Initialize kyc viewer _proxy
+    _engenCredits.initialize();
+    // Give some eth
     vm.deal(_owner, 1e20);
     vm.stopPrank();
   }

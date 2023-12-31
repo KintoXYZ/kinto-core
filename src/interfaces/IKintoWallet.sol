@@ -64,6 +64,8 @@ interface IKintoWallet {
 
     function isFunderWhitelisted(address funder) external view returns (bool);
 
+    function isTokenApproved(address app, address token) external view returns (uint256);
+
     function appSigner(address app) external view returns (address);
 
     function appWhitelist(address app) external view returns (bool);
