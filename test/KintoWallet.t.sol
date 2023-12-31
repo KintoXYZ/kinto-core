@@ -953,4 +953,35 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _walletFactory.completeWalletRecovery(payable(address(_kintoWalletv1)), users);
     }
 
+    /* ============ Funder Whitelist ============ */
+    function testWalletOwnersAreWhitelisted() public {
+        vm.startPrank(_owner);
+        assertEq(_kintoWalletv1.isFunderWhitelisted(_owner), true);
+        assertEq(_kintoWalletv1.isFunderWhitelisted(_user), false);
+        assertEq(_kintoWalletv1.isFunderWhitelisted(_user2), false);
+        vm.stopPrank();
+    }
+
+    function testAddingOneFunder() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+        address[] memory funders = new address[](1);
+        funders[0] = address(23);
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('setFunderWhitelist(address[],bool[])',funders, flags), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+        // Execute the transaction via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.isFunderWhitelisted(address(23)), true);
+        vm.stopPrank();
+    }
+
 }
