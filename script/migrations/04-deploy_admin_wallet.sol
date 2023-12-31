@@ -8,13 +8,12 @@ import { KintoWalletV2 } from '../../src/wallet/KintoWallet.sol';
 import { Create2Helper } from '../../test/helpers/Create2Helper.sol';
 import { ArtifactsReader } from '../../test/helpers/ArtifactsReader.sol';
 import { UUPSProxy } from '../../test/helpers/UUPSProxy.sol';
-import {KYCSignature} from '../../test/helpers/KYCSignature.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoMigration4DeployScript is Create2Helper, KYCSignature, ArtifactsReader {
+contract KintoMigration4DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
@@ -39,7 +38,7 @@ contract KintoMigration4DeployScript is Create2Helper, KYCSignature, ArtifactsRe
             console.log('Need to execute main deploy script first', walletFactoryAddr);
             return;
         }
-        vm.startBroadcast(deployerPrivateKey);
+        _walletFactory = KintoWalletFactory(walletFactoryAddr);
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = KintoWallet(payable(address(_walletFactory.createAccount(deployer, msg.sender, 0))));
         vm.stopBroadcast();
