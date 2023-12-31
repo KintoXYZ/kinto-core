@@ -19,9 +19,7 @@ contract EngenCreditsV2 is EngenCredits {
 }
 
 contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
-    EngenCredits _engenCredits;
     EngenCreditsV2 _engenCreditsV2;
-    UUPSProxy _proxycredit;
 
     uint256 _chainID = 1;
 
@@ -38,14 +36,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
         deployAAScaffolding(_owner, _kycProvider, _recoverer);
         vm.startPrank(_owner);
-        EngenCredits _imp = new EngenCredits{salt: 0}();
-        // deploy _proxy contract and point it to _implementation
-        _proxycredit = new UUPSProxy{salt: 0 }(address(_imp), '');
-        // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxycredit));
-        // Initialize kyc viewer _proxy
-        _engenCredits.initialize();
-        vm.stopPrank();
         _setPaymasterForContract(address(_engenCredits));
         _setPaymasterForContract(address(_kintoWalletv1));
 

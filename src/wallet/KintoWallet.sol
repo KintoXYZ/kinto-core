@@ -293,6 +293,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return owners.length;
     }
 
+    function isTokenApproved(address app, address token) external view override returns (uint256) {
+        return _tokenApprovals[app][token];
+    }
+
     /* ============ IAccountOverrides ============ */
 
     /// implement template method of BaseAccount
@@ -364,7 +368,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // Prevent direct deployment of KintoWallet contracts
         bytes4 approvalBytes = bytes4(keccak256(bytes("approve(address,uint256)")));
         require(
-            bytes4(keccak256(_bytes[:4])) != approvalBytes,
+            bytes4(_bytes[:4]) != approvalBytes,
             'KW: Direct ERC20 approval not allowed'
         );
     }

@@ -106,7 +106,4 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_user2, _counterInit.owner());
     }
 
-    /* ============ Deploy Tests ============ */
-
-
 }

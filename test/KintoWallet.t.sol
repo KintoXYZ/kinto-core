@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import '../src/wallet/KintoWallet.sol';
 import '../src/wallet/KintoWalletFactory.sol';
+import '../src/tokens/EngenCredits.sol';
 import '../src/paymasters/SponsorPaymaster.sol';
 import '../src/KintoID.sol';
 import {UserOp} from './helpers/UserOp.sol';
@@ -954,6 +955,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     /* ============ Funder Whitelist ============ */
+
     function testWalletOwnersAreWhitelisted() public {
         vm.startPrank(_owner);
         assertEq(_kintoWalletv1.isFunderWhitelisted(_owner), true);
@@ -981,6 +983,145 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWalletv1.isFunderWhitelisted(address(23)), true);
+        vm.stopPrank();
+    }
+
+    /* ============ Token Approvals ============ */
+
+    function testApproveTokens() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+        address app = address(100);
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(_engenCredits);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e12;
+
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('approveTokens(address,address[],uint256[])', app, tokens, amounts), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] =  createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(app),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.isTokenApproved(app, tokens[0]), 1e12);
+        assertEq(_kintoWalletv1.isTokenApproved(app, address(24)), 0);
+        vm.stopPrank();
+    }
+
+    function testFailApproveTokensWithoutWhitelist() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+        address app = address(100);
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(_engenCredits);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e12;
+
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('approveTokens(address,address[],uint256[])', app, tokens, amounts), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = userOp;
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.isTokenApproved(app, tokens[0]), 1e12);
+        assertEq(_kintoWalletv1.isTokenApproved(app, address(24)), 0);
+        vm.stopPrank();
+    }
+
+    function testApproveAndRevokeTokens() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_kintoWalletv1));
+        address app = address(100);
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(_engenCredits);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e12;
+
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('approveTokens(address,address[],uint256[])', app, tokens, amounts), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] =  createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(app),
+            address(_paymaster)
+        );
+        userOps[1] = userOp;
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.isTokenApproved(app, tokens[0]), 1e12);
+        assertEq(_kintoWalletv1.isTokenApproved(app, address(24)), 0);
+
+        userOps = new UserOperation[](1);
+        userOps[0] = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), _kintoWalletv1.getNonce(), privateKeys,
+            address(_kintoWalletv1), 0,
+            abi.encodeWithSignature('revokeTokens(address,address[])', app, tokens), address(_paymaster));
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWalletv1.isTokenApproved(app, tokens[0]), 0);
+
+        vm.stopPrank();
+    }
+
+    function testFailCallingApproveDirectly() public {
+        vm.startPrank(_owner);
+        _setPaymasterForContract(address(_engenCredits));
+        address app = address(100);
+
+        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = 1;
+
+        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWalletv1), startingNonce + 1, privateKeys,
+            address(_engenCredits), 0,
+            abi.encodeWithSignature('approve(address,uint256)', address(app), 1e12), address(_paymaster));
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] =  createApprovalUserOp(
+            _chainID,
+            privateKeys,
+            address(_kintoWalletv1),
+            _kintoWalletv1.getNonce(),
+            address(_engenCredits),
+            address(_paymaster)
+        );
+        userOps[1] =  userOp;
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenCredits.allowance(address(_kintoWalletv1), app), 1e12);
         vm.stopPrank();
     }
 
