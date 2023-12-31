@@ -35,7 +35,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         _owner.transfer(1e18);
         vm.stopPrank();
         deployAAScaffolding(_owner, _kycProvider, _recoverer);
-        vm.startPrank(_owner);
         _setPaymasterForContract(address(_engenCredits));
         _setPaymasterForContract(address(_kintoWalletv1));
 
@@ -61,11 +60,13 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function testFailOthersCannotUpgrade() public {
+        vm.startPrank(_recoverer);
         EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
         _engenCredits.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
         _engenCreditsV2 = EngenCreditsV2(address(_engenCredits));
         assertEq(_engenCreditsV2.newFunction(), 1);
+        vm.stopPrank();
     }
 
     /* ============ Token Tests ============ */
