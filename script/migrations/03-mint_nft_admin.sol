@@ -2,20 +2,25 @@
 pragma solidity ^0.8.13;
 
 import 'forge-std/Script.sol';
-import '../../src/sample/Counter.sol';
+import '../../src/wallet/KintoWalletFactory.sol';
+import '../../src/KintoID.sol';
 import { KintoWalletV2 } from '../../src/wallet/KintoWallet.sol';
 import { Create2Helper } from '../../test/helpers/Create2Helper.sol';
 import { ArtifactsReader } from '../../test/helpers/ArtifactsReader.sol';
 import { UUPSProxy } from '../../test/helpers/UUPSProxy.sol';
+import {KYCSignature} from '../../test/helpers/KYCSignature.sol';
 import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoMigration4DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration3DeployScript is Create2Helper, KYCSignature, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
-    Counter _counter;
+    KintoWalletFactory _walletFactory;
+    KintoWallet _kintoWalletv1;
+    KintoID _kintoIDv1;
+    UUPSProxy _proxy;
 
     function setUp() public {}
 
@@ -24,22 +29,25 @@ contract KintoMigration4DeployScript is Create2Helper, ArtifactsReader {
 
         console.log('RUNNING ON CHAIN WITH ID', vm.toString(block.chainid));
         // If not using ledger, replace
-        // uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
-        // vm.startBroadcast(deployerPrivateKey);
-        console.log('Executing with address', msg.sender);
-        vm.startBroadcast();
+        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        address deployer = vm.rememberKey(deployerPrivateKey);
+        vm.startBroadcast(deployerPrivateKey);
+        console.log('Executing with address', deployer);
+        // vm.startBroadcast();
         address walletFactoryAddr = _getChainDeployment('KintoWalletFactory');
         if (walletFactoryAddr == address(0)) {
             console.log('Need to execute main deploy script first', walletFactoryAddr);
             return;
         }
-        _counter = new Counter();
-        for (uint256 i = 0; i < 30; i++) {
-            _counter.increment();
-        }
+        // Mint an nft to the owner
+        _kintoIDv1 = KintoID(_getChainDeployment('KintoID'));
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(
+            _kintoIDv1, deployer, deployer, deployerPrivateKey, block.timestamp + 1000);
         vm.stopBroadcast();
-        // Writes the addresses to a file
-        console.log('Add these new addresses to the artifacts file');
-        console.log(string.concat('"Counter": "', vm.toString(address(_counter)), '"'));
+        vm.startBroadcast();
+        uint8[] memory traits = new uint8[](1);
+        traits[0] = 0; // ADMIN
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.stopBroadcast();
     }
 }
