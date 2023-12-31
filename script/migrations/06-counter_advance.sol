@@ -12,7 +12,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import 'forge-std/console.sol';
 
-contract KintoMigration5DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration6DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     Counter _counter;
@@ -34,7 +34,7 @@ contract KintoMigration5DeployScript is Create2Helper, ArtifactsReader {
             return;
         }
         _counter = new Counter();
-        for (uint256 i = 0; i < 30; i++) {
+        for (uint256 i = 0; i < 15; i++) {
             _counter.increment();
         }
         vm.stopBroadcast();
