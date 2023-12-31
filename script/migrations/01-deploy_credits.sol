@@ -73,6 +73,6 @@ contract KintoMigration1DeployScript is Create2Helper, ArtifactsReader {
         // Writes the addresses to a file
         console.log('Add these addresses to the artifacts file');
         console.log(string.concat('"EngenCredits-impl": "', vm.toString(address(_implementation)), '"'));
-        console.log(string.concat('"EngenCredits-proxy": "', vm.toString(address(_engenCredits)), '"'));
+        console.log(string.concat('"EngenCredits": "', vm.toString(address(_engenCredits)), '"'));
     }
 }
