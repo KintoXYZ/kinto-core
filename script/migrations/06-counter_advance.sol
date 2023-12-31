@@ -34,7 +34,7 @@ contract KintoMigration6DeployScript is Create2Helper, ArtifactsReader {
             return;
         }
         _counter = new Counter();
-        for (uint256 i = 0; i < 15; i++) {
+        for (uint256 i = 0; i < 14; i++) {
             _counter.increment();
         }
         vm.stopBroadcast();
