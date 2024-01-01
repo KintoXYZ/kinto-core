@@ -9,14 +9,12 @@ import '@openzeppelin/contracts/interfaces/IERC20.sol';
 import '@aa/core/BaseAccount.sol';
 import '@aa/samples/callback/TokenCallbackHandler.sol';
 
-
 import '../interfaces/IKintoID.sol';
 import '../interfaces/IKintoEntryPoint.sol';
 import '../libraries/ByteSignature.sol';
 import '../interfaces/IKintoWallet.sol';
 import '../interfaces/IKintoWalletFactory.sol';
 
-// import 'forge-std/console2.sol';
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
@@ -295,6 +293,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return owners.length;
     }
 
+    function isTokenApproved(address app, address token) external view override returns (uint256) {
+        return _tokenApprovals[app][token];
+    }
+
     /* ============ IAccountOverrides ============ */
 
     /// implement template method of BaseAccount
@@ -305,30 +307,33 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (!kintoID.isKYC(owners[0])) {
             return SIG_VALIDATION_FAILED;
         }
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
         if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
-            if (appSigner[app] == userOpHash.recover(userOp.signature)) {
+            if (appSigner[app] == hash.recover(userOp.signature)) {
                 return _packValidationData(false, 0, 0);
             }
         }
-        if (userOp.signature.length != 65 * owners.length) {
+        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
+        if (userOp.signature.length != 65 * requiredSigners) {
             return SIG_VALIDATION_FAILED;
         }
-        bytes32 hash = userOpHash.toEthSignedMessageHash();
+
         // Single signer
         if (signerPolicy == 1 && owners.length == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
             return _packValidationData(false, 0, 0);
         }
-        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
-        if (owners.length == 2) {
+        if (requiredSigners == 2) {
             (signatures[0], signatures[1]) = ByteSignature.extractTwoSignatures(userOp.signature);
-        } else {
+        } else if (requiredSigners == 3) {
             (signatures[0], signatures[1], signatures[2]) = ByteSignature.extractThreeSignatures(userOp.signature);
+        } else {
+            signatures[0] = userOp.signature;
         }
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
@@ -351,6 +356,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (newSigners.length == 3 && (newSigners[0] != newSigners[1]) &&
                 (newSigners[1] != newSigners[2]) && newSigners[0] != newSigners[2]),
             'duplicate owners');
+        for (uint i = 0; i < newSigners.length; i++) {
+            require(newSigners[i] != address(0), 'KW-rs: invalid signer address');
+        }
         owners = newSigners;
         // Change policy if needed.
         if (_policy != signerPolicy) {
@@ -364,7 +372,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // Prevent direct deployment of KintoWallet contracts
         bytes4 approvalBytes = bytes4(keccak256(bytes("approve(address,uint256)")));
         require(
-            bytes4(keccak256(_bytes[:4])) != approvalBytes,
+            bytes4(_bytes[:4]) != approvalBytes,
             'KW: Direct ERC20 approval not allowed'
         );
     }
@@ -412,9 +420,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            if (targetContract == address(this)) {
+                return address(0);
+            }
             return targetContract;
         }
         return address(0);
     }
+}
+
+// Upgradeable version of KintoWallet
+contract KintoWalletV2 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
 }
 
