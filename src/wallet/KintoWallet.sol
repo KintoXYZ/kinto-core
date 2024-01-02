@@ -227,23 +227,26 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (!kintoID.isKYC(owners[0])) {
             return SIG_VALIDATION_FAILED;
         }
-        if (userOp.signature.length != 65 * owners.length) {
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
+        if (userOp.signature.length != 65 * requiredSigners) {
             return SIG_VALIDATION_FAILED;
         }
-        bytes32 hash = userOpHash.toEthSignedMessageHash();
+
         // Single signer
         if (signerPolicy == 1 && owners.length == 1) {
             if (owners[0] != hash.recover(userOp.signature))
                 return SIG_VALIDATION_FAILED;
             return _packValidationData(false, 0, 0);
         }
-        uint requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
-        if (owners.length == 2) {
+        if (requiredSigners == 2) {
             (signatures[0], signatures[1]) = ByteSignature.extractTwoSignatures(userOp.signature);
-        } else {
+        } else if (requiredSigners == 3) {
             (signatures[0], signatures[1], signatures[2]) = ByteSignature.extractThreeSignatures(userOp.signature);
+        } else {
+            signatures[0] = userOp.signature;
         }
         for (uint i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
