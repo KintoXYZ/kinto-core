@@ -132,6 +132,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param wallet The wallet address
      */
     function startWalletRecovery(address payable wallet) external override {
+        require(walletTs[wallet] > 0, 'invalid wallet');
         require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
         KintoWallet(wallet).startRecovery();
     }
@@ -142,11 +143,13 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param newSigners new signers array
      */
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
+        require(walletTs[wallet] > 0, 'invalid wallet');
         require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
         KintoWallet(wallet).finishRecovery(newSigners);
     }
 
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
+        require(walletTs[wallet] > 0, 'invalid wallet');
         require(msg.sender == KintoWallet(wallet).recoverer(), 'only recoverer');
         KintoWallet(wallet).changeRecoverer(_newRecoverer);
     }
