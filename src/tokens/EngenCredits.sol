@@ -1,25 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {IKintoWallet} from '../interfaces/IKintoWallet.sol';
-
+import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
 
 /// @custom:security-contact security@mamorilabs.com
-contract EngenCredits is Initializable, ERC20Upgradeable,
-  ERC20BurnableUpgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
-
+contract EngenCredits is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    OwnableUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
     /// @dev EIP-20 token name for this token
-    string private constant _NAME = 'Engen Credits';
+    string private constant _NAME = "Engen Credits";
 
     /// @dev EIP-20 token symbol for this token
-    string private constant _SYMBOL = 'ENGEN';
+    string private constant _SYMBOL = "ENGEN";
 
     bool public transfersEnabled;
     bool public burnsEnabled;
@@ -57,16 +61,16 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
      * @param _transfersEnabled True if transfers should be enabled
      */
     function setTransfersEnabled(bool _transfersEnabled) public onlyOwner {
-        require(!transfersEnabled, 'EC: Transfers Already enabled');
+        require(!transfersEnabled, "EC: Transfers Already enabled");
         transfersEnabled = _transfersEnabled;
     }
-    
+
     /**
      * @dev Enable burning of Engen tokens
      * @param _burnsEnabled True if burning should be enabled
      */
     function setBurnsEnabled(bool _burnsEnabled) public onlyOwner {
-        require(!burnsEnabled, 'EC: Burns Already enabled');
+        require(!burnsEnabled, "EC: Burns Already enabled");
         burnsEnabled = _burnsEnabled;
     }
 
@@ -76,8 +80,8 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
      * @param _points The points to be set
      */
     function setPhase1Override(address[] calldata _wallets, uint256[] calldata _points) public onlyOwner {
-        require(_wallets.length == _points.length, 'EC: Invalid input');
-        for (uint i = 0; i < _wallets.length; i++) {
+        require(_wallets.length == _points.length, "EC: Invalid input");
+        for (uint256 i = 0; i < _wallets.length; i++) {
             phase1Override[_wallets[i]] = _points[i];
         }
     }
@@ -88,9 +92,9 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
      * @dev Mint points for the Engen user based on their activity
      */
     function mintCredits() public {
-        require(!transfersEnabled && !burnsEnabled, 'EC: Mint not allowed after completion');
-        uint points = calculatePoints(msg.sender);
-        require(points > 0 && balanceOf(msg.sender) < points, 'EC: No tokens to mint');
+        require(!transfersEnabled && !burnsEnabled, "EC: Mint not allowed after completion");
+        uint256 points = calculatePoints(msg.sender);
+        require(points > 0 && balanceOf(msg.sender) < points, "EC: No tokens to mint");
         _mint(msg.sender, points - balanceOf(msg.sender));
     }
 
@@ -101,7 +105,7 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
      * @param _wallet The wallet address of the user
      */
     function calculatePoints(address _wallet) public view returns (uint256) {
-        uint256 points  = 0;
+        uint256 points = 0;
         // Phase 1
         points = phase1Override[_wallet] > 0 ? phase1Override[_wallet] : 5;
         // Phase 2
@@ -112,21 +116,15 @@ contract EngenCredits is Initializable, ERC20Upgradeable,
 
     // ======= Private Functions ==================
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlyOwner
-        override
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        override(ERC20Upgradeable)
-    {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
         require(
-            from == address(0) ||  // mint
-            (to == address(0) && burnsEnabled) ||    // burn
-            transfersEnabled,
-            'EC: Transfers not enabled');
+            from == address(0) // mint
+                || (to == address(0) && burnsEnabled) // burn
+                || transfersEnabled,
+            "EC: Transfers not enabled"
+        );
     }
 }

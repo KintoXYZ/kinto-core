@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import '../src/KintoID.sol';
-import '../src/interfaces/IKintoID.sol';
-import './helpers/KYCSignature.sol';
-import './helpers/UUPSProxy.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import "../src/KintoID.sol";
+import "../src/interfaces/IKintoID.sol";
+import "./helpers/KYCSignature.sol";
+import "./helpers/UUPSProxy.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 contract KintoIDv2 is KintoID {
-  constructor() KintoID() {
+    constructor() KintoID() {}
 
-  }
-  function newFunction() public pure returns (uint256) {
-      return 1;
-  }
+    function newFunction() public pure returns (uint256) {
+        return 1;
+    }
 }
 
 contract KintoIDTest is KYCSignature {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
+
     KintoID _implementation;
 
     KintoID _kintoIDv1;
@@ -42,7 +42,7 @@ contract KintoIDTest is KYCSignature {
         vm.startPrank(_owner);
         _implementation = new KintoID();
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy(address(_implementation), '');
+        _proxy = new UUPSProxy(address(_implementation), "");
         // wrap in ABI to support easier calls
         _kintoIDv1 = KintoID(address(_proxy));
         // Initialize _proxy
@@ -53,8 +53,8 @@ contract KintoIDTest is KYCSignature {
 
     function testUp() public {
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
-        assertEq(_kintoIDv1.name(), 'Kinto ID');
-        assertEq(_kintoIDv1.symbol(), 'KINTOID');
+        assertEq(_kintoIDv1.name(), "Kinto ID");
+        assertEq(_kintoIDv1.symbol(), "KINTOID");
     }
 
     // Upgrade Tests
@@ -130,7 +130,7 @@ contract KintoIDTest is KYCSignature {
         uint8[] memory traits = new uint8[](1);
         traits[0] = 1;
         vm.startPrank(_user);
-        vm.expectRevert('Invalid Provider');
+        vm.expectRevert("Invalid Provider");
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
@@ -139,7 +139,7 @@ contract KintoIDTest is KYCSignature {
         uint8[] memory traits = new uint8[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
-        vm.expectRevert('Invalid Signer');
+        vm.expectRevert("Invalid Signer");
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
@@ -149,7 +149,7 @@ contract KintoIDTest is KYCSignature {
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.expectRevert('Invalid Nonce');
+        vm.expectRevert("Invalid Nonce");
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
@@ -158,7 +158,7 @@ contract KintoIDTest is KYCSignature {
         uint8[] memory traits = new uint8[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
-        vm.expectRevert('Signature has expired');
+        vm.expectRevert("Signature has expired");
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
     }
 
@@ -186,13 +186,14 @@ contract KintoIDTest is KYCSignature {
         sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
         vm.stopPrank();
         vm.startPrank(_user);
-        vm.expectRevert('Invalid Provider');
-        _kintoIDv1.burnKYC(sigdata);}
+        vm.expectRevert("Invalid Provider");
+        _kintoIDv1.burnKYC(sigdata);
+    }
 
     function testBurnFailsWithoutMinting() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
         vm.startPrank(_kycProvider);
-        vm.expectRevert('Nothing to burn');
+        vm.expectRevert("Nothing to burn");
         _kintoIDv1.burnKYC(sigdata);
     }
 
@@ -206,25 +207,25 @@ contract KintoIDTest is KYCSignature {
         sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
         _kintoIDv1.burnKYC(sigdata);
         sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        vm.expectRevert('Nothing to burn');
+        vm.expectRevert("Nothing to burn");
         _kintoIDv1.burnKYC(sigdata);
     }
 
     // Monitor Tests
     function testMonitorNoChanges() public {
         vm.startPrank(_kycProvider);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
+        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
     function testFailOnlyProviderCanMonitor() public {
         vm.startPrank(_user);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
+        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
     }
 
     function testIsSanctionsMonitored() public {
         vm.startPrank(_kycProvider);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
+        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
         assertEq(_kintoIDv1.isSanctionsMonitored(1), true);
         vm.warp(block.timestamp + 7 days);
         assertEq(_kintoIDv1.isSanctionsMonitored(8), true);
@@ -244,10 +245,10 @@ contract KintoIDTest is KYCSignature {
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
         updates[0][1] = IKintoID.MonitorUpdateData(true, false, 1); // remove 1
         _kintoIDv1.monitor(accounts, updates);
-        assertEq(_kintoIDv1.hasTrait(_user,5), true);
-        assertEq(_kintoIDv1.hasTrait(_user,1), false);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,5), true);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), true);
+        assertEq(_kintoIDv1.hasTrait(_user, 5), true);
+        assertEq(_kintoIDv1.hasTrait(_user, 1), false);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 5), true);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 1), true);
     }
 
     // Trait Tests
@@ -259,10 +260,11 @@ contract KintoIDTest is KYCSignature {
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
+
     function testFailProviderCanAddTraitUnknownUser() public {
         vm.startPrank(_kycProvider);
         _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
+        assertEq(_kintoIDv1.hasTrait(_user, 1), true);
     }
 
     function testFailUserCannotAddTrait() public {
@@ -281,9 +283,9 @@ contract KintoIDTest is KYCSignature {
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
+        assertEq(_kintoIDv1.hasTrait(_user, 1), true);
         _kintoIDv1.removeTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), false);
+        assertEq(_kintoIDv1.hasTrait(_user, 1), false);
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
 
@@ -294,7 +296,7 @@ contract KintoIDTest is KYCSignature {
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
+        assertEq(_kintoIDv1.hasTrait(_user, 1), true);
         vm.stopPrank();
         vm.startPrank(_user);
         _kintoIDv1.removeTrait(_user, 1);
@@ -308,7 +310,7 @@ contract KintoIDTest is KYCSignature {
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 1), false);
         assertEq(_kintoIDv1.isSanctionsSafe(_user), false);
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
@@ -320,9 +322,9 @@ contract KintoIDTest is KYCSignature {
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 1), false);
         _kintoIDv1.removeSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), true);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 1), true);
         assertEq(_kintoIDv1.isSanctionsSafe(_user), true);
         assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
     }
@@ -339,7 +341,7 @@ contract KintoIDTest is KYCSignature {
     function testFailUserCannotRemoveSanction() public {
         vm.startPrank(_kycProvider);
         _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
+        assertEq(_kintoIDv1.isSanctionsSafeIn(_user, 1), false);
         vm.stopPrank();
         vm.startPrank(_user);
         _kintoIDv1.removeSanction(_user2, 1);
@@ -359,7 +361,6 @@ contract KintoIDTest is KYCSignature {
         _kintoIDv1.safeTransferFrom(_user, _user2, _kintoIDv1.tokenOfOwnerByIndex(_user, 0));
         assertEq(_kintoIDv1.balanceOf(_user), 0);
         assertEq(_kintoIDv1.balanceOf(_user2), 1);
-
     }
 
     function testDappSignature() public {

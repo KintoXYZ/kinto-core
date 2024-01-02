@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { IEntryPoint } from '@aa/core/BaseAccount.sol';
-import { IKintoWalletFactory } from './IKintoWalletFactory.sol';
-import { IKintoID } from './IKintoID.sol';
+import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
+import {IKintoID} from "./IKintoID.sol";
 
 interface IKintoWallet {
-
     /* ============ Structs ============ */
 
     /* ============ State Change ============ */
@@ -29,34 +28,27 @@ interface IKintoWallet {
 
     function cancelRecovery() external;
 
-    function approveTokens(
-        address app,
-        address[] calldata tokens,
-        uint256[] calldata amount)
-        external;
+    function approveTokens(address app, address[] calldata tokens, uint256[] calldata amount) external;
 
-    function revokeTokens(
-        address app,
-        address[] calldata tokens)
-        external;
-    
+    function revokeTokens(address app, address[] calldata tokens) external;
+
     function setAppKey(address app, address signer) external;
 
     function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external;
 
     /* ============ Basic Viewers ============ */
 
-    function getOwnersCount() external view returns (uint);
+    function getOwnersCount() external view returns (uint256);
 
-    function getNonce() external view returns (uint);
+    function getNonce() external view returns (uint256);
 
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
 
-    function inRecovery() external view returns (uint);
+    function inRecovery() external view returns (uint256);
 
-    function owners(uint _index) external view returns (address);
+    function owners(uint256 _index) external view returns (address);
 
     function recoverer() external view returns (address);
 
@@ -81,6 +73,5 @@ interface IKintoWallet {
 
     function ALL_SIGNERS() external view returns (uint8);
 
-    function RECOVERY_TIME() external view returns (uint);
-
+    function RECOVERY_TIME() external view returns (uint256);
 }

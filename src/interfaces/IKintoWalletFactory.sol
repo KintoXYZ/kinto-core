@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { IKintoWallet } from './IKintoWallet.sol';
-import { IKintoID } from './IKintoID.sol';
-import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
-
+import {IKintoWallet} from "./IKintoWallet.sol";
+import {IKintoID} from "./IKintoID.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 interface IKintoWalletFactory {
-
     /* ============ Structs ============ */
 
     /* ============ State Change ============ */
@@ -16,13 +14,12 @@ interface IKintoWalletFactory {
 
     function createAccount(address owner, address recoverer, uint256 salt) external returns (IKintoWallet ret);
 
-    function deployContract(uint amount, bytes memory bytecode, bytes32 salt) payable external returns (address);
+    function deployContract(uint256 amount, bytes memory bytecode, bytes32 salt) external payable returns (address);
 
-    function deployContractByWallet(
-        uint amount,
-        bytes memory bytecode,
-        bytes32 salt
-    ) payable external returns (address);
+    function deployContractByWallet(uint256 amount, bytes memory bytecode, bytes32 salt)
+        external
+        payable
+        returns (address);
 
     function startWalletRecovery(address payable wallet) external;
 
@@ -30,7 +27,7 @@ interface IKintoWalletFactory {
 
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external;
 
-    function fundWallet(address payable wallet) payable external;
+    function fundWallet(address payable wallet) external payable;
 
     /* ============ Basic Viewers ============ */
 
@@ -45,11 +42,10 @@ interface IKintoWalletFactory {
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
-    
+
     function beacon() external view returns (UpgradeableBeacon);
 
-    function factoryWalletVersion() external view returns (uint);
+    function factoryWalletVersion() external view returns (uint256);
 
-    function totalWallets() external view returns (uint);
-
+    function totalWallets() external view returns (uint256);
 }

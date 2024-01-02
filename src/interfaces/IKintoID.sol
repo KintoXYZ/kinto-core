@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IKintoID {
-
     /* ============ Structs ============ */
 
     struct Metadata {
@@ -30,7 +29,6 @@ interface IKintoID {
     }
 
     /* ============ State Change ============ */
-
 
     function mintIndividualKyc(SignatureData calldata _signatureData, uint8[] calldata _traits) external;
 
@@ -83,5 +81,4 @@ interface IKintoID {
     function lastMonitoredAt() external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
-
 }

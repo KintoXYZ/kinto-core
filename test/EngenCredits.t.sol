@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import '../src/tokens/EngenCredits.sol';
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
-import {UserOp} from './helpers/UserOp.sol';
-import {UUPSProxy} from './helpers/UUPSProxy.sol';
-import {AATestScaffolding} from './helpers/AATestScaffolding.sol';
-import {Create2Helper} from './helpers/Create2Helper.sol';
-import '@aa/core/EntryPoint.sol';
-
+import "../src/tokens/EngenCredits.sol";
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
+import {UserOp} from "./helpers/UserOp.sol";
+import {UUPSProxy} from "./helpers/UUPSProxy.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import {Create2Helper} from "./helpers/Create2Helper.sol";
+import "@aa/core/EntryPoint.sol";
 
 contract EngenCreditsV2 is EngenCredits {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
+
     constructor() EngenCredits() {}
 }
 
@@ -37,7 +37,6 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         deployAAScaffolding(_owner, _kycProvider, _recoverer);
         _setPaymasterForContract(address(_engenCredits));
         _setPaymasterForContract(address(_kintoWalletv1));
-
     }
 
     function testUp() public {
@@ -79,7 +78,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function testOthersCannotMint() public {
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.mint(_user, 100);
         assertEq(_engenCredits.balanceOf(_user), 0);
     }
@@ -87,7 +86,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     function testNobodyCanTransfer() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert('EC: Transfers not enabled');
+        vm.expectRevert("EC: Transfers not enabled");
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -95,7 +94,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     function testNobodyCanBurn() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_user, 100);
-        vm.expectRevert('EC: Transfers not enabled');
+        vm.expectRevert("EC: Transfers not enabled");
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -126,13 +125,19 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
-            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+            address(_kintoWalletv1),
+            startingNonce + 1,
+            privateKeys,
+            address(_engenCredits),
+            0,
+            abi.encodeWithSignature("mintCredits()"),
+            address(_paymaster)
+        );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
@@ -159,13 +164,19 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 20);
         // Let's send a transaction to the counter contract through our wallet
-        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
-            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+            address(_kintoWalletv1),
+            startingNonce + 1,
+            privateKeys,
+            address(_engenCredits),
+            0,
+            abi.encodeWithSignature("mintCredits()"),
+            address(_paymaster)
+        );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
@@ -187,13 +198,19 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWalletv1.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 1, privateKeys, address(_engenCredits), 0,
-            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+            address(_kintoWalletv1),
+            startingNonce + 1,
+            privateKeys,
+            address(_engenCredits),
+            0,
+            abi.encodeWithSignature("mintCredits()"),
+            address(_paymaster)
+        );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = createApprovalUserOp(
             _chainID,
@@ -210,13 +227,18 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         // call again
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce + 2, privateKeys, address(_engenCredits), 0,
-            abi.encodeWithSignature('mintCredits()'), address(_paymaster));
+            address(_kintoWalletv1),
+            startingNonce + 2,
+            privateKeys,
+            address(_engenCredits),
+            0,
+            abi.encodeWithSignature("mintCredits()"),
+            address(_paymaster)
+        );
         userOps = new UserOperation[](1);
         userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
         vm.stopPrank();
     }
-
 }
