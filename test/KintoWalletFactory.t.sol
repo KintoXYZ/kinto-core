@@ -133,7 +133,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         address computed =
             _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
-        address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+        address created = _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
         assertEq(computed, created);
         assertEq(Counter(created).count(), 0);
         Counter(created).increment();
@@ -145,6 +145,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         bytes memory a = abi.encodeWithSelector(KintoWallet.initialize.selector, _owner, _owner);
         _walletFactory.deployContract(
+            _owner,
             0,
             abi.encodePacked(type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), a)),
             bytes32(0)
