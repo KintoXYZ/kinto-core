@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IFaucet {
-
     /* ============ Structs ============ */
 
     struct SignatureData {
@@ -20,7 +19,7 @@ interface IFaucet {
 
     function withdrawAll() external;
 
-    function startFaucet() payable external;
+    function startFaucet() external payable;
 
     /* ============ Basic Viewers ============ */
 

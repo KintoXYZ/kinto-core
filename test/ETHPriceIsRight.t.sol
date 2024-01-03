@@ -6,7 +6,6 @@ import "../src/interfaces/IETHPriceIsRight.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-
 contract ETHPriceIsRightTest is Test {
     ETHPriceIsRight _priceIsRight;
 

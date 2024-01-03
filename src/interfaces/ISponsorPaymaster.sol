@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 interface ISponsorPaymaster {
-
     /* ============ Structs ============ */
 
     // A structure to hold rate limiting data
@@ -16,12 +15,12 @@ interface ISponsorPaymaster {
 
     function initialize(address owner) external;
 
-    function addDepositFor(address account) payable external;
+    function addDepositFor(address account) external payable;
 
     function withdrawTokensTo(address target, uint256 amount) external;
 
     function unlockTokenDeposit() external;
-    
+
     function lockTokenDeposit() external;
 
     /* ============ Basic Viewers ============ */
@@ -31,11 +30,10 @@ interface ISponsorPaymaster {
     /* ============ Constants and attrs ============ */
 
     function balances(address account) external view returns (uint256 amount);
-    
+
     function contractSpent(address account) external view returns (uint256 amount);
-    
+
     function unlockBlock(address account) external view returns (uint256 block);
 
     function appUserLimit(address user, address app) external view returns (uint256, uint256, uint256, uint256);
-
 }

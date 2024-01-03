@@ -1,42 +1,41 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import '../src/wallet/KintoWallet.sol';
-import '../src/wallet/KintoWalletFactory.sol';
-import '../src/paymasters/SponsorPaymaster.sol';
-import '../src/KintoID.sol';
-import {UserOp} from './helpers/UserOp.sol';
-import {UUPSProxy} from './helpers/UUPSProxy.sol';
-import {AATestScaffolding} from './helpers/AATestScaffolding.sol';
-import {Create2Helper} from './helpers/Create2Helper.sol';
+import "../src/wallet/KintoWallet.sol";
+import "../src/wallet/KintoWalletFactory.sol";
+import "../src/paymasters/SponsorPaymaster.sol";
+import "../src/KintoID.sol";
+import {UserOp} from "./helpers/UserOp.sol";
+import {UUPSProxy} from "./helpers/UUPSProxy.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import {Create2Helper} from "./helpers/Create2Helper.sol";
 
-import '@aa/interfaces/IAccount.sol';
-import '@aa/interfaces/INonceManager.sol';
-import '@aa/interfaces/IEntryPoint.sol';
-import '@aa/core/EntryPoint.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import { UpgradeableBeacon } from '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
-import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import "@aa/interfaces/IAccount.sol";
+import "@aa/interfaces/INonceManager.sol";
+import "@aa/interfaces/IEntryPoint.sol";
+import "@aa/core/EntryPoint.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 contract KintoWalletV999 is KintoWallet {
-  constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
 
-  function walletFunction() public pure returns (uint256) {
-      return 1;
-  }
+    function walletFunction() public pure returns (uint256) {
+        return 1;
+    }
 }
 
 contract Counter {
-
     uint256 public count;
 
     constructor() {
-      count = 0;
+        count = 0;
     }
 
     function increment() public {
@@ -45,12 +44,11 @@ contract Counter {
 }
 
 contract KintoWalletFactoryV2 is KintoWalletFactory {
-  constructor(KintoWallet _impl) KintoWalletFactory(_impl) {
+    constructor(KintoWallet _impl) KintoWalletFactory(_impl) {}
 
-  }
-  function newFunction() public pure returns (uint256) {
-      return 1;
-  }
+    function newFunction() public pure returns (uint256) {
+        return 1;
+    }
 }
 
 contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
@@ -70,7 +68,6 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     address _kycProvider = address(6);
     address _recoverer = address(7);
     address payable _funder = payable(vm.addr(8));
-
 
     function setUp() public {
         vm.chainId(_chainID);
@@ -134,10 +131,9 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     /* ============ Deploy Tests ============ */
     function testDeployCustomContract() public {
         vm.startPrank(_owner);
-        address computed = _walletFactory.getContractAddress(
-          bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
-        address created = _walletFactory.deployContract(0,
-            abi.encodePacked(type(Counter).creationCode), bytes32(0));
+        address computed =
+            _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+        address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
         assertEq(computed, created);
         assertEq(Counter(created).count(), 0);
         Counter(created).increment();
@@ -147,17 +143,10 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testFailCreateWalletThroughDeploy() public {
         vm.startPrank(_owner);
-        bytes memory a = abi.encodeWithSelector(
-            KintoWallet.initialize.selector,
-            _owner,
-            _owner
-        );
+        bytes memory a = abi.encodeWithSelector(KintoWallet.initialize.selector, _owner, _owner);
         _walletFactory.deployContract(
             0,
-            abi.encodePacked(
-                type(SafeBeaconProxy).creationCode,
-                abi.encode(address(_walletFactory.beacon()), a)
-            ),
+            abi.encodePacked(type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), a)),
             bytes32(0)
         );
         vm.stopPrank();
@@ -172,7 +161,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     function testWhitelistedSignerCanFundWallet() public {
         vm.startPrank(_owner);
         _setPaymasterForContract(address(_kintoWalletv1));
-        uint startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWalletv1.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;
         bool[] memory flags = new bool[](1);
@@ -181,8 +170,14 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1), startingNonce, privateKeys, address(_kintoWalletv1), 0,
-            abi.encodeWithSignature('setFunderWhitelist(address[],bool[])',funders, flags), address(_paymaster));
+            address(_kintoWalletv1),
+            startingNonce,
+            privateKeys,
+            address(_kintoWalletv1),
+            0,
+            abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
+            address(_paymaster)
+        );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
         // Execute the transaction via the entry point
@@ -197,7 +192,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testSignerCannotFundInvalidWallet() public {
         vm.startPrank(_owner);
-        vm.expectRevert('Invalid wallet or funder');
+        vm.expectRevert("Invalid wallet or funder");
         _walletFactory.fundWallet{value: 1e18}(payable(address(0)));
     }
 
@@ -206,13 +201,13 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         _user.transfer(1e18);
         vm.stopPrank();
         vm.startPrank(_user);
-        vm.expectRevert('Invalid wallet or funder');
+        vm.expectRevert("Invalid wallet or funder");
         _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWalletv1)));
     }
 
     function testSignerCannotFundWalletWithoutEth() public {
         vm.startPrank(_owner);
-        vm.expectRevert('Invalid wallet or funder');
+        vm.expectRevert("Invalid wallet or funder");
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWalletv1)));
     }
 }

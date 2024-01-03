@@ -1,30 +1,29 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import '../src/paymasters/SponsorPaymaster.sol';
-import '../src/interfaces/ISponsorPaymaster.sol';
-import './helpers/KYCSignature.sol';
-import './helpers/UUPSProxy.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@aa/interfaces/IEntryPoint.sol';
-import '@aa/core/EntryPoint.sol';
+import "../src/paymasters/SponsorPaymaster.sol";
+import "../src/interfaces/ISponsorPaymaster.sol";
+import "./helpers/KYCSignature.sol";
+import "./helpers/UUPSProxy.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@aa/interfaces/IEntryPoint.sol";
+import "@aa/core/EntryPoint.sol";
 
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 contract SponsorPaymasterV2 is SponsorPaymaster {
-
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
         _disableInitializers();
         _transferOwnership(_owner);
     }
 
-  function newFunction() public pure returns (uint256) {
+    function newFunction() public pure returns (uint256) {
         return 1;
-  }
+    }
 }
 
 contract SponsorPaymasterTest is KYCSignature {
@@ -48,7 +47,7 @@ contract SponsorPaymasterTest is KYCSignature {
         _entryPoint = new EntryPoint{salt: 0}();
         _paymaster = new SponsorPaymaster(_entryPoint);
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy(address(_paymaster), '');
+        _proxy = new UUPSProxy(address(_paymaster), "");
         // wrap in ABI to support easier calls
         _paymaster = SponsorPaymaster(address(_proxy));
         // Initialize proxy
@@ -86,7 +85,7 @@ contract SponsorPaymasterTest is KYCSignature {
     // Deposit & Stake
     function testOwnerCanDepositStakeAndWithdraw() public {
         vm.startPrank(_owner);
-        uint balance = address(_owner).balance;
+        uint256 balance = address(_owner).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         assertEq(address(_owner).balance, balance - 5e18);
         _paymaster.unlockTokenDeposit();
@@ -98,7 +97,7 @@ contract SponsorPaymasterTest is KYCSignature {
 
     function testUserCanDepositStakeAndWithdraw() public {
         vm.startPrank(_user);
-        uint balance = address(_user).balance;
+        uint256 balance = address(_user).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_user));
         assertEq(address(_user).balance, balance - 5e18);
         _paymaster.unlockTokenDeposit();
@@ -111,7 +110,7 @@ contract SponsorPaymasterTest is KYCSignature {
 
     function testFailUserCanDepositStakeAndWithdrawWithoutRoll() public {
         vm.startPrank(_user);
-        uint balance = address(_user).balance;
+        uint256 balance = address(_user).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_user));
         assertEq(address(_user).balance, balance - 5e18);
         _paymaster.unlockTokenDeposit();
@@ -124,7 +123,7 @@ contract SponsorPaymasterTest is KYCSignature {
         vm.startPrank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
         vm.startPrank(_owner);
-        uint balance = address(_owner).balance;
+        uint256 balance = address(_owner).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         _paymaster.withdrawTo(payable(_owner), address(_entryPoint).balance);
         assertEq(address(_paymaster).balance, 0);
@@ -136,7 +135,7 @@ contract SponsorPaymasterTest is KYCSignature {
         vm.startPrank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         vm.startPrank(_user);
-        uint balance = address(_user).balance;
+        uint256 balance = address(_user).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_user));
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
         assertEq(address(_user).balance, balance + 5e18);
