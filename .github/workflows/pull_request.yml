@@ -1,0 +1,25 @@
+name: Pull request
+
+permissions:
+  issues: write
+  pull-requests: write
+  
+on:
+  pull_request:
+
+jobs:
+  forge-fmt:
+    name: Forge format
+    uses: ./.github/workflows/forge-fmt.yml
+    secrets: inherit
+
+  forge-test:
+    if: github.head_ref != 'main' # already triggered by push
+    name: Forge tests
+    uses: ./.github/workflows/forge-test.yml
+    secrets: inherit
+
+  analyse:
+    name: Slither analysis
+    uses: ./.github/workflows/slither.yml
+    secrets: inherit
