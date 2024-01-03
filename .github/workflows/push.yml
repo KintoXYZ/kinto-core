@@ -1,0 +1,9 @@
+name: Push
+
+on:
+  push:
+
+jobs:
+  forge-kinto-mainnet:
+    name: Forge tests
+    uses: ./.github/workflows/forge-fmt.yml
