@@ -268,12 +268,16 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         calls[0] = abi.encodeWithSignature('setAppWhitelist(address[],bool[])',apps, flags);
         calls[1] = abi.encodeWithSignature('increment()');
         calls[2] = abi.encodeWithSignature('increment()');
+
+        OperationParams memory opParams = OperationParams({
+            targetContracts: targets,
+            values: values,
+            bytesOps: calls
+        });
         UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
             _chainID,
             address(_kintoWalletv1), startingNonce, privateKeys,
-            targets,
-            values,
-            calls,
+            opParams,
             address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
@@ -312,12 +316,15 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         calls[1] = abi.encodeWithSignature('increment()');
         calls[2] = abi.encodeWithSignature('increment()');
         // Let's send both transactions via batch
+        OperationParams memory opParams = OperationParams({
+            targetContracts: targets,
+            values: values,
+            bytesOps: calls
+        });
         UserOperation memory userOp = this.createUserOperationBatchWithPaymaster(
             _chainID,
             address(_kintoWalletv1), startingNonce, privateKeys,
-            targets,
-            values,
-            calls,
+            opParams,
             address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;

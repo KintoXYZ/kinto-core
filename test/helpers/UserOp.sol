@@ -19,6 +19,12 @@ import 'forge-std/console.sol';
 abstract contract UserOp is Test {
     using ECDSAUpgradeable for bytes32;
 
+    struct OperationParams {
+        address[] targetContracts;
+        uint[] values;
+        bytes[] bytesOps;
+    }
+
     function _packUserOp (UserOperation memory op, bool forSig) internal pure returns (bytes memory) {
       if (forSig) {
         return abi.encode(
@@ -167,26 +173,46 @@ abstract contract UserOp is Test {
       address _account,
       uint nonce,
       uint256[] calldata _privateKeyOwners,
-      address[] calldata _targetContracts,
-      uint[] calldata values,
-      bytes[] calldata _bytesOps,
+      OperationParams calldata opParams,
       address _paymaster
     ) public view returns (UserOperation memory op) {
-      op = UserOperation({
-        sender: _account,
-        nonce: nonce,
-        initCode: bytes(''),
-        callData: abi.encodeCall(KintoWallet.executeBatch, (_targetContracts, values, _bytesOps)),
-        callGasLimit: 4000000, // generate from call simulation
-        verificationGasLimit: 170000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-        preVerificationGas: 21000, // should also cover calldata cost.
-        maxFeePerGas: 1, // grab from current gas
-        maxPriorityFeePerGas: 1e9, // grab from current gas
-        paymasterAndData: abi.encodePacked(_paymaster),
-        signature: bytes('')
-      });
-      op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
-      return op;
+
+      op = _prepareUserOperation(
+          _account,
+          nonce,
+          opParams,
+          _paymaster
+      );
+
+      op.signature = _signUserOp(
+          op,
+          KintoWallet(payable(_account)).entryPoint(),
+          _chainID,
+          _privateKeyOwners
+      );
+    }
+
+    function _prepareUserOperation(
+        address _account,
+        uint nonce,
+        OperationParams memory opParams,
+        address _paymaster
+    ) internal pure returns (UserOperation memory op) {
+        op = UserOperation({
+            sender: _account,
+            nonce: nonce,
+            initCode: bytes(''),
+            callData: abi.encodeCall(KintoWallet.executeBatch, (opParams.targetContracts, opParams.values, opParams.bytesOps)),
+            callGasLimit: 4000000, // generate from call simulation
+            verificationGasLimit: 170000, // verification gas
+            preVerificationGas: 21000, // should also cover calldata cost.
+            maxFeePerGas: 1, // grab from current gas
+            maxPriorityFeePerGas: 1e9, // grab from current gas
+            paymasterAndData: abi.encodePacked(_paymaster),
+            signature: bytes('')
+        });
+        
+        return op;
     }
 
   function createApprovalUserOp(
