@@ -14,7 +14,10 @@ interface IKintoWalletFactory {
 
     function createAccount(address owner, address recoverer, uint256 salt) external returns (IKintoWallet ret);
 
-    function deployContract(address contractOwner, uint256 amount, bytes memory bytecode, bytes32 salt) external payable returns (address);
+    function deployContract(address contractOwner, uint256 amount, bytes memory bytecode, bytes32 salt)
+        external
+        payable
+        returns (address);
 
     function deployContractByWallet(uint256 amount, bytes memory bytecode, bytes32 salt)
         external

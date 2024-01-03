@@ -129,7 +129,9 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
         address computed =
             _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
         if (!isContract(computed)) {
-            address created = _walletFactory.deployContract(deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+            address created = _walletFactory.deployContract(
+                deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0)
+            );
             console.log("Deployed Counter contract at", created);
         } else {
             console.log("Counter already deployed at", computed);
@@ -201,8 +203,9 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
             bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode))
         );
         if (!isContract(computed)) {
-            address created =
-                _walletFactory.deployContract(deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0));
+            address created = _walletFactory.deployContract(
+                deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0)
+            );
             console.log("Deployed ETHPriceIsRight contract at", created);
         } else {
             console.log("ETHPriceIsRight already deployed at", computed);
