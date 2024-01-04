@@ -1,12 +1,8 @@
 {
-  "name": "kinto-id",
-  "version": "1.0.0",
+  "name": "kinto-core",
   "description": "Kinto ID ",
-  "main": "index.js",
-  "author": "Ramon Recuero <rrmoreno1987@gmail.com>",
-  "license": "MIT",
-  "scripts": {
-    "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID"
-  },
-  "private": true
+  "repository": "https://github.com/KintoXYZ/kinto-core.git",
+  "devDependencies": {
+    "husky": "^8.0.3"
+  }
 }
