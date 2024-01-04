@@ -42,13 +42,9 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxycredit;
     EngenCredits _engenCredits;
 
-    address kycProvider;
-
     function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
-        kycProvider = _kycProvider;
-
         // Deploy Kinto ID
-        deployKintoID(_owner);
+        deployKintoID(_owner, _kycProvider);
 
         // vm.startPrank(_owner);
         EntryPoint entry = new EntryPoint{salt: 0}();
@@ -59,7 +55,7 @@ abstract contract AATestScaffolding is KYCSignature {
         deployWalletFactory(_owner);
 
         // Approve wallet's owner KYC
-        approveKYC(_owner, _ownerPk);
+        approveKYC(_kycProvider, _owner, _ownerPk);
 
         // deploy WalletV1 through wallet factory and initialize it
         vm.prank(_owner);
@@ -80,17 +76,20 @@ abstract contract AATestScaffolding is KYCSignature {
         _paymaster.addDepositFor{value: 1e19}(address(_contract));
     }
 
-    function deployKintoID(address _owner) public {
+    function deployKintoID(address _owner, address _kycProvider) public {
         vm.startPrank(_owner);
         // Deploy Kinto ID
         _implementation = new KintoID();
+
         // deploy _proxy contract and point it to _implementation
         _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");
+
         // wrap in ABI to support easier calls
         _kintoIDv1 = KintoID(address(_proxy));
+
         // Initialize _proxy
         _kintoIDv1.initialize();
-        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), kycProvider);
+        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
         vm.stopPrank();
     }
 
@@ -150,8 +149,8 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
-    function approveKYC(address _account, uint256 _accountPk) public {
-        vm.startPrank(kycProvider);
+    function approveKYC(address _kycProvider, address _account, uint256 _accountPk) public {
+        vm.startPrank(_kycProvider);
 
         IKintoID.SignatureData memory sigdata =
             _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);
@@ -161,8 +160,18 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
-    function revokeKYC(address _account, uint256 _accountPk) public {
-        vm.startPrank(kycProvider);
+    function approveKYC(address _kycProvider, address _account, uint256 _accountPk, uint8[] memory traits) public {
+        vm.startPrank(_kycProvider);
+
+        IKintoID.SignatureData memory sigdata =
+            _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+
+        vm.stopPrank();
+    }
+
+    function revokeKYC(address _kycProvider, address _account, uint256 _accountPk) public {
+        vm.startPrank(_kycProvider);
 
         IKintoID.SignatureData memory sigdata =
             _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);

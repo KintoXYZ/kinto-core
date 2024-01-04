@@ -19,6 +19,26 @@ import "forge-std/console.sol";
 abstract contract UserOp is Test {
     using ECDSAUpgradeable for bytes32;
 
+    // private keys
+    uint256 _ownerPk = 1;
+    uint256 _secondownerPk = 2;
+    uint256 _userPk = 3;
+    uint256 _user2Pk = 4;
+    uint256 _upgraderPk = 5;
+    uint256 _kycProviderPk = 6;
+    uint256 _recovererPk = 7;
+    uint256 _funderPk = 8;
+
+    // users
+    address payable _owner = payable(vm.addr(_ownerPk));
+    address payable _secondowner = payable(vm.addr(_secondownerPk));
+    address payable _user = payable(vm.addr(_userPk));
+    address payable _user2 = payable(vm.addr(_user2Pk));
+    address payable _upgrader = payable(vm.addr(_upgraderPk));
+    address payable _kycProvider = payable(vm.addr(_kycProviderPk));
+    address payable _recoverer = payable(vm.addr(_recovererPk));
+    address payable _funder = payable(vm.addr(_funderPk));
+
     struct OperationParams {
         address[] targetContracts;
         uint256[] values;

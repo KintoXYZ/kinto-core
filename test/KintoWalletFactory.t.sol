@@ -60,21 +60,12 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     uint256 _chainID = 1;
 
-    address payable _owner = payable(vm.addr(1));
-    address _secondowner = address(2);
-    address payable _user = payable(vm.addr(3));
-    address _user2 = address(4);
-    address _upgrader = address(5);
-    address _kycProvider = address(6);
-    address _recoverer = address(7);
-    address payable _funder = payable(vm.addr(8));
-
     function setUp() public {
         vm.chainId(_chainID);
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        deployAAScaffolding(_owner, _kycProvider, _recoverer);
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
     }
 
     function testUp() public {
@@ -94,7 +85,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgradeFactory() public {
+    function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
         _walletFactory.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
@@ -119,7 +110,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgradeWallets() public {
+    function test_RevertWhen_OthersCannotUpgradeWallets() public {
         // Deploy wallet implementation
         _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1);
         // deploy walletv1 through wallet factory and initializes it
@@ -142,7 +133,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testFailCreateWalletThroughDeploy() public {
+    function test_RevertWhen_CreateWalletThroughDeploy() public {
         vm.startPrank(_owner);
         bytes memory a = abi.encodeWithSelector(KintoWallet.initialize.selector, _owner, _owner);
         _walletFactory.deployContract(
@@ -162,7 +153,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testWhitelistedSignerCanFundWallet() public {
         vm.startPrank(_owner);
-        _setPaymasterForContract(address(_kintoWalletv1));
+        _fundPaymasterForContract(address(_kintoWalletv1));
         uint256 startingNonce = _kintoWalletv1.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;

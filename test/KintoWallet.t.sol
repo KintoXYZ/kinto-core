@@ -53,24 +53,6 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
     uint256 _chainID = 1;
 
-    // private keys
-    uint256 _ownerPk = 1;
-    uint256 _secondownerPk = 2;
-    uint256 _userPk = 3;
-    uint256 _user2Pk = 4;
-    uint256 _upgraderPk = 5;
-    uint256 _kycProviderPk = 6;
-    uint256 _recovererPk = 7;
-
-    // users
-    address payable _owner = payable(vm.addr(_ownerPk));
-    address payable _secondowner = payable(vm.addr(_secondownerPk));
-    address payable _user = payable(vm.addr(_userPk));
-    address payable _user2 = payable(vm.addr(_user2Pk));
-    address payable _upgrader = payable(vm.addr(_upgraderPk));
-    address payable _kycProvider = payable(vm.addr(_kycProviderPk));
-    address payable _recoverer = payable(vm.addr(_recovererPk));
-
     // events
     event UserOperationRevertReason(
         bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
@@ -138,7 +120,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
     function test_RevertWhen_OthersCannotUpgrade() public {
         // create a wallet for _user
-        approveKYC(_user, _userPk);
+        approveKYC(_kycProvider, _user, _userPk);
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a KintoWalletv2
@@ -1057,7 +1039,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
 
         // approve KYC for _user (mint NFT)
-        approveKYC(_user, _userPk);
+        approveKYC(_kycProvider, _user, _userPk);
         assertEq(_kintoIDv1.isKYC(_user), true);
 
         // pass recovery time
@@ -1089,7 +1071,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
 
         // burn old owner NFT
-        revokeKYC(_owner, _ownerPk);
+        revokeKYC(_kycProvider, _owner, _ownerPk);
         assertEq(_kintoIDv1.isKYC(_owner), false);
 
         // pass recovery time
@@ -1113,11 +1095,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(_kintoWalletv1.inRecovery(), block.timestamp);
 
         // burn old owner NFT
-        revokeKYC(_owner, _ownerPk);
+        revokeKYC(_kycProvider, _owner, _ownerPk);
         assertEq(_kintoIDv1.isKYC(_owner), false);
 
         // approve KYC for _user (mint NFT)
-        approveKYC(_user, _userPk);
+        approveKYC(_kycProvider, _user, _userPk);
         assertEq(_kintoIDv1.isKYC(_user), true);
 
         // pass recovery time (not enough)

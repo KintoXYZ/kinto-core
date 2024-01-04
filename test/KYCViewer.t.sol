@@ -39,14 +39,6 @@ contract KYCViewerTest is Create2Helper, UserOp, AATestScaffolding {
 
     uint256 _chainID = 1;
 
-    address payable _owner = payable(vm.addr(1));
-    address _secondowner = address(2);
-    address payable _user = payable(vm.addr(3));
-    address _user2 = address(4);
-    address _upgrader = address(5);
-    address _kycProvider = address(6);
-    address _recoverer = address(7);
-    address payable _funder = payable(vm.addr(8));
     UUPSProxy _proxyViewer;
     KYCViewer _implkycViewer;
     KYCViewerV2 _implkycViewerV2;
@@ -58,7 +50,7 @@ contract KYCViewerTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        deployAAScaffolding(_owner, _kycProvider, _recoverer);
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
         vm.startPrank(_owner);
         _implkycViewer = new KYCViewer{salt: 0}(address(_walletFactory));
         // deploy _proxy contract and point it to _implementation
@@ -90,7 +82,7 @@ contract KYCViewerTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgradeFactory() public {
+    function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KYCViewerV2 _implementationV2 = new KYCViewerV2(address(_walletFactory));
         _kycViewer.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy

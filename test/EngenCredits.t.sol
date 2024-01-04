@@ -23,20 +23,14 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
 
     uint256 _chainID = 1;
 
-    address payable _owner = payable(vm.addr(1));
-    address _user = vm.addr(3);
-    address _user2 = vm.addr(4);
-    address _kycProvider = address(6);
-    address _recoverer = address(7);
-
     function setUp() public {
         vm.chainId(1);
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        deployAAScaffolding(_owner, _kycProvider, _recoverer);
-        _setPaymasterForContract(address(_engenCredits));
-        _setPaymasterForContract(address(_kintoWalletv1));
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
+        _fundPaymasterForContract(address(_engenCredits));
+        _fundPaymasterForContract(address(_kintoWalletv1));
     }
 
     function testUp() public {
@@ -52,20 +46,18 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
         _engenCredits.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
+
+        // ensure that the implementation has been upgraded
         _engenCreditsV2 = EngenCreditsV2(address(_engenCredits));
         assertEq(_engenCreditsV2.newFunction(), 1);
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgrade() public {
-        vm.startPrank(_recoverer);
+    function test_RevertWhen_OthersCannotUpgrade() public {
         EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
+
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _engenCreditsV2 = EngenCreditsV2(address(_engenCredits));
-        assertEq(_engenCreditsV2.newFunction(), 1);
-        vm.stopPrank();
     }
 
     /* ============ Token Tests ============ */
@@ -139,7 +131,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createApprovalUserOp(
+        userOps[0] = createWhitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWalletv1),
@@ -178,7 +170,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createApprovalUserOp(
+        userOps[0] = createWhitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWalletv1),
@@ -212,7 +204,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createApprovalUserOp(
+        userOps[0] = createWhitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWalletv1),
