@@ -72,6 +72,10 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return kintoID.isIndividual(_getFinalAddress(_account));
     }
 
+    function hasTrait(address _account, uint8 _traitId) external view returns (bool) {
+        return kintoID.hasTrait(_getFinalAddress(_account), _traitId);
+    }
+
     /* ============ Helpers ============ */
 
     function _getFinalAddress(address _address) private view returns (address) {
