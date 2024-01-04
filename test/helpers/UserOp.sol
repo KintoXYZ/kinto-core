@@ -164,7 +164,6 @@ abstract contract UserOp is Test {
         address _paymaster
     ) public view returns (UserOperation memory op) {
         op = _prepareUserOperation(_account, nonce, opParams, _paymaster);
-
         op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
     }
 
@@ -192,7 +191,7 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function createApprovalUserOp(
+    function createWhitelistAppOp(
         uint256 _chainId,
         uint256[] memory pk,
         address wallet,

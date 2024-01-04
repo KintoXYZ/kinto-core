@@ -42,7 +42,45 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxycredit;
     EngenCredits _engenCredits;
 
-    function deployAAScaffolding(address _owner, address _kycProvider, address _recoverer) public {
+    address kycProvider;
+
+    function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
+        kycProvider = _kycProvider;
+
+        // Deploy Kinto ID
+        deployKintoID(_owner);
+
+        // vm.startPrank(_owner);
+        EntryPoint entry = new EntryPoint{salt: 0}();
+        _entryPoint = IKintoEntryPoint(address(entry));
+        // vm.stopPrank();
+
+        // Deploy wallet & wallet factory
+        deployWalletFactory(_owner);
+
+        // Approve wallet's owner KYC
+        approveKYC(_owner, _ownerPk);
+
+        // deploy WalletV1 through wallet factory and initialize it
+        vm.prank(_owner);
+        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
+
+        // Deploy paymaster
+        deployPaymaster(_owner);
+
+        // Deploy Engen Credits
+        deployEngenCredits(_owner);
+
+        // Give some eth
+        vm.deal(_owner, 1e20);
+    }
+
+    function _fundPaymasterForContract(address _contract) internal {
+        // We add the deposit to the counter contract in the paymaster
+        _paymaster.addDepositFor{value: 1e19}(address(_contract));
+    }
+
+    function deployKintoID(address _owner) public {
         vm.startPrank(_owner);
         // Deploy Kinto ID
         _implementation = new KintoID();
@@ -52,52 +90,84 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoIDv1 = KintoID(address(_proxy));
         // Initialize _proxy
         _kintoIDv1.initialize();
-        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
-        EntryPoint entry = new EntryPoint{salt: 0}();
-        _entryPoint = IKintoEntryPoint(address(entry));
-        // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-        //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(KintoWallet(payable(_kintoWalletImpl)));
-        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), "");
-        _walletFactory = KintoWalletFactory(address(_proxyf));
-        // Initialize wallet factory
-        _walletFactory.initialize(_kintoIDv1);
-        // Set the wallet factory in the entry point
-        _entryPoint.setWalletFactory(address(_walletFactory));
-        // Mint an nft to the owner
-        IKintoID.SignatureData memory sigdata =
-            _auxCreateSignature(_kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.stopPrank();
-        vm.startPrank(_owner);
-        // deploy walletv1 through wallet factory and initializes it
-        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
-        // deploy the paymaster
-        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
-        // deploy _proxy contract and point it to _implementation
-        _proxys = new UUPSProxy(address(_paymaster), "");
-        // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxys));
-        // Initialize proxy
-        _paymaster.initialize(_owner);
-        // Deploy engen credits
-        EngenCredits _imp = new EngenCredits{salt: 0}();
-        // deploy _proxy contract and point it to _implementation
-        _proxycredit = new UUPSProxy{salt: 0}(address(_imp), "");
-        // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxycredit));
-        // Initialize kyc viewer _proxy
-        _engenCredits.initialize();
-        // Give some eth
-        vm.deal(_owner, 1e20);
+        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), kycProvider);
         vm.stopPrank();
     }
 
-    function _setPaymasterForContract(address _contract) internal {
-        // We add the deposit to the counter contract in the paymaster
-        _paymaster.addDepositFor{value: 1e19}(address(_contract));
+    function deployWalletFactory(address _owner) public {
+        vm.startPrank(_owner);
+
+        // Deploy wallet implementation
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+
+        //Deploy wallet factory implementation
+        _walletFactoryI = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
+        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), "");
+        _walletFactory = KintoWalletFactory(address(_proxyf));
+
+        // Initialize wallet factory
+        _walletFactory.initialize(_kintoIDv1);
+
+        // Set the wallet factory in the entry point
+        _entryPoint.setWalletFactory(address(_walletFactory));
+
+        vm.stopPrank();
+    }
+
+    function deployPaymaster(address _owner) public {
+        vm.startPrank(_owner);
+
+        // deploy the paymaster
+        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
+
+        // deploy _proxy contract and point it to _implementation
+        _proxys = new UUPSProxy{salt: 0}(address(_paymaster), "");
+
+        // wrap in ABI to support easier calls
+        _paymaster = SponsorPaymaster(address(_proxys));
+
+        // initialize proxy
+        _paymaster.initialize(_owner);
+
+        vm.stopPrank();
+    }
+
+    function deployEngenCredits(address _owner) public {
+        vm.startPrank(_owner);
+
+        // deploy the engen credits
+        _engenCredits = new EngenCredits{salt: 0}();
+
+        // deploy _proxy contract and point it to _implementation
+        _proxycredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
+
+        // wrap in ABI to support easier calls
+        _engenCredits = EngenCredits(address(_proxycredit));
+
+        // initialize proxy
+        _engenCredits.initialize();
+
+        vm.stopPrank();
+    }
+
+    function approveKYC(address _account, uint256 _accountPk) public {
+        vm.startPrank(kycProvider);
+
+        IKintoID.SignatureData memory sigdata =
+            _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);
+        uint8[] memory traits = new uint8[](0);
+        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+
+        vm.stopPrank();
+    }
+
+    function revokeKYC(address _account, uint256 _accountPk) public {
+        vm.startPrank(kycProvider);
+
+        IKintoID.SignatureData memory sigdata =
+            _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);
+        _kintoIDv1.burnKYC(sigdata);
+
+        vm.stopPrank();
     }
 }
