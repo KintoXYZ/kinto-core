@@ -19,11 +19,6 @@ interface IKintoWalletFactory {
         payable
         returns (address);
 
-    function deployContractByWallet(uint256 amount, bytes memory bytecode, bytes32 salt)
-        external
-        payable
-        returns (address);
-
     function startWalletRecovery(address payable wallet) external;
 
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external;

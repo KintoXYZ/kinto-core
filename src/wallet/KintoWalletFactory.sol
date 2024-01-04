@@ -178,25 +178,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 
     /**
-     * @dev Deploys a contract using `CREATE2`. The address where the contract
-     * will be deployed can be known in advance via {computeAddress}.
-     *
-     * Same as above but this one goes through the Kinto Wallet.
-     * @param amount The amount of wei to send with the contract creation
-     * @param bytecode The bytecode of the contract to deploy
-     * @param salt The salt to use for the calculation
-     */
-    function deployContractByWallet(uint256 amount, bytes calldata bytecode, bytes32 salt)
-        external
-        payable
-        override
-        returns (address)
-    {
-        require(walletTs[msg.sender] > 0 && kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), "KYC required");
-        return _deployAndAssignOwnership(msg.sender, amount, bytecode, salt);
-    }
-
-    /**
      * @dev Fund a wallet through the factory given chain restrictions
      * @param wallet The wallet address to send eth to
      */
