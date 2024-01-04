@@ -54,16 +54,19 @@ contract FaucetTest is Test {
         vm.stopPrank();
     }
 
-    function testFailOwnerCannotStartWithoutAmount() public {
-        vm.startPrank(_owner);
-        _faucet.startFaucet{value: 0.1 ether}();
-        vm.stopPrank();
+    function testStart_RevertWhen_OwnerCannotStartWithoutAmount(uint256 amt) public {
+        vm.assume(amt < _faucet.FAUCET_AMOUNT());
+        vm.prank(_owner);
+        vm.expectRevert("Not enough ETH to start faucet");
+        _faucet.startFaucet{value: amt}();
     }
 
-    function testFailStartFaucetByOthers() public {
-        vm.startPrank(_user);
+    function testStart_RevertWhen_CallerIsNotOwner(address someone) public {
+        vm.assume(someone != _faucet.owner());
+        vm.deal(someone, 1 ether);
+        vm.prank(someone);
+        vm.expectRevert("Ownable: caller is not the owner");
         _faucet.startFaucet{value: 1 ether}();
-        vm.stopPrank();
     }
 
     function testClaim() public {
@@ -78,12 +81,14 @@ contract FaucetTest is Test {
         vm.stopPrank();
     }
 
-    function testFailIfClaimedTwice() public {
-        vm.startPrank(_owner);
+    function testClaim_RevertWhen_ClaimedTwice() public {
+        vm.prank(_owner);
         _faucet.startFaucet{value: 1 ether}();
-        vm.stopPrank();
+
         vm.startPrank(_user);
         _faucet.claimKintoETH();
+
+        vm.expectRevert("You have already claimed your KintoETH");
         _faucet.claimKintoETH();
         vm.stopPrank();
     }
