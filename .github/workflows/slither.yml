@@ -17,6 +17,7 @@ jobs:
           node-version: 16
           fail-on: none
           slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
+          target: 'src/'
 
       - name: Create/update checklist as PR comment
         uses: actions/github-script@v6
