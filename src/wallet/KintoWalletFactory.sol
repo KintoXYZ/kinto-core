@@ -162,15 +162,19 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * - `salt` must have not been used for `bytecode` already.
      * - the factory must have a balance of at least `amount`.
      * - if `amount` is non-zero, `bytecode` must have a `payable` constructor.
+     * @param contractOwner The address to be set as owner
+     * @param amount The amount of wei to send with the contract creation
+     * @param bytecode The bytecode of the contract to deploy
+     * @param salt The salt to use for the calculation
      */
-    function deployContract(uint256 amount, bytes calldata bytecode, bytes32 salt)
+    function deployContract(address contractOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
         external
         payable
         override
         returns (address)
     {
         require(kintoID.isKYC(msg.sender), "KYC required");
-        return _deployAndAssignOwnership(amount, bytecode, salt);
+        return _deployAndAssignOwnership(contractOwner, amount, bytecode, salt);
     }
 
     /**
@@ -178,6 +182,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * will be deployed can be known in advance via {computeAddress}.
      *
      * Same as above but this one goes through the Kinto Wallet.
+     * @param amount The amount of wei to send with the contract creation
+     * @param bytecode The bytecode of the contract to deploy
+     * @param salt The salt to use for the calculation
      */
     function deployContractByWallet(uint256 amount, bytes calldata bytecode, bytes32 salt)
         external
@@ -186,7 +193,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         returns (address)
     {
         require(walletTs[msg.sender] > 0 && kintoID.isKYC(KintoWallet(payable(msg.sender)).owners(0)), "KYC required");
-        return _deployAndAssignOwnership(amount, bytecode, salt);
+        return _deployAndAssignOwnership(msg.sender, amount, bytecode, salt);
     }
 
     /**
@@ -262,7 +269,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         }
     }
 
-    function _deployAndAssignOwnership(uint256 amount, bytes calldata bytecode, bytes32 salt)
+    function _deployAndAssignOwnership(address newOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
         internal
         returns (address)
     {
@@ -272,7 +279,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         // Assign ownership to the deployer if needed
         try OwnableUpgradeable(created).owner() returns (address owner) {
             if (owner == address(this)) {
-                OwnableUpgradeable(created).transferOwnership(msg.sender);
+                OwnableUpgradeable(created).transferOwnership(newOwner);
             }
         } catch {}
         return created;

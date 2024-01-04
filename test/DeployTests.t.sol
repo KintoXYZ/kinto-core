@@ -80,11 +80,13 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
         deployAAScaffolding(_owner, _kycProvider, _recoverer);
         vm.startPrank(_owner);
 
-        address created = _walletFactory.deployContract(0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+        address created =
+            _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
         _counter = Counter(created);
 
-        created =
-            _walletFactory.deployContract(0, abi.encodePacked(type(CounterInitializable).creationCode), bytes32(0));
+        created = _walletFactory.deployContract(
+            _owner, 0, abi.encodePacked(type(CounterInitializable).creationCode), bytes32(0)
+        );
 
         // deploy _proxy contract and point it to _implementation
         _proxyc = new UUPSProxy{salt: 0}(address(created), "");
