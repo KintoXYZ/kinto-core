@@ -104,5 +104,6 @@ contract KYCViewerTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(_kycViewer.isKYC(address(_kintoWalletv1)), _kycViewer.isKYC(_owner));
         assertEq(_kycViewer.isIndividual(address(_kintoWalletv1)), _kycViewer.isIndividual(_owner));
         assertEq(_kycViewer.isCompany(address(_kintoWalletv1)), false);
+        assertEq(_kycViewer.hasTrait(address(_kintoWalletv1), 6), false);
     }
 }

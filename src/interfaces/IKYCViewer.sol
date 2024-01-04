@@ -17,6 +17,8 @@ interface IKYCViewer {
 
     function isIndividual(address _account) external view returns (bool);
 
+    function hasTrait(address _account, uint8 _traitId) external view returns (bool);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
