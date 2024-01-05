@@ -74,12 +74,10 @@ contract SponsorPaymasterTest is KYCSignature {
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgrade() public {
+    function testUpgrade_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterV2 _implementationV2 = new SponsorPaymasterV2(_entryPoint, _owner);
+        vm.expectRevert("SP: not owner");
         _paymaster.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _paymasterv2 = SponsorPaymasterV2(address(_proxy));
-        assertEq(_paymasterv2.newFunction(), 1);
     }
 
     // Deposit & Stake
@@ -108,37 +106,47 @@ contract SponsorPaymasterTest is KYCSignature {
         vm.stopPrank();
     }
 
-    function testFailUserCanDepositStakeAndWithdrawWithoutRoll() public {
-        vm.startPrank(_user);
-        uint256 balance = address(_user).balance;
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
-        assertEq(address(_user).balance, balance - 5e18);
+    function test_RevertWhen_UserCanDepositStakeAndWithdrawWithoutRoll() public {
+        // user deposits 5 eth
+        uint256 balance = address(this).balance;
+        _paymaster.addDepositFor{value: 5e18}(address(this));
+        assertEq(address(this).balance, balance - 5e18);
+
+        // user unlocks token deposit
         _paymaster.unlockTokenDeposit();
-        _paymaster.withdrawTokensTo(address(_user), 5e18);
-        assertEq(address(_user).balance, balance);
-        vm.stopPrank();
+
+        // user withdraws 5 eth
+        vm.expectRevert("SP: must unlockTokenDeposit");
+        _paymaster.withdrawTokensTo(address(this), 5e18);
+
+        assertEq(address(this).balance, balance - 5e18);
     }
 
     function testOwnerCanWithdrawAllInEmergency() public {
-        vm.startPrank(_user);
+        vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
+
         vm.startPrank(_owner);
+
         uint256 balance = address(_owner).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
+
         _paymaster.withdrawTo(payable(_owner), address(_entryPoint).balance);
         assertEq(address(_paymaster).balance, 0);
         assertEq(address(_owner).balance, balance + 5e18);
+
         vm.stopPrank();
     }
 
-    function testFailUserCanWithdrawAllInEmergency() public {
-        vm.startPrank(_owner);
+    function test_RevertWhen_UserCanWithdrawAllInEmergency() public {
+        vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
+
+        // user deposits 5 eth and then tries to withdraw all
         vm.startPrank(_user);
-        uint256 balance = address(_user).balance;
         _paymaster.addDepositFor{value: 5e18}(address(_user));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
-        assertEq(address(_user).balance, balance + 5e18);
         vm.stopPrank();
     }
 }

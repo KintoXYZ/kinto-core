@@ -87,10 +87,8 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
+        vm.expectRevert("Ownable: caller is not the owner");
         _walletFactory.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _walletFactoryv2 = KintoWalletFactoryV2(address(_proxy));
-        assertEq(_walletFactoryv2.newFunction(), 1);
     }
 
     function testAllWalletsUpgrade() public {
@@ -110,12 +108,15 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_OthersCannotUpgradeWallets() public {
-        // Deploy wallet implementation
+    function testUpgrade_RevertWhen_CallerIsNotOwner() public {
+        // deploy wallet implementation
         _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1);
+
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
-        // Upgrade all implementations
+
+        // upgrade all implementations
+        vm.expectRevert("Ownable: caller is not the owner");
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
     }
 
@@ -133,15 +134,14 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_CreateWalletThroughDeploy() public {
+    function testDeploy_RevertWhen_CreateWalletThroughDeploy() public {
         vm.startPrank(_owner);
-        bytes memory a = abi.encodeWithSelector(KintoWallet.initialize.selector, _owner, _owner);
-        _walletFactory.deployContract(
-            _owner,
-            0,
-            abi.encodePacked(type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), a)),
-            bytes32(0)
+        bytes memory initialize = abi.encodeWithSelector(KintoWallet.initialize.selector, _owner, _owner);
+        bytes memory bytecode = abi.encodePacked(
+            type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );
+        vm.expectRevert("Direct KintoWallet deployment not allowed");
+        _walletFactory.deployContract(_owner, 0, bytecode, bytes32(0));
         vm.stopPrank();
     }
 

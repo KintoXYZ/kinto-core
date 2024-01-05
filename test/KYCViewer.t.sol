@@ -84,10 +84,8 @@ contract KYCViewerTest is Create2Helper, UserOp, AATestScaffolding {
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KYCViewerV2 _implementationV2 = new KYCViewerV2(address(_walletFactory));
+        vm.expectRevert("only owner");
         _kycViewer.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _kycViewer2 = KYCViewerV2(address(_kycViewer));
-        assertEq(_kycViewer2.newFunction(), 1);
     }
 
     /* ============ Viewer Tests ============ */

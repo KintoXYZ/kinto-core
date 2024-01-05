@@ -121,7 +121,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Signer Management ============ */
 
     /**
-     * @dev Change the signer policy
+     * @dev Change signer policy
      * @param policy new policy
      */
     function setSignerPolicy(uint8 policy) public override onlySelf {
@@ -132,11 +132,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     /**
-     * @dev Changed the signers
+     * @dev Change signers and policy (if new)
      * @param newSigners new signers array
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
-        require(newSigners[0] == owners[0], "KW-rs: first signer must same unless recovery");
+        require(newSigners[0] == owners[0], "KW-rs: first signer must be the same unless recovery");
         _resetSigners(newSigners, policy);
     }
 
@@ -220,7 +220,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     /**
-     * @dev Allos the wallet to transact with a specific app
+     * @dev Allows the wallet to transact with a specific app
      * @param apps apps array
      * @param flags whether to allow or disallow the app
      */
