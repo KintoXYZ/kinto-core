@@ -214,9 +214,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // Check Kinto Gas limit app
         ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
         if (block.timestamp < gasLimit.lastOperationTime + appLimits[2]) {
-            require(
-                (gasLimit.ethCostCount + ethMaxCost) <= appLimits[3], "SP: Kinto Gas App limit exceeded"
-            );
+            require((gasLimit.ethCostCount + ethMaxCost) <= appLimits[3], "SP: Kinto Gas App limit exceeded");
         } else {
             // First time need to be checked
             require(ethMaxCost <= appLimits[3], "SP: Kinto Gas App limit exceeded");
@@ -283,7 +281,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             lastTargetContract = appRegistry.getContractSponsor(targetContracts[targetContracts.length - 1]);
             // Last contract must be a contract app
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
-                if (!appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i]) && targetContracts[i] != sender) {
+                if (
+                    !appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i])
+                        && targetContracts[i] != sender
+                ) {
                     revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
                 }
             }

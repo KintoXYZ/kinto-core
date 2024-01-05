@@ -334,7 +334,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     function _checkAppWhitelist(address _contract) internal view {
-        require(appWhitelist[appRegistry.getContractSponsor(_contract)] || _contract == address(this), "KW: contract not whitelisted");
+        require(
+            appWhitelist[appRegistry.getContractSponsor(_contract)] || _contract == address(this),
+            "KW: contract not whitelisted"
+        );
     }
 
     function _onlySelf() internal view {

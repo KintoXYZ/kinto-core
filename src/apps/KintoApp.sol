@@ -28,7 +28,6 @@ contract KintoApp is
     UUPSUpgradeable,
     IKintoApp
 {
-
     /* ============ Constants ============ */
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant override DEVELOPER_ADMIN = keccak256("DEVELOPER_ADMIN");
@@ -37,15 +36,14 @@ contract KintoApp is
     uint256 public constant RATE_LIMIT_THRESHOLD = 10;
     uint256 public constant GAS_LIMIT_PERIOD = 30 days;
     uint256 public constant GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
-    
+
     /* ============ State Variables ============ */
 
     uint256 private _nextTokenId;
 
-    mapping (address => IKintoApp.Metadata) public appMetadata;
-    mapping (address => address) public childToParentContract;
-    mapping (address => mapping (address => bool)) public appSponsoredContracts; // other contracts to be sponsored
-
+    mapping(address => IKintoApp.Metadata) public appMetadata;
+    mapping(address => address) public childToParentContract;
+    mapping(address => mapping(address => bool)) public appSponsoredContracts; // other contracts to be sponsored
 
     /* ============ Events ============ */
 
@@ -83,7 +81,12 @@ contract KintoApp is
      * @param childContracts The addresses of the child contracts
      * @param appLimits The limits of the app
      */
-    function registerApp(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) external override {
+    function registerApp(
+        string calldata _name,
+        address parentContract,
+        address[] calldata childContracts,
+        uint256[4] calldata appLimits
+    ) external override {
         require(appLimits.length == 4, "Invalid app limits");
         _updateMetadata(_name, parentContract, childContracts, appLimits);
         _nextTokenId++;
@@ -96,7 +99,10 @@ contract KintoApp is
      * @param _contracts The addresses of the contracts
      * @param _flags The flags of the contracts
      */
-    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags) external override {
+    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags)
+        external
+        override
+    {
         require(_contracts.length == _flags.length, "Invalid input");
         require(msg.sender == appMetadata[_app].developerWallet, "Only developer can set sponsored contracts");
         for (uint256 i = 0; i < _contracts.length; i++) {
@@ -111,7 +117,12 @@ contract KintoApp is
      * @param childContracts The addresses of the child contracts
      * @param appLimits The limits of the app
      */
-    function updateMetadata(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) external override {
+    function updateMetadata(
+        string calldata _name,
+        address parentContract,
+        address[] calldata childContracts,
+        uint256[4] calldata appLimits
+    ) external override {
         require(appLimits.length == 4, "Invalid app limits");
         require(msg.sender == appMetadata[parentContract].developerWallet, "Only developer can update metadata");
         _updateMetadata(_name, parentContract, childContracts, appLimits);
@@ -134,7 +145,8 @@ contract KintoApp is
      * @return The metadata of the app
      */
     function getAppMetadata(address _contract) external view override returns (IKintoApp.Metadata memory) {
-        address finalContract = childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
+        address finalContract =
+            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
         return appMetadata[finalContract];
     }
 
@@ -144,7 +156,8 @@ contract KintoApp is
      * @return The limits of the app
      */
     function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
-        address finalContract = childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
+        address finalContract =
+            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
         IKintoApp.Metadata memory metadata = appMetadata[finalContract];
         return [
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
@@ -206,7 +219,12 @@ contract KintoApp is
     }
 
     /* =========== App metadata params =========== */
-    function _updateMetadata(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) internal {
+    function _updateMetadata(
+        string calldata _name,
+        address parentContract,
+        address[] calldata childContracts,
+        uint256[4] calldata appLimits
+    ) internal {
         IKintoApp.Metadata memory metadata = IKintoApp.Metadata({
             name: _name,
             developerWallet: msg.sender,
@@ -221,7 +239,6 @@ contract KintoApp is
             childToParentContract[childContracts[i]] = parentContract;
         }
     }
-
 
     /* ============ Disable token transfers ============ */
 
@@ -258,5 +275,4 @@ contract KintoApp is
     {
         return super.supportsInterface(interfaceId);
     }
-
 }
