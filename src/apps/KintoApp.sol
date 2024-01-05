@@ -39,6 +39,8 @@ contract KintoApp is
 
     mapping (address => IKintoApp.Metadata) public appMetadata;
     mapping (address => address) public childToParentContract;
+    mapping (address => mapping (address => bool)) public appSponsoredContracts; // other contracts to be sponsored
+
 
     /* ============ Events ============ */
 
@@ -78,21 +80,36 @@ contract KintoApp is
      */
     function registerApp(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) external override {
         require(appLimits.length == 4, "Invalid app limits");
-        IKintoApp.Metadata memory metadata = IKintoApp.Metadata({
-            name: _name,
-            developerWallet: msg.sender, 
-            dsaEnabled: false,
-            rateLimitPeriod: appLimits[0],
-            rateLimitNumber: appLimits[1],
-            gasLimitPeriod: appLimits[2],
-            gasLimitCost: appLimits[3]
-        });
-        appMetadata[parentContract] = metadata;
-        for (uint256 i = 0; i < childContracts.length; i++) {
-            childToParentContract[childContracts[i]] = parentContract;
-        }
+        _updateMetadata(_name, parentContract, childContracts, appLimits);
         _nextTokenId++;
         _safeMint(msg.sender, _nextTokenId);
+    }
+
+    /**
+     * @dev Allows the developer to set sponsored contracts
+     * @param _app The address of the app
+     * @param _contracts The addresses of the contracts
+     * @param _flags The flags of the contracts
+     */
+    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags) external override {
+        require(_contracts.length == _flags.length, "Invalid input");
+        require(msg.sender == appMetadata[_app].developerWallet, "Only developer can set sponsored contracts");
+        for (uint256 i = 0; i < _contracts.length; i++) {
+            appSponsoredContracts[_app][_contracts[i]] = _flags[i];
+        }
+    }
+
+    /**
+     * @dev Allows the developer to update the metadata of the app
+     * @param _name The name of the app
+     * @param parentContract The address of the parent contract
+     * @param childContracts The addresses of the child contracts
+     * @param appLimits The limits of the app
+     */
+    function updateMetadata(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) external override {
+        require(appLimits.length == 4, "Invalid app limits");
+        require(msg.sender == appMetadata[parentContract].developerWallet, "Only developer can update metadata");
+        _updateMetadata(_name, parentContract, childContracts, appLimits);
     }
 
     /**
@@ -127,6 +144,16 @@ contract KintoApp is
         return [metadata.rateLimitPeriod, metadata.rateLimitNumber, metadata.gasLimitPeriod, metadata.gasLimitCost];
     }
 
+    /**
+     * @dev Returns whether a contract is sponsored by an app
+     * @param _app The address of the app
+     * @param _contract The address of the contract
+     * @return bool true or false
+     */
+    function isContractSponsoredByApp(address _app, address _contract) external view override returns (bool) {
+        return childToParentContract[_contract] == _app || appSponsoredContracts[_app][_contract];
+    }
+
     /* ============ Token name, symbol & URI ============ */
 
     /**
@@ -151,6 +178,23 @@ contract KintoApp is
      */
     function _baseURI() internal pure override returns (string memory) {
         return "https://kinto.xyz/metadata/kintoapp/";
+    }
+
+    /* =========== App metadata params =========== */
+    function _updateMetadata(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) internal {
+        IKintoApp.Metadata memory metadata = IKintoApp.Metadata({
+            name: _name,
+            developerWallet: msg.sender,
+            dsaEnabled: false,
+            rateLimitPeriod: appLimits[0],
+            rateLimitNumber: appLimits[1],
+            gasLimitPeriod: appLimits[2],
+            gasLimitCost: appLimits[3]
+        });
+        appMetadata[parentContract] = metadata;
+        for (uint256 i = 0; i < childContracts.length; i++) {
+            childToParentContract[childContracts[i]] = parentContract;
+        }
     }
 
 

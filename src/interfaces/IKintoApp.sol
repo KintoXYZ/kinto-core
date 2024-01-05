@@ -20,6 +20,10 @@ interface IKintoApp {
 
     function enableDSA(address app) external;
 
+    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags) external;
+
+    function updateMetadata(string calldata _name, address parentContract, address[] calldata childContracts, uint256[4] calldata appLimits) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);
@@ -29,6 +33,8 @@ interface IKintoApp {
     function getContractLimits(address _contract) external view returns (uint256[4] memory);
     
     function getAppMetadata(address _contract) external view returns (Metadata memory);
+
+    function isContractSponsoredByApp(address _app, address _contract) external view returns (bool);
 
     /* ============ Constants and attrs ============ */
 
