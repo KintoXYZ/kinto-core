@@ -277,8 +277,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            lastTargetContract = targetContracts[targetContracts.length - 1];
-            // App contract must be last
+            lastTargetContract = appRegistry.getContractSponsor(targetContracts[targetContracts.length - 1]);
+            // Last contract must be a contract app
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
                 if (!appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i]) && targetContracts[i] != sender) {
                     revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");

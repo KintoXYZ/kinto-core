@@ -154,6 +154,21 @@ contract KintoApp is
         return _contract == _app || childToParentContract[_contract] == _app || appSponsoredContracts[_app][_contract];
     }
 
+    /**
+     * @dev Returns the contract that sponsors a contract
+     * @param _contract The address of the contract
+     * @return The address of the contract that sponsors the contract
+     */
+    function getContractSponsor(address _contract) external view override returns (address) {
+        if (appMetadata[_contract].developerWallet != address(0)) {
+            return _contract;
+        }
+        if (childToParentContract[_contract] != address(0)) {
+            return childToParentContract[_contract];
+        }
+        return _contract;
+    }
+
     /* ============ Token name, symbol & URI ============ */
 
     /**
