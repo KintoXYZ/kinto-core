@@ -33,11 +33,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     uint256 public constant MAX_COST_OF_USEROP = 3e15; // 0.03 ETH
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
-    uint256 public constant RATE_LIMIT_THRESHOLD_SINGLE = 10;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
-
-    uint256 public constant GAS_LIMIT_PERIOD = 30 days;
-    uint256 public constant GAS_LIMIT_THRESHOLD_SINGLE = 1e16; // 0.01 ETH
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
@@ -200,27 +196,30 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
-        // Check app rate limiting
-        ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
-        if (block.timestamp < data.lastOperationTime + RATE_LIMIT_PERIOD) {
-            require(data.operationCount < RATE_LIMIT_THRESHOLD_SINGLE, "SP: App Rate limit exceeded");
-        }
-
-        // Check Kinto Gas limit app
-        ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
-        if (block.timestamp < gasLimit.lastOperationTime + GAS_LIMIT_PERIOD) {
-            require(
-                (gasLimit.ethCostCount + ethMaxCost) <= GAS_LIMIT_THRESHOLD_SINGLE, "SP: Kinto Gas App limit exceeded"
-            );
-        } else {
-            // First time need to be checked
-            require(ethMaxCost <= GAS_LIMIT_THRESHOLD_SINGLE, "SP: Kinto Gas App limit exceeded");
-        }
-
         // Check Kinto rate limiting
         ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
         if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
             require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "SP: Kinto Rate limit exceeded");
+        }
+
+        // Get app limits
+        uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
+
+        // Check app rate limiting
+        ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
+        if (block.timestamp < data.lastOperationTime + appLimits[0]) {
+            require(data.operationCount < appLimits[1], "SP: App Rate limit exceeded");
+        }
+
+        // Check Kinto Gas limit app
+        ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
+        if (block.timestamp < gasLimit.lastOperationTime + appLimits[2]) {
+            require(
+                (gasLimit.ethCostCount + ethMaxCost) <= appLimits[3], "SP: Kinto Gas App limit exceeded"
+            );
+        } else {
+            // First time need to be checked
+            require(ethMaxCost <= appLimits[3], "SP: Kinto Gas App limit exceeded");
         }
 
         require(unlockBlock[targetAccount] == 0, "SP: deposit not locked");
@@ -238,22 +237,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
-        // Updates app rate limiting
-        ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[userAccount][account];
-        if (block.timestamp > appTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
-            appTxLimit.lastOperationTime = block.timestamp;
-            appTxLimit.operationCount = 1;
-        } else {
-            appTxLimit.operationCount += 1;
-        }
-        // App gas limit
-        ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
-        if (block.timestamp > costApp.lastOperationTime + GAS_LIMIT_PERIOD) {
-            costApp.lastOperationTime = block.timestamp;
-            costApp.ethCostCount = ethCost;
-        } else {
-            costApp.ethCostCount += ethCost;
-        }
+
         // Global network rate limit
         ISponsorPaymaster.RateLimitData storage globalTxLimit = totalRateLimit[userAccount];
         if (block.timestamp > globalTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
@@ -261,6 +245,25 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             globalTxLimit.operationCount = 1;
         } else {
             globalTxLimit.operationCount += 1;
+        }
+
+        uint256[4] memory appLimits = appRegistry.getContractLimits(account);
+
+        // Updates app rate limiting
+        ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[userAccount][account];
+        if (block.timestamp > appTxLimit.lastOperationTime + appLimits[0]) {
+            appTxLimit.lastOperationTime = block.timestamp;
+            appTxLimit.operationCount = 1;
+        } else {
+            appTxLimit.operationCount += 1;
+        }
+        // App gas limit
+        ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
+        if (block.timestamp > costApp.lastOperationTime + appLimits[2]) {
+            costApp.lastOperationTime = block.timestamp;
+            costApp.ethCostCount = ethCost;
+        } else {
+            costApp.ethCostCount += ethCost;
         }
     }
 
@@ -287,7 +290,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            lastTargetContract = targetContract;
+            lastTargetContract = appRegistry.getContractSponsor(targetContract);
         } else {
             // Handle unknown function or error
             revert("SP: Unknown function selector");

@@ -32,6 +32,11 @@ contract KintoApp is
     /* ============ Constants ============ */
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant override DEVELOPER_ADMIN = keccak256("DEVELOPER_ADMIN");
+
+    uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
+    uint256 public constant RATE_LIMIT_THRESHOLD = 10;
+    uint256 public constant GAS_LIMIT_PERIOD = 30 days;
+    uint256 public constant GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
     
     /* ============ State Variables ============ */
 
@@ -141,7 +146,12 @@ contract KintoApp is
     function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
         address finalContract = childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
         IKintoApp.Metadata memory metadata = appMetadata[finalContract];
-        return [metadata.rateLimitPeriod, metadata.rateLimitNumber, metadata.gasLimitPeriod, metadata.gasLimitCost];
+        return [
+            metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
+            metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
+            metadata.gasLimitPeriod != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_PERIOD,
+            metadata.gasLimitCost != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_THRESHOLD
+        ];
     }
 
     /**
