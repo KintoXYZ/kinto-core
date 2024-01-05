@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 import "@aa/core/UserOperationLib.sol";
 import "../interfaces/ISponsorPaymaster.sol";
+import "../interfaces/IKintoApp.sol";
 import "../interfaces/IKintoWallet.sol";
 
 /**
@@ -46,6 +47,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
     mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
 
+    IKintoApp public override appRegistry;
+
     // ========== Constructor & Upgrades ============
 
     constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
@@ -72,6 +75,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     function _authorizeUpgrade(address newImplementation) internal view override {
         require(msg.sender == owner(), "SP: not owner");
         (newImplementation);
+    }
+
+    /**
+     * @dev Set the app registry
+     * @param _appRegistry address of the app registry
+     */
+    function setAppRegistry(address _appRegistry) external override onlyOwner {
+        appRegistry = IKintoApp(_appRegistry);
     }
 
     // ========== Deposit Mgmt ============
@@ -256,7 +267,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     // Function to extract the first target contract
     function _getLastTargetContract(address sender, bytes calldata callData)
         private
-        pure
+        view
         returns (address lastTargetContract)
     {
         // Extract the function selector from the callData
@@ -267,9 +278,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
             lastTargetContract = targetContracts[targetContracts.length - 1];
+            // App contract must be last
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
-                if (targetContracts[i] != lastTargetContract && targetContracts[i] != sender) {
-                    revert("SP: executeBatch must come from same contract or sender wallet");
+                if (!appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i]) && targetContracts[i] != sender) {
+                    revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
                 }
             }
         } else if (selector == IKintoWallet.execute.selector) {

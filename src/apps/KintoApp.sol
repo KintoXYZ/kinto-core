@@ -151,7 +151,7 @@ contract KintoApp is
      * @return bool true or false
      */
     function isContractSponsoredByApp(address _app, address _contract) external view override returns (bool) {
-        return childToParentContract[_contract] == _app || appSponsoredContracts[_app][_contract];
+        return _contract == _app || childToParentContract[_contract] == _app || appSponsoredContracts[_app][_contract];
     }
 
     /* ============ Token name, symbol & URI ============ */
