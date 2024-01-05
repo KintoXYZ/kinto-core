@@ -328,12 +328,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         bytes[] memory signatures = new bytes[](owners.length);
         // Split signature from userOp.signature
-        if (requiredSigners == 2) {
-            (signatures[0], signatures[1]) = ByteSignature.extractTwoSignatures(userOp.signature);
-        } else if (requiredSigners == 3) {
-            (signatures[0], signatures[1], signatures[2]) = ByteSignature.extractThreeSignatures(userOp.signature);
-        } else {
+        if (requiredSigners == 1) {
             signatures[0] = userOp.signature;
+        } else {
+            signatures = ByteSignature.extractSignatures(userOp.signature, requiredSigners);
         }
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == hash.recover(signatures[i])) {
