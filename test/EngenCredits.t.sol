@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.23;
 
 import "../src/tokens/EngenCredits.sol";
 import "forge-std/Test.sol";
