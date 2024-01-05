@@ -25,20 +25,12 @@ contract KintoEntryPointTest is AATestScaffolding, UserOp {
 
     uint256 _chainID = 1;
 
-    address payable _owner = payable(vm.addr(1));
-    address _secondowner = address(2);
-    address _user = vm.addr(3);
-    address _user2 = vm.addr(5);
-    address _upgrader = address(5);
-    address _kycProvider = address(6);
-    address _recoverer = address(7);
-
     function setUp() public {
         vm.chainId(_chainID);
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        deployAAScaffolding(_owner, _kycProvider, _recoverer);
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
     }
 
     function testUp() public {

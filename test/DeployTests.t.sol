@@ -59,15 +59,6 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
 
     uint256 _chainID = 1;
 
-    address payable _owner = payable(vm.addr(1));
-    address _secondowner = address(2);
-    address payable _user = payable(vm.addr(3));
-    address _user2 = address(4);
-    address _upgrader = address(5);
-    address _kycProvider = address(6);
-    address _recoverer = address(7);
-    address payable _funder = payable(vm.addr(8));
-
     UUPSProxy _proxyc;
     Counter _counter;
     CounterInitializable _counterInit;
@@ -77,7 +68,7 @@ contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
-        deployAAScaffolding(_owner, _kycProvider, _recoverer);
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
         vm.startPrank(_owner);
 
         address created =

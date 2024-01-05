@@ -23,3 +23,9 @@ jobs:
     name: Slither analysis
     uses: ./.github/workflows/slither.yml
     secrets: inherit
+
+  gas-diff:
+    name: Gas diff
+    uses: ./.github/workflows/gas-diff.yml
+    secrets: inherit
+  
