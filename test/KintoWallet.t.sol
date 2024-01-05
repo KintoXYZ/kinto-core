@@ -21,7 +21,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletv2 is KintoWallet {
@@ -109,13 +109,10 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // execute the transaction via the entry point and expect a revert event
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOp),
-            userOp.sender,
-            userOp.nonce,
-            bytes("") // todo: add revert reason
-        );
+        emit UserOperationRevertReason(_entryPoint.getUserOpHash(userOp), userOp.sender, userOp.nonce, bytes(""));
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("Address: low-level call with value failed");
     }
 
     function test_RevertWhen_OthersCannotUpgrade() public {
@@ -147,14 +144,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // execute the transaction via the entry point
         // @dev handleOps seems to fail silently (does not revert)
         vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOp),
-            userOp.sender,
-            userOp.nonce,
-            bytes("") // todo: add revert reason
-        );
+        emit UserOperationRevertReason(_entryPoint.getUserOpHash(userOp), userOp.sender, userOp.nonce, bytes(""));
 
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW: app not whitelisted");
 
         vm.stopPrank();
     }
@@ -248,12 +242,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // execute the transaction via the entry point
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW: app not whitelisted");
         assertEq(counter.count(), 0);
     }
 
@@ -417,8 +410,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         userOps[0] = userOp;
 
         // execute the transaction via the entry point
-        vm.expectRevert();
-        // todo: vm.expectRevert(abi.encodeWithSignature("FailedOpWithRevert(uint256,string,bytes)", 0, "AA33 reverted", "TODO"));
+
+        // prepare expected error message
+        uint256 expectedOpIndex = 0; // Adjust as needed
+        string memory expectedMessage = "AA33 reverted";
+        bytes memory additionalMessage =
+            abi.encodePacked("SP: executeBatch must come from same contract or sender wallet");
+        bytes memory expectedAdditionalData = abi.encodeWithSelector(
+            bytes4(keccak256("Error(string)")), // Standard error selector
+            additionalMessage
+        );
+
+        // encode the entire revert reason
+        bytes memory expectedRevertReason = abi.encodeWithSignature(
+            "FailedOpWithRevert(uint256,string,bytes)", expectedOpIndex, expectedMessage, expectedAdditionalData
+        );
+
+        vm.expectRevert(expectedRevertReason);
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
@@ -470,12 +478,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("duplicate owners");
     }
 
     function test_RevertWhen_WithEmptyArray() public {
@@ -498,12 +505,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq(stdError.indexOOBError, false);
     }
 
     function test_RevertWhen_WithManyOwners() public {
@@ -530,12 +536,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW-rs: invalid array");
     }
 
     function test_RevertWhen_WithoutKYCSigner() public {
@@ -648,22 +653,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
 
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[1]),
-            userOps[1].sender,
-            userOps[1].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
         );
 
         // Execute the transaction via the entry point
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+
+        bytes[] memory reasons = new bytes[](2);
+        reasons[0] = "invalid policy";
+        reasons[1] = "Address: low-level call with value failed";
+        assertRevertReasonEq(reasons);
+
         assertEq(_kintoWalletv1.owners(0), _owner);
         assertEq(_kintoWalletv1.signerPolicy(), _kintoWalletv1.SINGLE_SIGNER());
     }
@@ -1212,12 +1218,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW-at: app not whitelisted");
         assertEq(_kintoWalletv1.isTokenApproved(app, tokens[0]), tokenApprovalBefore);
     }
 
@@ -1293,12 +1298,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[1]),
-            userOps[1].sender,
-            userOps[1].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW: Direct ERC20 approval not allowed");
         assertEq(_engenCredits.allowance(address(_kintoWalletv1), app), allowanceBefore);
     }
 
@@ -1324,12 +1328,11 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]),
-            userOps[0].sender,
-            userOps[0].nonce,
-            bytes("") // todo: add revert reason
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
+        vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW-apk: invalid address");
         assertEq(_kintoWalletv1.appSigner(app), appSignerBefore);
     }
 

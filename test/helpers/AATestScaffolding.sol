@@ -179,4 +179,58 @@ abstract contract AATestScaffolding is KYCSignature {
 
         vm.stopPrank();
     }
+
+    ////// helper methods to assert the revert reason on UserOperationRevertReason events ////
+
+    // string reasons
+
+    function assertRevertReasonEq(bytes memory _reason) public {
+        bytes[] memory reasons = new bytes[](1);
+        reasons[0] = _reason;
+        _assertRevertReasonEq(reasons, true);
+    }
+
+    // @dev if UserOperationRevertReason is string or bytes, we can specify it with isStringType
+    function assertRevertReasonEq(bytes memory _reason, bool isStringType) public {
+        bytes[] memory reasons = new bytes[](1);
+        reasons[0] = _reason;
+        _assertRevertReasonEq(reasons, isStringType);
+    }
+
+    // @dev if 2 or more UserOperationRevertReason events are emitted
+    function assertRevertReasonEq(bytes[] memory _reasons) public {
+        _assertRevertReasonEq(_reasons, true);
+    }
+
+    function _assertRevertReasonEq(bytes[] memory _reasons, bool isStringType) internal {
+        uint256 idx = 0;
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        for (uint256 i = 0; i < logs.length; i++) {
+            // check if this is the correct event
+            if (logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")) {
+                (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
+
+                // check that the revertReasonBytes is long enough (at least 4 bytes for the selector + additional data for the message)
+                if (revertReasonBytes.length > 4) {
+                    //decode the remaining bytes as a string
+                    if (isStringType) {
+                        // remove the first 4 bytes (the function selector)
+                        bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
+                        for (uint256 j = 4; j < revertReasonBytes.length; j++) {
+                            errorBytes[j - 4] = revertReasonBytes[j];
+                        }
+                        string memory decodedRevertReason = abi.decode(errorBytes, (string));
+                        // compare as strings
+                        assertEq(decodedRevertReason, string(_reasons[idx]), "Revert reason does not match");
+                    } else {
+                        // compare as bytes
+                        assertEq(revertReasonBytes, _reasons[idx], "Revert reason does not match");
+                    }
+                    idx++;
+                } else {
+                    revert("Revert reason bytes too short to decode");
+                }
+            }
+        }
+    }
 }
