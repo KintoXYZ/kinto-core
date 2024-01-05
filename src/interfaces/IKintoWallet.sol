@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 import {IKintoID} from "./IKintoID.sol";
+import {IKintoApp} from "./IKintoApp.sol";
 
 interface IKintoWallet {
     /* ============ Structs ============ */
@@ -27,10 +28,6 @@ interface IKintoWallet {
     function finishRecovery(address[] calldata newSigners) external;
 
     function cancelRecovery() external;
-
-    function approveTokens(address app, address[] calldata tokens, uint256[] calldata amount) external;
-
-    function revokeTokens(address app, address[] calldata tokens) external;
 
     function setAppKey(address app, address signer) external;
 
@@ -56,11 +53,11 @@ interface IKintoWallet {
 
     function isFunderWhitelisted(address funder) external view returns (bool);
 
-    function isTokenApproved(address app, address token) external view returns (uint256);
-
     function appSigner(address app) external view returns (address);
 
     function appWhitelist(address app) external view returns (bool);
+
+    function appRegistry() external view returns (IKintoApp);
 
     function signerPolicy() external view returns (uint8);
 

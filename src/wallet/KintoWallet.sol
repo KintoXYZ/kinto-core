@@ -14,6 +14,7 @@ import "../interfaces/IKintoEntryPoint.sol";
 import "../libraries/ByteSignature.sol";
 import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
+import "../interfaces/IKintoApp.sol";
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
@@ -45,9 +46,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address[] public override owners;
     address public override recoverer;
     mapping(address => bool) public override funderWhitelist;
-    mapping(address => mapping(address => uint256)) private _tokenApprovals;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
+    IKintoApp public override appRegistry = IKintoApp(address(0));
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -168,40 +169,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return funderWhitelist[funder];
     }
 
-    /* ============ Token Approvals ============ */
+    /* ============ Token & App whitelists ============ */
 
     /**
-     * @dev Approve tokens to a specific app
-     * @param app app address
-     * @param tokens tokens array
-     * @param amount amount array
+     * @dev Allos the wallet to transact with specific apps
+     * @param apps apps array
+     * @param flags whether to allow or disallow the app
      */
-    function approveTokens(address app, address[] calldata tokens, uint256[] calldata amount)
-        external
-        override
-        onlySelf
-    {
-        require(tokens.length == amount.length, "KW-at: invalid array");
-        require(appWhitelist[app], "KW-at: app not whitelisted");
-        for (uint256 i = 0; i < tokens.length; i++) {
-            if (_tokenApprovals[app][tokens[i]] > 0) {
-                IERC20(tokens[i]).approve(app, 0);
-            }
-            _tokenApprovals[app][tokens[i]] = amount[i];
-            IERC20(tokens[i]).approve(app, amount[i]);
-        }
-    }
-
-    /**
-     * @dev Revoke token approvals given to a specific app
-     * @param app app address
-     * @param tokens tokens array
-     */
-    function revokeTokens(address app, address[] calldata tokens) external override onlySelf {
-        require(appWhitelist[app], "KW-rt: app not whitelisted");
-        for (uint256 i = 0; i < tokens.length; i++) {
-            _tokenApprovals[app][tokens[i]] = 0;
-            IERC20(tokens[i]).approve(app, 0);
+    function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external override onlySelf {
+        require(apps.length == flags.length, "KW-apw: invalid array");
+        for (uint256 i = 0; i < apps.length; i++) {
+            appWhitelist[apps[i]] = flags[i];
         }
     }
 
@@ -217,18 +195,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         require(app != address(0) && appWhitelist[app], "KW-apk: invalid address");
         require(appSigner[app] != signer, "KW-apk: same key");
         appSigner[app] = signer;
-    }
-
-    /**
-     * @dev Allos the wallet to transact with a specific app
-     * @param apps apps array
-     * @param flags whether to allow or disallow the app
-     */
-    function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external override onlySelf {
-        require(apps.length == flags.length, "KW-apw: invalid array");
-        for (uint256 i = 0; i < apps.length; i++) {
-            appWhitelist[apps[i]] = flags[i];
-        }
     }
 
     /* ============ Recovery Process ============ */
@@ -286,10 +252,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function getOwnersCount() external view override returns (uint256) {
         return owners.length;
-    }
-
-    function isTokenApproved(address app, address token) external view override returns (uint256) {
-        return _tokenApprovals[app][token];
     }
 
     /* ============ IAccountOverrides ============ */
@@ -371,14 +333,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
-    function _preventDirectApproval(bytes calldata _bytes) internal pure {
-        // Prevent direct deployment of KintoWallet contracts
-        bytes4 approvalBytes = bytes4(keccak256(bytes("approve(address,uint256)")));
-        require(bytes4(_bytes[:4]) != approvalBytes, "KW: Direct ERC20 approval not allowed");
-    }
-
-    function _checkAppWhitelist(address app) internal view {
-        require(appWhitelist[app] || app == address(this), "KW: app not whitelisted");
+    function _checkAppWhitelist(address _contract) internal view {
+        require(appWhitelist[appRegistry.getContractSponsor(_contract)] || _contract == address(this), "KW: contract not whitelisted");
     }
 
     function _onlySelf() internal view {
@@ -393,8 +349,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         _checkAppWhitelist(dest);
-        // Prevents direct approval
-        _preventDirectApproval(func);
         dest.functionCallWithValue(func, value);
     }
 
@@ -407,14 +361,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            address lastTargetContract = targetContracts[targetContracts.length - 1];
+            address lastTargetContract = appRegistry.getContractSponsor(targetContracts[targetContracts.length - 1]);
             for (uint256 i = 0; i < targetContracts.length; i++) {
-                // App signer should only be valid for the app itself and its tokens
+                // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
-                if (
-                    targetContracts[i] != lastTargetContract // same contract
-                        && _tokenApprovals[lastTargetContract][targetContracts[i]] == 0
-                ) {
+                if (!appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i])) {
                     return address(0);
                 }
             }
@@ -422,6 +373,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            // Do not allow txs to the wallet via app key
             if (targetContract == address(this)) {
                 return address(0);
             }
