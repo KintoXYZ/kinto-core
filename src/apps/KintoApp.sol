@@ -32,18 +32,18 @@ contract KintoApp is
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant override DEVELOPER_ADMIN = keccak256("DEVELOPER_ADMIN");
 
-    uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
-    uint256 public constant RATE_LIMIT_THRESHOLD = 10;
-    uint256 public constant GAS_LIMIT_PERIOD = 30 days;
-    uint256 public constant GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
+    uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
+    uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
+    uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
+    uint256 public constant override GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
 
     /* ============ State Variables ============ */
 
-    uint256 private _nextTokenId;
-
-    mapping(address => IKintoApp.Metadata) public appMetadata;
-    mapping(address => address) public childToParentContract;
-    mapping(address => mapping(address => bool)) public appSponsoredContracts; // other contracts to be sponsored
+    uint256 public override appCount;
+    mapping(address => IKintoApp.Metadata) private _appMetadata;
+    mapping(address => mapping(address => bool)) private _appSponsoredContracts; // other contracts to be sponsored
+    
+    mapping(address => address) public override childToParentContract;
 
     /* ============ Events ============ */
 
@@ -72,126 +72,6 @@ contract KintoApp is
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
-    /* ============ App Registration ============ */
-
-    /**
-     * @dev Register a new app and mints the NFT to the creator
-     * @param _name The name of the app
-     * @param parentContract The address of the parent contract
-     * @param childContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     */
-    function registerApp(
-        string calldata _name,
-        address parentContract,
-        address[] calldata childContracts,
-        uint256[4] calldata appLimits
-    ) external override {
-        require(appLimits.length == 4, "Invalid app limits");
-        _updateMetadata(_name, parentContract, childContracts, appLimits);
-        _nextTokenId++;
-        _safeMint(msg.sender, _nextTokenId);
-    }
-
-    /**
-     * @dev Allows the developer to set sponsored contracts
-     * @param _app The address of the app
-     * @param _contracts The addresses of the contracts
-     * @param _flags The flags of the contracts
-     */
-    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags)
-        external
-        override
-    {
-        require(_contracts.length == _flags.length, "Invalid input");
-        require(msg.sender == appMetadata[_app].developerWallet, "Only developer can set sponsored contracts");
-        for (uint256 i = 0; i < _contracts.length; i++) {
-            appSponsoredContracts[_app][_contracts[i]] = _flags[i];
-        }
-    }
-
-    /**
-     * @dev Allows the developer to update the metadata of the app
-     * @param _name The name of the app
-     * @param parentContract The address of the parent contract
-     * @param childContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     */
-    function updateMetadata(
-        string calldata _name,
-        address parentContract,
-        address[] calldata childContracts,
-        uint256[4] calldata appLimits
-    ) external override {
-        require(appLimits.length == 4, "Invalid app limits");
-        require(msg.sender == appMetadata[parentContract].developerWallet, "Only developer can update metadata");
-        _updateMetadata(_name, parentContract, childContracts, appLimits);
-    }
-
-    /**
-     * @dev Allows the app to request PII data
-     * @param app The name of the app
-     */
-    function enableDSA(address app) external override onlyRole(DEVELOPER_ADMIN) {
-        require(appMetadata[app].dsaEnabled == false, "DSA already enabled");
-        appMetadata[app].dsaEnabled = true;
-    }
-
-    /* ============ App Info Fetching ============ */
-
-    /**
-     * @dev Returns the metadata of the app
-     * @param _contract The address of the app
-     * @return The metadata of the app
-     */
-    function getAppMetadata(address _contract) external view override returns (IKintoApp.Metadata memory) {
-        address finalContract =
-            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
-        return appMetadata[finalContract];
-    }
-
-    /**
-     * @dev Returns the limits of the app
-     * @param _contract The address of the app
-     * @return The limits of the app
-     */
-    function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
-        address finalContract =
-            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
-        IKintoApp.Metadata memory metadata = appMetadata[finalContract];
-        return [
-            metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
-            metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
-            metadata.gasLimitPeriod != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_PERIOD,
-            metadata.gasLimitCost != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_THRESHOLD
-        ];
-    }
-
-    /**
-     * @dev Returns whether a contract is sponsored by an app
-     * @param _app The address of the app
-     * @param _contract The address of the contract
-     * @return bool true or false
-     */
-    function isContractSponsoredByApp(address _app, address _contract) external view override returns (bool) {
-        return _contract == _app || childToParentContract[_contract] == _app || appSponsoredContracts[_app][_contract];
-    }
-
-    /**
-     * @dev Returns the contract that sponsors a contract
-     * @param _contract The address of the contract
-     * @return The address of the contract that sponsors the contract
-     */
-    function getContractSponsor(address _contract) external view override returns (address) {
-        if (appMetadata[_contract].developerWallet != address(0)) {
-            return _contract;
-        }
-        if (childToParentContract[_contract] != address(0)) {
-            return childToParentContract[_contract];
-        }
-        return _contract;
-    }
-
     /* ============ Token name, symbol & URI ============ */
 
     /**
@@ -218,6 +98,126 @@ contract KintoApp is
         return "https://kinto.xyz/metadata/kintoapp/";
     }
 
+    /* ============ App Registration ============ */
+
+    /**
+     * @dev Register a new app and mints the NFT to the creator
+     * @param _name The name of the app
+     * @param parentContract The address of the parent contract
+     * @param childContracts The addresses of the child contracts
+     * @param appLimits The limits of the app
+     */
+    function registerApp(
+        string calldata _name,
+        address parentContract,
+        address[] calldata childContracts,
+        uint256[4] calldata appLimits
+    ) external override {
+        require(appLimits.length == 4, "Invalid app limits");
+        _updateMetadata(_name, parentContract, childContracts, appLimits);
+        appCount++;
+        _safeMint(msg.sender, appCount);
+    }
+
+    /**
+     * @dev Allows the developer to set sponsored contracts
+     * @param _app The address of the app
+     * @param _contracts The addresses of the contracts
+     * @param _flags The flags of the contracts
+     */
+    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags)
+        external
+        override
+    {
+        require(_contracts.length == _flags.length, "Invalid input");
+        require(msg.sender == _appMetadata[_app].developerWallet, "Only developer can set sponsored contracts");
+        for (uint256 i = 0; i < _contracts.length; i++) {
+            _appSponsoredContracts[_app][_contracts[i]] = _flags[i];
+        }
+    }
+
+    /**
+     * @dev Allows the developer to update the metadata of the app
+     * @param _name The name of the app
+     * @param parentContract The address of the parent contract
+     * @param childContracts The addresses of the child contracts
+     * @param appLimits The limits of the app
+     */
+    function updateMetadata(
+        string calldata _name,
+        address parentContract,
+        address[] calldata childContracts,
+        uint256[4] calldata appLimits
+    ) external override {
+        require(appLimits.length == 4, "Invalid app limits");
+        require(msg.sender == _appMetadata[parentContract].developerWallet, "Only developer can update metadata");
+        _updateMetadata(_name, parentContract, childContracts, appLimits);
+    }
+
+    /**
+     * @dev Allows the app to request PII data
+     * @param app The name of the app
+     */
+    function enableDSA(address app) external override onlyRole(DEVELOPER_ADMIN) {
+        require(_appMetadata[app].dsaEnabled == false, "DSA already enabled");
+        _appMetadata[app].dsaEnabled = true;
+    }
+
+    /* ============ App Info Fetching ============ */
+
+    /**
+     * @dev Returns the metadata of the app
+     * @param _contract The address of the app
+     * @return The metadata of the app
+     */
+    function getAppMetadata(address _contract) external view override returns (IKintoApp.Metadata memory) {
+        address finalContract =
+            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
+        return _appMetadata[finalContract];
+    }
+
+    /**
+     * @dev Returns the limits of the app
+     * @param _contract The address of the app
+     * @return The limits of the app
+     */
+    function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
+        address finalContract =
+            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
+        IKintoApp.Metadata memory metadata = _appMetadata[finalContract];
+        return [
+            metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
+            metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
+            metadata.gasLimitPeriod != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_PERIOD,
+            metadata.gasLimitCost != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_THRESHOLD
+        ];
+    }
+
+    /**
+     * @dev Returns whether a contract is sponsored by an app
+     * @param _app The address of the app
+     * @param _contract The address of the contract
+     * @return bool true or false
+     */
+    function isContractSponsoredByApp(address _app, address _contract) external view override returns (bool) {
+        return _contract == _app || childToParentContract[_contract] == _app || _appSponsoredContracts[_app][_contract];
+    }
+
+    /**
+     * @dev Returns the contract that sponsors a contract
+     * @param _contract The address of the contract
+     * @return The address of the contract that sponsors the contract
+     */
+    function getContractSponsor(address _contract) external view override returns (address) {
+        if (_appMetadata[_contract].developerWallet != address(0)) {
+            return _contract;
+        }
+        if (childToParentContract[_contract] != address(0)) {
+            return childToParentContract[_contract];
+        }
+        return _contract;
+    }
+
     /* =========== App metadata params =========== */
     function _updateMetadata(
         string calldata _name,
@@ -234,7 +234,7 @@ contract KintoApp is
             gasLimitPeriod: appLimits[2],
             gasLimitCost: appLimits[3]
         });
-        appMetadata[parentContract] = metadata;
+        _appMetadata[parentContract] = metadata;
         for (uint256 i = 0; i < childContracts.length; i++) {
             childToParentContract[childContracts[i]] = parentContract;
         }

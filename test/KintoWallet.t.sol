@@ -187,7 +187,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // sender prefunds the contract
         vm.deal(address(_kintoWalletv1), 1 ether);
         vm.prank(address(_kintoWalletv1));
-        payable(address(counter)).call{value: 1 ether}("");
+        // address(counter).call{value: 1 ether}("");
 
         UserOperation[] memory userOps = new UserOperation[](2);
 

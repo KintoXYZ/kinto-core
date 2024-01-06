@@ -39,6 +39,10 @@ interface IKintoApp {
     function name() external pure returns (string memory);
 
     function symbol() external pure returns (string memory);
+    
+    function appCount() external view returns (uint256);
+
+    function childToParentContract(address _contract) external view returns (address);
 
     function getContractLimits(address _contract) external view returns (uint256[4] memory);
 
@@ -53,4 +57,12 @@ interface IKintoApp {
     function DEVELOPER_ADMIN() external view returns (bytes32);
 
     function UPGRADER_ROLE() external view returns (bytes32);
+
+    function RATE_LIMIT_PERIOD() external view returns (uint256);
+
+    function RATE_LIMIT_THRESHOLD() external view returns (uint256);
+
+    function GAS_LIMIT_PERIOD() external view returns (uint256);
+
+    function GAS_LIMIT_THRESHOLD() external view returns (uint256);
 }
