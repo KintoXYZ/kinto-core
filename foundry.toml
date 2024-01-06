@@ -12,3 +12,6 @@ kinto = "${KINTO_RPC_URL}"
 
 [etherscan]
 # goerli = { key = "${ETHERSCAN_API_KEY}" }
+
+[fuzz]
+runs = 16
