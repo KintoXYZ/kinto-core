@@ -1,7 +1,8 @@
 {
   "name": "kinto-core",
-  "description": "Kinto ID ",
+  "description": "Kinto Core Contracts",
   "repository": "https://github.com/KintoXYZ/kinto-core.git",
+  "version": "1.0.0",
   "devDependencies": {
     "husky": "^8.0.3"
   },
