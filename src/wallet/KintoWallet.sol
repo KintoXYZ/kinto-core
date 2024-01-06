@@ -48,7 +48,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override funderWhitelist;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
-    IKintoApp public override appRegistry = IKintoApp(address(0));
+    IKintoApp public override appRegistry;
+    IKintoWalletFactory public override walletFactory;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -89,6 +90,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
         emit KintoWalletInitialized(_entryPoint, anOwner);
+    }
+
+    // Function to be called upon wallet upgrade to save gas on subsequent calls to walletFactory
+    function setAppRegistryAndWalletFactory(address _appRegistry, address _walletFactory) external onlyFactory {
+        require(address(appRegistry) == address(0) && _appRegistry != address(0), "KW-i3: invalid address");
+        require(address(walletFactory) == address(0) && _walletFactory != address(0), "KW-i3: invalid address");
+        appRegistry = IKintoApp(_appRegistry);
+        walletFactory = IKintoWalletFactory(_walletFactory);
     }
 
     /* ============ Execution methods ============ */

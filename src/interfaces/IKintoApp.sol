@@ -39,7 +39,7 @@ interface IKintoApp {
     function name() external pure returns (string memory);
 
     function symbol() external pure returns (string memory);
-    
+
     function appCount() external view returns (uint256);
 
     function childToParentContract(address _contract) external view returns (address);

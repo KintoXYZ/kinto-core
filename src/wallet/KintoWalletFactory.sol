@@ -266,3 +266,15 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         return created;
     }
 }
+
+contract KinwoWalletFactoryV2 is KintoWalletFactory {
+    constructor(KintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+
+    function setAddressesOnImplementation(
+        IKintoWallet newImplementationWallet,
+        address _appRegistry,
+        address _walletFactory
+    ) external onlyOwner {
+        newImplementationWallet.setAppRegistryAndWalletFactory(_appRegistry, _walletFactory);
+    }
+}

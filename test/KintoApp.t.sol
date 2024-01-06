@@ -99,7 +99,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
 
     /* ============ App Tests & Viewers ============ */
 
-    function testRegisterApp(string memory name ,address parentContract) public {
+    function testRegisterApp(string memory name, address parentContract) public {
         vm.startPrank(_user);
         assertEq(_kintoApp.appCount(), 0);
         address[] memory childContracts = new address[](1);
@@ -109,7 +109,9 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp(name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
+        _kintoApp.registerApp(
+            name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
         assertEq(_kintoApp.appCount(), 1);
         IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
@@ -136,7 +138,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testRegisterAppAndUpdate(string memory name ,address parentContract) public {
+    function testRegisterAppAndUpdate(string memory name, address parentContract) public {
         vm.startPrank(_user);
         address[] memory childContracts = new address[](1);
         childContracts[0] = address(8);
@@ -145,8 +147,12 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp(name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
-        _kintoApp.updateMetadata("test2", parentContract, childContracts, [uint(1), uint(1), uint(1), uint(1)]);
+        _kintoApp.registerApp(
+            name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        _kintoApp.updateMetadata(
+            "test2", parentContract, childContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
+        );
         IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, "test2");
         assertEq(metadata.developerWallet, address(_user));
@@ -171,7 +177,9 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp("", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
+        _kintoApp.registerApp(
+            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
         uint256 tokenIdx = _kintoApp.tokenOfOwnerByIndex(_user, 0);
         vm.expectRevert("Only mint transfers are allowed");
         _kintoApp.safeTransferFrom(_user, _user2, tokenIdx);

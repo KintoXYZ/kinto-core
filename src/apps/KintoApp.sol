@@ -40,7 +40,7 @@ contract KintoApp is
     uint256 public override appCount;
     mapping(address => IKintoApp.Metadata) private _appMetadata;
     mapping(address => mapping(address => bool)) private _appSponsoredContracts; // other contracts to be sponsored
-    
+
     mapping(address => address) public override childToParentContract;
 
     /* ============ Events ============ */
@@ -250,10 +250,7 @@ contract KintoApp is
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
-        require(
-            (from == address(0) && to != address(0)),
-            "Only mint transfers are allowed"
-        );
+        require((from == address(0) && to != address(0)), "Only mint transfers are allowed");
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
