@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -23,7 +22,6 @@ contract KintoApp is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
-    ERC721BurnableUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable,
     IKintoApp
@@ -57,7 +55,6 @@ contract KintoApp is
     function initialize() external initializer {
         __ERC721_init("Kinto APP", "KINTOAPP");
         __ERC721Enumerable_init();
-        __ERC721Burnable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -189,7 +186,7 @@ contract KintoApp is
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
             metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
             metadata.gasLimitPeriod != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_PERIOD,
-            metadata.gasLimitCost != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_THRESHOLD
+            metadata.gasLimitCost != 0 ? metadata.gasLimitCost : GAS_LIMIT_THRESHOLD
         ];
     }
 
@@ -254,8 +251,8 @@ contract KintoApp is
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
         require(
-            (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
-            "Only mint or burn transfers are allowed"
+            (from == address(0) && to != address(0)),
+            "Only mint transfers are allowed"
         );
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }

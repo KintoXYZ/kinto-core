@@ -87,13 +87,20 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KintoAppV2 _implementationV2 = new KintoAppV2();
-        vm.expectRevert("only owner");
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(this)),
+            " is missing role ",
+            Strings.toHexString(uint256(_implementationV2.UPGRADER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
         _kintoApp.upgradeTo(address(_implementationV2));
     }
 
-    /* ============ App Tests ============ */
+    /* ============ App Tests & Viewers ============ */
 
-    function testRegisterApp() public {
+    function testRegisterApp(string memory name ,address parentContract) public {
+        vm.startPrank(_user);
         assertEq(_kintoApp.appCount(), 0);
         address[] memory childContracts = new address[](1);
         childContracts[0] = address(7);
@@ -102,7 +109,71 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp("test", address(0), childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
+        _kintoApp.registerApp(name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
         assertEq(_kintoApp.appCount(), 1);
+        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        assertEq(metadata.name, name);
+        assertEq(metadata.developerWallet, address(_user));
+        assertEq(metadata.dsaEnabled, false);
+        assertEq(metadata.rateLimitPeriod, appLimits[0]);
+        assertEq(metadata.rateLimitNumber, appLimits[1]);
+        assertEq(metadata.gasLimitPeriod, appLimits[2]);
+        assertEq(metadata.gasLimitCost, appLimits[3]);
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(7)), true);
+        assertEq(_kintoApp.getContractSponsor(address(7)), parentContract);
+        uint256[4] memory limits = _kintoApp.getContractLimits(address(7));
+        assertEq(limits[0], appLimits[0]);
+        assertEq(limits[1], appLimits[1]);
+        assertEq(limits[2], appLimits[2]);
+        assertEq(limits[3], appLimits[3]);
+        limits = _kintoApp.getContractLimits(parentContract);
+        assertEq(limits[0], appLimits[0]);
+        assertEq(limits[1], appLimits[1]);
+        assertEq(limits[2], appLimits[2]);
+        assertEq(limits[3], appLimits[3]);
+        metadata = _kintoApp.getAppMetadata(address(7));
+        assertEq(metadata.name, name);
+        vm.stopPrank();
+    }
+
+    function testRegisterAppAndUpdate(string memory name ,address parentContract) public {
+        vm.startPrank(_user);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
+        _kintoApp.updateMetadata("test2", parentContract, childContracts, [uint(1), uint(1), uint(1), uint(1)]);
+        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        assertEq(metadata.name, "test2");
+        assertEq(metadata.developerWallet, address(_user));
+        assertEq(metadata.dsaEnabled, false);
+        assertEq(metadata.rateLimitPeriod, 1);
+        assertEq(metadata.rateLimitNumber, 1);
+        assertEq(metadata.gasLimitPeriod, 1);
+        assertEq(metadata.gasLimitCost, 1);
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(7)), false);
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(8)), true);
+        vm.stopPrank();
+    }
+
+    /* ============ Transfer Test ============ */
+
+    function test_RevertWhen_TransfersAreDisabled(address parentContract) public {
+        vm.startPrank(_user);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp("", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]);
+        uint256 tokenIdx = _kintoApp.tokenOfOwnerByIndex(_user, 0);
+        vm.expectRevert("Only mint transfers are allowed");
+        _kintoApp.safeTransferFrom(_user, _user2, tokenIdx);
     }
 }
