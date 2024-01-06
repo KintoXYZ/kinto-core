@@ -4,5 +4,10 @@
   "repository": "https://github.com/KintoXYZ/kinto-core.git",
   "devDependencies": {
     "husky": "^8.0.3"
+  },
+  "license": "MIT",
+  "scripts": {
+    "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
+    "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID"
   }
 }
