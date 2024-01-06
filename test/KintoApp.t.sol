@@ -39,10 +39,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
 
     uint256 _chainID = 1;
 
-    UUPSProxy _proxyViewer;
-    KintoApp _implkintoApp;
     KintoAppV2 _implkintoAppV2;
-    KintoApp _kintoApp;
     KintoAppV2 _kintoApp2;
 
     function setUp() public {
@@ -51,15 +48,6 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         _owner.transfer(1e18);
         vm.stopPrank();
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-        vm.startPrank(_owner);
-        _implkintoApp = new KintoApp{salt: 0}();
-        // deploy _proxy contract and point it to _implementation
-        _proxyViewer = new UUPSProxy{salt: 0}(address(_implkintoApp), "");
-        // wrap in ABI to support easier calls
-        _kintoApp = KintoApp(address(_proxyViewer));
-        // Initialize kyc viewer _proxy
-        _kintoApp.initialize();
-        vm.stopPrank();
     }
 
     function testUp() public {

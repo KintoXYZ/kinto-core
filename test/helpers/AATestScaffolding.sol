@@ -11,6 +11,7 @@ import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 import {KYCSignature} from "../helpers/KYCSignature.sol";
 
 import "../../src/wallet/KintoWallet.sol";
+import "../../src/apps/KintoApp.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
@@ -30,6 +31,7 @@ abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
     KintoWalletFactory _walletFactoryI;
     KintoWalletFactory _walletFactory;
+    KintoApp _kintoApp;
     KintoID _implementation;
     KintoID _kintoIDv1;
     SponsorPaymaster _paymaster;
@@ -40,6 +42,7 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxyf;
     UUPSProxy _proxys;
     UUPSProxy _proxycredit;
+    UUPSProxy _proxyapp;
     EngenCredits _engenCredits;
 
     function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
@@ -66,6 +69,9 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // Deploy Engen Credits
         deployEngenCredits(_owner);
+
+        // Deploy Kinto App
+        deployKintoApp(_owner);
 
         // Give some eth
         vm.deal(_owner, 1e20);
@@ -145,6 +151,29 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // initialize proxy
         _engenCredits.initialize();
+
+        vm.stopPrank();
+    }
+
+    function deployKintoApp(address _owner) public {
+        vm.startPrank(_owner);
+
+        // deploy the Kinto App registry
+        _kintoApp = new KintoApp{salt: 0}();
+
+        // deploy _proxy contract and point it to _implementation
+        _proxyapp = new UUPSProxy{salt: 0}(address(_kintoApp), "");
+
+        // wrap in ABI to support easier calls
+        _kintoApp = KintoApp(address(_proxyapp));
+
+        // initialize proxy
+        _kintoApp.initialize();
+
+        // Upgrade to a new impl with the registry and wallet factory
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+        _walletFactory.setAddressesOnImplementation(_kintoWalletImpl, address(_kintoApp), address(_walletFactory));
+        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
 
         vm.stopPrank();
     }
