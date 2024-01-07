@@ -12,8 +12,6 @@ import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 
-// import "forge-std/console2.sol";
-
 /**
  * @title KintoAppRegistry
  * @dev A contract that holds all the information of a KintoApp
@@ -44,6 +42,9 @@ contract KintoAppRegistry is
     mapping(address => address) public override childToParentContract;
 
     /* ============ Events ============ */
+    event AppCreated(address indexed _app, address _owner, uint256 _timestamp);
+    event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
+    event AppDSAEnabled(address indexed _app, uint256 _timestamp);
 
     /* ============ Constructor & Initializers ============ */
 
@@ -114,6 +115,7 @@ contract KintoAppRegistry is
         _updateMetadata(_name, parentContract, childContracts, appLimits);
         appCount++;
         _safeMint(msg.sender, appCount);
+        emit AppCreated(parentContract, msg.sender, block.timestamp);
     }
 
     /**
@@ -149,6 +151,7 @@ contract KintoAppRegistry is
         require(appLimits.length == 4, "Invalid app limits");
         require(msg.sender == _appMetadata[parentContract].developerWallet, "Only developer can update metadata");
         _updateMetadata(_name, parentContract, childContracts, appLimits);
+        emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
 
     /**
@@ -158,6 +161,7 @@ contract KintoAppRegistry is
     function enableDSA(address app) external override onlyRole(DEVELOPER_ADMIN) {
         require(_appMetadata[app].dsaEnabled == false, "DSA already enabled");
         _appMetadata[app].dsaEnabled = true;
+        emit AppDSAEnabled(app, block.timestamp);
     }
 
     /* ============ App Info Fetching ============ */
