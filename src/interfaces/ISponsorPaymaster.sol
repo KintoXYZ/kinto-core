@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IKintoApp} from "./IKintoApp.sol";
+import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 
 interface ISponsorPaymaster {
     /* ============ Structs ============ */
@@ -35,7 +35,7 @@ interface ISponsorPaymaster {
 
     function balances(address account) external view returns (uint256 amount);
 
-    function appRegistry() external view returns (IKintoApp);
+    function appRegistry() external view returns (IKintoAppRegistry);
 
     function contractSpent(address account) external view returns (uint256 amount);
 

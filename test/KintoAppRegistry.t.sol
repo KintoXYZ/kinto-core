@@ -5,7 +5,7 @@ import "../src/wallet/KintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
 import "../src/KintoID.sol";
-import "../src/apps/KintoApp.sol";
+import "../src/apps/KintoAppRegistry.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {UUPSProxy} from "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
@@ -25,22 +25,22 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-contract KintoAppV2 is KintoApp {
+contract KintoAppRegistryV2 is KintoAppRegistry {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
 
-    constructor() KintoApp() {}
+    constructor() KintoAppRegistry() {}
 }
 
-contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
+contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     uint256 _chainID = 1;
 
-    KintoAppV2 _implkintoAppV2;
-    KintoAppV2 _kintoApp2;
+    KintoAppRegistryV2 _implkintoAppV2;
+    KintoAppRegistryV2 _kintoApp2;
 
     function setUp() public {
         vm.chainId(_chainID);
@@ -65,16 +65,16 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeApp() public {
         vm.startPrank(_owner);
-        KintoAppV2 _implementationV2 = new KintoAppV2();
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
         _kintoApp.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
-        _kintoApp2 = KintoAppV2(address(_kintoApp));
+        _kintoApp2 = KintoAppRegistryV2(address(_kintoApp));
         assertEq(_kintoApp2.newFunction(), 1);
         vm.stopPrank();
     }
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
-        KintoAppV2 _implementationV2 = new KintoAppV2();
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
         bytes memory err = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(address(this)),
@@ -101,7 +101,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
             name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         assertEq(_kintoApp.appCount(), 1);
-        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
         assertEq(metadata.developerWallet, address(_user));
         assertEq(metadata.dsaEnabled, false);
@@ -141,7 +141,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         _kintoApp.updateMetadata(
             "test2", parentContract, childContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
-        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, "test2");
         assertEq(metadata.developerWallet, address(_user));
         assertEq(metadata.dsaEnabled, false);
@@ -170,7 +170,7 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
             "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         _kintoApp.enableDSA(parentContract);
-        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.dsaEnabled, true);
         vm.stopPrank();
     }

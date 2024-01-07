@@ -9,22 +9,22 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../interfaces/IKintoID.sol";
-import "../interfaces/IKintoApp.sol";
+import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 
 // import "forge-std/console2.sol";
 
 /**
- * @title KintoApp
+ * @title KintoAppRegistry
  * @dev A contract that holds all the information of a KintoApp
  */
-contract KintoApp is
+contract KintoAppRegistry is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable,
-    IKintoApp
+    IKintoAppRegistry
 {
     /* ============ Constants ============ */
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
@@ -38,7 +38,7 @@ contract KintoApp is
     /* ============ State Variables ============ */
 
     uint256 public override appCount;
-    mapping(address => IKintoApp.Metadata) private _appMetadata;
+    mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
     mapping(address => mapping(address => bool)) private _appSponsoredContracts; // other contracts to be sponsored
 
     mapping(address => address) public override childToParentContract;
@@ -75,7 +75,7 @@ contract KintoApp is
      * @dev Gets the token name.
      * @return string representing the token name
      */
-    function name() public pure override(ERC721Upgradeable, IKintoApp) returns (string memory) {
+    function name() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "Kinto APP";
     }
 
@@ -83,7 +83,7 @@ contract KintoApp is
      * @dev Gets the token symbol.
      * @return string representing the token symbol
      */
-    function symbol() public pure override(ERC721Upgradeable, IKintoApp) returns (string memory) {
+    function symbol() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "KINTOAPP";
     }
 
@@ -167,7 +167,7 @@ contract KintoApp is
      * @param _contract The address of the app
      * @return The metadata of the app
      */
-    function getAppMetadata(address _contract) external view override returns (IKintoApp.Metadata memory) {
+    function getAppMetadata(address _contract) external view override returns (IKintoAppRegistry.Metadata memory) {
         address finalContract =
             childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
         return _appMetadata[finalContract];
@@ -181,7 +181,7 @@ contract KintoApp is
     function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
         address finalContract =
             childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
-        IKintoApp.Metadata memory metadata = _appMetadata[finalContract];
+        IKintoAppRegistry.Metadata memory metadata = _appMetadata[finalContract];
         return [
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
             metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
@@ -222,7 +222,7 @@ contract KintoApp is
         address[] calldata childContracts,
         uint256[4] calldata appLimits
     ) internal {
-        IKintoApp.Metadata memory metadata = IKintoApp.Metadata({
+        IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             name: _name,
             developerWallet: msg.sender,
             dsaEnabled: false,

@@ -14,7 +14,7 @@ import "../interfaces/IKintoEntryPoint.sol";
 import "../libraries/ByteSignature.sol";
 import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
-import "../interfaces/IKintoApp.sol";
+import "../interfaces/IKintoAppRegistry.sol";
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
@@ -48,7 +48,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override funderWhitelist;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
-    IKintoApp public immutable override appRegistry;
+    IKintoAppRegistry public immutable override appRegistry;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -69,10 +69,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoApp _kintoApp) {
+    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
-        appRegistry = IKintoApp(_kintoApp);
+        appRegistry = _kintoApp;
         _disableInitializers();
     }
 
@@ -389,7 +389,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV3 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
         KintoWallet(_entryPoint, _kintoID, _kintoApp)
     {}
 }

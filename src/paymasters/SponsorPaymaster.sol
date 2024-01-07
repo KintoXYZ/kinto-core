@@ -11,7 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 import "@aa/core/UserOperationLib.sol";
 import "../interfaces/ISponsorPaymaster.sol";
-import "../interfaces/IKintoApp.sol";
+import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWallet.sol";
 
 /**
@@ -43,7 +43,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
     mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
 
-    IKintoApp public override appRegistry;
+    IKintoAppRegistry public override appRegistry;
 
     // ========== Constructor & Upgrades ============
 
@@ -78,7 +78,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @param _appRegistry address of the app registry
      */
     function setAppRegistry(address _appRegistry) external override onlyOwner {
-        appRegistry = IKintoApp(_appRegistry);
+        appRegistry = IKintoAppRegistry(_appRegistry);
     }
 
     // ========== Deposit Mgmt ============

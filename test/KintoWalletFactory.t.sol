@@ -24,7 +24,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletV999 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
         KintoWallet(_entryPoint, _kintoID, _kintoApp)
     {}
 

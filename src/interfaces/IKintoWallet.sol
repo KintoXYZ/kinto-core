@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 import {IKintoID} from "./IKintoID.sol";
-import {IKintoApp} from "./IKintoApp.sol";
+import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 
 interface IKintoWallet {
     /* ============ Structs ============ */
@@ -57,7 +57,7 @@ interface IKintoWallet {
 
     function appWhitelist(address app) external view returns (bool);
 
-    function appRegistry() external view returns (IKintoApp);
+    function appRegistry() external view returns (IKintoAppRegistry);
 
     function signerPolicy() external view returns (uint8);
 

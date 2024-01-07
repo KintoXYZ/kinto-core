@@ -11,7 +11,7 @@ import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 import {KYCSignature} from "../helpers/KYCSignature.sol";
 
 import "../../src/wallet/KintoWallet.sol";
-import "../../src/apps/KintoApp.sol";
+import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
@@ -31,7 +31,7 @@ abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
     KintoWalletFactory _walletFactoryI;
     KintoWalletFactory _walletFactory;
-    KintoApp _kintoApp;
+    KintoAppRegistry _kintoApp;
     KintoID _implementation;
     KintoID _kintoIDv1;
     SponsorPaymaster _paymaster;
@@ -161,13 +161,13 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // deploy the Kinto App registry
-        _kintoApp = new KintoApp{salt: 0}();
+        _kintoApp = new KintoAppRegistry{salt: 0}();
 
         // deploy _proxy contract and point it to _implementation
         _proxyapp = new UUPSProxy{salt: 0}(address(_kintoApp), "");
 
         // wrap in ABI to support easier calls
-        _kintoApp = KintoApp(address(_proxyapp));
+        _kintoApp = KintoAppRegistry(address(_proxyapp));
 
         // initialize proxy
         _kintoApp.initialize();
