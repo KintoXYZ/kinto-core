@@ -150,7 +150,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: app not whitelisted");
+        assertRevertReasonEq("KW: contract not whitelisted");
 
         vm.stopPrank();
     }
@@ -248,7 +248,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: app not whitelisted");
+        assertRevertReasonEq("KW: contract not whitelisted");
         assertEq(counter.count(), 0);
     }
 
@@ -417,7 +417,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256 expectedOpIndex = 0; // Adjust as needed
         string memory expectedMessage = "AA33 reverted";
         bytes memory additionalMessage =
-            abi.encodePacked("SP: executeBatch must come from same contract or sender wallet");
+            abi.encodePacked("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
         bytes memory expectedAdditionalData = abi.encodeWithSelector(
             bytes4(keccak256("Error(string)")), // Standard error selector
             additionalMessage
