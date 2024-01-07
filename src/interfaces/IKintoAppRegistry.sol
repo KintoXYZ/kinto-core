@@ -5,13 +5,13 @@ interface IKintoAppRegistry {
     /* ============ Structs ============ */
 
     struct Metadata {
-        string name;
-        address developerWallet; // the address that deploys the wallet
-        bool dsaEnabled; // whether or not this application can request PII from users
+        address developerWallet; // 160 bits
+        bool dsaEnabled;
         uint256 rateLimitPeriod;
         uint256 rateLimitNumber; // in txs
         uint256 gasLimitPeriod;
         uint256 gasLimitCost; // in eth
+        string name;
     }
 
     /* ============ State Change ============ */
