@@ -37,6 +37,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
      */
     function initialize() external initializer {
         __Ownable_init();
+        __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
     }
 
