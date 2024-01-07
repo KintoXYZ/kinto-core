@@ -282,7 +282,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             // Last contract must be a contract app
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
                 if (
-                    !appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i])
+                    !appRegistry.isContractSponsored(lastTargetContract, targetContracts[i])
                         && targetContracts[i] != sender
                 ) {
                     revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");

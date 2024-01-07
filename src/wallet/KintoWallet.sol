@@ -369,7 +369,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             for (uint256 i = 0; i < targetContracts.length; i++) {
                 // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
-                if (!appRegistry.isContractSponsoredByApp(lastTargetContract, targetContracts[i])) {
+                if (!appRegistry.isContractSponsored(lastTargetContract, targetContracts[i])) {
                     return address(0);
                 }
             }

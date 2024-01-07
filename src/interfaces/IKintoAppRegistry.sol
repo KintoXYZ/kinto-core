@@ -50,7 +50,7 @@ interface IKintoAppRegistry {
 
     function getContractSponsor(address _contract) external view returns (address);
 
-    function isContractSponsoredByApp(address _app, address _contract) external view returns (bool);
+    function isContractSponsored(address _app, address _contract) external view returns (bool);
 
     /* ============ Constants and attrs ============ */
 

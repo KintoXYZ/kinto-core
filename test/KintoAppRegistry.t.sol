@@ -109,7 +109,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(7)), true);
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(7)), true);
         assertEq(_kintoApp.getContractSponsor(address(7)), parentContract);
         uint256[4] memory limits = _kintoApp.getContractLimits(address(7));
         assertEq(limits[0], appLimits[0]);
@@ -149,8 +149,8 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         assertEq(metadata.rateLimitNumber, 1);
         assertEq(metadata.gasLimitPeriod, 1);
         assertEq(metadata.gasLimitCost, 1);
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(7)), false);
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(8)), true);
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(7)), false);
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(8)), true);
         vm.stopPrank();
     }
 
@@ -220,9 +220,9 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         flags[0] = false;
         flags[1] = true;
         _kintoApp.setSponsoredContracts(parentContract, contracts, flags);
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(8)), true); // child contracts always sponsored
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(9)), true);
-        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(10)), false);
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(8)), true); // child contracts always sponsored
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(9)), true);
+        assertEq(_kintoApp.isContractSponsored(parentContract, address(10)), false);
         vm.stopPrank();
     }
 

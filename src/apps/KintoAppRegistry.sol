@@ -196,7 +196,7 @@ contract KintoAppRegistry is
      * @param _contract The address of the contract
      * @return bool true or false
      */
-    function isContractSponsoredByApp(address _app, address _contract) external view override returns (bool) {
+    function isContractSponsored(address _app, address _contract) external view override returns (bool) {
         return _contract == _app || childToParentContract[_contract] == _app || _appSponsoredContracts[_app][_contract];
     }
 

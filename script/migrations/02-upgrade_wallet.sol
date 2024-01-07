@@ -14,7 +14,9 @@ import "forge-std/console.sol";
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV2 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID, IKintoAppRegistry(address(0))) {}
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID)
+        KintoWallet(_entryPoint, _kintoID, IKintoAppRegistry(address(0)))
+    {}
 }
 
 contract KintoMigration2DeployScript is Create2Helper, ArtifactsReader {
