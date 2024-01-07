@@ -45,7 +45,7 @@ contract Counter {
     }
 }
 
-contract KintoWalletFactoryV2 is KintoWalletFactory {
+contract KintoWalletFactoryV999 is KintoWalletFactory {
     constructor(KintoWallet _impl) KintoWalletFactory(_impl) {}
 
     function newFunction() public pure returns (uint256) {
@@ -57,7 +57,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    KintoWalletFactoryV2 _walletFactoryv2;
+    KintoWalletFactoryV999 _walletFactoryv2;
     KintoWalletV999 _kintoWalletv2;
 
     uint256 _chainID = 1;
@@ -79,18 +79,18 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeFactory() public {
         vm.startPrank(_owner);
-        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
-        _walletFactory.upgradeTo(address(_implementationV2));
+        KintoWalletFactoryV999 _implementationV999 = new KintoWalletFactoryV999(_kintoWalletImpl);
+        _walletFactory.upgradeTo(address(_implementationV999));
         // re-wrap the _proxy
-        _walletFactoryv2 = KintoWalletFactoryV2(address(_walletFactory));
+        _walletFactoryv2 = KintoWalletFactoryV999(address(_walletFactory));
         assertEq(_walletFactoryv2.newFunction(), 1);
         vm.stopPrank();
     }
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
-        KintoWalletFactoryV2 _implementationV2 = new KintoWalletFactoryV2(_kintoWalletImpl);
+        KintoWalletFactoryV999 _implementationV999 = new KintoWalletFactoryV999(_kintoWalletImpl);
         vm.expectRevert("Ownable: caller is not the owner");
-        _walletFactory.upgradeTo(address(_implementationV2));
+        _walletFactory.upgradeTo(address(_implementationV999));
     }
 
     function testAllWalletsUpgrade() public {

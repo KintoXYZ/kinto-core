@@ -22,7 +22,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
-contract KintoWalletFactoryV2 is KintoWalletFactory {
+contract KintoWalletFactoryV999 is KintoWalletFactory {
     constructor(KintoWallet _impl) KintoWalletFactory(_impl) {}
 }
 
@@ -39,10 +39,10 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         _oldKintoWalletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
-        KintoWalletFactoryV2 _implementationV2 =
-            new KintoWalletFactoryV2(KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))));
-        _oldKintoWalletFactory.upgradeTo(address(_implementationV2));
-        console.log("KintoWalletFactory Upgraded to implementation", address(_implementationV2));
+        KintoWalletFactoryV999 _implementationV999 =
+            new KintoWalletFactoryV999(KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))));
+        _oldKintoWalletFactory.upgradeTo(address(_implementationV999));
+        console.log("KintoWalletFactory Upgraded to implementation", address(_implementationV999));
         vm.stopBroadcast();
     }
 }
