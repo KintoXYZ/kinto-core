@@ -265,5 +265,4 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         } catch {}
         return created;
     }
-
 }

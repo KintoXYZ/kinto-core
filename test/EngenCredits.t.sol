@@ -33,10 +33,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         _fundPaymasterForContract(address(_kintoWalletv1));
         vm.startPrank(_owner);
         _kintoApp.registerApp(
-            "engen credits",
-            address(_engenCredits),
-            new address[](0),
-           [uint256(0), uint256(0), uint256(0), uint256(0)]
+            "engen credits", address(_engenCredits), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]
         );
         vm.stopPrank();
     }

@@ -389,5 +389,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV3 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp) KintoWallet(_entryPoint, _kintoID, _kintoApp) {}
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp)
+        KintoWallet(_entryPoint, _kintoID, _kintoApp)
+    {}
 }
