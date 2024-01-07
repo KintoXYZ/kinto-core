@@ -154,10 +154,108 @@ contract KintoAppTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
+    /* ============ DSA Test ============ */
+
+    function testOwnerCanEnableDSA() public {
+        vm.startPrank(_owner);
+        address parentContract = address(_engenCredits);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(
+            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        _kintoApp.enableDSA(parentContract);
+        IKintoApp.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
+        assertEq(metadata.dsaEnabled, true);
+        vm.stopPrank();
+    }
+
+    function test_Revert_When_User_TriesToEnableDSA() public {
+        vm.startPrank(_user);
+        address parentContract = address(_engenCredits);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(
+            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(_user)),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoApp.DEVELOPER_ADMIN()), 32)
+        );
+        vm.expectRevert(err);
+        _kintoApp.enableDSA(parentContract);
+    }
+
+    /* ============ Sponsored Contracts Test ============ */
+
+    function testAppCreatorCanSetSponsoredContracts() public {
+        vm.startPrank(_user);
+        address parentContract = address(_engenCredits);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(
+            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        address[] memory contracts = new address[](2);
+        contracts[0] = address(8);
+        contracts[1] = address(9);
+        bool[] memory flags = new bool[](2);
+        flags[0] = false;
+        flags[1] = true;
+        _kintoApp.setSponsoredContracts(parentContract, contracts, flags);
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(8)), true); // child contracts always sponsored
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(9)), true);
+        assertEq(_kintoApp.isContractSponsoredByApp(parentContract, address(10)), false);
+        vm.stopPrank();
+    }
+
+    function test_Revert_When_NotCreator_TriesToSetSponsoredContracts() public {
+        vm.startPrank(_user);
+        address parentContract = address(_engenCredits);
+        address[] memory childContracts = new address[](1);
+        childContracts[0] = address(8);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(
+            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        address[] memory contracts = new address[](2);
+        contracts[0] = address(8);
+        contracts[1] = address(9);
+        bool[] memory flags = new bool[](2);
+        flags[0] = false;
+        flags[1] = true;
+        vm.startPrank(_user2);
+        vm.expectRevert("Only developer can set sponsored contracts");
+        _kintoApp.setSponsoredContracts(parentContract, contracts, flags);
+        vm.stopPrank();
+    }
+
     /* ============ Transfer Test ============ */
 
-    function test_RevertWhen_TransfersAreDisabled(address parentContract) public {
+    function test_RevertWhen_TransfersAreDisabled() public {
         vm.startPrank(_user);
+        address parentContract = address(_engenCredits);
         address[] memory childContracts = new address[](1);
         childContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
