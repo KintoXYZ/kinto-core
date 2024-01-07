@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -20,14 +20,11 @@ contract KintoAppRegistry is
     Initializable,
     ERC721Upgradeable,
     ERC721EnumerableUpgradeable,
-    AccessControlUpgradeable,
+    OwnableUpgradeable,
     UUPSUpgradeable,
     IKintoAppRegistry
 {
     /* ============ Constants ============ */
-    bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public constant override DEVELOPER_ADMIN = keccak256("DEVELOPER_ADMIN");
-
     uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
     uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
@@ -56,11 +53,9 @@ contract KintoAppRegistry is
     function initialize() external initializer {
         __ERC721_init("Kinto APP", "KINTOAPP");
         __ERC721Enumerable_init();
-        __AccessControl_init();
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(UPGRADER_ROLE, msg.sender);
-        _grantRole(DEVELOPER_ADMIN, msg.sender);
+        _transferOwnership(msg.sender);
     }
 
     /**
@@ -68,7 +63,7 @@ contract KintoAppRegistry is
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the implementation is upgraded
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -158,7 +153,7 @@ contract KintoAppRegistry is
      * @dev Allows the app to request PII data
      * @param app The name of the app
      */
-    function enableDSA(address app) external override onlyRole(DEVELOPER_ADMIN) {
+    function enableDSA(address app) external override onlyOwner {
         require(_appMetadata[app].dsaEnabled == false, "DSA already enabled");
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
@@ -268,7 +263,7 @@ contract KintoAppRegistry is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable, AccessControlUpgradeable)
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

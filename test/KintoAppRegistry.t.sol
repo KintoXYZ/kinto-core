@@ -52,7 +52,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testUp() public {
         console.log("address owner", address(_owner));
-        assertEq(_kintoApp.hasRole(_kintoApp.UPGRADER_ROLE(), _owner), true);
+        assertEq(_kintoApp.owner(), _owner);
         assertEq(_kintoApp.name(), "Kinto APP");
         assertEq(_kintoApp.symbol(), "KINTOAPP");
         assertEq(_kintoApp.RATE_LIMIT_PERIOD(), 1 minutes);
@@ -75,13 +75,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
-        bytes memory err = abi.encodePacked(
-            "AccessControl: account ",
-            Strings.toHexString(address(this)),
-            " is missing role ",
-            Strings.toHexString(uint256(_implementationV2.UPGRADER_ROLE()), 32)
-        );
-        vm.expectRevert(err);
+        vm.expectRevert("Ownable: caller is not the owner");
         _kintoApp.upgradeTo(address(_implementationV2));
     }
 
@@ -188,13 +182,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         _kintoApp.registerApp(
             "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
-        bytes memory err = abi.encodePacked(
-            "AccessControl: account ",
-            Strings.toHexString(address(_user)),
-            " is missing role ",
-            Strings.toHexString(uint256(_kintoApp.DEVELOPER_ADMIN()), 32)
-        );
-        vm.expectRevert(err);
+        vm.expectRevert("Ownable: caller is not the owner");
         _kintoApp.enableDSA(parentContract);
     }
 

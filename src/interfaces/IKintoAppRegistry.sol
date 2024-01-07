@@ -54,10 +54,6 @@ interface IKintoAppRegistry {
 
     /* ============ Constants and attrs ============ */
 
-    function DEVELOPER_ADMIN() external view returns (bytes32);
-
-    function UPGRADER_ROLE() external view returns (bytes32);
-
     function RATE_LIMIT_PERIOD() external view returns (uint256);
 
     function RATE_LIMIT_THRESHOLD() external view returns (uint256);
