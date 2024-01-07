@@ -33,8 +33,6 @@ interface IKintoWallet {
 
     function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external;
 
-    function setAppRegistryAndWalletFactory(address _appRegistry, address _walletFactory) external;
-
     /* ============ Basic Viewers ============ */
 
     function getOwnersCount() external view returns (uint256);
@@ -60,8 +58,6 @@ interface IKintoWallet {
     function appWhitelist(address app) external view returns (bool);
 
     function appRegistry() external view returns (IKintoApp);
-
-    function walletFactory() external view returns (IKintoWalletFactory);
 
     function signerPolicy() external view returns (uint8);
 

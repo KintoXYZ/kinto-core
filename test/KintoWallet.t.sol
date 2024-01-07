@@ -25,7 +25,7 @@ import {Test, stdError} from "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletv2 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp) KintoWallet(_entryPoint, _kintoID, _kintoApp) {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -88,7 +88,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a KintoWalletv2
-        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
+        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1, _kintoApp);
 
         uint256 nonce = _kintoWalletv1.getNonce();
 
@@ -121,7 +121,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a KintoWalletv2
-        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1);
+        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1, _kintoApp);
 
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         uint256 nonce = userWallet.getNonce();

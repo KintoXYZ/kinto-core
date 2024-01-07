@@ -105,7 +105,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             console.log("Wallet Implementation already deployed at", address(walletImplementationAddr));
         } else {
             // Deploy Wallet Implementation
-            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, IKintoApp(address(0)));
             console.log("Wallet Implementation deployed at", address(_walletImpl));
         }
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
-import {KintoWalletV2} from "../../src/wallet/KintoWallet.sol";
+import {KintoWallet} from "../../src/wallet/KintoWallet.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
@@ -11,6 +11,11 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
+
+// Upgradeable version of KintoWallet
+contract KintoWalletV2 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID, IKintoApp(address(0))) {}
+}
 
 contract KintoMigration2DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;

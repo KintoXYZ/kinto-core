@@ -48,8 +48,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override funderWhitelist;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
-    IKintoApp public override appRegistry;
-    IKintoWalletFactory public override walletFactory;
+    IKintoApp public immutable override appRegistry;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -70,9 +69,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID) {
+    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoApp _kintoApp) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
+        appRegistry = IKintoApp(_kintoApp);
         _disableInitializers();
     }
 
@@ -90,14 +90,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
         emit KintoWalletInitialized(_entryPoint, anOwner);
-    }
-
-    // Function to be called upon wallet upgrade to save gas on subsequent calls to walletFactory
-    function setAppRegistryAndWalletFactory(address _appRegistry, address _walletFactory) external onlyFactory {
-        require(address(appRegistry) == address(0) && _appRegistry != address(0), "KW-i3: invalid address");
-        require(address(walletFactory) == address(0) && _walletFactory != address(0), "KW-i3: invalid address");
-        appRegistry = IKintoApp(_appRegistry);
-        walletFactory = IKintoWalletFactory(_walletFactory);
     }
 
     /* ============ Execution methods ============ */
@@ -396,6 +388,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV2 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID) KintoWallet(_entryPoint, _kintoID) {}
+contract KintoWalletV3 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoApp _kintoApp) KintoWallet(_entryPoint, _kintoID, _kintoApp) {}
 }

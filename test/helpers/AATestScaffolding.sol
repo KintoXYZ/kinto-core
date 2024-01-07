@@ -49,6 +49,9 @@ abstract contract AATestScaffolding is KYCSignature {
         // Deploy Kinto ID
         deployKintoID(_owner, _kycProvider);
 
+        // Deploy Kinto App
+        deployKintoApp(_owner);
+
         // vm.startPrank(_owner);
         EntryPoint entry = new EntryPoint{salt: 0}();
         _entryPoint = IKintoEntryPoint(address(entry));
@@ -60,19 +63,16 @@ abstract contract AATestScaffolding is KYCSignature {
         // Approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
 
-        // deploy WalletV1 through wallet factory and initialize it
-        vm.prank(_owner);
-        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
-
         // Deploy paymaster
         deployPaymaster(_owner);
 
         // Deploy Engen Credits
         deployEngenCredits(_owner);
 
-        // Deploy Kinto App
-        deployKintoApp(_owner);
-
+        vm.prank(_owner);
+        // deploy WalletV1 through wallet factory and initialize it
+        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
+        console.log("kinto wallet app registry in wall", address(_kintoWalletv1.appRegistry()));
         // Give some eth
         vm.deal(_owner, 1e20);
     }
@@ -103,7 +103,8 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+        console.log("APPPP", address(_kintoApp));
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoApp);
 
         //Deploy wallet factory implementation
         _walletFactoryI = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
@@ -133,6 +134,9 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // initialize proxy
         _paymaster.initialize(_owner);
+
+        // Set the registry in the paymaster
+        _paymaster.setAppRegistry(address(_kintoApp));
 
         vm.stopPrank();
     }
@@ -169,11 +173,6 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // initialize proxy
         _kintoApp.initialize();
-
-        // Upgrade to a new impl with the registry and wallet factory
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
-        _walletFactory.setAddressesOnImplementation(_kintoWalletImpl, address(_kintoApp), address(_walletFactory));
-        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
 
         vm.stopPrank();
     }

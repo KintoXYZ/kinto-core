@@ -47,8 +47,8 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
     }
 }
 
-contract KintoWalletV3 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoIDv1) KintoWallet(_entryPoint, _kintoIDv1) {}
+contract KintoWalletVTest is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoIDv1, IKintoApp _kintoApp) KintoWallet(_entryPoint, _kintoIDv1, _kintoApp) {}
 }
 
 contract KintoWalletsUpgradeScript is ArtifactsReader {
@@ -67,7 +67,7 @@ contract KintoWalletsUpgradeScript is ArtifactsReader {
         _walletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
         // Deploy new wallet implementation
         _kintoWalletImpl =
-            new KintoWalletV3(IEntryPoint(_getChainDeployment("EntryPoint")), IKintoID(_getChainDeployment("KintoID")));
+            new KintoWalletVTest(IEntryPoint(_getChainDeployment("EntryPoint")), IKintoID(_getChainDeployment("KintoID")), IKintoApp(_getChainDeployment("KintoApp")));
         // // Upgrade all implementations
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
         vm.stopBroadcast();
