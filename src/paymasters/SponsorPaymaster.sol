@@ -202,7 +202,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "SP: Kinto Rate limit exceeded");
         }
 
-        // Get app limits
+        // Get per-app limits
         uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
 
         // Check app rate limiting
