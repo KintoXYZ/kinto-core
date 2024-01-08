@@ -278,7 +278,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            lastTargetContract = appRegistry.getContractSponsor(targetContracts[targetContracts.length - 1]);
+            lastTargetContract = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
             // Last contract must be a contract app
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
                 if (
@@ -291,7 +291,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            lastTargetContract = appRegistry.getContractSponsor(targetContract);
+            lastTargetContract = appRegistry.getSponsor(targetContract);
         } else {
             // Handle unknown function or error
             revert("SP: Unknown function selector");

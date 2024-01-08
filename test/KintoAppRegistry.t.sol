@@ -84,27 +84,27 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function testRegisterApp(string memory name, address parentContract) public {
         vm.startPrank(_user);
         assertEq(_kintoApp.appCount(), 0);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(7);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(7);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         assertEq(_kintoApp.appCount(), 1);
         IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
-        assertEq(metadata.developerWallet, address(_user));
+        assertEq(metadata.admin, address(_user));
         assertEq(metadata.dsaEnabled, false);
         assertEq(metadata.rateLimitPeriod, appLimits[0]);
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
         assertEq(_kintoApp.isContractSponsored(parentContract, address(7)), true);
-        assertEq(_kintoApp.getContractSponsor(address(7)), parentContract);
+        assertEq(_kintoApp.getSponsor(address(7)), parentContract);
         uint256[4] memory limits = _kintoApp.getContractLimits(address(7));
         assertEq(limits[0], appLimits[0]);
         assertEq(limits[1], appLimits[1]);
@@ -122,22 +122,22 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testRegisterAppAndUpdate(string memory name, address parentContract) public {
         vm.startPrank(_user);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            name, parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         _kintoApp.updateMetadata(
-            "test2", parentContract, childContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
+            "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
         IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
         assertEq(metadata.name, "test2");
-        assertEq(metadata.developerWallet, address(_user));
+        assertEq(metadata.admin, address(_user));
         assertEq(metadata.dsaEnabled, false);
         assertEq(metadata.rateLimitPeriod, 1);
         assertEq(metadata.rateLimitNumber, 1);
@@ -153,15 +153,15 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function testOwnerCanEnableDSA() public {
         vm.startPrank(_owner);
         address parentContract = address(_engenCredits);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         _kintoApp.enableDSA(parentContract);
         IKintoAppRegistry.Metadata memory metadata = _kintoApp.getAppMetadata(parentContract);
@@ -172,15 +172,15 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function test_Revert_When_User_TriesToEnableDSA() public {
         vm.startPrank(_user);
         address parentContract = address(_engenCredits);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoApp.enableDSA(parentContract);
@@ -191,15 +191,15 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function testAppCreatorCanSetSponsoredContracts() public {
         vm.startPrank(_user);
         address parentContract = address(_engenCredits);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -217,15 +217,15 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function test_Revert_When_NotCreator_TriesToSetSponsoredContracts() public {
         vm.startPrank(_user);
         address parentContract = address(_engenCredits);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -244,15 +244,15 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     function test_RevertWhen_TransfersAreDisabled() public {
         vm.startPrank(_user);
         address parentContract = address(_engenCredits);
-        address[] memory childContracts = new address[](1);
-        childContracts[0] = address(8);
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(8);
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
         _kintoApp.registerApp(
-            "", parentContract, childContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         uint256 tokenIdx = _kintoApp.tokenOfOwnerByIndex(_user, 0);
         vm.expectRevert("Only mint transfers are allowed");

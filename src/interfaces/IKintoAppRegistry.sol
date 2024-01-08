@@ -5,7 +5,7 @@ interface IKintoAppRegistry {
     /* ============ Structs ============ */
 
     struct Metadata {
-        address developerWallet; // 160 bits
+        address admin; // 160 bits
         bool dsaEnabled;
         uint256 rateLimitPeriod;
         uint256 rateLimitNumber; // in txs
@@ -19,7 +19,7 @@ interface IKintoAppRegistry {
     function registerApp(
         string calldata _name,
         address parentContract,
-        address[] calldata childContracts,
+        address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external;
 
@@ -30,7 +30,7 @@ interface IKintoAppRegistry {
     function updateMetadata(
         string calldata _name,
         address parentContract,
-        address[] calldata childContracts,
+        address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external;
 
@@ -48,7 +48,7 @@ interface IKintoAppRegistry {
 
     function getAppMetadata(address _contract) external view returns (Metadata memory);
 
-    function getContractSponsor(address _contract) external view returns (address);
+    function getSponsor(address _contract) external view returns (address);
 
     function isContractSponsored(address _app, address _contract) external view returns (bool);
 

@@ -336,7 +336,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _checkAppWhitelist(address _contract) internal view {
         require(
-            appWhitelist[appRegistry.getContractSponsor(_contract)] || _contract == address(this),
+            appWhitelist[appRegistry.getSponsor(_contract)] || _contract == address(this),
             "KW: contract not whitelisted"
         );
     }
@@ -365,7 +365,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            address lastTargetContract = appRegistry.getContractSponsor(targetContracts[targetContracts.length - 1]);
+            address lastTargetContract = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
             for (uint256 i = 0; i < targetContracts.length; i++) {
                 // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
@@ -389,7 +389,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV3 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
-        KintoWallet(_entryPoint, _kintoID, _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
+        KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
 }

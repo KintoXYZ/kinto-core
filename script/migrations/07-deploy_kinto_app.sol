@@ -25,14 +25,13 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // Execute this script with the hot wallet, not with ledger
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address admin = vm.envAddress("LEGER_ADMIN");
+        address admin = vm.envAddress("LEDGER_ADMIN");
         if (admin == address(0)) {
             console.log("Admin key not set", admin);
             return;
         }
-        vm.startBroadcast(deployerPrivateKey);
+        vm.broadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
         address appAddr = _getChainDeployment("KintoAppRegistry");
         if (appAddr != address(0)) {
             console.log("KintoAppRegistry already deployed", appAddr);
@@ -53,7 +52,6 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         // Fund in the paymaster
         SponsorPaymaster _paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
         _paymaster.addDepositFor{value: 1e17}(credits);
-        vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoAppRegistry": "', vm.toString(address(_kintoApp)), '"'));
