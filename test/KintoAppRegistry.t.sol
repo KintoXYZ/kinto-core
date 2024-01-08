@@ -73,7 +73,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_OthersCannotUpgradeFactory() public {
+    function test_RevertWhen_OthersCannotUpgradeAppRegistry() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoApp.upgradeTo(address(_implementationV2));
