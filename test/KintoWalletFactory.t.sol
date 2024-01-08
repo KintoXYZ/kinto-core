@@ -9,6 +9,7 @@ import {UserOp} from "./helpers/UserOp.sol";
 import {UUPSProxy} from "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import {Create2Helper} from "./helpers/Create2Helper.sol";
+import "../src/sample/Counter.sol";
 
 import "@aa/interfaces/IAccount.sol";
 import "@aa/interfaces/INonceManager.sol";
@@ -30,18 +31,6 @@ contract KintoWalletV999 is KintoWallet {
 
     function walletFunction() public pure returns (uint256) {
         return 1;
-    }
-}
-
-contract Counter {
-    uint256 public count;
-
-    constructor() {
-        count = 0;
-    }
-
-    function increment() public {
-        count += 1;
     }
 }
 

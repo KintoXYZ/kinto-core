@@ -7,21 +7,10 @@ import "@aa/interfaces/IEntryPoint.sol";
 import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import "../src/sample/Counter.sol";
 
 import {Test, stdError} from "forge-std/Test.sol";
 import "forge-std/console.sol";
-
-contract Counter {
-    uint256 public count;
-
-    constructor() {
-        count = 0;
-    }
-
-    function increment() public {
-        count += 1;
-    }
-}
 
 contract KintoWalletTest is AATestScaffolding, UserOp {
     uint256[] privateKeys;
