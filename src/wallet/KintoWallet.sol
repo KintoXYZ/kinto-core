@@ -54,6 +54,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
+    event SignersChanged(address[] newSigners, address[] oldSigners);
 
     /* ============ Modifiers ============ */
 
@@ -326,6 +327,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             require(newSigners[i] != address(0), "KW-rs: invalid signer address");
         }
         owners = newSigners;
+        emit SignersChanged(newSigners, owners);
         // Change policy if needed.
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);

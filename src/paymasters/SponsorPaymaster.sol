@@ -26,6 +26,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
 
+    // ========== Events ============
+    event AppRegistrySet(address appRegistry, address _oldRegistry);
+
     //calculated cost of the postOp
     uint256 public constant COST_OF_POST = 60_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 180_000;
@@ -78,6 +81,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @param _appRegistry address of the app registry
      */
     function setAppRegistry(address _appRegistry) external override onlyOwner {
+        require(_appRegistry != address(0) && _appRegistry != address(appRegistry), "SP: appRegistry cannot be 0");
+        emit AppRegistrySet(_appRegistry, address(appRegistry));
         appRegistry = IKintoAppRegistry(_appRegistry);
     }
 
@@ -132,9 +137,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         entryPoint.withdrawTo(payable(target), amount);
     }
 
-    /**
-     * Viewers & validation ********
-     */
+    /* =============== Viewers & validation ============= */
 
     /**
      * Return the deposit info for the account

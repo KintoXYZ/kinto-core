@@ -204,9 +204,6 @@ contract KintoAppRegistry is
      * @return The address of the contract that sponsors the contract
      */
     function getSponsor(address _contract) external view override returns (address) {
-        if (_appMetadata[_contract].admin != address(0)) {
-            return _contract;
-        }
         if (childToParentContract[_contract] != address(0)) {
             return childToParentContract[_contract];
         }
