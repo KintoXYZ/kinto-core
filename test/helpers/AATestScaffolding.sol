@@ -29,21 +29,26 @@ abstract contract AATestScaffolding is KYCSignature {
     using SignatureChecker for address;
 
     IKintoEntryPoint _entryPoint;
-    KintoWalletFactory _walletFactoryI;
-    KintoWalletFactory _walletFactory;
-    KintoAppRegistry _kintoApp;
+
+    KintoAppRegistry _kintoAppRegistry;
+
     KintoID _implementation;
     KintoID _kintoIDv1;
-    SponsorPaymaster _paymaster;
 
+    // Wallet & Factory
+    KintoWalletFactory _walletFactory;
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWalletv1;
-    UUPSProxy _proxy;
-    UUPSProxy _proxyf;
-    UUPSProxy _proxys;
-    UUPSProxy _proxycredit;
-    UUPSProxy _proxyapp;
+
     EngenCredits _engenCredits;
+    SponsorPaymaster _paymaster;
+
+    // proxies
+    UUPSProxy _proxy;
+    UUPSProxy _proxyFactory;
+    UUPSProxy _proxyPaymaster;
+    UUPSProxy _proxyCredit;
+    UUPSProxy _proxyRegistry;
 
     function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
         // Deploy Kinto ID
@@ -70,7 +75,8 @@ abstract contract AATestScaffolding is KYCSignature {
         deployEngenCredits(_owner);
 
         vm.prank(_owner);
-        // deploy WalletV1 through wallet factory and initialize it
+
+        // deploy latest KintoWallet version through wallet factory and initialize it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
         // Give some eth
         vm.deal(_owner, 1e20);
@@ -102,12 +108,12 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoApp);
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
-        //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
-        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), "");
-        _walletFactory = KintoWalletFactory(address(_proxyf));
+        // Deploy wallet factory implementation
+        KintoWalletFactory _walletFactoryI = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
+        _proxyFactory = new UUPSProxy{salt: 0}(address(_walletFactoryI), "");
+        _walletFactory = KintoWalletFactory(address(_proxyFactory));
 
         // Initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
@@ -125,16 +131,16 @@ abstract contract AATestScaffolding is KYCSignature {
         _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
 
         // deploy _proxy contract and point it to _implementation
-        _proxys = new UUPSProxy{salt: 0}(address(_paymaster), "");
+        _proxyPaymaster = new UUPSProxy{salt: 0}(address(_paymaster), "");
 
         // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxys));
+        _paymaster = SponsorPaymaster(address(_proxyPaymaster));
 
         // initialize proxy
         _paymaster.initialize(_owner);
 
         // Set the registry in the paymaster
-        _paymaster.setAppRegistry(address(_kintoApp));
+        _paymaster.setAppRegistry(address(_kintoAppRegistry));
 
         vm.stopPrank();
     }
@@ -146,10 +152,10 @@ abstract contract AATestScaffolding is KYCSignature {
         _engenCredits = new EngenCredits{salt: 0}();
 
         // deploy _proxy contract and point it to _implementation
-        _proxycredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
+        _proxyCredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
 
         // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxycredit));
+        _engenCredits = EngenCredits(address(_proxyCredit));
 
         // initialize proxy
         _engenCredits.initialize();
@@ -161,16 +167,16 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // deploy the Kinto App registry
-        _kintoApp = new KintoAppRegistry{salt: 0}();
+        _kintoAppRegistry = new KintoAppRegistry{salt: 0}();
 
         // deploy _proxy contract and point it to _implementation
-        _proxyapp = new UUPSProxy{salt: 0}(address(_kintoApp), "");
+        _proxyRegistry = new UUPSProxy{salt: 0}(address(_kintoAppRegistry), "");
 
         // wrap in ABI to support easier calls
-        _kintoApp = KintoAppRegistry(address(_proxyapp));
+        _kintoAppRegistry = KintoAppRegistry(address(_proxyRegistry));
 
         // initialize proxy
-        _kintoApp.initialize();
+        _kintoAppRegistry.initialize();
 
         vm.stopPrank();
     }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "../src/interfaces/IKintoWallet.sol";
 import "@aa/interfaces/IEntryPoint.sol";
 
-import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
+import "../src/wallet/KintoWallet.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import "../src/sample/Counter.sol";
@@ -52,7 +52,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoApp);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         uint256 nonce = _kintoWalletv1.getNonce();
 
@@ -85,7 +85,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoApp);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         uint256 nonce = userWallet.getNonce();

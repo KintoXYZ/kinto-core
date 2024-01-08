@@ -25,8 +25,8 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletV999 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
-        KintoWallet(_entryPoint, _kintoID, _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry)
+        KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry)
     {}
 
     function walletFunction() public pure returns (uint256) {
@@ -86,7 +86,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
         vm.startPrank(_owner);
 
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1, _kintoApp);
+        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
@@ -101,7 +101,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testUpgrade_RevertWhen_CallerIsNotOwner() public {
         // deploy wallet implementation
-        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1, _kintoApp);
+        _kintoWalletImpl = new KintoWalletV999(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         // deploy walletv1 through wallet factory and initializes it
         _kintoWalletv1 = _walletFactory.createAccount(_owner, _owner, 0);
