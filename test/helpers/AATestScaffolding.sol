@@ -217,11 +217,11 @@ abstract contract AATestScaffolding is KYCSignature {
     {
         vm.startPrank(_owner);
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp(
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         vm.stopPrank();
