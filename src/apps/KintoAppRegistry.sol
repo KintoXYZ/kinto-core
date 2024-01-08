@@ -107,7 +107,7 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
-        require(appLimits.length == 4, "Invalid app limits");
+        require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
         _updateMetadata(_name, parentContract, appContracts, appLimits);
         appCount++;
         _safeMint(msg.sender, appCount);

@@ -206,6 +206,21 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
+    function createApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
+        public
+    {
+        vm.startPrank(_owner);
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
+        _kintoApp.registerApp(
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        );
+        vm.stopPrank();
+    }
+
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////
 
     // string reasons
