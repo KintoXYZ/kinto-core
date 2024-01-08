@@ -2,3 +2,4 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 forge fmt
+# git add . (do we want to automatically stage the changes?)

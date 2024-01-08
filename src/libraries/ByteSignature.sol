@@ -2,29 +2,16 @@
 pragma solidity ^0.8.23;
 
 library ByteSignature {
-    function extractTwoSignatures(bytes memory _fullSignature)
+    function extractSignatures(bytes memory _fullSignature, uint256 count)
         internal
         pure
-        returns (bytes memory signature1, bytes memory signature2)
+        returns (bytes[] memory signatures)
     {
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-        return (extractECDASignatureFromBytes(_fullSignature, 0), extractECDASignatureFromBytes(_fullSignature, 1));
-    }
-
-    function extractThreeSignatures(bytes memory _fullSignature)
-        internal
-        pure
-        returns (bytes memory signature1, bytes memory signature2, bytes memory signature3)
-    {
-        signature1 = new bytes(65);
-        signature2 = new bytes(65);
-        signature3 = new bytes(65);
-        return (
-            extractECDASignatureFromBytes(_fullSignature, 0),
-            extractECDASignatureFromBytes(_fullSignature, 1),
-            extractECDASignatureFromBytes(_fullSignature, 2)
-        );
+        require(_fullSignature.length >= count * 65, "ByteSignature: Invalid signature length");
+        signatures = new bytes[](count);
+        for (uint256 i = 0; i < count; i++) {
+            signatures[i] = extractECDASignatureFromBytes(_fullSignature, i);
+        }
     }
 
     function extractECDASignatureFromBytes(bytes memory _fullSignature, uint256 position)
@@ -32,16 +19,14 @@ library ByteSignature {
         pure
         returns (bytes memory signature)
     {
+        uint256 offset = (position * 0x40) + position;
         signature = new bytes(65);
         // Copying the first signature. Note, that we need an offset of 0x20
         // since it is where the length of the `_fullSignature` is stored
-        uint256 firstIndex = (position * 0x40) + 0x20 + position;
-        uint256 secondIndex = (position * 0x40) + 0x40 + position;
-        uint256 thirdIndex = (position * 0x40) + 0x41 + position;
         assembly {
-            let r := mload(add(_fullSignature, firstIndex))
-            let s := mload(add(_fullSignature, secondIndex))
-            let v := and(mload(add(_fullSignature, thirdIndex)), 0xff)
+            let r := mload(add(_fullSignature, add(offset, 0x20)))
+            let s := mload(add(_fullSignature, add(offset, 0x40)))
+            let v := and(mload(add(_fullSignature, add(offset, 0x41))), 0xff)
 
             mstore(add(signature, 0x20), r)
             mstore(add(signature, 0x40), s)
