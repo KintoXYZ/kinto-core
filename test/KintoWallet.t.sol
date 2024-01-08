@@ -1,38 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../src/wallet/KintoWallet.sol";
-import "../src/wallet/KintoWalletFactory.sol";
-import "../src/tokens/EngenCredits.sol";
-import "../src/paymasters/SponsorPaymaster.sol";
-import "../src/KintoID.sol";
-import {UserOp} from "./helpers/UserOp.sol";
-import {UUPSProxy} from "./helpers/UUPSProxy.sol";
-import {KYCSignature} from "./helpers/KYCSignature.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-
-import "@aa/interfaces/IAccount.sol";
-import "@aa/interfaces/INonceManager.sol";
+import "../src/interfaces/IKintoWallet.sol";
 import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
+import {UserOp} from "./helpers/UserOp.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
 import {Test, stdError} from "forge-std/Test.sol";
 import "forge-std/console.sol";
-
-contract KintoWalletv2 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
-        KintoWallet(_entryPoint, _kintoID, _kintoApp)
-    {}
-
-    function newFunction() public pure returns (uint256) {
-        return 1;
-    }
-}
 
 contract Counter {
     uint256 public count;
@@ -47,10 +24,6 @@ contract Counter {
 }
 
 contract KintoWalletTest is AATestScaffolding, UserOp {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    KintoWalletv2 _kintoWalletv2;
     uint256[] privateKeys;
 
     uint256 _chainID = 1;
@@ -89,8 +62,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     /* ============ Upgrade Tests ============ */
 
     function test_RevertWhen_OwnerCannotUpgrade() public {
-        // deploy a KintoWalletv2
-        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1, _kintoApp);
+        // deploy a new implementation
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoApp);
 
         uint256 nonce = _kintoWalletv1.getNonce();
 
@@ -102,7 +75,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             privateKeys,
             address(_kintoWalletv1),
             0,
-            abi.encodeWithSignature("upgradeTo(address)", address(_implementationV2)),
+            abi.encodeWithSignature("upgradeTo(address)", address(_newImplementation)),
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -122,8 +95,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
-        // deploy a KintoWalletv2
-        KintoWalletv2 _implementationV2 = new KintoWalletv2(_entryPoint, _kintoIDv1, _kintoApp);
+        // deploy a new implementation
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoApp);
 
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         uint256 nonce = userWallet.getNonce();
@@ -136,7 +109,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             privateKeys,
             address(_kintoWalletv1),
             0,
-            abi.encodeWithSignature("upgradeTo(address)", address(_implementationV2)),
+            abi.encodeWithSignature("upgradeTo(address)", address(_newImplementation)),
             address(_paymaster)
         );
 
