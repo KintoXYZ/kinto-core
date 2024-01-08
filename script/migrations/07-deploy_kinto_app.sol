@@ -30,7 +30,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
             console.log("Admin key not set", admin);
             return;
         }
-        vm.broadcast(deployerPrivateKey);
+        vm.startBroadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
         address appAddr = _getChainDeployment("KintoAppRegistry");
         if (appAddr != address(0)) {
@@ -52,6 +52,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         // Fund in the paymaster
         SponsorPaymaster _paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
         _paymaster.addDepositFor{value: 1e17}(credits);
+        vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoAppRegistry": "', vm.toString(address(_kintoApp)), '"'));
