@@ -10,7 +10,7 @@ import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
-import "./KintoWallet.sol";
+import "../interfaces/IKintoWallet.sol";
 
 /**
  * @title KintoWalletFactory
@@ -25,7 +25,7 @@ import "./KintoWallet.sol";
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
-    KintoWallet private immutable _implAddress;
+    IKintoWallet private immutable _implAddress;
     IKintoID public override kintoID;
     mapping(address => uint256) public override walletTs;
     uint256 public override factoryWalletVersion;
@@ -36,7 +36,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     event KintoWalletFactoryUpgraded(address indexed oldImplementation, address indexed newImplementation);
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(KintoWallet _implAddressP) {
+    constructor(IKintoWallet _implAddressP) {
         _disableInitializers();
         _implAddress = _implAddressP;
     }
@@ -101,13 +101,13 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         uint256 codeSize = addr.code.length;
 
         if (codeSize > 0) {
-            return KintoWallet(payable(addr));
+            return IKintoWallet(payable(addr));
         }
 
-        ret = KintoWallet(
+        ret = IKintoWallet(
             payable(
                 new SafeBeaconProxy{salt: bytes32(salt)}(
-                    address(beacon), abi.encodeCall(KintoWallet.initialize, (owner, recoverer))
+                    address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer))
                 )
             )
         );
@@ -126,8 +126,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function startWalletRecovery(address payable wallet) external override {
         require(walletTs[wallet] > 0, "invalid wallet");
-        require(msg.sender == KintoWallet(wallet).recoverer(), "only recoverer");
-        KintoWallet(wallet).startRecovery();
+        require(msg.sender == IKintoWallet(wallet).recoverer(), "only recoverer");
+        IKintoWallet(wallet).startRecovery();
     }
 
     /**
@@ -137,14 +137,14 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
         require(walletTs[wallet] > 0, "invalid wallet");
-        require(msg.sender == KintoWallet(wallet).recoverer(), "only recoverer");
-        KintoWallet(wallet).finishRecovery(newSigners);
+        require(msg.sender == IKintoWallet(wallet).recoverer(), "only recoverer");
+        IKintoWallet(wallet).finishRecovery(newSigners);
     }
 
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
         require(walletTs[wallet] > 0, "invalid wallet");
-        require(msg.sender == KintoWallet(wallet).recoverer(), "only recoverer");
-        KintoWallet(wallet).changeRecoverer(_newRecoverer);
+        require(msg.sender == IKintoWallet(wallet).recoverer(), "only recoverer");
+        IKintoWallet(wallet).changeRecoverer(_newRecoverer);
     }
     /* ============ Deploy Custom Contract ============ */
 
@@ -183,8 +183,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function fundWallet(address payable wallet) external payable override {
         require(
-            msg.value > 0 && walletTs[wallet] > 0 && kintoID.isKYC(KintoWallet(wallet).owners(0))
-                && KintoWallet(payable(wallet)).isFunderWhitelisted(msg.sender),
+            msg.value > 0 && walletTs[wallet] > 0 && kintoID.isKYC(IKintoWallet(wallet).owners(0))
+                && IKintoWallet(payable(wallet)).isFunderWhitelisted(msg.sender),
             "Invalid wallet or funder"
         );
         wallet.transfer(msg.value);
@@ -215,7 +215,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
             keccak256(
                 abi.encodePacked(
                     type(SafeBeaconProxy).creationCode,
-                    abi.encode(address(beacon), abi.encodeCall(KintoWallet.initialize, (owner, recoverer)))
+                    abi.encode(address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer)))
                 )
             )
         );
@@ -268,5 +268,5 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 }
 
 contract KintoWalletFactoryV2 is KintoWalletFactory {
-    constructor(KintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

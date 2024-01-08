@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
-import {KintoWallet} from "../../src/wallet/KintoWallet.sol";
+import "../../src/wallet/KintoWallet.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";

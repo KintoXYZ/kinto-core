@@ -66,8 +66,8 @@ contract SponsorPaymasterTest is KYCSignature {
 
     function testOwnerCanUpgrade() public {
         vm.startPrank(_owner);
-        SponsorPaymasterV999 _implementationV999 = new SponsorPaymasterV999(_entryPoint, _owner);
-        _paymaster.upgradeTo(address(_implementationV999));
+        SponsorPaymasterV999 _newImplementation = new SponsorPaymasterV999(_entryPoint, _owner);
+        _paymaster.upgradeTo(address(_newImplementation));
         // re-wrap the _proxy
         _paymasterv999 = SponsorPaymasterV999(address(_proxy));
         assertEq(_paymasterv999.newFunction(), 1);
@@ -75,9 +75,9 @@ contract SponsorPaymasterTest is KYCSignature {
     }
 
     function testUpgrade_RevertWhen_CallerIsNotOwner() public {
-        SponsorPaymasterV999 _implementationV999 = new SponsorPaymasterV999(_entryPoint, _owner);
+        SponsorPaymasterV999 _newImplementation = new SponsorPaymasterV999(_entryPoint, _owner);
         vm.expectRevert("SP: not owner");
-        _paymaster.upgradeTo(address(_implementationV999));
+        _paymaster.upgradeTo(address(_newImplementation));
     }
 
     // Deposit & Stake

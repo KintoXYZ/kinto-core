@@ -11,6 +11,8 @@ interface IKintoWallet {
 
     /* ============ State Change ============ */
 
+    function initialize(address anOwner, address _recoverer) external;
+
     function execute(address dest, uint256 value, bytes calldata func) external;
 
     function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func) external;
@@ -31,7 +33,7 @@ interface IKintoWallet {
 
     function setAppKey(address app, address signer) external;
 
-    function setAppWhitelist(address[] calldata apps, bool[] calldata flags) external;
+    function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
     /* ============ Basic Viewers ============ */
 

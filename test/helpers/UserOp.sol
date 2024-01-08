@@ -230,7 +230,7 @@ abstract contract UserOp is Test {
             pk,
             address(wallet),
             0,
-            abi.encodeWithSignature("setAppWhitelist(address[],bool[])", targets, flags),
+            abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
             address(_paymaster)
         );
     }
