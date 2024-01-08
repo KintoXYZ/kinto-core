@@ -31,7 +31,7 @@ contract ByteSignatureTest is UserOp {
         bytes[] memory originalSignatures = new bytes[](numSignatures);
 
         // generate random signatures
-        for (uint8 i = 0; i < numSignatures;i++) {
+        for (uint8 i = 0; i < numSignatures; i++) {
             bytes memory signature = new bytes(65);
             for (uint256 j = 0; j < 65; j++) {
                 signature[j] = bytes1(uint8(uint256(keccak256(abi.encodePacked(block.timestamp, i, j))) % 256));
