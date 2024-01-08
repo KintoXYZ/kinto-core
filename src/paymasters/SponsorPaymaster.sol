@@ -196,7 +196,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
-        // Check Kinto rate limiting
+        // Check global rate limit (across all apps)
         ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
         if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
             require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "SP: Kinto Rate limit exceeded");
