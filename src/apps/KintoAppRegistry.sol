@@ -200,7 +200,7 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @dev Returns the contract that sponsors a contract
+     * @dev Returns the sponsoring contract
      * @param _contract The address of the contract
      * @return The address of the contract that sponsors the contract
      */
