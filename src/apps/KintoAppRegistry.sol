@@ -34,8 +34,9 @@ contract KintoAppRegistry is
 
     uint256 public override appCount;
     mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
-    mapping(address => mapping(address => bool)) private _sponsoredContracts; // other contracts to be sponsored
-
+    // other contracts to be sponsored that dont belong in the app
+    mapping(address => mapping(address => bool)) private _sponsoredContracts;
+    // Mapping between the app and all the contracts that belong to it
     mapping(address => address) public override childToParentContract;
 
     /* ============ Events ============ */
