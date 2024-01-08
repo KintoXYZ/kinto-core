@@ -212,7 +212,7 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
-    function createApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
+    function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
         public
     {
         vm.startPrank(_owner);
