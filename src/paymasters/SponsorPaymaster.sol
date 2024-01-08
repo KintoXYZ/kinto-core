@@ -41,7 +41,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     // A mapping for rate limiting data: account => contract => RateLimitData
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
-    mapping(address => ISponsorPaymaster.RateLimitData) public totalRateLimit;
+    mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
 
     IKintoAppRegistry public override appRegistry;
 
@@ -197,7 +197,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
         // Check global rate limit (across all apps)
-        ISponsorPaymaster.RateLimitData memory globalData = totalRateLimit[userOp.sender];
+        ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[userOp.sender];
         if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
             require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "SP: Kinto Rate limit exceeded");
         }
@@ -237,7 +237,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         contractSpent[account] += ethCost;
 
         // Global network rate limit
-        ISponsorPaymaster.RateLimitData storage globalTxLimit = totalRateLimit[userAccount];
+        ISponsorPaymaster.RateLimitData storage globalTxLimit = globalRateLimit[userAccount];
         if (block.timestamp > globalTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
             globalTxLimit.lastOperationTime = block.timestamp;
             globalTxLimit.operationCount = 1;
