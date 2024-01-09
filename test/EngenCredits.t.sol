@@ -2,13 +2,12 @@
 pragma solidity ^0.8.23;
 
 import "../src/tokens/EngenCredits.sol";
+import "./helpers/UserOp.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import "@aa/core/EntryPoint.sol";
+
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import {UserOp} from "./helpers/UserOp.sol";
-import {UUPSProxy} from "./helpers/UUPSProxy.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-import {Create2Helper} from "./helpers/Create2Helper.sol";
-import "@aa/core/EntryPoint.sol";
 
 contract EngenCreditsV2 is EngenCredits {
     function newFunction() external pure returns (uint256) {
@@ -18,7 +17,7 @@ contract EngenCreditsV2 is EngenCredits {
     constructor() EngenCredits() {}
 }
 
-contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
+contract EngenCreditsTest is UserOp, AATestScaffolding {
     EngenCreditsV2 _engenCreditsV2;
 
     uint256 _chainID = 1;

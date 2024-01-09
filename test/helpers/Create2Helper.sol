@@ -1,21 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
 import "forge-std/console.sol";
 
 abstract contract Create2Helper {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    /* solhint-disable var-name-mixedcase */
-    /* solhint-disable private-vars-leading-underscore */
     address CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     /// @notice Precompute a contract address deployed via CREATE2

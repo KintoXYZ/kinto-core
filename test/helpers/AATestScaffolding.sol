@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
-import "@aa/interfaces/IAccount.sol";
-import "@aa/interfaces/INonceManager.sol";
-import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 import "../../src/KintoID.sol";
 import {IKintoEntryPoint} from "../../src/interfaces/IKintoEntryPoint.sol";
@@ -16,18 +13,10 @@ import "../../src/tokens/EngenCredits.sol";
 import {KintoWalletFactoryV2 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-abstract contract AATestScaffolding is Create2Helper, KYCSignature {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
+abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
 
     KintoAppRegistry _kintoAppRegistry;
