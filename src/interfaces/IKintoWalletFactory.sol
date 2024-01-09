@@ -37,6 +37,8 @@ interface IKintoWalletFactory {
 
     function getWalletTimestamp(address wallet) external view returns (uint256);
 
+    function deployedBy(address wallet) external view returns (address);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);

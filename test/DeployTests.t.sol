@@ -11,6 +11,8 @@ import {UUPSProxy} from "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import {Create2Helper} from "./helpers/Create2Helper.sol";
 import "./helpers/KYCSignature.sol";
+import "../src/sample/CounterInitializable.sol";
+import {OwnableCounter as Counter} from "../src/sample/OwnableCounter.sol";
 
 import "@aa/interfaces/IAccount.sol";
 import "@aa/interfaces/INonceManager.sol";
@@ -27,31 +29,6 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-
-contract Counter is Ownable {
-    uint256 public count = 0;
-
-    constructor() Ownable() {}
-
-    function increment() public onlyOwner {
-        count += 1;
-    }
-}
-
-contract CounterInitializable is Initializable, OwnableUpgradeable, UUPSUpgradeable {
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(address initialOwner) public initializer {
-        __Ownable_init();
-        _transferOwnership(initialOwner);
-        __UUPSUpgradeable_init();
-    }
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-}
 
 contract DeveloperDeployTest is Create2Helper, UserOp, AATestScaffolding {
     using ECDSAUpgradeable for bytes32;

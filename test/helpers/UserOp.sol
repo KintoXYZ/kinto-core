@@ -211,14 +211,14 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function createWhitelistAppOp(
+    function _whitelistAppOp(
         uint256 _chainId,
         uint256[] memory pk,
         address wallet,
         uint256 startingNonce,
         address app,
         address _paymaster
-    ) public view returns (UserOperation memory userOp) {
+    ) internal view returns (UserOperation memory userOp) {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
@@ -230,7 +230,7 @@ abstract contract UserOp is Test {
             pk,
             address(wallet),
             0,
-            abi.encodeWithSignature("setAppWhitelist(address[],bool[])", targets, flags),
+            abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
             address(_paymaster)
         );
     }

@@ -15,7 +15,7 @@ import "@aa/core/EntryPoint.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-contract SponsorPaymasterV2 is SponsorPaymaster {
+contract SponsorPaymasterV999 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
         _disableInitializers();
         _transferOwnership(_owner);
@@ -32,7 +32,7 @@ contract SponsorPaymasterTest is KYCSignature {
 
     EntryPoint _entryPoint;
     SponsorPaymaster _paymaster;
-    SponsorPaymasterV2 _paymasterv2;
+    SponsorPaymasterV999 _paymasterv999;
     UUPSProxy _proxy;
 
     address _owner = address(1);
@@ -66,18 +66,18 @@ contract SponsorPaymasterTest is KYCSignature {
 
     function testOwnerCanUpgrade() public {
         vm.startPrank(_owner);
-        SponsorPaymasterV2 _implementationV2 = new SponsorPaymasterV2(_entryPoint, _owner);
-        _paymaster.upgradeTo(address(_implementationV2));
+        SponsorPaymasterV999 _newImplementation = new SponsorPaymasterV999(_entryPoint, _owner);
+        _paymaster.upgradeTo(address(_newImplementation));
         // re-wrap the _proxy
-        _paymasterv2 = SponsorPaymasterV2(address(_proxy));
-        assertEq(_paymasterv2.newFunction(), 1);
+        _paymasterv999 = SponsorPaymasterV999(address(_proxy));
+        assertEq(_paymasterv999.newFunction(), 1);
         vm.stopPrank();
     }
 
     function testUpgrade_RevertWhen_CallerIsNotOwner() public {
-        SponsorPaymasterV2 _implementationV2 = new SponsorPaymasterV2(_entryPoint, _owner);
+        SponsorPaymasterV999 _newImplementation = new SponsorPaymasterV999(_entryPoint, _owner);
         vm.expectRevert("SP: not owner");
-        _paymaster.upgradeTo(address(_implementationV2));
+        _paymaster.upgradeTo(address(_newImplementation));
     }
 
     // Deposit & Stake

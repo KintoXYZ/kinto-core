@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "../src/KintoID.sol";
+import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
 import "../src/viewers/KYCViewer.sol";
 import "../src/interfaces/IKintoID.sol";
 import "../src/sample/Counter.sol";
@@ -105,7 +106,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             console.log("Wallet Implementation already deployed at", address(walletImplementationAddr));
         } else {
             // Deploy Wallet Implementation
-            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1);
+            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, IKintoAppRegistry(address(0)));
             console.log("Wallet Implementation deployed at", address(_walletImpl));
         }
 
