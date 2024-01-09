@@ -16,10 +16,6 @@ import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 
-/* solhint-disable avoid-low-level-calls */
-/* solhint-disable no-inline-assembly */
-/* solhint-disable reason-string */
-
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
@@ -77,7 +73,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _disableInitializers();
     }
 
-    // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
     /**

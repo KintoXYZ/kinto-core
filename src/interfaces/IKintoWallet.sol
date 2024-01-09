@@ -63,7 +63,6 @@ interface IKintoWallet {
 
     function signerPolicy() external view returns (uint8);
 
-    /* solhint-disable func-name-mixedcase */
     function MAX_SIGNERS() external view returns (uint8);
 
     function SINGLE_SIGNER() external view returns (uint8);

@@ -21,7 +21,6 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
 
     function setUp() public {}
 
-    // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // Execute this script with the hot wallet

@@ -19,6 +19,5 @@ interface IETHPriceIsRight {
     function guessCount() external view returns (uint256);
 
     // ignore this linter warning, it's a false positive
-    // solhint-disable-next-line func-name-mixedcase
     function END_ENTER_TIMESTAMP() external view returns (uint256);
 }

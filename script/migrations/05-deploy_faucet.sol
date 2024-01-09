@@ -18,7 +18,6 @@ contract KintoMigration5DeployScript is Create2Helper, ArtifactsReader {
 
     function setUp() public {}
 
-    // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // If not using ledger, replace
