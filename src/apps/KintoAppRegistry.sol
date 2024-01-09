@@ -31,13 +31,13 @@ contract KintoAppRegistry is
     uint256 public constant override GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
 
     /* ============ State Variables ============ */
-
-    uint256 public override appCount;
+    IKintoWalletFactory public override walletFactory;
     mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
     // other contracts to be sponsored that dont belong in the app
     mapping(address => mapping(address => bool)) private _sponsoredContracts;
     // Mapping between the app and all the contracts that belong to it
     mapping(address => address) public override childToParentContract;
+    uint256 public override appCount;
 
     /* ============ Events ============ */
     event AppCreated(address indexed _app, address _owner, uint256 _timestamp);
@@ -65,6 +65,11 @@ contract KintoAppRegistry is
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function setWalletFactory(IKintoWalletFactory _walletFactory) external onlyOwner {
+        require(address(_walletFactory) != address(0), "Invalid wallet factory address");
+        walletFactory = _walletFactory;
+    }
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -108,6 +113,11 @@ contract KintoAppRegistry is
         uint256[4] calldata appLimits
     ) external override {
         require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
+        require(
+            walletFactory.deployedBy(parentContract) == address(0)
+                || walletFactory.deployedBy(parentContract) == msg.sender,
+            "Parent contract not deployed by wallet factory or admin"
+        );
         _updateMetadata(_name, parentContract, appContracts, appLimits);
         appCount++;
         _safeMint(msg.sender, appCount);

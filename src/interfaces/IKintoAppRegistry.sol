@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
+
 interface IKintoAppRegistry {
     /* ============ Structs ============ */
 
@@ -34,6 +36,8 @@ interface IKintoAppRegistry {
         uint256[4] calldata appLimits
     ) external;
 
+    function setWalletFactory(IKintoWalletFactory _walletFactory) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);
@@ -51,6 +55,8 @@ interface IKintoAppRegistry {
     function getSponsor(address _contract) external view returns (address);
 
     function isContractSponsored(address _app, address _contract) external view returns (bool);
+
+    function walletFactory() external view returns (IKintoWalletFactory);
 
     /* ============ Constants and attrs ============ */
 

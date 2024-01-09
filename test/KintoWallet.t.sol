@@ -1316,8 +1316,6 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (2). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        // registerApp(_owner, "test", address(counter), childContracts);
 
         // (3). Create whitelist app user op
         UserOperation[] memory userOps = new UserOperation[](1);

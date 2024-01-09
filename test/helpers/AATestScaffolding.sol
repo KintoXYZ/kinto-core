@@ -111,8 +111,8 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         // Deploy wallet factory implementation
-        KintoWalletFactory _implementation = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
-        _proxyFactory = new UUPSProxy{salt: 0}(address(_implementation), "");
+        KintoWalletFactory _implementation2 = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
+        _proxyFactory = new UUPSProxy{salt: 0}(address(_implementation2), "");
         _walletFactory = KintoWalletFactory(address(_proxyFactory));
 
         // Initialize wallet factory
@@ -120,6 +120,7 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
+        _kintoAppRegistry.setWalletFactory(_walletFactory);
 
         vm.stopPrank();
     }

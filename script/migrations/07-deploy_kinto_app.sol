@@ -44,6 +44,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
                 msg.sender, 0, abi.encodePacked(type(KintoAppRegistry).creationCode), bytes32(0)
             )
         );
+        _kintoApp.setWalletFactory(_walletFactory);
         // Give ownership to admin
         _kintoApp.transferOwnership(admin);
         address credits = _getChainDeployment("EngenCredits");

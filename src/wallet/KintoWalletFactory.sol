@@ -30,6 +30,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     mapping(address => uint256) public override walletTs;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
+    mapping(address => address) public override deployedBy;
 
     /* ============ Events ============ */
     event KintoWalletFactoryCreation(address indexed account, address indexed owner, uint256 version);
@@ -263,6 +264,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
                 OwnableUpgradeable(created).transferOwnership(newOwner);
             }
         } catch {}
+        deployedBy[created] = newOwner;
         return created;
     }
 }
