@@ -30,7 +30,7 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
         return 1;
     }
 
-    constructor() KintoAppRegistry() {}
+    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
 
 contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
@@ -65,7 +65,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeApp() public {
         vm.startPrank(_owner);
-        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
         _kintoApp2 = KintoAppRegistryV2(address(_kintoAppRegistry));
@@ -74,7 +74,7 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function test_RevertWhen_OthersCannotUpgradeAppRegistry() public {
-        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2();
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
     }

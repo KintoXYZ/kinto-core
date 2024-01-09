@@ -9,7 +9,7 @@ import "../../src/KintoID.sol";
 import {IKintoEntryPoint} from "../../src/interfaces/IKintoEntryPoint.sol";
 import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 import {KYCSignature} from "../helpers/KYCSignature.sol";
-
+import {Create2Helper} from "../helpers/Create2Helper.sol";
 import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
 import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
@@ -24,7 +24,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-abstract contract AATestScaffolding is KYCSignature {
+abstract contract AATestScaffolding is Create2Helper, KYCSignature {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
@@ -54,9 +54,6 @@ abstract contract AATestScaffolding is KYCSignature {
         // Deploy Kinto ID
         deployKintoID(_owner, _kycProvider);
 
-        // Deploy Kinto App
-        deployAppRegistry(_owner);
-
         // vm.startPrank(_owner);
         EntryPoint entry = new EntryPoint{salt: 0}();
         _entryPoint = IKintoEntryPoint(address(entry));
@@ -64,6 +61,9 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // Deploy wallet & wallet factory
         deployWalletFactory(_owner);
+
+        // Deploy Kinto App
+        deployAppRegistry(_owner);
 
         // Approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
@@ -107,20 +107,18 @@ abstract contract AATestScaffolding is KYCSignature {
     function deployWalletFactory(address _owner) public {
         vm.startPrank(_owner);
 
-        // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        // Deploy wallet implementation (temporary because of loop dependency on app)
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, KintoAppRegistry(address(0)));
 
         // Deploy wallet factory implementation
         KintoWalletFactory _implementation2 = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
         _proxyFactory = new UUPSProxy{salt: 0}(address(_implementation2), "");
         _walletFactory = KintoWalletFactory(address(_proxyFactory));
-
         // Initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
 
         // Set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
-        _kintoAppRegistry.setWalletFactory(_walletFactory);
 
         vm.stopPrank();
     }
@@ -168,7 +166,7 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // deploy the Kinto App registry
-        _kintoAppRegistry = new KintoAppRegistry{salt: 0}();
+        _kintoAppRegistry = new KintoAppRegistry{salt: 0}(IKintoWalletFactory(_walletFactory));
 
         // deploy _proxy contract and point it to _implementation
         _proxyRegistry = new UUPSProxy{salt: 0}(address(_kintoAppRegistry), "");
@@ -179,6 +177,10 @@ abstract contract AATestScaffolding is KYCSignature {
         // initialize proxy
         _kintoAppRegistry.initialize();
 
+        // Deploy a new wallet implementation an upgrade
+        // Deploy wallet implementation
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
         vm.stopPrank();
     }
 

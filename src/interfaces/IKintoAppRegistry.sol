@@ -36,8 +36,6 @@ interface IKintoAppRegistry {
         uint256[4] calldata appLimits
     ) external;
 
-    function setWalletFactory(IKintoWalletFactory _walletFactory) external;
-
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);

@@ -38,12 +38,11 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         }
         address credits = _getChainDeployment("EngenCredits");
         IKintoAppRegistry _kintoApp = IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
-        
-        // TODO: This needs to go through the entry point
-        _kintoApp.setWalletFactory(_walletFactory);
-        // // Create Engen App
+
+        // TODO: This needs to go through the entry point and the wallet we created in 4
+        // Create Engen App
         _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
-        
+
         vm.stopBroadcast();
 
         // Writes the addresses to a file

@@ -62,7 +62,7 @@ contract KintoWalletFactoryTest is Create2Helper, UserOp, AATestScaffolding {
     }
 
     function testUp() public {
-        assertEq(_walletFactory.factoryWalletVersion(), 1);
+        assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 

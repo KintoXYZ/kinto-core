@@ -31,7 +31,7 @@ contract KintoAppRegistry is
     uint256 public constant override GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
 
     /* ============ State Variables ============ */
-    IKintoWalletFactory public override walletFactory;
+    IKintoWalletFactory public immutable override walletFactory;
     mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
     // other contracts to be sponsored that dont belong in the app
     mapping(address => mapping(address => bool)) private _sponsoredContracts;
@@ -47,8 +47,9 @@ contract KintoAppRegistry is
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(IKintoWalletFactory _walletFactory) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     function initialize() external initializer {
@@ -65,11 +66,6 @@ contract KintoAppRegistry is
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
-
-    function setWalletFactory(IKintoWalletFactory _walletFactory) external onlyOwner {
-        require(address(_walletFactory) != address(0), "Invalid wallet factory address");
-        walletFactory = _walletFactory;
-    }
 
     /* ============ Token name, symbol & URI ============ */
 
