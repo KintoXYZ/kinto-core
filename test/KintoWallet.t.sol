@@ -1309,27 +1309,27 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
-    function testWhitelist_revertWhen_AppNotRegistered() public {
-        // (1). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
+    // function testWhitelist_revertWhen_AppNotRegistered() public {
+    //     // (1). deploy Counter contract
+    //     Counter counter = new Counter();
+    //     assertEq(counter.count(), 0);
 
-        // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
+    //     // (2). fund paymaster for Counter contract
+    //     _fundPaymasterForContract(address(counter));
 
-        // (3). Create whitelist app user op
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _whitelistAppOp(
-            _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
+    //     // (3). Create whitelist app user op
+    //     UserOperation[] memory userOps = new UserOperation[](1);
+    //     userOps[0] = _whitelistAppOp(
+    //         _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
+    //     );
 
-        // (4). execute the transaction via the entry point and expect a revert event
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-apw: app must be registered");
-    }
+    //     // (4). execute the transaction via the entry point and expect a revert event
+    //     vm.expectEmit(true, true, true, false);
+    //     emit UserOperationRevertReason(
+    //         _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
+    //     );
+    //     vm.recordLogs();
+    //     _entryPoint.handleOps(userOps, payable(_owner));
+    //     assertRevertReasonEq("KW-apw: app must be registered");
+    // }
 }

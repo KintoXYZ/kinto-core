@@ -108,12 +108,8 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
+        require(_appMetadata[parentContract].admin == address(0), "App already registered");
         require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
-        require(
-            walletFactory.deployedBy(parentContract) == address(0)
-                || walletFactory.deployedBy(parentContract) == msg.sender,
-            "Parent contract not deployed by wallet factory or admin"
-        );
         _updateMetadata(_name, parentContract, appContracts, appLimits);
         appCount++;
         _safeMint(msg.sender, appCount);

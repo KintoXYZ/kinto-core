@@ -174,14 +174,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Token & App whitelists ============ */
 
     /**
-     * @dev Allos the wallet to transact with specific apps
+     * @dev Allows the wallet to transact with specific apps
      * @param apps apps array
      * @param flags whether to allow or disallow the app
      */
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external override onlySelf {
         require(apps.length == flags.length, "KW-apw: invalid array");
         for (uint256 i = 0; i < apps.length; i++) {
-            require(appRegistry.getAppMetadata(apps[i]).admin != address(0), "KW-apw: app must be registered");
+            // require(appRegistry.getAppMetadata(apps[i]).admin != address(0), "KW-apw: app must be registered");
             appWhitelist[apps[i]] = flags[i];
         }
     }

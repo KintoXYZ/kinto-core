@@ -178,6 +178,10 @@ contract KintoID is
         _burnp(tokenOfOwnerByIndex(_signatureData.signer, 0), _signatureData);
     }
 
+    function burn(uint256 /* tokenId */ ) public pure override {
+        require(false, "Use burnKYC instead");
+    }
+
     /**
      * @dev Burns a token.
      * @param _tokenId Token ID to be burned

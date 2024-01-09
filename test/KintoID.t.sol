@@ -397,6 +397,14 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         _kintoIDv1.safeTransferFrom(_user, _user2, tokenIdx);
     }
 
+    function test_RevertWhen_BurnIsCalled() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        uint256 tokenIdx = _kintoIDv1.tokenOfOwnerByIndex(_user, 0);
+        vm.prank(_user);
+        vm.expectRevert("Use burnKYC instead");
+        _kintoIDv1.burn(tokenIdx);
+    }
+
     function testDappSignature() public {
         // vm.startPrank(_kycProvider);
         // bytes memory sig = hex"0fcafa82e64fcfd3c38209e23270274132e88061f1718c7ff45e8c0ddbbe7cdd59b5af57e10a5d8221baa6ae37b57d02acace7e25fc29cb4025f15269e0939aa1b";
