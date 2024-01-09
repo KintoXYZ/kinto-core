@@ -7,7 +7,7 @@ import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
 import "../src/viewers/KYCViewer.sol";
 import "../src/interfaces/IKintoID.sol";
 import "../src/sample/Counter.sol";
-import "../src/ETHPriceIsRight.sol";
+import "../src/sample/ETHPriceIsRight.sol";
 import "../src/interfaces/IKintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";

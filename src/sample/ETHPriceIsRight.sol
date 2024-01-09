@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {IETHPriceIsRight} from "./interfaces/IETHPriceIsRight.sol";
+import {IETHPriceIsRight} from "../interfaces/IETHPriceIsRight.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**

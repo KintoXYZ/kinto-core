@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "../src/KintoID.sol";
 import "../src/interfaces/IKintoID.sol";
 import "../src/sample/Counter.sol";
-import "../src/ETHPriceIsRight.sol";
+import "../src/sample/ETHPriceIsRight.sol";
 import "../src/interfaces/IKintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
