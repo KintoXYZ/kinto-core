@@ -94,11 +94,12 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
+        assertEq(_kintoAppRegistry.balanceOf(_user), 1);
         assertEq(_kintoAppRegistry.appCount(), 1);
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
-        assertEq(metadata.admin, address(_user));
         assertEq(metadata.dsaEnabled, false);
+        assertEq(_kintoAppRegistry.ownerOf(metadata.tokenId), _user);
         assertEq(metadata.rateLimitPeriod, appLimits[0]);
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
@@ -137,7 +138,6 @@ contract KintoAppRegistryTest is Create2Helper, UserOp, AATestScaffolding {
         );
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, "test2");
-        assertEq(metadata.admin, address(_user));
         assertEq(metadata.dsaEnabled, false);
         assertEq(metadata.rateLimitPeriod, 1);
         assertEq(metadata.rateLimitNumber, 1);
