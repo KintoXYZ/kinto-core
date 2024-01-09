@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "../src/KintoID.sol";
-import "../src/interfaces/IKintoID.sol";
-import "./helpers/KYCSignature.sol";
-import "./helpers/UUPSProxy.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+import "../src/KintoID.sol";
+import "../src/interfaces/IKintoID.sol";
+
+import "./helpers/KYCSignature.sol";
+import "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 

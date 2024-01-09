@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "../../src/KintoID.sol";
-import "../../src/interfaces/IKintoID.sol";
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
+
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "../../src/KintoID.sol";
+import "../../src/interfaces/IKintoID.sol";
 
 abstract contract KYCSignature is Test {
     using ECDSAUpgradeable for bytes32;

@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";
-import "forge-std/console.sol";
 
 abstract contract Create2Helper {
     address CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;

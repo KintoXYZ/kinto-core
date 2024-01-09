@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "../src/wallet/KintoWalletFactory.sol";
-import "../src/KintoID.sol";
-import "../src/sample/Counter.sol";
-import "../src/interfaces/IKintoWallet.sol";
-import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-import {UserOp} from "./helpers/UserOp.sol";
-
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
+import "../src/wallet/KintoWalletFactory.sol";
+import "../src/KintoID.sol";
+import "../src/sample/Counter.sol";
+import "../src/interfaces/IKintoWallet.sol";
+import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
+
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import {UserOp} from "./helpers/UserOp.sol";
 
 contract KintoWalletUpgrade is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry)

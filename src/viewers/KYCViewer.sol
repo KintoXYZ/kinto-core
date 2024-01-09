@@ -10,8 +10,6 @@ import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title KYCViewer
  * @dev A viewer class that helps developers to check if an address is KYC'd

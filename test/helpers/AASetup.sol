@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
+import "forge-std/console.sol";
+
 import "@aa/core/EntryPoint.sol";
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
 import "../../src/KintoID.sol";
+
 import "./Create2Helper.sol";
 import "./ArtifactsReader.sol";
-
-import "forge-std/console.sol";
 
 abstract contract AASetup is Create2Helper, ArtifactsReader {
     function _checkAccountAbstraction()

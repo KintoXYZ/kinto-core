@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "../src/apps/KintoAppRegistry.sol";
-import "./helpers/UserOp.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
+import "../src/apps/KintoAppRegistry.sol";
+
+import "./helpers/UserOp.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
 contract KintoAppRegistryV2 is KintoAppRegistry {
     function newFunction() external pure returns (uint256) {

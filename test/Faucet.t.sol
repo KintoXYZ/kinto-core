@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.23;
 
-import "../src/Faucet.sol";
-import "../src/interfaces/IFaucet.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import "../src/interfaces/IFaucet.sol";
+import "../src/Faucet.sol";
 
 contract FaucetTest is Test {
     using ECDSA for bytes32;
