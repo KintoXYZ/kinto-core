@@ -129,8 +129,10 @@ contract KintoAppRegistry is
         override
     {
         require(_contracts.length == _flags.length, "Invalid input");
-        require(_appMetadata[_app].tokenId > 0 &&
-            msg.sender == ownerOf(_appMetadata[_app].tokenId), "Only developer can set sponsored contracts");
+        require(
+            _appMetadata[_app].tokenId > 0 && msg.sender == ownerOf(_appMetadata[_app].tokenId),
+            "Only developer can set sponsored contracts"
+        );
         for (uint256 i = 0; i < _contracts.length; i++) {
             _sponsoredContracts[_app][_contracts[i]] = _flags[i];
         }
