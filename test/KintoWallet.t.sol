@@ -49,18 +49,17 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     }
 
     /* ============ Upgrade Tests ============ */
-
+    // FIXME: these I think these upgrade tests are wrong because, basically, the KintoWallet.sol does not have
+    // an upgrade function. The upgrade function is in the UUPSUpgradeable.sol contract.
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a new implementation
         KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
-
-        uint256 nonce = _kintoWallet.getNonce();
 
         // try calling upgradeTo from _owner wallet to upgrade _owner wallet
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
             address(_kintoWallet),
-            nonce,
+            _kintoWallet.getNonce(),
             privateKeys,
             address(_kintoWallet),
             0,
@@ -157,7 +156,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         UserOperation[] memory userOps = new UserOperation[](2);
 
         // whitelist app
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -178,15 +177,17 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 1);
     }
 
-    function test_RevertWhen_TransactionViaPaymasterAndNoApproval() public {
-        // deploy the counter contract
+    function testTransaction_RevertWhen_AppNotRegisteredAndNotWhitelisted() public {
+        // (1). deploy Counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
 
+        // (2). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
 
-        // send a transaction to the counter contract through our wallet
-        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+        // (3). Create Counter increment user op
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = this.createUserOperationWithPaymaster(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -196,10 +197,44 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
 
-        // execute the transaction via the entry point
+        // (4). execute the transaction via the entry point
+        vm.expectEmit(true, true, true, false);
+        emit UserOperationRevertReason(
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
+        );
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW: contract not whitelisted");
+        assertEq(counter.count(), 0);
+    }
+
+    function testTransaction_RevertWhen_AppRegisteredButNotWhitelisted() public {
+        // (1). deploy Counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+
+        // (2). fund paymaster for Counter contract
+        _fundPaymasterForContract(address(counter));
+
+        // (3). register app
+        address[] memory childContracts = new address[](0);
+        registerApp(_owner, "test", address(counter), childContracts);
+
+        // (4). Create Counter increment user op
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = this.createUserOperationWithPaymaster(
+            _chainID,
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            address(counter),
+            0,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        // (5). execute the transaction via the entry point
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
             _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
@@ -235,7 +270,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
         userOps[1] = userOp2;
@@ -278,9 +313,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](3);
-        userOps[0] = createWhitelistAppOp(
-            _chainID, privateKeys, address(_kintoWallet), nonce, address(counter), address(_paymaster)
-        );
+        userOps[0] =
+            _whitelistAppOp(_chainID, privateKeys, address(_kintoWallet), nonce, address(counter), address(_paymaster));
         userOps[1] = userOp;
         userOps[2] = userOp2;
         // Execute the transaction via the entry point
@@ -683,8 +717,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (6). Create 2 user ops:
         userOps = new UserOperation[](2);
-        // a. Approval UserOp
-        userOps[0] = createWhitelistAppOp(
+        // a. whitelist app
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -743,8 +777,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // (5). Create 2 user ops:
         userOps = new UserOperation[](2);
 
-        // a. Approval UserOp
-        userOps[0] = createWhitelistAppOp(
+        // a. whitelist app
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -810,8 +844,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (6). Create 2 user ops:
         userOps = new UserOperation[](2);
-        // a. Approval UserOp
-        userOps[0] = createWhitelistAppOp(
+        // a. whitelist app
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
         // b. Counter increment
@@ -844,8 +878,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // (3). Create 2 user ops:
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps = new UserOperation[](2);
-        // a. Approval UserOp
-        userOps[0] = createWhitelistAppOp(
+        // a. whitelist app
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -912,8 +946,8 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // (6). Create 2 user ops:
         userOps = new UserOperation[](2);
 
-        // a. Approval UserOp
-        userOps[0] = createWhitelistAppOp(
+        // a. whitelist app
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -1152,7 +1186,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         registerApp(_owner, "test", address(_engenCredits), childContracts);
 
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), nonce, address(_engenCredits), address(_paymaster)
         );
 
@@ -1214,7 +1248,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         privateKeys = new uint256[](2);
         privateKeys[0] = _ownerPk;
         privateKeys[1] = _user2Pk;
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
         userOps[1] = this.createUserOperationWithPaymaster(
@@ -1267,7 +1301,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (4). Create whitelist app user op
         UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
@@ -1287,7 +1321,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (3). Create whitelist app user op
         UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID, privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 

@@ -136,7 +136,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWallet),
@@ -175,7 +175,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWallet),
@@ -209,7 +209,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
             address(_kintoWallet),

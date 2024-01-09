@@ -211,14 +211,14 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function createWhitelistAppOp(
+    function _whitelistAppOp(
         uint256 _chainId,
         uint256[] memory pk,
         address wallet,
         uint256 startingNonce,
         address app,
         address _paymaster
-    ) public view returns (UserOperation memory userOp) {
+    ) internal view returns (UserOperation memory userOp) {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
