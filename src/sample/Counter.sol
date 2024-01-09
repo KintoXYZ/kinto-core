@@ -8,7 +8,7 @@ contract Counter {
         count = 0;
     }
 
-    function increment() public {
+    function increment() public virtual {
         count += 1;
     }
 }

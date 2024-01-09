@@ -30,9 +30,9 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         vm.stopPrank();
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
         _fundPaymasterForContract(address(_engenCredits));
-        _fundPaymasterForContract(address(_kintoWalletv1));
+        _fundPaymasterForContract(address(_kintoWallet));
         vm.startPrank(_owner);
-        _kintoApp.registerApp(
+        _kintoAppRegistry.registerApp(
             "engen credits", address(_engenCredits), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]
         );
         vm.stopPrank();
@@ -118,16 +118,16 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
     /* ============ Engen Tests ============ */
 
     function testWalletCanGetPoints() public {
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1),
+            address(_kintoWallet),
             startingNonce + 1,
             privateKeys,
             address(_engenCredits),
@@ -136,18 +136,18 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
-            address(_kintoWalletv1),
-            _kintoWalletv1.getNonce(),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
             address(_engenCredits),
             address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         vm.stopPrank();
     }
 
@@ -156,17 +156,17 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         uint256[] memory points = new uint256[](1);
         points[0] = 10;
         address[] memory addresses = new address[](1);
-        addresses[0] = address(_kintoWalletv1);
+        addresses[0] = address(_kintoWallet);
         _engenCredits.setPhase1Override(addresses, points);
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 20);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 20);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1),
+            address(_kintoWallet),
             startingNonce + 1,
             privateKeys,
             address(_engenCredits),
@@ -175,32 +175,32 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
-            address(_kintoWalletv1),
-            _kintoWalletv1.getNonce(),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
             address(_engenCredits),
             address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 20);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 20);
         vm.stopPrank();
     }
 
     function testWalletCannotGetPointsTwice() public {
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWalletv1)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
+        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWalletv1.getNonce();
+        uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1),
+            address(_kintoWallet),
             startingNonce + 1,
             privateKeys,
             address(_engenCredits),
@@ -209,22 +209,22 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = createWhitelistAppOp(
+        userOps[0] = _whitelistAppOp(
             _chainID,
             privateKeys,
-            address(_kintoWalletv1),
-            _kintoWalletv1.getNonce(),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
             address(_engenCredits),
             address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         // call again
         userOp = this.createUserOperationWithPaymaster(
             _chainID,
-            address(_kintoWalletv1),
+            address(_kintoWallet),
             startingNonce + 2,
             privateKeys,
             address(_engenCredits),
@@ -235,7 +235,7 @@ contract EngenCreditsTest is Create2Helper, UserOp, AATestScaffolding {
         userOps = new UserOperation[](1);
         userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWalletv1)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         vm.stopPrank();
     }
 }

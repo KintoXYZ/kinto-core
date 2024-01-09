@@ -10,10 +10,10 @@ import {IKintoEntryPoint} from "../../src/interfaces/IKintoEntryPoint.sol";
 import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 import {KYCSignature} from "../helpers/KYCSignature.sol";
 
-import "../../src/wallet/KintoWallet.sol";
+import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
 import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
-import "../../src/wallet/KintoWalletFactory.sol";
+import {KintoWalletFactoryV2 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -29,28 +29,33 @@ abstract contract AATestScaffolding is KYCSignature {
     using SignatureChecker for address;
 
     IKintoEntryPoint _entryPoint;
-    KintoWalletFactory _walletFactoryI;
-    KintoWalletFactory _walletFactory;
-    KintoAppRegistry _kintoApp;
+
+    KintoAppRegistry _kintoAppRegistry;
+
     KintoID _implementation;
     KintoID _kintoIDv1;
+
+    // Wallet & Factory
+    KintoWalletFactory _walletFactory;
+    KintoWallet _kintoWalletImpl;
+    IKintoWallet _kintoWallet;
+
+    EngenCredits _engenCredits;
     SponsorPaymaster _paymaster;
 
-    KintoWallet _kintoWalletImpl;
-    IKintoWallet _kintoWalletv1;
+    // proxies
     UUPSProxy _proxy;
-    UUPSProxy _proxyf;
-    UUPSProxy _proxys;
-    UUPSProxy _proxycredit;
-    UUPSProxy _proxyapp;
-    EngenCredits _engenCredits;
+    UUPSProxy _proxyFactory;
+    UUPSProxy _proxyPaymaster;
+    UUPSProxy _proxyCredit;
+    UUPSProxy _proxyRegistry;
 
     function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
         // Deploy Kinto ID
         deployKintoID(_owner, _kycProvider);
 
         // Deploy Kinto App
-        deployKintoApp(_owner);
+        deployAppRegistry(_owner);
 
         // vm.startPrank(_owner);
         EntryPoint entry = new EntryPoint{salt: 0}();
@@ -70,8 +75,9 @@ abstract contract AATestScaffolding is KYCSignature {
         deployEngenCredits(_owner);
 
         vm.prank(_owner);
-        // deploy WalletV1 through wallet factory and initialize it
-        _kintoWalletv1 = _walletFactory.createAccount(_owner, _recoverer, 0);
+
+        // deploy latest KintoWallet version through wallet factory and initialize it
+        _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
         // Give some eth
         vm.deal(_owner, 1e20);
     }
@@ -102,12 +108,12 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.startPrank(_owner);
 
         // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoApp);
+        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
-        //Deploy wallet factory implementation
-        _walletFactoryI = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
-        _proxyf = new UUPSProxy{salt: 0}(address(_walletFactoryI), "");
-        _walletFactory = KintoWalletFactory(address(_proxyf));
+        // Deploy wallet factory implementation
+        KintoWalletFactory _implementation = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
+        _proxyFactory = new UUPSProxy{salt: 0}(address(_implementation), "");
+        _walletFactory = KintoWalletFactory(address(_proxyFactory));
 
         // Initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
@@ -125,16 +131,16 @@ abstract contract AATestScaffolding is KYCSignature {
         _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
 
         // deploy _proxy contract and point it to _implementation
-        _proxys = new UUPSProxy{salt: 0}(address(_paymaster), "");
+        _proxyPaymaster = new UUPSProxy{salt: 0}(address(_paymaster), "");
 
         // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxys));
+        _paymaster = SponsorPaymaster(address(_proxyPaymaster));
 
         // initialize proxy
         _paymaster.initialize(_owner);
 
         // Set the registry in the paymaster
-        _paymaster.setAppRegistry(address(_kintoApp));
+        _paymaster.setAppRegistry(address(_kintoAppRegistry));
 
         vm.stopPrank();
     }
@@ -146,10 +152,10 @@ abstract contract AATestScaffolding is KYCSignature {
         _engenCredits = new EngenCredits{salt: 0}();
 
         // deploy _proxy contract and point it to _implementation
-        _proxycredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
+        _proxyCredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
 
         // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxycredit));
+        _engenCredits = EngenCredits(address(_proxyCredit));
 
         // initialize proxy
         _engenCredits.initialize();
@@ -157,20 +163,20 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
-    function deployKintoApp(address _owner) public {
+    function deployAppRegistry(address _owner) public {
         vm.startPrank(_owner);
 
         // deploy the Kinto App registry
-        _kintoApp = new KintoAppRegistry{salt: 0}();
+        _kintoAppRegistry = new KintoAppRegistry{salt: 0}();
 
         // deploy _proxy contract and point it to _implementation
-        _proxyapp = new UUPSProxy{salt: 0}(address(_kintoApp), "");
+        _proxyRegistry = new UUPSProxy{salt: 0}(address(_kintoAppRegistry), "");
 
         // wrap in ABI to support easier calls
-        _kintoApp = KintoAppRegistry(address(_proxyapp));
+        _kintoAppRegistry = KintoAppRegistry(address(_proxyRegistry));
 
         // initialize proxy
-        _kintoApp.initialize();
+        _kintoAppRegistry.initialize();
 
         vm.stopPrank();
     }
@@ -206,16 +212,16 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
-    function createApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
+    function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
         public
     {
         vm.startPrank(_owner);
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoApp.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoApp.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoApp.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoApp.GAS_LIMIT_THRESHOLD();
-        _kintoApp.registerApp(
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
         vm.stopPrank();
