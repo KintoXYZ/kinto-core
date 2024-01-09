@@ -23,14 +23,11 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // Execute this script with the hot wallet, not with ledger
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address admin = vm.envAddress("LEDGER_ADMIN");
-        if (admin == address(0)) {
-            console.log("Admin key not set", admin);
-            return;
-        }
-        vm.startBroadcast(deployerPrivateKey);
+        // If not using ledger, replace
+        // Execute this script with the admin
+        // uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        // vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
         console.log("Executing with address", msg.sender);
         address appAddr = _getChainDeployment("KintoAppRegistry");
         if (appAddr != address(0)) {
@@ -44,12 +41,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
                 msg.sender, 0, abi.encodePacked(type(KintoAppRegistry).creationCode), bytes32(0)
             )
         );
-        _kintoApp.setWalletFactory(_walletFactory);
-        // Give ownership to admin
-        _kintoApp.transferOwnership(admin);
         address credits = _getChainDeployment("EngenCredits");
-        // Create Engen App
-        _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
         // Fund in the paymaster
         SponsorPaymaster _paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
         _paymaster.addDepositFor{value: 1e17}(credits);
