@@ -38,23 +38,34 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         }
         address walletFactoryAddr = _getChainDeployment("KintoWalletFactory");
         IOldWalletFactory _walletFactory = IOldWalletFactory(walletFactoryAddr);
+        address kintoAppRegistryImpl = _getChainDeployment("KintoAppRegistry-impl");
 
+        if (kintoAppRegistryImpl == address(0)) {
+            console.log("kintoAppRegistryImpl not deployed", appAddr);
+            return;
+        }
+        console.log("kintoAppRegistryImpl", kintoAppRegistryImpl);
         bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(KintoAppRegistry).creationCode),
+            abi.encodePacked(type(UUPSProxy).creationCode),
             abi.encode(
-                address(_walletFactory)
+                address(kintoAppRegistryImpl),
+                bytes("")
             )
         );
-        _kintoAppImpl = KintoAppRegistry(
+        // deploy _proxy contract and point it to _implementation
+
+        _kintoApp = KintoAppRegistry(
             _walletFactory.deployContract{value: 0}(
-                0,  bytecode, bytes32(0)
+                0,  bytecode, bytes32("")
             )
         );
+        _kintoApp.initialize();
         vm.stopBroadcast();
 
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
-        console.log(string.concat('"KintoAppRegistry-impl": "', vm.toString(address(_kintoAppImpl)), '"'));
+        console.log(string.concat('"KintoAppRegistry": "', vm.toString(address(_kintoApp)), '"'));
+
     }
 }
 

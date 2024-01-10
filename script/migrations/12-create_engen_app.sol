@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
@@ -40,6 +40,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         IKintoAppRegistry _kintoApp = IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         // TODO: This needs to go through the entry point and the wallet we created in 4
+        // transfer ownership of kinto app proxy to admin
         // Create Engen App
         _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
 

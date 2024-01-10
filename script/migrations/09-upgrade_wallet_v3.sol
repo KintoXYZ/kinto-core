@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
+import "../../src/paymasters/SponsorPaymaster.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
@@ -52,6 +53,10 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
         _kintoWalletImpl = KintoWalletV3(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
         // Upgrade all implementations
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
+        address credits = _getChainDeployment("EngenCredits");
+        // Fund in the paymaster
+        SponsorPaymaster _paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
+        _paymaster.addDepositFor{value: 1e17}(credits);
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
