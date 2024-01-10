@@ -40,11 +40,9 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
         IKintoWalletFactory _walletFactory = IKintoWalletFactory(walletFactoryAddr);
 
         bytes memory bytecode =
-            abi.encodePacked(
-                type(KintoAppRegistry).creationCode,
-                abi.encode(address(_walletFactory))
-            );
-        _kintoAppImpl = KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32("1")));
+            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(address(_walletFactory)));
+        _kintoAppImpl =
+            KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32("1")));
         vm.stopBroadcast();
 
         // Writes the addresses to a file
