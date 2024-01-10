@@ -25,10 +25,10 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // Execute this script with the hot wallet
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
-        address ledgerAdmin = vm.envAddress('LEDGER_ADMIN');
+        address ledgerAdmin = vm.envAddress("LEDGER_ADMIN");
         console.log("Executing with ledger admin as", ledgerAdmin);
 
         address appAddr = _getChainDeployment("KintoAppRegistry");
@@ -39,17 +39,9 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         address walletFactoryAddr = _getChainDeployment("KintoWalletFactory");
         IOldWalletFactory _walletFactory = IOldWalletFactory(walletFactoryAddr);
 
-        bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(KintoAppRegistry).creationCode),
-            abi.encode(
-                address(_walletFactory)
-            )
-        );
-        _kintoAppImpl = KintoAppRegistry(
-            _walletFactory.deployContract{value: 0}(
-                0,  bytecode, bytes32(0)
-            )
-        );
+        bytes memory bytecode =
+            abi.encodePacked(abi.encodePacked(type(KintoAppRegistry).creationCode), abi.encode(address(_walletFactory)));
+        _kintoAppImpl = KintoAppRegistry(_walletFactory.deployContract{value: 0}(0, bytecode, bytes32(0)));
         vm.stopBroadcast();
 
         // Writes the addresses to a file
@@ -59,6 +51,5 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
 }
 
 interface IOldWalletFactory {
-
     function deployContract(uint256 amount, bytes calldata bytecode, bytes32 salt) external payable returns (address);
 }

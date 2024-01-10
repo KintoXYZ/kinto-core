@@ -7,13 +7,12 @@ import "../../src/paymasters/SponsorPaymaster.sol";
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
-import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoAppRegistry _kintoApp;
@@ -25,10 +24,10 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // Execute this script with the hot wallet
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
-        address ledgerAdmin = vm.envAddress('LEDGER_ADMIN');
+        address ledgerAdmin = vm.envAddress("LEDGER_ADMIN");
         console.log("Executing with ledger admin as", ledgerAdmin);
 
         address appAddr = _getChainDeployment("KintoAppRegistry");
@@ -46,30 +45,27 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         }
         console.log("kintoAppRegistryImpl", kintoAppRegistryImpl);
         bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(UUPSProxy).creationCode),
-            abi.encode(
-                address(kintoAppRegistryImpl),
-                bytes("")
-            )
+            abi.encodePacked(type(UUPSProxy).creationCode), abi.encode(address(kintoAppRegistryImpl), bytes(""))
         );
         // deploy _proxy contract and point it to _implementation
-
-        _kintoApp = KintoAppRegistry(
-            _walletFactory.deployContract{value: 0}(
-                0,  bytecode, bytes32("")
-            )
-        );
-        _kintoApp.initialize();
+        _kintoApp = KintoAppRegistry(_walletFactory.deployContract{value: 0}(0, bytecode, bytes32("")));
+        // _kintoApp.initialize();
         vm.stopBroadcast();
 
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoAppRegistry": "', vm.toString(address(_kintoApp)), '"'));
-
     }
 }
 
 interface IOldWalletFactory {
-
     function deployContract(uint256 amount, bytes calldata bytecode, bytes32 salt) external payable returns (address);
+}
+
+contract UUPSProxy is ERC1967Proxy {
+    constructor(address _implementation, bytes memory _data) ERC1967Proxy(_implementation, _data) {}
+}
+
+contract Test {
+    constructor(address _a, bytes memory a) {}
 }

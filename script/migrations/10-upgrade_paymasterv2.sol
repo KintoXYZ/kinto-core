@@ -46,6 +46,8 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
         _paymasterImpl = SponsorPaymasterV2(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
         // Upgrade
         _paymaster.upgradeTo(address(_paymasterImpl));
+        // Set the app registry
+        _paymaster.setAppRegistry(_getChainDeployment("KintoAppRegistry"));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
