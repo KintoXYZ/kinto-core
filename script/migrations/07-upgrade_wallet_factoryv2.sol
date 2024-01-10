@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactoryV2 _factoryImpl;
