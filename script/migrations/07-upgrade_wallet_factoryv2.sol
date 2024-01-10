@@ -15,7 +15,6 @@ import "forge-std/console.sol";
 contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
-    KintoWalletFactory _walletFactory;
     KintoWalletFactoryV2 _factoryImpl;
     UUPSProxy _proxy;
 
@@ -24,33 +23,41 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // Execute this script with the ledger admin
+        // Execute this script with the ledger admin but we also execute stuff with the hot wallet
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
         address factoryAddr = _getChainDeployment("KintoWalletFactory");
         if (factoryAddr == address(0)) {
             console.log("Need to execute main deploy script first", factoryAddr);
             return;
         }
-        _walletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
+        IOldWalletFactory _walletFactory = IOldWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
 
-        address newImpl = _getChainDeployment("KintoWalletV3-impl");
+        address newImpl = _getChainDeployment("KintoWalletV2-impl");
         if (newImpl == address(0)) {
             console.log("Need to deploy the new wallet first", newImpl);
             return;
         }
         bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(KintoWalletFactoryV2).creationCode),
-            abi.encode(_getChainDeployment("KintoWalletV3-impl")) // Encoded constructor arguments
+            type(KintoWalletFactoryV2).creationCode,
+            abi.encode(_getChainDeployment("KintoWalletV2-impl")) // Encoded constructor arguments
         );
 
         // Deploy new paymaster implementation
-        _factoryImpl = KintoWalletFactoryV2(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
+        _factoryImpl = KintoWalletFactoryV2(payable(_walletFactory.deployContract(0, bytecode, bytes32(0))));
+        vm.stopBroadcast();
+        // Switch to admin
+        vm.startBroadcast();
         // Upgrade
-        _walletFactory.upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoWalletFactoryV2-impl": "', vm.toString(address(_factoryImpl)), '"'));
     }
+}
+
+interface IOldWalletFactory {
+    function deployContract(uint256 amount, bytes calldata bytecode, bytes32 salt) external payable returns (address);
 }

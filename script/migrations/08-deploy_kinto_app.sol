@@ -37,19 +37,15 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
             return;
         }
         address walletFactoryAddr = _getChainDeployment("KintoWalletFactory");
-        IOldWalletFactory _walletFactory = IOldWalletFactory(walletFactoryAddr);
+        IKintoWalletFactory _walletFactory = IKintoWalletFactory(walletFactoryAddr);
 
         bytes memory bytecode =
-            abi.encodePacked(abi.encodePacked(type(KintoAppRegistry).creationCode), abi.encode(address(_walletFactory)));
-        _kintoAppImpl = KintoAppRegistry(_walletFactory.deployContract{value: 0}(0, bytecode, bytes32(0)));
+            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(address(_walletFactory)));
+        _kintoAppImpl = KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32(0)));
         vm.stopBroadcast();
 
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoAppRegistry-impl": "', vm.toString(address(_kintoAppImpl)), '"'));
     }
-}
-
-interface IOldWalletFactory {
-    function deployContract(uint256 amount, bytes calldata bytecode, bytes32 salt) external payable returns (address);
 }

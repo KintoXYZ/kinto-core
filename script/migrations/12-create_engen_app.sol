@@ -26,7 +26,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // If not using ledger, replace
+        // Execute using hot wallet
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.rememberKey(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
@@ -40,7 +40,6 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         IKintoAppRegistry _kintoApp = IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         // TODO: This needs to go through the entry point and the wallet we created in 4
-        // transfer ownership of kinto app proxy to admin
         // Create Engen App
         _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
 

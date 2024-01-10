@@ -25,9 +25,10 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // Execute this script with the ledger admin
+        // Execute this script with the hot wallet
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
         address walletFactoryAddr = _getChainDeployment("KintoWalletFactory");
         if (walletFactoryAddr == address(0)) {
             console.log("Need to execute main deploy script first", walletFactoryAddr);
@@ -41,7 +42,7 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
         _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
 
         bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(KintoWalletV3).creationCode),
+            type(KintoWalletV3).creationCode,
             abi.encode(
                 _getChainDeployment("EntryPoint"),
                 IKintoID(_getChainDeployment("KintoID")),
@@ -51,6 +52,8 @@ contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
 
         // Deploy new wallet implementation
         _kintoWalletImpl = KintoWalletV3(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
+        vm.stopBroadcast();
+        vm.startBroadcast();
         // Upgrade all implementations
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
         address credits = _getChainDeployment("EngenCredits");
