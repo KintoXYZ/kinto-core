@@ -48,7 +48,6 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
             abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(kintoAppRegistryImpl), bytes("")));
         // deploy _proxy contract and point it to _implementation
         _kintoApp = KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32("")));
-        // _kintoApp.initialize();
         vm.stopBroadcast();
 
         // Writes the addresses to a file
