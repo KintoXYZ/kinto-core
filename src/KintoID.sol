@@ -149,7 +149,7 @@ contract KintoID is
         IKintoID.SignatureData calldata _signatureData,
         uint8[] calldata _traits,
         bool _indiv
-    ) private onlySignerVerified(_tokenId, _signatureData) {
+    ) private onlySignerVerified(_signatureData) {
         require(balanceOf(_signatureData.signer) == 0, "Balance before mint must be 0");
 
         Metadata storage meta = _kycmetas[_signatureData.signer];
@@ -162,8 +162,7 @@ contract KintoID is
         }
 
         nonces[_signatureData.signer]++;
-        uint256 tokenId = _nextTokenId++;
-        _safeMint(_signatureData.signer, tokenId);
+        _safeMint(_signatureData.signer, _tokenId);
     }
 
     /* ============ Burn ============ */
@@ -189,7 +188,7 @@ contract KintoID is
      */
     function _burnp(uint256 _tokenId, SignatureData calldata _signatureData)
         private
-        onlySignerVerified(_tokenId, _signatureData)
+        onlySignerVerified(_signatureData)
     {
         nonces[_signatureData.signer] += 1;
         _burn(_tokenId);
@@ -220,6 +219,9 @@ contract KintoID is
         require(_accounts.length <= 200, "Too many accounts to monitor at once");
         for (uint256 i = 0; i < _accounts.length; i += 1) {
             Metadata storage meta = _kycmetas[_accounts[i]];
+            if (balanceOf(_accounts[i]) == 0) {
+                continue;
+            }
             meta.updatedAt = block.timestamp;
             for (uint256 j = 0; j < _traitsAndSanctions[i].length; j += 1) {
                 IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
@@ -400,10 +402,9 @@ contract KintoID is
 
     /**
      * @dev Check that the signature is valid and the sender is a valid KYC provider.
-     * @param _id id of the token to be signed.
      * @param _signature signature to be recovered.
      */
-    modifier onlySignerVerified(uint256 _id, IKintoID.SignatureData calldata _signature) {
+    modifier onlySignerVerified(IKintoID.SignatureData calldata _signature) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
         require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
         require(hasRole(KYC_PROVIDER_ROLE, msg.sender), "Invalid Provider");
