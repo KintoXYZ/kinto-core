@@ -7,7 +7,7 @@ interface IKintoAppRegistry {
     /* ============ Structs ============ */
 
     struct Metadata {
-        address admin; // 160 bits
+        uint256 tokenId;
         bool dsaEnabled;
         uint256 rateLimitPeriod;
         uint256 rateLimitNumber; // in txs
@@ -55,6 +55,8 @@ interface IKintoAppRegistry {
     function isContractSponsored(address _app, address _contract) external view returns (bool);
 
     function walletFactory() external view returns (IKintoWalletFactory);
+
+    function tokenIdToApp(uint256 _tokenId) external view returns (address);
 
     /* ============ Constants and attrs ============ */
 

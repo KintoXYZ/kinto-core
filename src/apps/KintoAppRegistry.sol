@@ -37,6 +37,8 @@ contract KintoAppRegistry is
     mapping(address => mapping(address => bool)) private _sponsoredContracts;
     // Mapping between the app and all the contracts that belong to it
     mapping(address => address) public override childToParentContract;
+    // Mapping between token id and app metadata
+    mapping(uint256 => address) public override tokenIdToApp;
     uint256 public override appCount;
 
     /* ============ Events ============ */
@@ -108,10 +110,10 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
-        require(_appMetadata[parentContract].admin == address(0), "App already registered");
+        require(_appMetadata[parentContract].tokenId == 0, "App already registered");
         require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
-        _updateMetadata(_name, parentContract, appContracts, appLimits);
         appCount++;
+        _updateMetadata(appCount, _name, parentContract, appContracts, appLimits);
         _safeMint(msg.sender, appCount);
         emit AppCreated(parentContract, msg.sender, block.timestamp);
     }
@@ -127,7 +129,10 @@ contract KintoAppRegistry is
         override
     {
         require(_contracts.length == _flags.length, "Invalid input");
-        require(msg.sender == _appMetadata[_app].admin, "Only developer can set sponsored contracts");
+        require(
+            _appMetadata[_app].tokenId > 0 && msg.sender == ownerOf(_appMetadata[_app].tokenId),
+            "Only developer can set sponsored contracts"
+        );
         for (uint256 i = 0; i < _contracts.length; i++) {
             _sponsoredContracts[_app][_contracts[i]] = _flags[i];
         }
@@ -146,8 +151,9 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
-        require(msg.sender == _appMetadata[parentContract].admin, "Only developer can update metadata");
-        _updateMetadata(_name, parentContract, appContracts, appLimits);
+        uint256 tokenId = _appMetadata[parentContract].tokenId;
+        require(msg.sender == ownerOf(tokenId), "Only developer can update metadata");
+        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
 
@@ -215,20 +221,22 @@ contract KintoAppRegistry is
 
     /* =========== App metadata params =========== */
     function _updateMetadata(
+        uint256 tokenId,
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) internal {
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
+            tokenId: tokenId,
             name: _name,
-            admin: msg.sender,
             dsaEnabled: false,
             rateLimitPeriod: appLimits[0],
             rateLimitNumber: appLimits[1],
             gasLimitPeriod: appLimits[2],
             gasLimitCost: appLimits[3]
         });
+        tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
         for (uint256 i = 0; i < appContracts.length; i++) {
             childToParentContract[appContracts[i]] = parentContract;

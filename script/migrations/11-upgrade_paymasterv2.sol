@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     SponsorPaymaster _paymaster;
@@ -26,9 +26,10 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // Execute this script with the ledger admin
-        console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
+        // Execute this script with the hot wallet and ledger
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.rememberKey(deployerPrivateKey);
+        vm.startBroadcast(deployerPrivateKey);
         address sponsorAddr = _getChainDeployment("SponsorPaymaster");
         if (sponsorAddr == address(0)) {
             console.log("Need to execute main deploy script first", sponsorAddr);
@@ -38,14 +39,18 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
 
         _walletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
         bytes memory bytecode = abi.encodePacked(
-            abi.encodePacked(type(SponsorPaymasterV2).creationCode),
+            type(SponsorPaymasterV2).creationCode,
             abi.encode(_getChainDeployment("EntryPoint")) // Encoded constructor arguments
         );
 
         // Deploy new paymaster implementation
         _paymasterImpl = SponsorPaymasterV2(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
-        // Upgrade
+        // Switch to admin to upgrade
+        vm.stopBroadcast();
+        vm.startBroadcast();
         _paymaster.upgradeTo(address(_paymasterImpl));
+        // Set the app registry
+        _paymaster.setAppRegistry(_getChainDeployment("KintoAppRegistry"));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import "forge-std/Script.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration12DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
@@ -26,7 +26,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
     // solhint-disable code-complexity
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // If not using ledger, replace
+        // Execute using hot wallet
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.rememberKey(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
@@ -40,8 +40,9 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         IKintoAppRegistry _kintoApp = IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         // TODO: This needs to go through the entry point and the wallet we created in 4
+        // _kintoApp.initialize();
         // Create Engen App
-        _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
+        // _kintoApp.registerApp("Engen", credits, new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]);
 
         vm.stopBroadcast();
 
