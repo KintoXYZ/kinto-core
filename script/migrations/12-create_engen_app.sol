@@ -46,14 +46,14 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         EngenCredits _credits = EngenCredits(_getChainDeployment("EngenCredits"));
         SponsorPaymaster _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
 
-        // fund KintoAppRegistry in the paymaster
+        // fund KintoWallet in the paymaster
         vm.broadcast(deployerPrivateKey);
         _paymaster.addDepositFor{value: 0.1 ether}(address(_kintoWallet));
+        assertEq(_paymaster.balances(address(_kintoWallet)), 0.1 ether);
 
+        // fund KintoAppRegistry in the paymaster
         vm.broadcast(deployerPrivateKey);
         _paymaster.addDepositFor{value: 0.1 ether}(address(_kintoAppRegistry));
-
-        assertEq(_paymaster.balances(address(_kintoWallet)), 0.1 ether);
         assertEq(_paymaster.balances(address(_kintoAppRegistry)), 0.1 ether);
 
         console.log("KintoWallet funds:", _paymaster.balances(address(_kintoWallet)));
@@ -120,7 +120,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         vm.broadcast(deployerPrivateKey);
         _entryPoint.handleOps(userOps, payable(deployer));
 
-        // assertions:
+        // sanity checks:
 
         // (1). app is whitelisted
         assertTrue(_kintoWallet.appWhitelist(address(_credits)));
