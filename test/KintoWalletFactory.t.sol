@@ -145,7 +145,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         flags[0] = true;
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperationWithPaymaster(
+        UserOperation memory userOp = this.createUserOperation(
             _chainID,
             address(_kintoWallet),
             startingNonce,

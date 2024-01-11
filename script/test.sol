@@ -143,7 +143,7 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
         uint256 startingNonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = this.createUserOperationWithPaymasterCustomGas(
+        UserOperation memory userOp = this.createUserOperation(
             block.chainid,
             address(_newWallet),
             startingNonce,
@@ -221,7 +221,7 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
         uint256 startingNonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = this.createUserOperationWithPaymasterCustomGas(
+        UserOperation memory userOp = this.createUserOperation(
             block.chainid,
             address(_newWallet),
             startingNonce,

@@ -110,12 +110,12 @@ abstract contract UserOp is Test {
         uint256 value,
         bytes calldata _bytesOp
     ) public view returns (UserOperation memory op) {
-        return this.createUserOperationWithPaymaster(
+        return this.createUserOperation(
             _chainID, _account, nonce, _privateKeyOwners, _targetContract, value, _bytesOp, address(0)
         );
     }
 
-    function createUserOperationWithPaymaster(
+    function createUserOperation(
         uint256 _chainID,
         address _account,
         uint256 nonce,
@@ -142,7 +142,7 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function createUserOperationWithPaymasterCustomGas(
+    function createUserOperation(
         uint256 _chainID,
         address _account,
         uint256 nonce,
@@ -218,7 +218,7 @@ abstract contract UserOp is Test {
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
         flags[0] = true;
-        return this.createUserOperationWithPaymaster(
+        return this.createUserOperation(
             _chainId,
             address(wallet),
             startingNonce,

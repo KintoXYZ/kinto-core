@@ -6,7 +6,6 @@ import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 interface ISponsorPaymaster {
     /* ============ Structs ============ */
 
-    // A structure to hold rate limiting data
     struct RateLimitData {
         uint256 lastOperationTime;
         uint256 operationCount;
