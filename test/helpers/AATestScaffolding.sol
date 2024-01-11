@@ -68,7 +68,8 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // deploy latest KintoWallet version through wallet factory and initialize it
         _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
-        // Give some eth
+
+        // give some eth
         vm.deal(_owner, 1e20);
     }
 
@@ -205,19 +206,60 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
+    // register app helpers
+    // fixme: this should go through entrypoint
+
+    function registerApp(address _owner, string memory name, address parentContract) public {
+        address[] memory appContracts = new address[](0);
+        uint256[4] memory appLimits = [
+            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
+            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+        ];
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
+    function registerApp(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
+        public
+    {
+        address[] memory appContracts = new address[](0);
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
     function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
         public
     {
-        vm.startPrank(_owner);
-        uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        uint256[4] memory appLimits = [
+            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
+            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+        ];
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        uint256[4] memory appLimits
+    ) public {
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
-        vm.stopPrank();
+    }
+
+    // fixme: this should go through entrypoint
+    function whitelistApp(address app) public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(app);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.whitelistApp(targets, flags);
     }
 
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////

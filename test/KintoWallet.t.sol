@@ -120,8 +120,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // send a transaction to the counter contract through our wallet
         // without a paymaster and without prefunding the wallet
@@ -146,8 +145,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
         // prefund wallet
         vm.deal(address(_kintoWallet), 1 ether);
 
@@ -216,8 +214,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _fundPaymasterForContract(address(counter));
 
         // (3). register app
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (4). Create Counter increment user op
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -250,8 +247,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
         vm.stopPrank();
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
         uint256 nonce = _kintoWallet.getNonce();
@@ -285,8 +281,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
         uint256 nonce = _kintoWallet.getNonce();
         vm.stopPrank();
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
         vm.startPrank(_owner);
         _fundPaymasterForContract(address(counter));
         // Let's send a transaction to the counter contract through our wallet
@@ -328,8 +323,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
         uint256 nonce = _kintoWallet.getNonce();
         vm.stopPrank();
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
         vm.startPrank(_owner);
         _fundPaymasterForContract(address(counter));
         address[] memory targets = new address[](3);
@@ -371,8 +365,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // only fund counter
         _fundPaymasterForContract(address(counter));
 
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // prep batch
         address[] memory targets = new address[](3);
@@ -705,8 +698,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (4). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (5). Set private keys
         privateKeys = new uint256[](2);
@@ -769,8 +761,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (4). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (5). Create 2 user ops:
         userOps = new UserOperation[](2);
@@ -831,8 +822,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (4). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (5). Set private keys
         privateKeys = new uint256[](3);
@@ -870,8 +860,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (2). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (3). Create 2 user ops:
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -933,8 +922,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // (4). fund paymaster for Counter contract
         _fundPaymasterForContract(address(counter));
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (5). Set private keys
         privateKeys = new uint256[](2);
@@ -1149,8 +1137,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
     function test_RevertWhen_SettingAppKeyNoWhitelist() public {
         address app = address(_engenCredits);
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(_engenCredits), childContracts);
+        registerApp(_owner, "test", address(_engenCredits));
         UserOperation memory userOp = this.createUserOperation(
             _chainID,
             address(_kintoWallet),
@@ -1180,8 +1167,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     function testSettingAppKey() public {
         address app = address(_engenCredits);
         uint256 nonce = _kintoWallet.getNonce();
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(_engenCredits), childContracts);
+        registerApp(_owner, "test", address(_engenCredits));
 
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
@@ -1234,8 +1220,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
         vm.stopPrank();
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // Fund counter contract
         vm.startPrank(_owner);
@@ -1294,8 +1279,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         _fundPaymasterForContract(address(counter));
 
         // (3). register app
-        address[] memory childContracts = new address[](0);
-        registerApp(_owner, "test", address(counter), childContracts);
+        registerApp(_owner, "test", address(counter));
 
         // (4). Create whitelist app user op
         UserOperation[] memory userOps = new UserOperation[](1);

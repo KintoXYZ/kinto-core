@@ -206,6 +206,39 @@ abstract contract UserOp is Test {
         return op;
     }
 
+    function _registerAppOp(
+        uint256 _chainId,
+        uint256[] memory pk,
+        address wallet,
+        uint256 startingNonce,
+        address _paymaster,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        uint256[4] memory appLimits
+    ) internal view returns (UserOperation memory userOp) {
+        // uint256[] memory appLimits = new uint256[](4);
+        // appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        // appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        // appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        // appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        // _kintoAppRegistry.registerApp(
+        //     name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+        // );
+        return this.createUserOperation(
+            _chainId,
+            address(wallet),
+            startingNonce,
+            pk,
+            address(wallet),
+            0,
+            abi.encodeWithSignature(
+                "registerApp(string,address,address[],uint256[4])", name, parentContract, appContracts, appLimits
+            ),
+            address(_paymaster)
+        );
+    }
+
     function _whitelistAppOp(
         uint256 _chainId,
         uint256[] memory pk,
