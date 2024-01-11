@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -15,10 +15,6 @@ import "../libraries/ByteSignature.sol";
 import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoAppRegistry.sol";
-
-/* solhint-disable avoid-low-level-calls */
-/* solhint-disable no-inline-assembly */
-/* solhint-disable reason-string */
 
 /**
  * @title KintoWallet
@@ -77,7 +73,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _disableInitializers();
     }
 
-    // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
     /**

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-import "../src/Faucet.sol";
-import "../src/interfaces/IFaucet.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import "../src/interfaces/IFaucet.sol";
+import "../src/Faucet.sol";
+
 contract FaucetTest is Test {
     using ECDSA for bytes32;
-    using SignatureChecker for address;
 
     Faucet _faucet;
 

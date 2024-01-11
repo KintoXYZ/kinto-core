@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
@@ -63,7 +63,6 @@ interface IKintoWallet {
 
     function signerPolicy() external view returns (uint8);
 
-    /* solhint-disable func-name-mixedcase */
     function MAX_SIGNERS() external view returns (uint8);
 
     function SINGLE_SIGNER() external view returns (uint8);

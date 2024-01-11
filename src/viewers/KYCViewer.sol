@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -9,8 +9,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
-
-import "forge-std/console2.sol";
 
 /**
  * @title KYCViewer

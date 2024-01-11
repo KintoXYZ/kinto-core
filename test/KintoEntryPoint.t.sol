@@ -1,28 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-import "../src/wallet/KintoWallet.sol";
-import "../src/wallet/KintoWalletFactory.sol";
-import "../src/paymasters/SponsorPaymaster.sol";
-import "../src/KintoID.sol";
-import {UserOp} from "./helpers/UserOp.sol";
-import {UUPSProxy} from "./helpers/UUPSProxy.sol";
-import {KYCSignature} from "./helpers/KYCSignature.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-
-import "@aa/interfaces/IAccount.sol";
-import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-contract KintoEntryPointTest is AATestScaffolding, UserOp {
-    using ECDSAUpgradeable for bytes32;
+import {UserOp} from "./helpers/UserOp.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
+contract KintoEntryPointTest is AATestScaffolding, UserOp {
     uint256 _chainID = 1;
 
     function setUp() public {

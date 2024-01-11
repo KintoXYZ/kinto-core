@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-import "../src/ETHPriceIsRight.sol";
-import "../src/interfaces/IETHPriceIsRight.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
+import "../src/sample/ETHPriceIsRight.sol";
+import "../src/interfaces/IETHPriceIsRight.sol";
 
 contract ETHPriceIsRightTest is Test {
     ETHPriceIsRight _priceIsRight;

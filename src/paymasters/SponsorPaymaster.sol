@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
-
-/* solhint-disable reason-string */
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 import "@aa/core/UserOperationLib.sol";
+
 import "../interfaces/ISponsorPaymaster.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWallet.sol";

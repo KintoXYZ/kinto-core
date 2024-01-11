@@ -1,33 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-import "@aa/interfaces/IAccount.sol";
-import "@aa/interfaces/INonceManager.sol";
-import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
-import "../../src/KintoID.sol";
-import {IKintoEntryPoint} from "../../src/interfaces/IKintoEntryPoint.sol";
-import {UUPSProxy} from "../helpers/UUPSProxy.sol";
-import {KYCSignature} from "../helpers/KYCSignature.sol";
-import {Create2Helper} from "../helpers/Create2Helper.sol";
-import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
-import "../../src/apps/KintoAppRegistry.sol";
-import "../../src/tokens/EngenCredits.sol";
-import {KintoWalletFactoryV2 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
-
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-abstract contract AATestScaffolding is Create2Helper, KYCSignature {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
+import "@aa/core/EntryPoint.sol";
 
+import "../../src/KintoID.sol";
+import "../../src/interfaces/IKintoEntryPoint.sol";
+import "../../src/apps/KintoAppRegistry.sol";
+import "../../src/tokens/EngenCredits.sol";
+import "../../src/paymasters/SponsorPaymaster.sol";
+import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
+import {KintoWalletFactoryV2 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
+
+import "../helpers/UUPSProxy.sol";
+import "../helpers/KYCSignature.sol";
+
+abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
 
     KintoAppRegistry _kintoAppRegistry;
