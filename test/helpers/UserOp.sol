@@ -130,9 +130,9 @@ abstract contract UserOp is Test {
             nonce: nonce,
             initCode: bytes(""),
             callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
-            callGasLimit: 4000000, // generate from call simulation
-            verificationGasLimit: 210000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-            preVerificationGas: 21000, // should also cover calldata cost.
+            callGasLimit: 4_000_000, // generate from call simulation
+            verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: 1, // grab from current gas
             maxPriorityFeePerGas: 1e9, // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -159,8 +159,8 @@ abstract contract UserOp is Test {
             initCode: bytes(""),
             callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
             callGasLimit: _gasLimits[0], // generate from call simulation
-            verificationGasLimit: 170000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-            preVerificationGas: 21000, // should also cover calldata cost.
+            verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: _gasLimits[1], // grab from current gas
             maxPriorityFeePerGas: _gasLimits[2], // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -194,9 +194,9 @@ abstract contract UserOp is Test {
             callData: abi.encodeCall(
                 KintoWallet.executeBatch, (opParams.targetContracts, opParams.values, opParams.bytesOps)
                 ),
-            callGasLimit: 4000000, // generate from call simulation
-            verificationGasLimit: 170000, // verification gas
-            preVerificationGas: 21000, // should also cover calldata cost.
+            callGasLimit: 4_000_000, // generate from call simulation
+            verificationGasLimit: 210_000, // verification gas
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: 1, // grab from current gas
             maxPriorityFeePerGas: 1e9, // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -217,14 +217,6 @@ abstract contract UserOp is Test {
         address[] memory appContracts,
         uint256[4] memory appLimits
     ) internal view returns (UserOperation memory userOp) {
-        // uint256[] memory appLimits = new uint256[](4);
-        // appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        // appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        // appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        // appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
-        // _kintoAppRegistry.registerApp(
-        //     name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
-        // );
         return this.createUserOperation(
             _chainId,
             address(wallet),

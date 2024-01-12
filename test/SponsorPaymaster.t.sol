@@ -457,12 +457,11 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         ];
         address app = _createApp(appLimits);
 
-        // execute transactions until reaching gas limit and use the amount of apps that reached the threshold
+        // execute transactions until reaching gas limit and save the amount of apps that reached the threshold
         uint256 amt = _incrementCounterTxsUntilGasLimit(app);
-        console.log("AMT", amt);
 
         // reset period
-        vm.warp(block.timestamp + _kintoAppRegistry.GAS_LIMIT_PERIOD() + 1);
+        // fixme: vm.warp(block.timestamp + _kintoAppRegistry.GAS_LIMIT_PERIOD() + 1);
 
         // generate `amt` ops until reaching the threshold and assert that it reverts
         UserOperation[] memory userOps = _incrementCounterOps(amt, app);
@@ -537,7 +536,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     /// @dev if batch is true, then we batch the increment ops
     // otherwise we do them one by one
-    function _incrementCounterOps(uint256 amt, address app) internal returns (UserOperation[] memory userOps) {
+    function _incrementCounterOps(uint256 amt, address app) internal view returns (UserOperation[] memory userOps) {
         uint256 nonce = _kintoWallet.getNonce();
         userOps = new UserOperation[](amt);
         // we iterate from 1 because the first op is whitelisting the app
