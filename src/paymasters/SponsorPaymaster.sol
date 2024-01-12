@@ -28,11 +28,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     // ========== Events ============
     event AppRegistrySet(address appRegistry, address _oldRegistry);
 
-    //calculated cost of the postOp
-    uint256 public constant COST_OF_POST = 60_000;
-    uint256 public constant MAX_COST_OF_VERIFICATION = 180_000;
+    // calculated cost of the postOp
+    uint256 public constant COST_OF_POST = 200_000;
+    uint256 public constant MAX_COST_OF_VERIFICATION = 230_000;
     uint256 public constant MAX_COST_OF_PREVERIFICATION = 50_000;
-    uint256 public constant MAX_COST_OF_USEROP = 3e15; // 0.03 ETH
+    uint256 public constant MAX_COST_OF_USEROP = 0.03 ether;
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
@@ -40,9 +40,12 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
-    // A mapping for rate limiting data: account => contract => RateLimitData
+
+    // rate & cost limits per user per app: user => app => RateLimitData
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
+
+    // rate limit across apps: user => RateLimitData
     mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
 
     IKintoAppRegistry public override appRegistry;
@@ -90,14 +93,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     /**
      * ETH value that a specific account can use to pay for gas.
      * Note depositing the tokens is equivalent to transferring them to the "account" - only the account can later
-     *  use them - either as gas, or using withdrawTo()
+     * use them - either as gas, or using withdrawTo()
      *
      * @param account the account to deposit for.
      * msg.value the amount of token to deposit.
      */
     function addDepositFor(address account) external payable override {
         require(msg.value > 0, "SP: requires a deposit");
-        //(sender must have approval for the paymaster)
+        // sender must have approval for the paymaster
         balances[account] += msg.value;
         if (msg.sender == account) {
             lockTokenDeposit();
@@ -183,47 +186,26 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         returns (bytes memory context, uint256 validationData)
     {
         (userOpHash);
+
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
         require(
             userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION,
             "SP: gas outside of range for postOp"
         );
         require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, "SP: gas too high for verification");
-        bytes calldata paymasterAndData = userOp.paymasterAndData;
-        require(paymasterAndData.length == 20, "SP: paymasterAndData must contain only paymaster");
+        require(userOp.paymasterAndData.length == 20, "SP: paymasterAndData must contain only paymaster");
 
-        // Get the contract called from calldata
-        address targetAccount = _getLastTargetContract(userOp.sender, userOp.callData);
+        // calculate max cost in ETH for this op
         uint256 gasPriceUserOp = userOp.gasPrice();
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
-        // Check global rate limit (across all apps)
-        ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[userOp.sender];
-        if (block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD) {
-            require(globalData.operationCount < RATE_LIMIT_THRESHOLD_TOTAL, "SP: Kinto Rate limit exceeded");
-        }
-
-        // Get per-app limits
-        uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
-
-        // Check app rate limiting
-        ISponsorPaymaster.RateLimitData memory data = rateLimit[userOp.sender][targetAccount];
-        if (block.timestamp < data.lastOperationTime + appLimits[0]) {
-            require(data.operationCount < appLimits[1], "SP: App Rate limit exceeded");
-        }
-
-        // Check Kinto Gas limit app
-        ISponsorPaymaster.RateLimitData memory gasLimit = costLimit[userOp.sender][targetAccount];
-        if (block.timestamp < gasLimit.lastOperationTime + appLimits[2]) {
-            require((gasLimit.ethCostCount + ethMaxCost) <= appLimits[3], "SP: Kinto Gas App limit exceeded");
-        } else {
-            // First time need to be checked
-            require(ethMaxCost <= appLimits[3], "SP: Kinto Gas App limit exceeded");
-        }
+        // get target contract from calldata
+        address targetAccount = _getSponsor(userOp.sender, userOp.callData);
 
         require(unlockBlock[targetAccount] == 0, "SP: deposit not locked");
-        require(balances[targetAccount] >= maxCost, "SP: deposit too low");
+        require(balances[targetAccount] >= ethMaxCost, "SP: deposit too low");
+
         return (abi.encode(targetAccount, userOp.sender, gasPriceUserOp), 0);
     }
 
@@ -233,12 +215,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
         (address account, address userAccount, uint256 gasPricePostOp) =
             abi.decode(context, (address, address, uint256));
-        //use same conversion rate as used for validation.
+
+        // use same conversion rate as used for validation.
         uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
 
-        // Global network rate limit
+        // update global rate limit
         ISponsorPaymaster.RateLimitData storage globalTxLimit = globalRateLimit[userAccount];
         if (block.timestamp > globalTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
             globalTxLimit.lastOperationTime = block.timestamp;
@@ -249,7 +232,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
         uint256[4] memory appLimits = appRegistry.getContractLimits(account);
 
-        // Updates app rate limiting
+        // update app rate limiting
         ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[userAccount][account];
         if (block.timestamp > appTxLimit.lastOperationTime + appLimits[0]) {
             appTxLimit.lastOperationTime = block.timestamp;
@@ -257,7 +240,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         } else {
             appTxLimit.operationCount += 1;
         }
-        // App gas limit
+
+        // app gas limit
         ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
         if (block.timestamp > costApp.lastOperationTime + appLimits[2]) {
             costApp.lastOperationTime = block.timestamp;
@@ -265,37 +249,58 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         } else {
             costApp.ethCostCount += ethCost;
         }
+
+        // re-check limits after updating
+        _checkLimits(userAccount, account, ethCost);
     }
 
-    // Function to extract the first target contract
-    function _getLastTargetContract(address sender, bytes calldata callData)
-        private
-        view
-        returns (address lastTargetContract)
-    {
-        // Extract the function selector from the callData
-        bytes4 selector = bytes4(callData[:4]);
+    function _checkLimits(address sender, address targetAccount, uint256 ethMaxCost) internal view {
+        // global rate limit check
+        ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[sender];
+        require(
+            block.timestamp >= globalData.lastOperationTime + RATE_LIMIT_PERIOD
+                || globalData.operationCount <= RATE_LIMIT_THRESHOLD_TOTAL,
+            "SP: Kinto Rate limit exceeded"
+        );
 
-        // Compare the selector with the known function selectors
+        // app rate limit check
+        uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
+        ISponsorPaymaster.RateLimitData memory appData = rateLimit[sender][targetAccount];
+
+        require(
+            block.timestamp >= appData.lastOperationTime + appLimits[0] || appData.operationCount <= appLimits[1],
+            "SP: App Rate limit exceeded"
+        );
+
+        // app gas limit check
+        ISponsorPaymaster.RateLimitData memory gasData = costLimit[sender][targetAccount];
+        require(
+            block.timestamp >= gasData.lastOperationTime + appLimits[2]
+                || (gasData.ethCostCount + ethMaxCost) <= appLimits[3],
+            "SP: Kinto Gas App limit exceeded"
+        );
+    }
+
+    /// @dev extracts the target contract from the calldata and calls the app registry to get the sponsor
+    function _getSponsor(address sender, bytes calldata callData) internal view returns (address sponsor) {
+        bytes4 selector = bytes4(callData[:4]); // function selector
         if (selector == IKintoWallet.executeBatch.selector) {
-            // Decode callData for executeBatch
+            // decode callData for executeBatch
             (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            lastTargetContract = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
-            // Last contract must be a contract app
+            sponsor = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
+
+            // last contract must be a contract app
             for (uint256 i = 0; i < targetContracts.length - 1; i++) {
-                if (
-                    !appRegistry.isContractSponsored(lastTargetContract, targetContracts[i])
-                        && targetContracts[i] != sender
-                ) {
+                if (!appRegistry.isContractSponsored(sponsor, targetContracts[i]) && targetContracts[i] != sender) {
                     revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
                 }
             }
         } else if (selector == IKintoWallet.execute.selector) {
-            // Decode callData for execute
+            // decode callData for execute
             (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            lastTargetContract = appRegistry.getSponsor(targetContract);
+            sponsor = appRegistry.getSponsor(targetContract);
         } else {
-            // Handle unknown function or error
+            // handle unknown function or error
             revert("SP: Unknown function selector");
         }
     }

@@ -110,12 +110,12 @@ abstract contract UserOp is Test {
         uint256 value,
         bytes calldata _bytesOp
     ) public view returns (UserOperation memory op) {
-        return this.createUserOperationWithPaymaster(
+        return this.createUserOperation(
             _chainID, _account, nonce, _privateKeyOwners, _targetContract, value, _bytesOp, address(0)
         );
     }
 
-    function createUserOperationWithPaymaster(
+    function createUserOperation(
         uint256 _chainID,
         address _account,
         uint256 nonce,
@@ -130,9 +130,9 @@ abstract contract UserOp is Test {
             nonce: nonce,
             initCode: bytes(""),
             callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
-            callGasLimit: 4000000, // generate from call simulation
-            verificationGasLimit: 170000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-            preVerificationGas: 21000, // should also cover calldata cost.
+            callGasLimit: 4_000_000, // generate from call simulation
+            verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: 1, // grab from current gas
             maxPriorityFeePerGas: 1e9, // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -142,7 +142,7 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function createUserOperationWithPaymasterCustomGas(
+    function createUserOperation(
         uint256 _chainID,
         address _account,
         uint256 nonce,
@@ -159,8 +159,8 @@ abstract contract UserOp is Test {
             initCode: bytes(""),
             callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
             callGasLimit: _gasLimits[0], // generate from call simulation
-            verificationGasLimit: 170000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-            preVerificationGas: 21000, // should also cover calldata cost.
+            verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: _gasLimits[1], // grab from current gas
             maxPriorityFeePerGas: _gasLimits[2], // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -194,9 +194,9 @@ abstract contract UserOp is Test {
             callData: abi.encodeCall(
                 KintoWallet.executeBatch, (opParams.targetContracts, opParams.values, opParams.bytesOps)
                 ),
-            callGasLimit: 4000000, // generate from call simulation
-            verificationGasLimit: 170000, // verification gas
-            preVerificationGas: 21000, // should also cover calldata cost.
+            callGasLimit: 4_000_000, // generate from call simulation
+            verificationGasLimit: 210_000, // verification gas
+            preVerificationGas: 21_000, // should also cover calldata cost.
             maxFeePerGas: 1, // grab from current gas
             maxPriorityFeePerGas: 1e9, // grab from current gas
             paymasterAndData: abi.encodePacked(_paymaster),
@@ -204,6 +204,31 @@ abstract contract UserOp is Test {
         });
 
         return op;
+    }
+
+    function _registerAppOp(
+        uint256 _chainId,
+        uint256[] memory pk,
+        address wallet,
+        uint256 startingNonce,
+        address _paymaster,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        uint256[4] memory appLimits
+    ) internal view returns (UserOperation memory userOp) {
+        return this.createUserOperation(
+            _chainId,
+            address(wallet),
+            startingNonce,
+            pk,
+            address(wallet),
+            0,
+            abi.encodeWithSignature(
+                "registerApp(string,address,address[],uint256[4])", name, parentContract, appContracts, appLimits
+            ),
+            address(_paymaster)
+        );
     }
 
     function _whitelistAppOp(
@@ -218,7 +243,7 @@ abstract contract UserOp is Test {
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
         flags[0] = true;
-        return this.createUserOperationWithPaymaster(
+        return this.createUserOperation(
             _chainId,
             address(wallet),
             startingNonce,

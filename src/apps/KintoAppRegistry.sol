@@ -28,7 +28,7 @@ contract KintoAppRegistry is
     uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
     uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
-    uint256 public constant override GAS_LIMIT_THRESHOLD = 1e16; // 0.01 ETH
+    uint256 public constant override GAS_LIMIT_THRESHOLD = 0.01 ether;
 
     /* ============ State Variables ============ */
     IKintoWalletFactory public immutable override walletFactory;

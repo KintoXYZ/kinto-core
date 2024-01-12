@@ -68,7 +68,8 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // deploy latest KintoWallet version through wallet factory and initialize it
         _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
-        // Give some eth
+
+        // give some eth
         vm.deal(_owner, 1e20);
     }
 
@@ -205,19 +206,60 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.stopPrank();
     }
 
+    // register app helpers
+    // fixme: this should go through entrypoint
+
+    function registerApp(address _owner, string memory name, address parentContract) public {
+        address[] memory appContracts = new address[](0);
+        uint256[4] memory appLimits = [
+            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
+            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+        ];
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
+    function registerApp(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
+        public
+    {
+        address[] memory appContracts = new address[](0);
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
     function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
         public
     {
-        vm.startPrank(_owner);
-        uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        uint256[4] memory appLimits = [
+            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
+            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+        ];
+        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    }
+
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        uint256[4] memory appLimits
+    ) public {
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
-        vm.stopPrank();
+    }
+
+    // fixme: this should go through entrypoint
+    function whitelistApp(address app) public {
+        address[] memory targets = new address[](1);
+        targets[0] = address(app);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.whitelistApp(targets, flags);
     }
 
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////
@@ -227,50 +269,93 @@ abstract contract AATestScaffolding is KYCSignature {
     function assertRevertReasonEq(bytes memory _reason) public {
         bytes[] memory reasons = new bytes[](1);
         reasons[0] = _reason;
-        _assertRevertReasonEq(reasons, true);
+        _assertRevertReasonEq(reasons);
     }
 
-    // @dev if UserOperationRevertReason is string or bytes, we can specify it with isStringType
-    function assertRevertReasonEq(bytes memory _reason, bool isStringType) public {
-        bytes[] memory reasons = new bytes[](1);
-        reasons[0] = _reason;
-        _assertRevertReasonEq(reasons, isStringType);
-    }
-
-    // @dev if 2 or more UserOperationRevertReason events are emitted
+    /// @dev if 2 or more UserOperationRevertReason events are emitted
     function assertRevertReasonEq(bytes[] memory _reasons) public {
-        _assertRevertReasonEq(_reasons, true);
+        _assertRevertReasonEq(_reasons);
     }
 
-    function _assertRevertReasonEq(bytes[] memory _reasons, bool isStringType) internal {
+    function _assertRevertReasonEq(bytes[] memory _reasons) internal {
         uint256 idx = 0;
         Vm.Log[] memory logs = vm.getRecordedLogs();
+
         for (uint256 i = 0; i < logs.length; i++) {
             // check if this is the correct event
-            if (logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")) {
+            if (
+                logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
+                    || logs[i].topics[0] == keccak256("PostOpRevertReason(bytes32,address,uint256,bytes)")
+            ) {
                 (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
 
                 // check that the revertReasonBytes is long enough (at least 4 bytes for the selector + additional data for the message)
                 if (revertReasonBytes.length > 4) {
-                    //decode the remaining bytes as a string
-                    if (isStringType) {
-                        // remove the first 4 bytes (the function selector)
-                        bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
-                        for (uint256 j = 4; j < revertReasonBytes.length; j++) {
-                            errorBytes[j - 4] = revertReasonBytes[j];
-                        }
-                        string memory decodedRevertReason = abi.decode(errorBytes, (string));
-                        // compare as strings
-                        assertEq(decodedRevertReason, string(_reasons[idx]), "Revert reason does not match");
-                    } else {
-                        // compare as bytes
-                        assertEq(revertReasonBytes, _reasons[idx], "Revert reason does not match");
+                    // remove the first 4 bytes (the function selector)
+                    bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
+                    for (uint256 j = 4; j < revertReasonBytes.length; j++) {
+                        errorBytes[j - 4] = revertReasonBytes[j];
                     }
-                    idx++;
+                    string memory decodedRevertReason = abi.decode(errorBytes, (string));
+                    string[] memory prefixes = new string[](3);
+                    prefixes[0] = "SP";
+                    prefixes[1] = "KW";
+                    prefixes[2] = "EC";
+
+                    // clean revert reason & assert
+                    string memory cleanRevertReason = _trimToPrefixAndRemoveTrailingNulls(decodedRevertReason, prefixes);
+                    assertEq(cleanRevertReason, string(_reasons[idx]), "Revert reason does not match");
+
+                    if (_reasons.length > 1) idx++; // if there's only one reason, we always use the same one
                 } else {
                     revert("Revert reason bytes too short to decode");
                 }
             }
         }
+    }
+
+    function _trimToPrefixAndRemoveTrailingNulls(string memory revertReason, string[] memory prefixes)
+        internal
+        pure
+        returns (string memory)
+    {
+        bytes memory revertBytes = bytes(revertReason);
+        uint256 meaningfulLength = revertBytes.length;
+        if (meaningfulLength == 0) return revertReason;
+
+        // find the actual end of the meaningful content
+        for (uint256 i = revertBytes.length - 1; i >= 0; i--) {
+            if (revertBytes[i] != 0) {
+                meaningfulLength = i + 1;
+                break;
+            }
+            if (i == 0) break; // avoid underflow
+        }
+        // trim until one of the prefixes
+        for (uint256 j = 0; j < revertBytes.length; j++) {
+            for (uint256 k = 0; k < prefixes.length; k++) {
+                bytes memory prefixBytes = bytes(prefixes[k]);
+                if (j + prefixBytes.length <= meaningfulLength) {
+                    bool matched = true;
+                    for (uint256 l = 0; l < prefixBytes.length; l++) {
+                        if (revertBytes[j + l] != prefixBytes[l]) {
+                            matched = false;
+                            break;
+                        }
+                    }
+                    if (matched) {
+                        // create a new trimmed and cleaned string
+                        bytes memory trimmedBytes = new bytes(meaningfulLength - j);
+                        for (uint256 m = j; m < meaningfulLength; m++) {
+                            trimmedBytes[m - j] = revertBytes[m];
+                        }
+                        return string(trimmedBytes);
+                    }
+                }
+            }
+        }
+
+        // if no prefix is found or no meaningful content, return the original string
+        return revertReason;
     }
 }
