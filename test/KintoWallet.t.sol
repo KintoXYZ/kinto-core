@@ -498,7 +498,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(stdError.indexOOBError, false);
+        assertRevertReasonEq(stdError.indexOOBError);
     }
 
     function test_RevertWhen_WithManyOwners() public {

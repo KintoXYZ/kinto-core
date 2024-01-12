@@ -131,7 +131,7 @@ abstract contract UserOp is Test {
             initCode: bytes(""),
             callData: abi.encodeCall(KintoWallet.execute, (_targetContract, value, _bytesOp)),
             callGasLimit: 4000000, // generate from call simulation
-            verificationGasLimit: 170000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+            verificationGasLimit: 210000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
             preVerificationGas: 21000, // should also cover calldata cost.
             maxFeePerGas: 1, // grab from current gas
             maxPriorityFeePerGas: 1e9, // grab from current gas
