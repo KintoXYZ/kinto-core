@@ -13,7 +13,7 @@ import "../../test/helpers/UUPSProxy.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
@@ -28,9 +28,6 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
     // NOTE: this migration must be run from the ledger admin
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.rememberKey(deployerPrivateKey);
 
         // execute this script with the with the ledger
         console.log("Executing from address", msg.sender);

@@ -25,7 +25,6 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
         // Execute this script with the hot wallet and ledger
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.rememberKey(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
         address sponsorAddr = _getChainDeployment("SponsorPaymaster");
         if (sponsorAddr == address(0)) {
