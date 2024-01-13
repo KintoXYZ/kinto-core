@@ -29,6 +29,9 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
     function run() public {
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
 
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
         // execute this script with the with the ledger
         console.log("Executing from address", msg.sender);
 
@@ -44,18 +47,8 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         _paymaster = SponsorPaymaster(payable(sponsorAddr));
         bytes memory bytecode =
             abi.encodePacked(type(SponsorPaymasterV3).creationCode, abi.encode(_getChainDeployment("EntryPoint")));
-        // vm.prank(address(deployer));
-        vm.broadcast();
+        console.log("factory", address(_walletFactory));
         _paymasterImpl = SponsorPaymasterV3(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
-
-        vm.broadcast();
-        // vm.prank(_paymaster.owner());
-        _paymaster.upgradeTo(address(_paymasterImpl));
-
-        // sanity check: paymaster's cost of op should be 200_000
-        require(_paymaster.COST_OF_POST() == 200_000, "COST_OF_POST should be 200_000");
-
-        //////////
 
         // (2). deploy new kinto ID implementation via wallet factory
         address kintoIDAddr = _getChainDeployment("KintoID");
@@ -65,11 +58,17 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         }
         _kintoID = KintoID(payable(kintoIDAddr));
         bytecode = abi.encodePacked(type(KintoIDV3).creationCode);
-        vm.broadcast();
-        // vm.prank(address(deployer));
         _kintoIDImpl = KintoIDV3(payable(_walletFactory.deployContract(msg.sender, 0, bytecode, bytes32(0))));
 
-        vm.broadcast();
+        vm.stopBroadcast();
+        vm.startBroadcast();
+        // (3). upgrade paymaster to new implementation
+        _paymaster.upgradeTo(address(_paymasterImpl));
+
+        // sanity check: paymaster's cost of op should be 200_000
+        require(_paymaster.COST_OF_POST() == 200_000, "COST_OF_POST should be 200_000");
+
+        // (4). upgrade kinto id to new implementation
         // vm.prank(_paymaster.owner());
         _kintoID.upgradeTo(address(_kintoIDImpl));
 
@@ -82,7 +81,7 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
                 "Incorrect error reason"
             );
         }
-
+        vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"SponsorPaymasterV3-impl": "', vm.toString(address(_paymasterImpl)), '"'));
