@@ -498,3 +498,7 @@ contract KintoID is
         return super.supportsInterface(interfaceId);
     }
 }
+
+contract KintoIDV3 is KintoID {
+    constructor() KintoID() {}
+}
