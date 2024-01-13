@@ -107,7 +107,7 @@ contract KintoID is
      * @return token URI.
      */
     function _baseURI() internal pure override returns (string memory) {
-        return "https://kinto.xyz/metadata/kintoid/";
+        return "https://kinto.xyz/api/v1/nft-kinto-id/";
     }
 
     /* ============ Mint & Burn ============ */
@@ -497,4 +497,8 @@ contract KintoID is
     {
         return super.supportsInterface(interfaceId);
     }
+}
+
+contract KintoIDV3 is KintoID {
+    constructor() KintoID() {}
 }
