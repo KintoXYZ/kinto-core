@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IKintoWallet} from "./IKintoWallet.sol";
 import {IKintoID} from "./IKintoID.sol";
+import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 interface IKintoWalletFactory {
@@ -26,6 +27,8 @@ interface IKintoWalletFactory {
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external;
 
     function fundWallet(address payable wallet) external payable;
+
+    function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external;
 
     /* ============ Basic Viewers ============ */
 

@@ -9,6 +9,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
+import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
 
@@ -96,7 +97,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         override
         returns (IKintoWallet ret)
     {
-        require(kintoID.isKYC(owner), "KYC required");
+        require(kintoID.isKYC(owner) && owner == msg.sender, "KYC required");
         address addr = getAddress(owner, recoverer, salt);
         uint256 codeSize = addr.code.length;
 
@@ -188,6 +189,16 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
             "Invalid wallet or funder"
         );
         wallet.transfer(msg.value);
+    }
+
+    /**
+     * @dev Claim from a faucet on behalf of a user
+     * @param _faucet The faucet address
+     * @param _signatureData The signature data
+     */
+    function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
+        require(kintoID.isKYC(msg.sender), "KYC required");
+        IFaucet(_faucet).claimOnBehalf(_signatureData);
     }
 
     /* ============ View Functions ============ */

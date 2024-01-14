@@ -8,14 +8,26 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "../src/interfaces/IFaucet.sol";
 import "../src/Faucet.sol";
+import "./helpers/UserOp.sol";
+import "./helpers/UUPSProxy.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
-contract FaucetTest is Test {
+contract FaucetV2 is Faucet {
+    function newFunction() external pure returns (uint256) {
+        return 1;
+    }
+
+    constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
+}
+
+contract FaucetTest is UserOp, AATestScaffolding {
     using ECDSA for bytes32;
 
+    UUPSProxy _proxyViewer;
+    Faucet _implFaucet;
+    FaucetV2 _implFaucetV2;
     Faucet _faucet;
-
-    address _owner = address(1);
-    address _user = vm.addr(3);
+    FaucetV2 _faucetv2;
 
     // Create a aux function to create a signature for claiming kinto ETH from the faucet
     function _auxCreateSignature(address _signer, uint256 _privateKey, uint256 _expiresAt)
@@ -33,18 +45,46 @@ contract FaucetTest is Test {
     }
 
     function setUp() public {
-        vm.chainId(1);
+        vm.chainId(block.chainid);
+        vm.startPrank(address(1));
+        _owner.transfer(1e18);
+        vm.stopPrank();
+        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
         vm.startPrank(_owner);
-        _faucet = new Faucet();
+        _implFaucet = new Faucet{salt: 0}(address(_walletFactory));
+        // deploy _proxy contract and point it to _implementation
+        _proxyViewer = new UUPSProxy{salt: 0}(address(_implFaucet), "");
+        // wrap in ABI to support easier calls
+        _faucet = Faucet(payable(address(_proxyViewer)));
+        // Initialize kyc viewer _proxy
+        _faucet.initialize();
         vm.stopPrank();
     }
 
     function testUp() public {
-        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 200);
+        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2000);
         assertEq(_faucet.FAUCET_AMOUNT(), 1 ether);
     }
 
-    // Upgrade Tests
+    /* ============ Upgrade Tests ============ */
+
+    function testOwnerCanUpgradeViewer() public {
+        vm.startPrank(_owner);
+        FaucetV2 _implementationV2 = new FaucetV2(address(_walletFactory));
+        _faucet.upgradeTo(address(_implementationV2));
+        // re-wrap the _proxy
+        _faucetv2 = FaucetV2(payable(address(_faucet)));
+        assertEq(_faucetv2.newFunction(), 1);
+        vm.stopPrank();
+    }
+
+    function test_RevertWhen_OthersCannotUpgradeFactory() public {
+        FaucetV2 _implementationV2 = new FaucetV2(address(_walletFactory));
+        vm.expectRevert("only owner");
+        _faucet.upgradeTo(address(_implementationV2));
+    }
+
+    /* ============ Claim Tests ============ */
 
     function testOwnerCanStartFaucet() public {
         vm.startPrank(_owner);
@@ -99,7 +139,7 @@ contract FaucetTest is Test {
         _faucet.startFaucet{value: 1 ether}();
         assertEq(_faucet.claimed(_user), false);
         assertEq(_faucet.nonces(_user), 0);
-        _faucet.claimOnBehalf(sigdata);
+        _walletFactory.claimFromFaucet(address(_faucet), sigdata);
         assertEq(_faucet.claimed(_user), true);
         assertEq(_faucet.nonces(_user), 1);
         vm.stopPrank();

@@ -97,6 +97,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoIDv1, _kintoAppRegistry);
 
         // deploy walletv1 through wallet factory and initializes it
+        vm.broadcast(_owner);
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
 
         // upgrade all implementations

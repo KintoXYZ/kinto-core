@@ -79,6 +79,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     function test_RevertWhen_OthersCannotUpgrade() public {
         // create a wallet for _user
         approveKYC(_kycProvider, _user, _userPk);
+        vm.broadcast(_user);
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a new implementation
