@@ -198,6 +198,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
         require(kintoID.isKYC(msg.sender), "KYC required");
+        require(address(_faucet) != address(0), "Invalid faucet address");
         IFaucet(_faucet).claimOnBehalf(_signatureData);
     }
 
