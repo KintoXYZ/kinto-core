@@ -62,7 +62,7 @@ contract FaucetTest is UserOp, AATestScaffolding {
     }
 
     function testUp() public {
-        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 3000);
+        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2500);
         assertEq(_faucet.FAUCET_AMOUNT(), 1 ether);
     }
 
