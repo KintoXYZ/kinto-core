@@ -22,7 +22,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     event Claim(address indexed _to, uint256 _timestamp);
 
     /* ============ Constants ============ */
-    uint256 public constant CLAIM_AMOUNT = 1 ether / 2000;
+    uint256 public constant CLAIM_AMOUNT = 1 ether / 3000;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 
     /* ============ State Variables ============ */
