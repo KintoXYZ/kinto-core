@@ -70,8 +70,6 @@ interface IKintoID {
 
     function traits(address _account) external view returns (bool[] memory);
 
-    // function balanceOf(address _account, uint256) external view returns(uint256);
-
     /* ============ Constants and attrs ============ */
 
     function KYC_PROVIDER_ROLE() external view returns (bytes32);

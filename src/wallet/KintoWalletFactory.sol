@@ -13,6 +13,10 @@ import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
 
+interface KintoIDWithAccessControl is IKintoID {
+    function hasRole(bytes32 role, address account) external view returns (bool);
+}
+
 /**
  * @title KintoWalletFactory
  * @dev A kinto wallet factory contract for KintoWallet
@@ -198,6 +202,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
         require(kintoID.isKYC(msg.sender), "KYC required");
+        require(
+            KintoIDWithAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender),
+            "Invalid sender"
+        );
         require(address(_faucet) != address(0), "Invalid faucet address");
         IFaucet(_faucet).claimOnBehalf(_signatureData);
     }
