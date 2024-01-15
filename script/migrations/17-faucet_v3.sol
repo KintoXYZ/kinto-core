@@ -51,7 +51,6 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
 
         vm.stopBroadcast();
 
-        // Writes the addresses to a file
         console.log(string.concat("Faucet-impl: ", vm.toString(address(_implementation))));
         console.log(string.concat("Faucet: ", vm.toString(address(_proxy))));
     }

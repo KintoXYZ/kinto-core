@@ -23,7 +23,7 @@ contract FaucetV999 is Faucet {
 contract FaucetTest is UserOp, AATestScaffolding {
     using ECDSA for bytes32;
 
-    UUPSProxy _proxyViewer;
+    UUPSProxy _proxyFaucet;
     Faucet _implFaucet;
     FaucetV999 _implFaucetV999;
     Faucet _faucet;
