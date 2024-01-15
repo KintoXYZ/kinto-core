@@ -136,12 +136,66 @@ contract FaucetTest is UserOp, AATestScaffolding {
     function testClaimOnBehalf() public {
         IFaucet.SignatureData memory sigdata = _auxCreateSignature(_user, 3, block.timestamp + 1000);
         vm.startPrank(_owner);
+
         _faucet.startFaucet{value: 1 ether}();
         assertEq(_faucet.claimed(_user), false);
         assertEq(_faucet.nonces(_user), 0);
+
         _walletFactory.claimFromFaucet(address(_faucet), sigdata);
         assertEq(_faucet.claimed(_user), true);
         assertEq(_faucet.nonces(_user), 1);
+
         vm.stopPrank();
+    }
+
+    function testClaimOnBehalf_RevertWhen_CallerIsNotFactory() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_user, 3, block.timestamp + 1000);
+        vm.expectRevert("Only wallet factory can call this");
+        _faucet.claimOnBehalf(sigdata);
+    }
+
+    function testClaim_RevertWhen_FaucerIsNotActive() public {
+        vm.prank(_owner);
+        vm.expectRevert("Faucet is not active");
+        _faucet.claimKintoETH();
+    }
+
+    function testClaim_DeactivatesWhenNotEnoughBalanceForNextClaim() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
+        for (uint256 i = 1; i <= 2500; i++) {
+            vm.prank(vm.addr(i));
+            _faucet.claimKintoETH();
+        }
+        // assert faucet is deactivated
+        assertEq(address(_faucet).balance, 0);
+        assertEq(_faucet.active(), false);
+    }
+
+    /* ============ Withdraw Tests ============ */
+
+    function testWithdrawAll() public {
+        vm.startPrank(_owner);
+
+        _faucet.startFaucet{value: 1 ether}();
+        assertEq(address(_faucet).balance, 1 ether);
+
+        _faucet.withdrawAll();
+        assertEq(address(_faucet).balance, 0);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawAll_RevertWhen_CallerIsNotOwner() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+        assertEq(address(_faucet).balance, 1 ether);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        _faucet.withdrawAll();
     }
 }
