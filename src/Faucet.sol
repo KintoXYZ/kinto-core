@@ -122,23 +122,16 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     modifier onlySignerVerified(IFaucet.SignatureData calldata _signature) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
         require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                keccak256(
-                    abi.encode(
-                        _signature.signer,
-                        address(this),
-                        _signature.expiresAt,
-                        nonces[_signature.signer],
-                        bytes32(block.chainid)
-                    )
-                )
-            )
-        ) // EIP-191 header
-            .toEthSignedMessageHash();
 
-        require(_signature.signer.isValidSignatureNow(hash, _signature.signature), "Invalid Signer");
+        bytes32 dataHash = keccak256(
+            abi.encode(_signature.signer, address(this), _signature.expiresAt, nonces[_signature.signer], block.chainid)
+        ).toEthSignedMessageHash(); // EIP-712 hash
+
+        require(_signature.signer.isValidSignatureNow(dataHash, _signature.signature), "Invalid Signer");
         _;
     }
+}
+
+contract FaucetV3 is Faucet {
+    constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }
