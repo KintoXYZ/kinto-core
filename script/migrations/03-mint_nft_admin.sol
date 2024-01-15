@@ -36,7 +36,7 @@ contract KintoMigration3DeployScript is Create2Helper, KYCSignature, ArtifactsRe
             _auxCreateSignature(_kintoIDv1, deployer, deployer, deployerPrivateKey, block.timestamp + 1000);
         vm.stopBroadcast();
         vm.startBroadcast();
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 0; // ADMIN
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         vm.stopBroadcast();
