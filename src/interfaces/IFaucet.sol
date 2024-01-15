@@ -17,7 +17,7 @@ interface IFaucet {
 
     function claimKintoETH() external;
 
-    function claimOnBehalf(SignatureData calldata _signatureData) external;
+    function claimKintoETH(SignatureData calldata _signatureData) external;
 
     function withdrawAll() external;
 

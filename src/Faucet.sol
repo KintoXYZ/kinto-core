@@ -73,7 +73,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Claim via meta tx on behalf of a new account by the owner
      * @param _signatureData Signature data
      */
-    function claimOnBehalf(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
+    function claimKintoETH(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
         require(msg.sender == address(walletFactory), "Only wallet factory can call this");
         _privateClaim(_signatureData.signer);
         nonces[_signatureData.signer]++;
