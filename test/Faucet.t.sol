@@ -12,7 +12,7 @@ import "./helpers/UserOp.sol";
 import "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
-contract FaucetV2 is Faucet {
+contract FaucetV999 is Faucet {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
@@ -23,13 +23,13 @@ contract FaucetV2 is Faucet {
 contract FaucetTest is UserOp, AATestScaffolding {
     using ECDSA for bytes32;
 
-    UUPSProxy _proxyViewer;
+    UUPSProxy _proxyFaucet;
     Faucet _implFaucet;
-    FaucetV2 _implFaucetV2;
+    FaucetV999 _implFaucetV999;
     Faucet _faucet;
-    FaucetV2 _faucetv2;
+    FaucetV999 _FaucetV999;
 
-    // Create a aux function to create a signature for claiming kinto ETH from the faucet
+    // Create a aux function to create an EIP-191 comploiant signature for claiming Kinto ETH from the faucet
     function _auxCreateSignature(address _signer, uint256 _privateKey, uint256 _expiresAt)
         private
         view
@@ -38,8 +38,9 @@ contract FaucetTest is UserOp, AATestScaffolding {
         bytes32 dataHash = keccak256(
             abi.encode(_signer, address(_faucet), _expiresAt, _faucet.nonces(_signer), bytes32(block.chainid))
         );
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0x19), bytes1(0x01), dataHash)).toEthSignedMessageHash();
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, hash);
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)); // EIP-191 compliant
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, ethSignedMessageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
         return IFaucet.SignatureData(_signer, _faucet.nonces(_signer), _expiresAt, signature);
     }
@@ -53,9 +54,9 @@ contract FaucetTest is UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         _implFaucet = new Faucet{salt: 0}(address(_walletFactory));
         // deploy _proxy contract and point it to _implementation
-        _proxyViewer = new UUPSProxy{salt: 0}(address(_implFaucet), "");
+        _proxyFaucet = new UUPSProxy{salt: 0}(address(_implFaucet), "");
         // wrap in ABI to support easier calls
-        _faucet = Faucet(payable(address(_proxyViewer)));
+        _faucet = Faucet(payable(address(_proxyFaucet)));
         // Initialize kyc viewer _proxy
         _faucet.initialize();
         vm.stopPrank();
@@ -70,16 +71,16 @@ contract FaucetTest is UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeViewer() public {
         vm.startPrank(_owner);
-        FaucetV2 _implementationV2 = new FaucetV2(address(_walletFactory));
+        FaucetV999 _implementationV2 = new FaucetV999(address(_walletFactory));
         _faucet.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
-        _faucetv2 = FaucetV2(payable(address(_faucet)));
-        assertEq(_faucetv2.newFunction(), 1);
+        _FaucetV999 = FaucetV999(payable(address(_faucet)));
+        assertEq(_FaucetV999.newFunction(), 1);
         vm.stopPrank();
     }
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
-        FaucetV2 _implementationV2 = new FaucetV2(address(_walletFactory));
+        FaucetV999 _implementationV2 = new FaucetV999(address(_walletFactory));
         vm.expectRevert("only owner");
         _faucet.upgradeTo(address(_implementationV2));
     }
