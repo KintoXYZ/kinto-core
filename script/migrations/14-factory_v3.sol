@@ -56,7 +56,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
 
         bytes memory bytecode = abi.encodePacked(
             type(KintoWalletFactoryV3).creationCode,
-            abi.encode(_getChainDeployment("KintoWalletV3-impl")) // Encoded constructor arguments
+            abi.encode(newImpl) // Encoded constructor arguments
         );
 
         // 1) Deploy new wallet factory
@@ -80,7 +80,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
-        console.log(string.concat('"KintoWalletFactoryV3-impl": "', vm.toString(address(newImpl)), '"'));
+        console.log(string.concat('"KintoWalletFactoryV3-impl": "', vm.toString(address(_factoryImpl)), '"'));
         console.log(string.concat('"KintoIDV4-impl": "', vm.toString(address(_kintoIDImpl)), '"'));
     }
 }
