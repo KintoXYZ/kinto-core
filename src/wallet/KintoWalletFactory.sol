@@ -199,7 +199,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param _signatureData The signature data
      */
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
-        require(kintoID.isKYC(msg.sender), "KYC required");
         require(IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender), "Invalid sender");
         require(address(_faucet) != address(0), "Invalid faucet address");
         IFaucet(_faucet).claimKintoETH(_signatureData);
@@ -282,6 +281,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV3 is KintoWalletFactory {
+contract KintoWalletFactoryV4 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
