@@ -16,7 +16,6 @@ import "forge-std/console.sol";
 contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
-    KintoID _kintoID;
     KintoWalletFactoryV3 _factoryImpl;
 
     function setUp() public {}
