@@ -17,6 +17,8 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactoryV3 _factoryImpl;
+    KintoID _kintoID;
+    KintoIDV4 _kintoIDImpl;
 
     function setUp() public {}
 
@@ -26,7 +28,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         // Execute this script with the ledger admin but first we use the hot wallet
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        console.log("Executing with address", msg.sender);
+        console.log("Executing with address", msg.sender, vm.envAddress("LEDGER_ADMIN"));
         address factoryAddr = _getChainDeployment("KintoWalletFactory");
         if (factoryAddr == address(0)) {
             console.log("Need to execute main deploy script first", factoryAddr);
@@ -37,6 +39,13 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
             console.log("V3 already deployed", v3factory);
             return;
         }
+
+        address kintoIDAddr = _getChainDeployment("KintoID");
+        if (kintoIDAddr == address(0)) {
+            console.log("Need to execute main deploy script first", kintoIDAddr);
+            return;
+        }
+
         IKintoWalletFactory _walletFactory = IKintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
 
         address newImpl = _getChainDeployment("KintoWalletV3-impl");
@@ -44,6 +53,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
             console.log("Need to deploy the new wallet first", newImpl);
             return;
         }
+
         bytes memory bytecode = abi.encodePacked(
             type(KintoWalletFactoryV3).creationCode,
             abi.encode(_getChainDeployment("KintoWalletV3-impl")) // Encoded constructor arguments
@@ -53,14 +63,24 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         _factoryImpl = KintoWalletFactoryV3(
             payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0)))
         );
+
+        // (2). deploy new kinto ID implementation via wallet factory
+
+        _kintoID = KintoID(payable(kintoIDAddr));
+        bytecode = abi.encodePacked(type(KintoIDV4).creationCode);
+        _kintoIDImpl =
+            KintoIDV4(payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0))));
         vm.stopBroadcast();
         // Start admin
         vm.startBroadcast();
-        // 2) Upgrade wallet factory
+        // 3) Upgrade wallet factory
         KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        // (4). upgrade kinto id to new implementation
+        _kintoID.upgradeTo(address(_kintoIDImpl));
         vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoWalletFactoryV3-impl": "', vm.toString(address(newImpl)), '"'));
+        console.log(string.concat('"KintoIDV4-impl": "', vm.toString(address(_kintoIDImpl)), '"'));
     }
 }

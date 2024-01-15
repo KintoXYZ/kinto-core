@@ -499,6 +499,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV3 is KintoID {
+contract KintoIDV4 is KintoID {
     constructor() KintoID() {}
 }
