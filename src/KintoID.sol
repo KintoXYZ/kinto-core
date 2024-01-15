@@ -168,32 +168,21 @@ contract KintoID is
 
     /* ============ Burn ============ */
 
-    /**
-     * @dev Burns a KYC token.
-     * @param _signatureData Signature data
-     */
-    function burnKYC(SignatureData calldata _signatureData) external override {
-        require(balanceOf(_signatureData.signer) > 0, "Nothing to burn");
-
-        _burnp(tokenOfOwnerByIndex(_signatureData.signer, 0), _signatureData);
-    }
-
     function burn(uint256 /* tokenId */ ) public pure override {
         require(false, "Use burnKYC instead");
     }
 
     /**
-     * @dev Burns a token.
-     * @param _tokenId Token ID to be burned
+     * @dev Burns a KYC token.
      * @param _signatureData Signature data
      */
-    function _burnp(uint256 _tokenId, SignatureData calldata _signatureData)
-        private
-        onlySignerVerified(_signatureData)
-    {
+    function burnKYC(SignatureData calldata _signatureData) external override onlySignerVerified(_signatureData) {
+        require(balanceOf(_signatureData.signer) > 0, "Nothing to burn");
+
         nonces[_signatureData.signer] += 1;
-        _burn(_tokenId);
+        _burn(tokenOfOwnerByIndex(_signatureData.signer, 0));
         require(balanceOf(_signatureData.signer) == 0, "Balance after burn must be 0");
+
         // Update metadata after burning the token
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
@@ -218,27 +207,39 @@ contract KintoID is
     {
         require(_accounts.length == _traitsAndSanctions.length, "Length mismatch");
         require(_accounts.length <= 200, "Too many accounts to monitor at once");
+
+        uint256 time = block.timestamp;
+
         for (uint256 i = 0; i < _accounts.length; i += 1) {
+            address account = _accounts[i];
             Metadata storage meta = _kycmetas[_accounts[i]];
-            if (balanceOf(_accounts[i]) == 0) {
-                continue;
-            }
-            meta.updatedAt = block.timestamp;
-            for (uint256 j = 0; j < _traitsAndSanctions[i].length; j += 1) {
-                IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
-                if (updateData.isTrait && updateData.isSet) {
-                    addTrait(_accounts[i], uint8(updateData.index));
-                } else if (updateData.isTrait && !updateData.isSet) {
-                    removeTrait(_accounts[i], uint8(updateData.index));
-                } else if (!updateData.isTrait && updateData.isSet) {
-                    addSanction(_accounts[i], updateData.index);
-                } else {
-                    removeSanction(_accounts[i], updateData.index);
+
+            if (balanceOf(_accounts[i]) > 0) {
+                meta.updatedAt = time;
+                IKintoID.MonitorUpdateData[] memory updates = _traitsAndSanctions[i];
+
+                for (uint256 j = 0; j < updates.length; j += 1) {
+                    IKintoID.MonitorUpdateData memory updateData = updates[j];
+
+                    if (updateData.isTrait) {
+                        if (updateData.isSet) {
+                            addTrait(account, uint8(updateData.index));
+                        } else {
+                            removeTrait(account, uint8(updateData.index));
+                        }
+                    } else {
+                        if (updateData.isSet) {
+                            addSanction(account, updateData.index);
+                        } else {
+                            removeSanction(account, updateData.index);
+                        }
+                    }
                 }
             }
         }
-        lastMonitoredAt = block.timestamp;
-        emit AccountsMonitoredAt(msg.sender, _accounts.length, block.timestamp);
+
+        lastMonitoredAt = time;
+        emit AccountsMonitoredAt(msg.sender, _accounts.length, time);
     }
 
     /**
