@@ -54,7 +54,9 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         );
 
         // 1) Deploy new wallet factory
-        _factoryImpl = KintoWalletFactoryV3(payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0))));
+        _factoryImpl = KintoWalletFactoryV3(
+            payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0)))
+        );
         vm.stopBroadcast();
         // Start admin
         vm.startBroadcast();
