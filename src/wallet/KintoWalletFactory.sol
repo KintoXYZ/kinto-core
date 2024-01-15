@@ -98,6 +98,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         override
         returns (IKintoWallet ret)
     {
+        require(owner != address(0) && recoverer != address(0), "invalid addresses");
         require(kintoID.isKYC(owner) && owner == msg.sender, "KYC required");
         address addr = getAddress(owner, recoverer, salt);
         uint256 codeSize = addr.code.length;
