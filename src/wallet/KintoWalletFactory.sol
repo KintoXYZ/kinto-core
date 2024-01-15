@@ -23,6 +23,7 @@ import "../interfaces/IKintoWallet.sol";
  *   This way, the entryPoint.getSenderAddress() can be called either
  *   before or after the account is created.
  */
+
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
@@ -198,10 +199,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
         require(kintoID.isKYC(msg.sender), "KYC required");
-        require(
-            IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender),
-            "Invalid sender"
-        );
+        require(IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender), "Invalid sender");
         require(address(_faucet) != address(0), "Invalid faucet address");
         IFaucet(_faucet).claimKintoETH(_signatureData);
     }
