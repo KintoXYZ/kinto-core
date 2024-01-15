@@ -52,7 +52,6 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
         vm.stopBroadcast();
 
         console.log(string.concat("Faucet-impl: ", vm.toString(address(_implementation))));
-        console.log(string.concat("Faucet: ", vm.toString(address(_proxy))));
     }
 
     function _upgradeTo(address _newFaucetImpl, uint256 _signerPk) internal {
