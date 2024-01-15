@@ -18,7 +18,6 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
 
     KintoID _kintoID;
     KintoWalletFactoryV3 _factoryImpl;
-    UUPSProxy _proxy;
 
     function setUp() public {}
 
