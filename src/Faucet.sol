@@ -91,7 +91,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Function to start the faucet
      */
     function startFaucet() external payable override onlyOwner {
-        require(msg.value >= FAUCET_AMOUNT, "Not enough ETH to start faucet");
+        require(address(this).balance >= FAUCET_AMOUNT, "Not enough ETH to start faucet");
         active = true;
     }
 
