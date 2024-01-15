@@ -79,6 +79,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
     function test_RevertWhen_OthersCannotUpgrade() public {
         // create a wallet for _user
         approveKYC(_kycProvider, _user, _userPk);
+        vm.broadcast(_user);
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a new implementation
@@ -967,7 +968,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         // Mint NFT to new owner and burn old
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         sigdata = _auxCreateSignature(_kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);

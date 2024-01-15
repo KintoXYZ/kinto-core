@@ -10,10 +10,18 @@ import "../../test/helpers/UUPSProxy.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
+contract KintoWalletFactoryV2 is KintoWalletFactory {
+    constructor(IKintoWallet _impl) KintoWalletFactory(_impl) {}
+
+    function newFunction() public pure returns (uint256) {
+        return 1;
+    }
+}
+
 contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
-    KintoWalletFactoryV2 _factoryImpl;
+    KintoWalletFactory _factoryImpl;
     UUPSProxy _proxy;
 
     function setUp() public {}

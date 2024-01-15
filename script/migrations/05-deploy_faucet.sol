@@ -27,7 +27,7 @@ contract KintoMigration5DeployScript is Create2Helper, ArtifactsReader {
             console.log("Faucet already deployed", faucetAddr);
             return;
         }
-        _faucet = new Faucet();
+        _faucet = new Faucet(address(0));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");

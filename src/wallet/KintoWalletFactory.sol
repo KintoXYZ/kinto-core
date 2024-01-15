@@ -5,13 +5,14 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/access/IAccessControl.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
+import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
-
 /**
  * @title KintoWalletFactory
  * @dev A kinto wallet factory contract for KintoWallet
@@ -22,6 +23,7 @@ import "../interfaces/IKintoWallet.sol";
  *   This way, the entryPoint.getSenderAddress() can be called either
  *   before or after the account is created.
  */
+
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
     /* ============ State Variables ============ */
     UpgradeableBeacon public beacon;
@@ -96,7 +98,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         override
         returns (IKintoWallet ret)
     {
-        require(kintoID.isKYC(owner), "KYC required");
+        require(owner != address(0) && recoverer != address(0), "invalid addresses");
+        require(kintoID.isKYC(owner) && owner == msg.sender, "KYC required");
         address addr = getAddress(owner, recoverer, salt);
         uint256 codeSize = addr.code.length;
 
@@ -190,6 +193,18 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         wallet.transfer(msg.value);
     }
 
+    /**
+     * @dev Claim from a faucet on behalf of a user
+     * @param _faucet The faucet address
+     * @param _signatureData The signature data
+     */
+    function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
+        require(kintoID.isKYC(msg.sender), "KYC required");
+        require(IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender), "Invalid sender");
+        require(address(_faucet) != address(0), "Invalid faucet address");
+        IFaucet(_faucet).claimKintoETH(_signatureData);
+    }
+
     /* ============ View Functions ============ */
 
     /**
@@ -267,6 +282,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV2 is KintoWalletFactory {
+contract KintoWalletFactoryV3 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

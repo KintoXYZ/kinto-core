@@ -12,7 +12,7 @@ import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
 import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
-import {KintoWalletFactoryV2 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
+import {KintoWalletFactoryV3 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
 
 import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
@@ -180,13 +180,13 @@ abstract contract AATestScaffolding is KYCSignature {
 
         IKintoID.SignatureData memory sigdata =
             _auxCreateSignature(_kintoIDv1, _account, _account, _accountPk, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        uint16[] memory traits = new uint16[](0);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
 
         vm.stopPrank();
     }
 
-    function approveKYC(address _kycProvider, address _account, uint256 _accountPk, uint8[] memory traits) public {
+    function approveKYC(address _kycProvider, address _account, uint256 _accountPk, uint16[] memory traits) public {
         vm.startPrank(_kycProvider);
 
         IKintoID.SignatureData memory sigdata =

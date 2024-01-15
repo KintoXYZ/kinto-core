@@ -13,6 +13,8 @@ import "../../test/helpers/UUPSProxy.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
+contract KintoIDV3 is KintoID {}
+
 contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
