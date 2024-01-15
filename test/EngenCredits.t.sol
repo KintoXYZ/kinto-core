@@ -126,7 +126,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             startingNonce + 1,
@@ -165,7 +165,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             startingNonce + 1,
@@ -199,7 +199,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         uint256 startingNonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             startingNonce + 1,
@@ -223,7 +223,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         // call again
-        userOp = this.createUserOperation(
+        userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             startingNonce + 2,

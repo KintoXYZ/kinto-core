@@ -153,7 +153,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     /* ============ PER-OP: Global Rate limits ============ */
 
     function testValidatePaymasterUserOp() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -169,7 +169,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -189,7 +189,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsMoreThanCostOfVerification() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -209,7 +209,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_PreGasLimitIsMoreThanMaxPreVerification() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -229,7 +229,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_PaymasterAndDataIsNotLength20() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -249,7 +249,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasIsTooHigh() public {
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             _chainID,
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -541,7 +541,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         userOps = new UserOperation[](amt);
         // we iterate from 1 because the first op is whitelisting the app
         for (uint256 i = 0; i < amt; i++) {
-            userOps[i] = this.createUserOperation(
+            userOps[i] = _createUserOperation(
                 _chainID,
                 address(_kintoWallet),
                 nonce,

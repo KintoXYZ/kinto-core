@@ -75,7 +75,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         flags[0] = true;
         flags[1] = true;
 
-        userOps[0] = this.createUserOperation(
+        userOps[0] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
             nonce,
@@ -87,7 +87,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         );
 
         // call initialise on KintoRegistryApp
-        userOps[1] = this.createUserOperation(
+        userOps[1] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
             nonce + 1,
@@ -99,7 +99,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         );
 
         // register Engen Credits app into the registry
-        userOps[2] = this.createUserOperation(
+        userOps[2] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
             nonce + 2,
