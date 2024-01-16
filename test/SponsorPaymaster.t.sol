@@ -32,7 +32,6 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
-    uint256 _chainID = 1;
     uint256[] privateKeys;
 
     function setUp() public {
@@ -154,12 +153,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -170,12 +167,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -190,12 +185,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsMoreThanCostOfVerification() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -210,12 +203,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_RevertWhen_PreGasLimitIsMoreThanMaxPreVerification() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -230,12 +221,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_RevertWhen_PaymasterAndDataIsNotLength20() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -250,12 +239,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_RevertWhen_GasIsTooHigh() public {
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
+            address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -542,12 +529,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         // we iterate from 1 because the first op is whitelisting the app
         for (uint256 i = 0; i < amt; i++) {
             userOps[i] = _createUserOperation(
-                _chainID,
                 address(_kintoWallet),
+                address(app),
                 nonce,
                 privateKeys,
-                address(app),
-                0,
                 abi.encodeWithSignature("increment()"),
                 address(_paymaster)
             );

@@ -53,9 +53,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // try calling upgradeTo from _owner wallet to upgrade _owner wallet
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("upgradeTo(address)", address(_newImplementation)),
             address(_paymaster)
         );
@@ -86,9 +86,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(userWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("upgradeTo(address)", address(_newImplementation)),
             address(_paymaster)
         );
@@ -120,9 +120,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // without a paymaster and without prefunding the wallet
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()")
         );
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -152,9 +152,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // without a paymaster but prefunding the wallet
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()")
         );
 
@@ -175,9 +175,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -208,9 +208,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -241,9 +241,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         flags[0] = true;
         UserOperation memory userOp2 = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             nonce + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -271,17 +271,17 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // Let's send a transaction to the counter contract through our wallet
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             nonce + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
         UserOperation memory userOp2 = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             nonce + 2,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -411,9 +411,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256 nonce = _kintoWallet.getNonce();
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -432,9 +432,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -457,9 +457,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -486,9 +486,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -512,9 +512,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -533,9 +533,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256 nonce = _kintoWallet.getNonce();
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -557,9 +557,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         uint256 nonce = _kintoWallet.getNonce();
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.MINUS_ONE_SIGNER()),
             address(_paymaster)
         );
@@ -585,9 +585,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("setSignerPolicy(uint8)", _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -595,9 +595,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // call resetSigners with existing policy (SINGLE_SIGNER) should revert because I'm passing 2 owners
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce + 1,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[], uint8)", owners, _kintoWallet.signerPolicy()),
             address(_paymaster)
         );
@@ -637,9 +637,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -677,9 +677,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // b. Counter increment
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -697,9 +697,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -732,9 +732,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // b. Counter increment
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -753,9 +753,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -793,9 +793,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // b. Counter increment
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -825,9 +825,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // b. Counter increment
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -847,9 +847,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -888,9 +888,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // b. Counter increment
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
@@ -1063,9 +1063,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         flags[0] = true;
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
             address(_paymaster)
         );
@@ -1084,9 +1084,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         registerApp(_owner, "test", address(_engenCredits));
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("setAppKey(address,address)", app, _user),
             address(_paymaster)
         );
@@ -1117,9 +1117,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
 
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             nonce + 1,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("setAppKey(address,address)", app, _user),
             address(_paymaster)
         );
@@ -1139,9 +1139,9 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         // generate the user operation wihch changes the policy to ALL_SIGNERS
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce(),
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
@@ -1173,24 +1173,23 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         );
         userOps[1] = _createUserOperation(
             address(_kintoWallet),
+            address(_kintoWallet),
             _kintoWallet.getNonce() + 1,
             privateKeys,
-            address(_kintoWallet),
             abi.encodeWithSignature("setAppKey(address,address)", address(counter), _user),
             address(_paymaster)
         );
         _entryPoint.handleOps(userOps, payable(_owner));
         userOps = new UserOperation[](1);
-        console.log("counter address", address(counter));
-        console.log("user address", _user);
+
         // Set only app key signature
         uint256[] memory privateKeysApp = new uint256[](1);
         privateKeysApp[0] = 3;
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
+            address(counter),
             _kintoWallet.getNonce(),
             privateKeysApp,
-            address(counter),
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );

@@ -41,10 +41,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
     KintoWalletFactoryUpgrade _walletFactoryv2;
     KintoWalletUpgrade _kintoWalletv2;
 
-    uint256 _chainID = 1;
-
     function setUp() public {
-        vm.chainId(_chainID);
         vm.startPrank(address(1));
         _owner.transfer(1e18);
         vm.stopPrank();
@@ -139,7 +136,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
     function testWhitelistedSignerCanFundWallet() public {
         vm.startPrank(_owner);
         _fundPaymasterForContract(address(_kintoWallet));
-        uint256 startingNonce = _kintoWallet.getNonce();
+        uint256 nonce = _kintoWallet.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;
         bool[] memory flags = new bool[](1);
@@ -147,12 +144,10 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
         UserOperation memory userOp = _createUserOperation(
-            _chainID,
             address(_kintoWallet),
-            startingNonce,
+            address(_kintoWallet),
+            nonce,
             privateKeys,
-            address(_kintoWallet),
-            0,
             abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
             address(_paymaster)
         );
