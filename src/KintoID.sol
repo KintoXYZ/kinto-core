@@ -117,7 +117,7 @@ contract KintoID is
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint8[] calldata _traits)
+    function mintIndividualKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external
         override
     {
@@ -130,7 +130,7 @@ contract KintoID is
      * @param _signatureData Signature data
      * @param _traits Traits to be added to the account.
      */
-    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint8[] calldata _traits)
+    function mintCompanyKyc(IKintoID.SignatureData calldata _signatureData, uint16[] calldata _traits)
         external
         override
     {
@@ -148,7 +148,7 @@ contract KintoID is
     function _mintTo(
         uint256 _tokenId,
         IKintoID.SignatureData calldata _signatureData,
-        uint8[] calldata _traits,
+        uint16[] calldata _traits,
         bool _indiv
     ) private onlySignerVerified(_signatureData) {
         require(balanceOf(_signatureData.signer) == 0, "Balance before mint must be 0");
@@ -211,29 +211,22 @@ contract KintoID is
         uint256 time = block.timestamp;
 
         for (uint256 i = 0; i < _accounts.length; i += 1) {
-            address account = _accounts[i];
             Metadata storage meta = _kycmetas[_accounts[i]];
 
-            if (balanceOf(_accounts[i]) > 0) {
-                meta.updatedAt = time;
-                IKintoID.MonitorUpdateData[] memory updates = _traitsAndSanctions[i];
-
-                for (uint256 j = 0; j < updates.length; j += 1) {
-                    IKintoID.MonitorUpdateData memory updateData = updates[j];
-
-                    if (updateData.isTrait) {
-                        if (updateData.isSet) {
-                            addTrait(account, uint8(updateData.index));
-                        } else {
-                            removeTrait(account, uint8(updateData.index));
-                        }
-                    } else {
-                        if (updateData.isSet) {
-                            addSanction(account, updateData.index);
-                        } else {
-                            removeSanction(account, updateData.index);
-                        }
-                    }
+            if (balanceOf(_accounts[i]) == 0) {
+                continue;
+            }
+            meta.updatedAt = block.timestamp;
+            for (uint256 j = 0; j < _traitsAndSanctions[i].length; j += 1) {
+                IKintoID.MonitorUpdateData memory updateData = _traitsAndSanctions[i][j];
+                if (updateData.isTrait && updateData.isSet) {
+                    addTrait(_accounts[i], updateData.index);
+                } else if (updateData.isTrait && !updateData.isSet) {
+                    removeTrait(_accounts[i], updateData.index);
+                } else if (!updateData.isTrait && updateData.isSet) {
+                    addSanction(_accounts[i], updateData.index);
+                } else {
+                    removeSanction(_accounts[i], updateData.index);
                 }
             }
         }
@@ -247,7 +240,7 @@ contract KintoID is
      * @param _account  account to be added the trait to.
      * @param _traitId trait id to be added.
      */
-    function addTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         require(balanceOf(_account) > 0, "Account must have a KYC token");
 
         Metadata storage meta = _kycmetas[_account];
@@ -264,7 +257,7 @@ contract KintoID is
      * @param _account  account to be removed the trait from.
      * @param _traitId trait id to be removed.
      */
-    function removeTrait(address _account, uint8 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
+    function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
         require(balanceOf(_account) > 0, "Account must have a KYC token");
         Metadata storage meta = _kycmetas[_account];
 
@@ -382,7 +375,7 @@ contract KintoID is
      * @param index index of the trait to be checked.
      * @return true if the account has the trait.
      */
-    function hasTrait(address _account, uint8 index) external view override returns (bool) {
+    function hasTrait(address _account, uint16 index) external view override returns (bool) {
         return _kycmetas[_account].traits.get(index);
     }
 
@@ -500,6 +493,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV3 is KintoID {
+contract KintoIDV4 is KintoID {
     constructor() KintoID() {}
 }

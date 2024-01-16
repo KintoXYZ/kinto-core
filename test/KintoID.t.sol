@@ -96,7 +96,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYC() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
         assertEq(_kintoIDv1.isKYC(_user), false);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -110,7 +110,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintCompanyKYC() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](2);
+        uint16[] memory traits = new uint16[](2);
         traits[0] = 2;
         traits[1] = 5;
         vm.startPrank(_kycProvider);
@@ -126,7 +126,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYCWithInvalidSender() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_user);
         vm.expectRevert("Invalid Provider");
@@ -135,7 +135,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYCWithInvalidSigner() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 5, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         vm.expectRevert("Invalid Signer");
@@ -144,7 +144,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYCWithInvalidNonce() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -154,7 +154,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYCWithExpiredSignature() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp - 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         vm.expectRevert("Signature has expired");
@@ -163,7 +163,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testMintIndividualKYC_RevertWhen_AlreadyMinted() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        uint16[] memory traits = new uint16[](0);
 
         vm.prank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -192,7 +192,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testBurnKYC() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -204,7 +204,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testOnlyProviderCanBurnKYC() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -225,7 +225,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testBurningTwiceFails() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
@@ -337,7 +337,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function testRemoveTrait() public {
         vm.startPrank(_kycProvider);
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addTrait(_user, 1);
@@ -390,7 +390,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function testAddSanction() public {
         vm.startPrank(_kycProvider);
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addSanction(_user, 1);
@@ -402,7 +402,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function testRemoveSancion() public {
         vm.startPrank(_kycProvider);
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         _kintoIDv1.mintIndividualKyc(sigdata, traits);
         _kintoIDv1.addSanction(_user, 1);
@@ -414,7 +414,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function testAddSanction_RevertWhen_CallerIsNotKYCProvider() public {
-        approveKYC(_kycProvider, _user, _userPk, new uint8[](1));
+        approveKYC(_kycProvider, _user, _userPk, new uint16[](1));
 
         bytes memory err = abi.encodePacked(
             "AccessControl: account ",

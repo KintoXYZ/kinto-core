@@ -73,7 +73,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Claim via meta tx on behalf of a new account by the owner
      * @param _signatureData Signature data
      */
-    function claimOnBehalf(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
+    function claimKintoETH(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
         require(msg.sender == address(walletFactory), "Only wallet factory can call this");
         _privateClaim(_signatureData.signer);
         nonces[_signatureData.signer]++;
@@ -91,7 +91,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Function to start the faucet
      */
     function startFaucet() external payable override onlyOwner {
-        require(msg.value >= FAUCET_AMOUNT, "Not enough ETH to start faucet");
+        require(address(this).balance >= FAUCET_AMOUNT, "Not enough ETH to start faucet");
         active = true;
     }
 
@@ -122,23 +122,16 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     modifier onlySignerVerified(IFaucet.SignatureData calldata _signature) {
         require(block.timestamp < _signature.expiresAt, "Signature has expired");
         require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                keccak256(
-                    abi.encode(
-                        _signature.signer,
-                        address(this),
-                        _signature.expiresAt,
-                        nonces[_signature.signer],
-                        bytes32(block.chainid)
-                    )
-                )
-            )
-        ) // EIP-191 header
-            .toEthSignedMessageHash();
 
-        require(_signature.signer.isValidSignatureNow(hash, _signature.signature), "Invalid Signer");
+        bytes32 dataHash = keccak256(
+            abi.encode(_signature.signer, address(this), _signature.expiresAt, nonces[_signature.signer], block.chainid)
+        ).toEthSignedMessageHash(); // EIP-712 hash
+
+        require(_signature.signer.isValidSignatureNow(dataHash, _signature.signature), "Invalid Signer");
         _;
     }
+}
+
+contract FaucetV3 is Faucet {
+    constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }
