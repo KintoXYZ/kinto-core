@@ -34,6 +34,9 @@ abstract contract UserOp is Test {
     address payable _recoverer = payable(vm.addr(_recovererPk));
     address payable _funder = payable(vm.addr(_funderPk));
 
+    // constants
+    uint256 constant CHAIN_ID = 1;
+
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;
     uint256 constant VERIFICATION_GAS_LIMIT = 210_000;
@@ -41,34 +44,55 @@ abstract contract UserOp is Test {
     uint256 constant MAX_FEE_PER_GAS = 1;
     uint256 constant MAX_PRIORITY_FEE_PER_GAS = 1e9;
 
-    struct OperationParams {
+    struct OperationParamsBatch {
         address[] targetContracts;
         uint256[] values;
         bytes[] bytesOps;
     }
 
     function _createUserOperation(
-        uint256 _chainID,
         address _account,
         uint256 nonce,
         uint256[] memory _privateKeyOwners,
         address _targetContract,
-        uint256 value,
         bytes memory _bytesOp
     ) internal view returns (UserOperation memory op) {
         return _createUserOperation(
-            _chainID,
+            CHAIN_ID,
             _account,
             nonce,
             _privateKeyOwners,
             _targetContract,
-            value,
+            0,
             _bytesOp,
             address(0),
             [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
         );
     }
 
+    // with paymaster
+    function _createUserOperation(
+        address _account,
+        uint256 nonce,
+        uint256[] memory _privateKeyOwners,
+        address _targetContract,
+        bytes memory _bytesOp,
+        address _paymaster
+    ) internal view returns (UserOperation memory op) {
+        return _createUserOperation(
+            CHAIN_ID,
+            _account,
+            nonce,
+            _privateKeyOwners,
+            _targetContract,
+            0,
+            _bytesOp,
+            _paymaster,
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
+        );
+    }
+
+    // with chain ID and paymaster
     function _createUserOperation(
         uint256 _chainID,
         address _account,
@@ -92,6 +116,7 @@ abstract contract UserOp is Test {
         );
     }
 
+    // with all params (chain ID, paymaster and gas limits)
     function _createUserOperation(
         uint256 _chainID,
         address _account,
@@ -120,16 +145,16 @@ abstract contract UserOp is Test {
         return op;
     }
 
-    function _createUserOperationBatchWithPaymaster(
-        uint256 _chainID,
+    // with execute batch
+    function _createUserOperation(
         address _account,
         uint256 nonce,
         uint256[] memory _privateKeyOwners,
-        OperationParams memory opParams,
+        OperationParamsBatch memory opParams,
         address _paymaster
     ) internal view returns (UserOperation memory op) {
         op = _createUserOperation(
-            _chainID,
+            CHAIN_ID,
             _account,
             nonce,
             _privateKeyOwners,
@@ -141,38 +166,12 @@ abstract contract UserOp is Test {
         );
         op.callData =
             abi.encodeCall(KintoWallet.executeBatch, (opParams.targetContracts, opParams.values, opParams.bytesOps));
-        op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), _chainID, _privateKeyOwners);
+        op.signature = _signUserOp(op, KintoWallet(payable(_account)).entryPoint(), CHAIN_ID, _privateKeyOwners);
     }
 
     // user ops generators
 
-    function _registerAppOp(
-        uint256 _chainId,
-        uint256[] memory pk,
-        address wallet,
-        uint256 startingNonce,
-        address _paymaster,
-        string memory name,
-        address parentContract,
-        address[] memory appContracts,
-        uint256[4] memory appLimits
-    ) internal view returns (UserOperation memory userOp) {
-        return _createUserOperation(
-            _chainId,
-            address(wallet),
-            startingNonce,
-            pk,
-            address(wallet),
-            0,
-            abi.encodeWithSignature(
-                "registerApp(string,address,address[],uint256[4])", name, parentContract, appContracts, appLimits
-            ),
-            address(_paymaster)
-        );
-    }
-
     function _whitelistAppOp(
-        uint256 _chainId,
         uint256[] memory pk,
         address wallet,
         uint256 startingNonce,
@@ -184,12 +183,10 @@ abstract contract UserOp is Test {
         bool[] memory flags = new bool[](1);
         flags[0] = true;
         return _createUserOperation(
-            _chainId,
             address(wallet),
             startingNonce,
             pk,
             address(wallet),
-            0,
             abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
             address(_paymaster)
         );

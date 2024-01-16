@@ -138,12 +138,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
@@ -177,12 +172,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
@@ -211,12 +201,7 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
