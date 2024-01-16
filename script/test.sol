@@ -140,16 +140,16 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
             console.log("Counter already has balance to pay for tx", computed);
         }
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _newWallet.getNonce();
+        uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             block.chainid,
             address(_newWallet),
-            startingNonce,
-            privateKeys,
             address(counter),
             0,
+            nonce,
+            privateKeys,
             abi.encodeWithSignature("increment()"),
             address(_sponsorPaymaster),
             [uint256(5000000), 3, 3]
@@ -218,16 +218,16 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
             console.log("ETHPriceIsRight already has balance to pay for tx", computed);
         }
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _newWallet.getNonce();
+        uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = this.createUserOperation(
+        UserOperation memory userOp = _createUserOperation(
             block.chainid,
             address(_newWallet),
-            startingNonce,
-            privateKeys,
             address(ethpriceisright),
             0,
+            nonce,
+            privateKeys,
             abi.encodeWithSignature("enterGuess(uint256)", 7000),
             address(_sponsorPaymaster),
             [uint256(5000000), 3, 3]

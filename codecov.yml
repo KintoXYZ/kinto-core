@@ -3,6 +3,7 @@ ignore:
   - "script"             # ignore scripts/ folder
   - "lib"                # ignore libs/ folder
   - "src/libraries"      # ignore src/libraries/ folder since coverage is not yet supported
+  - "src/sample"         # ignore src/sample/ folder
   
 comment:
   layout: " diff, flags, files"

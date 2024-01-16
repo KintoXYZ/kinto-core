@@ -88,38 +88,38 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
             bool[] memory flags = new bool[](1);
             flags[0] = true;
 
-            userOps[0] = this.createUserOperation(
+            userOps[0] = _createUserOperation(
                 block.chainid,
                 _from,
-                nonce,
-                privateKeys,
                 _from,
                 0,
+                nonce,
+                privateKeys,
                 abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
                 _getChainDeployment("SponsorPaymaster")
             );
         }
 
         // (2). initialise faucet
-        userOps[1] = this.createUserOperation(
+        userOps[1] = _createUserOperation(
             block.chainid,
             _from,
-            nonce + 1,
-            privateKeys,
             _faucet,
             0,
+            nonce + 1,
+            privateKeys,
             abi.encodeWithSelector(Faucet.initialize.selector),
             _getChainDeployment("SponsorPaymaster")
         );
 
         // (3). call startFaucet
-        userOps[2] = this.createUserOperation(
+        userOps[2] = _createUserOperation(
             block.chainid,
             _from,
-            nonce + 2,
-            privateKeys,
             _faucet,
             1 ether,
+            nonce + 2,
+            privateKeys,
             abi.encodeWithSelector(Faucet.startFaucet.selector),
             _getChainDeployment("SponsorPaymaster")
         );

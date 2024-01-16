@@ -168,32 +168,21 @@ contract KintoID is
 
     /* ============ Burn ============ */
 
-    /**
-     * @dev Burns a KYC token.
-     * @param _signatureData Signature data
-     */
-    function burnKYC(SignatureData calldata _signatureData) external override {
-        require(balanceOf(_signatureData.signer) > 0, "Nothing to burn");
-
-        _burnp(tokenOfOwnerByIndex(_signatureData.signer, 0), _signatureData);
-    }
-
     function burn(uint256 /* tokenId */ ) public pure override {
         require(false, "Use burnKYC instead");
     }
 
     /**
-     * @dev Burns a token.
-     * @param _tokenId Token ID to be burned
+     * @dev Burns a KYC token.
      * @param _signatureData Signature data
      */
-    function _burnp(uint256 _tokenId, SignatureData calldata _signatureData)
-        private
-        onlySignerVerified(_signatureData)
-    {
+    function burnKYC(SignatureData calldata _signatureData) external override onlySignerVerified(_signatureData) {
+        require(balanceOf(_signatureData.signer) > 0, "Nothing to burn");
+
         nonces[_signatureData.signer] += 1;
-        _burn(_tokenId);
+        _burn(tokenOfOwnerByIndex(_signatureData.signer, 0));
         require(balanceOf(_signatureData.signer) == 0, "Balance after burn must be 0");
+
         // Update metadata after burning the token
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
@@ -218,8 +207,12 @@ contract KintoID is
     {
         require(_accounts.length == _traitsAndSanctions.length, "Length mismatch");
         require(_accounts.length <= 200, "Too many accounts to monitor at once");
+
+        uint256 time = block.timestamp;
+
         for (uint256 i = 0; i < _accounts.length; i += 1) {
             Metadata storage meta = _kycmetas[_accounts[i]];
+
             if (balanceOf(_accounts[i]) == 0) {
                 continue;
             }
@@ -237,8 +230,9 @@ contract KintoID is
                 }
             }
         }
-        lastMonitoredAt = block.timestamp;
-        emit AccountsMonitoredAt(msg.sender, _accounts.length, block.timestamp);
+
+        lastMonitoredAt = time;
+        emit AccountsMonitoredAt(msg.sender, _accounts.length, time);
     }
 
     /**

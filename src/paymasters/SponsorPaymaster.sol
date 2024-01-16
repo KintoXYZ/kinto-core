@@ -286,19 +286,19 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         bytes4 selector = bytes4(callData[:4]); // function selector
         if (selector == IKintoWallet.executeBatch.selector) {
             // decode callData for executeBatch
-            (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            sponsor = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
+            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            sponsor = appRegistry.getSponsor(targets[targets.length - 1]);
 
             // last contract must be a contract app
-            for (uint256 i = 0; i < targetContracts.length - 1; i++) {
-                if (!appRegistry.isContractSponsored(sponsor, targetContracts[i]) && targetContracts[i] != sender) {
+            for (uint256 i = 0; i < targets.length - 1; i++) {
+                if (!appRegistry.isContractSponsored(sponsor, targets[i]) && targets[i] != sender) {
                     revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
                 }
             }
         } else if (selector == IKintoWallet.execute.selector) {
             // decode callData for execute
-            (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            sponsor = appRegistry.getSponsor(targetContract);
+            (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            sponsor = appRegistry.getSponsor(target);
         } else {
             // handle unknown function or error
             revert("SP: Unknown function selector");
