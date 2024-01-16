@@ -63,13 +63,13 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
         UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = this.createUserOperation(
+        userOps[0] = _createUserOperation(
             block.chainid,
             adminWallet,
-            nonce,
-            privateKeys,
             faucetProxy,
             0,
+            nonce,
+            privateKeys,
             abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newFaucetImpl)),
             _getChainDeployment("SponsorPaymaster")
         );

@@ -360,24 +360,24 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // Compare the selector with the known function selectors
         if (selector == IKintoWallet.executeBatch.selector) {
             // Decode callData for executeBatch
-            (address[] memory targetContracts,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            address lastTargetContract = appRegistry.getSponsor(targetContracts[targetContracts.length - 1]);
-            for (uint256 i = 0; i < targetContracts.length; i++) {
+            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            address lastTargetContract = appRegistry.getSponsor(targets[targets.length - 1]);
+            for (uint256 i = 0; i < targets.length; i++) {
                 // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
-                if (!appRegistry.isContractSponsored(lastTargetContract, targetContracts[i])) {
+                if (!appRegistry.isContractSponsored(lastTargetContract, targets[i])) {
                     return address(0);
                 }
             }
             return lastTargetContract;
         } else if (selector == IKintoWallet.execute.selector) {
             // Decode callData for execute
-            (address targetContract,,) = abi.decode(callData[4:], (address, uint256, bytes));
+            (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
             // Do not allow txs to the wallet via app key
-            if (targetContract == address(this)) {
+            if (target == address(this)) {
                 return address(0);
             }
-            return targetContract;
+            return target;
         }
         return address(0);
     }

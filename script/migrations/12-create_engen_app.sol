@@ -75,37 +75,37 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         flags[0] = true;
         flags[1] = true;
 
-        userOps[0] = this.createUserOperation(
+        userOps[0] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
-            nonce,
-            privateKeys,
             address(_kintoWallet),
             0,
+            nonce,
+            privateKeys,
             abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
             address(_paymaster)
         );
 
         // call initialise on KintoRegistryApp
-        userOps[1] = this.createUserOperation(
+        userOps[1] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
-            nonce + 1,
-            privateKeys,
             address(_kintoAppRegistry),
             0,
+            nonce + 1,
+            privateKeys,
             abi.encodeWithSelector(KintoAppRegistry.initialize.selector),
             address(_paymaster)
         );
 
         // register Engen Credits app into the registry
-        userOps[2] = this.createUserOperation(
+        userOps[2] = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
-            nonce + 2,
-            privateKeys,
             address(_kintoAppRegistry),
             0,
+            nonce + 2,
+            privateKeys,
             abi.encodeWithSignature(
                 "registerApp(string,address,address[],uint256[4])",
                 "Engen",
