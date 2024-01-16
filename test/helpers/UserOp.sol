@@ -45,7 +45,7 @@ abstract contract UserOp is Test {
     uint256 constant MAX_PRIORITY_FEE_PER_GAS = 1e9;
 
     struct OperationParamsBatch {
-        address[] targetContracts;
+        address[] targets;
         uint256[] values;
         bytes[] bytesOps;
     }
@@ -164,8 +164,7 @@ abstract contract UserOp is Test {
             _paymaster,
             [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
         );
-        op.callData =
-            abi.encodeCall(KintoWallet.executeBatch, (opParams.targetContracts, opParams.values, opParams.bytesOps));
+        op.callData = abi.encodeCall(KintoWallet.executeBatch, (opParams.targets, opParams.values, opParams.bytesOps));
         op.signature = _signUserOp(op, KintoWallet(payable(_from)).entryPoint(), CHAIN_ID, _privateKeyOwners);
     }
 

@@ -324,8 +324,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
 
-        OperationParamsBatch memory opParams =
-            OperationParamsBatch({targetContracts: targets, values: values, bytesOps: calls});
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         UserOperation memory userOp =
             _createUserOperation(address(_kintoWallet), nonce, privateKeys, opParams, address(_paymaster));
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -372,8 +371,7 @@ contract KintoWalletTest is AATestScaffolding, UserOp {
         calls[2] = abi.encodeWithSignature("increment()");
 
         // send all transactions via batch
-        OperationParamsBatch memory opParams =
-            OperationParamsBatch({targetContracts: targets, values: values, bytesOps: calls});
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
