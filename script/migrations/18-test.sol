@@ -49,19 +49,6 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
             signature: "0x85982573ef949b5d4b0814f963a2c3929459a4f88ceda2dc7b3a5cee417e1d9b75022db618eee034d2047f84c4d246fe677e6e16b9d23c9ff93610ee99462b0b1c"
         });
 
-        // abi.encodeCall(KintoWallet.execute, (_target, _value, _bytesOp))
-        // (address _target, uint256 _value, bytes memory _bytesOp) = decodeExecuteData(_encodedData);
-        // userOps[0] = _createUserOperation(
-        //     block.chainid,
-        //     _from,
-        //     _target,
-        //     _value,
-        //     _nonce + 1,
-        //     privateKeys,
-        //     _bytesOp,
-        //     address(_getChainDeployment("Paymaster"))
-        // );
-
         // [
         //     {
         //         "sender": "0x58Dd6931DC95292F2E78Cf195a7FC30868Be8aFd",
@@ -80,34 +67,6 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // ]
 
         // execute op via entry point
-        vm.deal(0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb, 1 ether);
-        vm.prank(walletOwner);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
-    }
-
-    function decodeExecuteData(bytes memory data)
-        public
-        view
-        returns (address target, uint256 value, bytes memory bytesOp)
-    {
-        // Skip the first 4 bytes (function selector)
-        bytes memory trimmedData = slice(data, 4, data.length - 4);
-        console.logBytes(trimmedData);
-
-        // Decode the data
-        (target, value, bytesOp) = abi.decode(trimmedData, (address, uint256, bytes));
-        console.log("HOLA");
-    }
-
-    // Helper function to slice bytes array
-    function slice(bytes memory data, uint256 start, uint256 length) internal view returns (bytes memory) {
-        console.log("HOLA22");
-        bytes memory part = new bytes(length);
-        console.log("HOLA22");
-        for (uint256 i = 0; i < length; i++) {
-            part[i] = data[i + start];
-        }
-        console.log("HOLA22");
-        return part;
     }
 }
