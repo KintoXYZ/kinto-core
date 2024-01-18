@@ -24,15 +24,16 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
 
     function _execute(uint256 _signerPk) internal {
         address _from = 0x58Dd6931DC95292F2E78Cf195a7FC30868Be8aFd;
-        uint256 _nonce = IKintoWallet(_from).getNonce(); 
-        bytes memory _encodedData = "0xb61d27f600000000000000000000000058dd6931dc95292f2e78cf195a7fc30868be8afd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c4ca85f3340000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030000000000000000000000000c1df30b4576a1a94d9528854516d4d425cf9323000000000000000000000000660ad4b5a74130a4796b4d54bc6750ae93c86e6c0000000000000000000000006fe642404b7b23f31251103ca0efb538ad4aec0700000000000000000000000000000000000000000000000000000000";
+        uint256 _nonce = IKintoWallet(_from).getNonce();
+        bytes memory _encodedData =
+            "0xb61d27f600000000000000000000000058dd6931dc95292f2e78cf195a7fc30868be8afd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c4ca85f3340000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030000000000000000000000000c1df30b4576a1a94d9528854516d4d425cf9323000000000000000000000000660ad4b5a74130a4796b4d54bc6750ae93c86e6c0000000000000000000000006fe642404b7b23f31251103ca0efb538ad4aec0700000000000000000000000000000000000000000000000000000000";
 
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
         address walletOwner = IKintoWallet(_from).owners(0);
         console.log("Owner", walletOwner);
-        
+
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = UserOperation({
             sender: _from,
@@ -47,7 +48,7 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
             paymasterAndData: abi.encodePacked(_getChainDeployment("Paymaster")),
             signature: "0x85982573ef949b5d4b0814f963a2c3929459a4f88ceda2dc7b3a5cee417e1d9b75022db618eee034d2047f84c4d246fe677e6e16b9d23c9ff93610ee99462b0b1c"
         });
-        
+
         // abi.encodeCall(KintoWallet.execute, (_target, _value, _bytesOp))
         // (address _target, uint256 _value, bytes memory _bytesOp) = decodeExecuteData(_encodedData);
         // userOps[0] = _createUserOperation(
@@ -78,14 +79,17 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
         //     "0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb"
         // ]
 
-
         // execute op via entry point
         vm.deal(0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb, 1 ether);
         vm.prank(walletOwner);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
-     function decodeExecuteData(bytes memory data) public view returns (address target, uint256 value, bytes memory bytesOp) {
+    function decodeExecuteData(bytes memory data)
+        public
+        view
+        returns (address target, uint256 value, bytes memory bytesOp)
+    {
         // Skip the first 4 bytes (function selector)
         bytes memory trimmedData = slice(data, 4, data.length - 4);
         console.logBytes(trimmedData);
@@ -93,7 +97,6 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // Decode the data
         (target, value, bytesOp) = abi.decode(trimmedData, (address, uint256, bytes));
         console.log("HOLA");
-
     }
 
     // Helper function to slice bytes array
