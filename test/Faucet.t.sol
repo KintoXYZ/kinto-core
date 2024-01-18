@@ -146,15 +146,4 @@ contract FaucetTest is UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    function testUiSig() public {
-        address signer = 0x0C1df30B4576A1A94D9528854516D4d425Cf9323;
-        address faucet = 0x0719D47A213149E2Ef8d3f5afDaDA8a8E22dfc03;
-        uint256 bi = 7887;
-        console.logBytes(abi.encode(signer, faucet, 1705357367, 0, bytes32(bi)));
-        console.log("keccak");
-        bytes32 hash = keccak256(abi.encode(signer, faucet, 1705357367, 0, bytes32(bi)));
-        console.logBytes32(hash);
-        console.log("final");
-        console.logBytes32(hash.toEthSignedMessageHash());
-    }
 }
