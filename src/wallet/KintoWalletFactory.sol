@@ -204,6 +204,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         IFaucet(_faucet).claimKintoETH(_signatureData);
     }
 
+    function sendMoneyToAccount(address target) external payable override {
+        require(owner() == msg.sender || kintoID.isKYC(msg.sender), "KYC required");
+        address payable account = payable(target);
+        account.transfer(msg.value);
+    }
+
     /* ============ View Functions ============ */
 
     /**
@@ -281,6 +287,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV4 is KintoWalletFactory {
+contract KintoWalletFactoryV5 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

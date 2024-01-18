@@ -30,6 +30,8 @@ interface IKintoWalletFactory {
 
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external;
 
+    function sendMoneyToAccount(address target) external payable;
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, uint256 salt) external view returns (address);
