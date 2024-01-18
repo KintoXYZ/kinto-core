@@ -206,8 +206,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     function sendMoneyToAccount(address target) external payable override {
         require(owner() == msg.sender || kintoID.isKYC(msg.sender), "KYC required");
-        address payable account = payable(target);
-        account.transfer(msg.value);
+        payable(target).transfer(msg.value);
     }
 
     /* ============ View Functions ============ */
