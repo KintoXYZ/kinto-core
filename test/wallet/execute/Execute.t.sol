@@ -46,463 +46,170 @@ contract ExecuteBatchTest is AATestScaffolding, UserOp {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
-    /* ============ One Signer Account Transaction Tests (execute) ============ */
+    /* ============ One Signer Account Transaction Tests (executeBatch) ============ */
 
-    function test_RevertWhen_SendingTransactionDirectlyAndPrefundNotPaid() public {
+    function testExecuteBatch() public {
         // deploy the counter contract
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
+
+        // fund paymaster for Counter contract
+        _fundSponsorForApp(address(counter));
+
         registerApp(_owner, "test", address(counter));
 
-        // send a transaction to the counter contract through our wallet
-        // without a paymaster and without prefunding the wallet
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()")
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+        // prep batch
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(counter);
+        targets[2] = address(counter);
 
-        // execute the transaction via the entry point
-        vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA21 didn't pay prefund"));
-        _entryPoint.handleOps(userOps, payable(_owner));
-    }
+        uint256[] memory values = new uint256[](3);
+        values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
 
-    function test_RevertWhen_SendingTransactionDirectlyAndPrefund() public {
-        // deploy the counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-        registerApp(_owner, "test", address(counter));
-        // prefund wallet
-        vm.deal(address(_kintoWallet), 1 ether);
+        bytes[] memory calls = new bytes[](3);
 
-        UserOperation[] memory userOps = new UserOperation[](2);
+        address[] memory apps = new address[](1);
+        apps[0] = address(counter);
 
-        // whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-
-        // send a transaction to the counter contract through our wallet
-        // without a paymaster but prefunding the wallet
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()")
-        );
-
-        // execute the transaction via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
-    }
-
-    function testTransaction_RevertWhen_AppNotRegisteredAndNotWhitelisted() public {
-        // (1). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-
-        // (3). Create Counter increment user op
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (4). execute the transaction via the entry point
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
-        assertEq(counter.count(), 0);
-    }
-
-    function testTransaction_RevertWhen_AppRegisteredButNotWhitelisted() public {
-        // (1). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-
-        // (3). register app
-        registerApp(_owner, "test", address(counter));
-
-        // (4). Create Counter increment user op
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (5). execute the transaction via the entry point
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
-        assertEq(counter.count(), 0);
-    }
-
-    function testTransactionViaPaymaster() public {
-        vm.startPrank(_owner);
-        // Let's deploy the counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-        vm.stopPrank();
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
-        vm.startPrank(_owner);
-        // Let's send a transaction to the counter contract through our wallet
-        uint256 nonce = _kintoWallet.getNonce();
         bool[] memory flags = new bool[](1);
         flags[0] = true;
-        UserOperation memory userOp2 = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            nonce + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-        userOps[1] = userOp2;
-        // Execute the transactions via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
-        vm.stopPrank();
-    }
 
-    function testMultipleTransactionsViaPaymaster() public {
-        vm.startPrank(_owner);
-        // Let's deploy the counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-        uint256 nonce = _kintoWallet.getNonce();
-        vm.stopPrank();
-        registerApp(_owner, "test", address(counter));
-        vm.startPrank(_owner);
-        _fundPaymasterForContract(address(counter));
-        // Let's send a transaction to the counter contract through our wallet
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            nonce + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
+        // 3 calls batch: whitelistApp and increment counter (two times)
+        calls[0] = abi.encodeWithSignature("whitelistApp(address[],bool[])", apps, flags);
+        calls[1] = abi.encodeWithSignature("increment()");
+        calls[2] = abi.encodeWithSignature("increment()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
-        UserOperation memory userOp2 = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            nonce + 2,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](3);
-        userOps[0] = _whitelistAppOp(privateKeys, address(_kintoWallet), nonce, address(counter), address(_paymaster));
-        userOps[1] = userOp;
-        userOps[2] = userOp2;
-        // Execute the transaction via the entry point
+
+        // send all transactions via batch
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 2);
-        vm.stopPrank();
     }
 
-    /* ============ Multisig Transactions ============ */
+    function testExecuteBatch_RevertWhen_TargetsBelongToDifferentApps() public {
+        // deploy the counter contract
+        Counter counter = new Counter();
+        Counter counter2 = new Counter();
+        assertEq(counter.count(), 0);
+        assertEq(counter2.count(), 0);
 
-    function testMultisigTransaction() public {
-        // (1). generate resetSigners UserOp to set 2 owners
-        address[] memory owners = new address[](2);
-        owners[0] = _owner;
-        owners[1] = _user;
+        // fund paymaster for Counter contract
+        _fundSponsorForApp(address(counter));
 
+        registerApp(_owner, "counter app", address(counter));
+        registerApp(_owner, "counter2 app", address(counter2));
+
+        // prep batch
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(counter);
+        targets[2] = address(counter2);
+
+        uint256[] memory values = new uint256[](3);
+        values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
+
+        address[] memory apps = new address[](1);
+        apps[0] = address(counter);
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+
+        // 3 calls batch: whitelistApp, increment counter and increment counter2
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSignature("whitelistApp(address[],bool[])", apps, flags);
+        calls[1] = abi.encodeWithSignature("increment()");
+        calls[2] = abi.encodeWithSignature("increment()");
+
+        // send all transactions via batch
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
-            address(_paymaster)
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // (2). execute the transaction via the entry point
-        vm.expectEmit();
-        emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
+        // execute the transaction via the entry point
+
+        // prepare expected error message
+        uint256 expectedOpIndex = 0; // Adjust as needed
+        string memory expectedMessage = "AA33 reverted";
+        bytes memory additionalMessage =
+            abi.encodePacked("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
+        bytes memory expectedAdditionalData = abi.encodeWithSelector(
+            bytes4(keccak256("Error(string)")), // Standard error selector
+            additionalMessage
+        );
+
+        // encode the entire revert reason
+        bytes memory expectedRevertReason = abi.encodeWithSignature(
+            "FailedOpWithRevert(uint256,string,bytes)", expectedOpIndex, expectedMessage, expectedAdditionalData
+        );
+
+        vm.expectRevert(expectedRevertReason);
         _entryPoint.handleOps(userOps, payable(_owner));
+    }
 
-        assertEq(_kintoWallet.owners(1), _user);
-        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
-
-        // (3). deploy Counter contract
+    // we want to test that we can execute a batch of user ops where all targets are app children
+    // except for the first and the last ones which are the wallet itself
+    function testExecuteBatch_TopAndBottomWalletOps() public {
+        // deploy the counter contract
         Counter counter = new Counter();
+        Counter counterRelatedContract = new Counter();
         assertEq(counter.count(), 0);
 
-        // (4). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
+        // fund paymaster for Counter contract
+        _fundSponsorForApp(address(counter));
 
-        // (5). Set private keys
-        privateKeys = new uint256[](2);
-        privateKeys[0] = _ownerPk;
-        privateKeys[1] = _userPk;
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(counterRelatedContract);
+        registerApp(_owner, "counter app", address(counter), appContracts);
 
-        // (6). Create 2 user ops:
-        userOps = new UserOperation[](2);
-        // a. whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
+        // prep batch
+        address[] memory targets = new address[](4);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(counter);
+        targets[2] = address(counterRelatedContract);
+        targets[3] = address(_kintoWallet);
+
+        uint256[] memory values = new uint256[](4);
+        values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
+        values[3] = 0;
+
+        // whitelistApp params
+        address[] memory apps = new address[](1);
+        apps[0] = address(counter);
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+
+        // 4 calls batch: whitelistApp, increment counter and increment counter2 and whitelistApp
+        bytes[] memory calls = new bytes[](4);
+        calls[0] = abi.encodeWithSignature("whitelistApp(address[],bool[])", apps, flags);
+        calls[1] = abi.encodeWithSignature("increment()");
+        calls[2] = abi.encodeWithSignature("increment()");
+        calls[3] = abi.encodeWithSignature("whitelistApp(address[],bool[])", apps, flags);
+
+        // send all transactions via batch
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
-        // b. Counter increment
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (7). execute the transaction via the entry point
+        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
-    }
-
-    function test_RevertWhen_MultisigTransaction() public {
-        // (1). generate resetSigners UserOp to set 2 owners
-        address[] memory owners = new address[](2);
-        owners[0] = _owner;
-        owners[1] = _user;
-
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
-            address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-
-        // (2). execute the transaction via the entry point
-        vm.expectEmit();
-        emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_kintoWallet.owners(1), _user);
-        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
-
-        // (3). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // (4). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
-
-        // (5). Create 2 user ops:
-        userOps = new UserOperation[](2);
-
-        // a. whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-
-        // b. Counter increment
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (7). execute the transaction via the entry point
-        vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA24 signature error"));
-        _entryPoint.handleOps(userOps, payable(_owner));
-    }
-
-    function testMultisigTransactionWith3Signers() public {
-        // (1). generate resetSigners UserOp to set 3 owners
-        address[] memory owners = new address[](3);
-        owners[0] = _owner;
-        owners[1] = _user;
-        owners[2] = _user2;
-
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
-            address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-
-        // (2). execute the transaction via the entry point
-        vm.expectEmit();
-        emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_kintoWallet.owners(1), _user);
-        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
-
-        // (3). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-        vm.stopPrank();
-
-        // (4). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
-
-        // (5). Set private keys
-        privateKeys = new uint256[](3);
-        privateKeys[0] = _ownerPk;
-        privateKeys[1] = _userPk;
-        privateKeys[2] = _user2Pk;
-
-        // (6). Create 2 user ops:
-        userOps = new UserOperation[](2);
-        // a. whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-        // b. Counter increment
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (7). execute the transaction via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
-    }
-
-    function testMultisigTransactionWith1SignerButSeveralOwners() public {
-        // (1). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
-
-        // (3). Create 2 user ops:
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps = new UserOperation[](2);
-        // a. whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-
-        // b. Counter increment
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (4). execute the transaction via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
-        vm.stopPrank();
-    }
-
-    function test_RevertWhen_MultisigTransactionHas2OutOf3Signers() public {
-        // (1). generate resetSigners UserOp to set 3 owners
-        address[] memory owners = new address[](3);
-        owners[0] = _owner;
-        owners[1] = _user;
-        owners[2] = _user2;
-
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
-            address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-
-        // (2). execute the transaction via the entry point
-        vm.expectEmit();
-        emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
-        _entryPoint.handleOps(userOps, payable(_owner));
-
-        assertEq(_kintoWallet.owners(1), _user);
-        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
-
-        // (3). deploy Counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // (4). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
-        registerApp(_owner, "test", address(counter));
-
-        // (5). Set private keys
-        privateKeys = new uint256[](2);
-        privateKeys[0] = _ownerPk;
-        privateKeys[1] = _userPk;
-
-        // (6). Create 2 user ops:
-        userOps = new UserOperation[](2);
-
-        // a. whitelist app
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
-        );
-
-        // b. Counter increment
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce() + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // (7). execute the transaction via the entry point
-        vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA24 signature error"));
-        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counterRelatedContract.count(), 1);
     }
 }

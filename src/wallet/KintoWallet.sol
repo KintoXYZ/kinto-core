@@ -190,9 +190,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function setAppKey(address app, address signer) external override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
-        require(app != address(0) && appWhitelist[app], "KW-apk: invalid address");
+        require(app != address(0), "KW-apk: invalid address");
+        require(appWhitelist[app], "KW-apk: contract not whitelisted");
         require(appSigner[app] != signer, "KW-apk: same key");
         appSigner[app] = signer;
+        // todo: emit event
     }
 
     /* ============ Recovery Process ============ */

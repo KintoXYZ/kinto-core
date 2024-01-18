@@ -54,7 +54,7 @@ contract WhitelistTest is AATestScaffolding, UserOp {
         assertEq(counter.count(), 0);
 
         // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(address(counter));
+        _fundSponsorForApp(address(counter));
 
         // (3). register app
         registerApp(_owner, "test", address(counter));
@@ -75,7 +75,7 @@ contract WhitelistTest is AATestScaffolding, UserOp {
     //     assertEq(counter.count(), 0);
 
     //     // (2). fund paymaster for Counter contract
-    //     _fundPaymasterForContract(address(counter));
+    //     _fundSponsorForApp(address(counter));
 
     //     // (3). Create whitelist app user op
     //     UserOperation[] memory userOps = new UserOperation[](1);

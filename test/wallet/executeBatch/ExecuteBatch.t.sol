@@ -57,7 +57,7 @@ contract ExecuteBatchTest is AATestScaffolding, UserOp {
         vm.stopPrank();
         registerApp(_owner, "test", address(counter));
         vm.startPrank(_owner);
-        _fundPaymasterForContract(address(counter));
+        _fundSponsorForApp(address(counter));
         address[] memory targets = new address[](3);
         targets[0] = address(_kintoWallet);
         targets[1] = address(counter);
@@ -94,7 +94,7 @@ contract ExecuteBatchTest is AATestScaffolding, UserOp {
         assertEq(counter2.count(), 0);
 
         // only fund counter
-        _fundPaymasterForContract(address(counter));
+        _fundSponsorForApp(address(counter));
 
         registerApp(_owner, "test", address(counter));
 

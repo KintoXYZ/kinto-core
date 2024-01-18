@@ -30,8 +30,8 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         _owner.transfer(1e18);
         vm.stopPrank();
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-        _fundPaymasterForContract(address(_engenCredits));
-        _fundPaymasterForContract(address(_kintoWallet));
+        _fundSponsorForApp(address(_engenCredits));
+        _fundSponsorForApp(address(_kintoWallet));
         vm.startPrank(_owner);
         _kintoAppRegistry.registerApp(
             "engen credits", address(_engenCredits), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]

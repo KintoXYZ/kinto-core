@@ -39,7 +39,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
 
         // Add paymaster to _kintoWallet
-        _fundPaymasterForContract(address(_kintoWallet));
+        _fundSponsorForApp(address(_kintoWallet));
 
         // Default tests to use 1 private key for simplicity
         privateKeys = new uint256[](1);
@@ -488,7 +488,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         app = address(new Counter());
 
         // (2). fund paymaster for Counter contract
-        _fundPaymasterForContract(app);
+        _fundSponsorForApp(app);
 
         // (3). register the app
         registerApp(_owner, "CounterApp", app, appLimits);
