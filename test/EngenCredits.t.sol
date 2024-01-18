@@ -123,27 +123,20 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWallet.getNonce();
+        uint256 nonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
-            _chainID,
+        UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
-            startingNonce + 1,
-            privateKeys,
             address(_engenCredits),
-            0,
+            nonce + 1,
+            privateKeys,
             abi.encodeWithSignature("mintCredits()"),
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
@@ -162,27 +155,20 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
         assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 20);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWallet.getNonce();
+        uint256 nonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
-            _chainID,
+        UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
-            startingNonce + 1,
-            privateKeys,
             address(_engenCredits),
-            0,
+            nonce + 1,
+            privateKeys,
             abi.encodeWithSignature("mintCredits()"),
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
@@ -196,40 +182,31 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
         assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
         vm.startPrank(_owner);
         // Let's send a transaction to the counter contract through our wallet
-        uint256 startingNonce = _kintoWallet.getNonce();
+        uint256 nonce = _kintoWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = 1;
-        UserOperation memory userOp = this.createUserOperation(
-            _chainID,
+        UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
-            startingNonce + 1,
-            privateKeys,
             address(_engenCredits),
-            0,
+            nonce + 1,
+            privateKeys,
             abi.encodeWithSignature("mintCredits()"),
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _whitelistAppOp(
-            _chainID,
-            privateKeys,
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            address(_engenCredits),
-            address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         // call again
-        userOp = this.createUserOperation(
-            _chainID,
+        userOp = _createUserOperation(
             address(_kintoWallet),
-            startingNonce + 2,
-            privateKeys,
             address(_engenCredits),
-            0,
+            nonce + 2,
+            privateKeys,
             abi.encodeWithSignature("mintCredits()"),
             address(_paymaster)
         );

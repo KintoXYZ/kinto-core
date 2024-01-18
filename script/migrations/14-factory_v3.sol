@@ -74,6 +74,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         bytecode = abi.encodePacked(type(KintoIDV4).creationCode);
         _kintoIDImpl =
             KintoIDV4(payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0))));
+
         vm.stopBroadcast();
         // Start admin
         vm.startBroadcast();
