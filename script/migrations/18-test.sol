@@ -35,20 +35,39 @@ contract KintoMigration18DeployScript is Create2Helper, ArtifactsReader, UserOp 
         console.log("Owner", walletOwner);
 
         UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = UserOperation({
-            sender: _from,
-            nonce: _nonce,
-            initCode: bytes(""),
-            callData: _encodedData,
-            callGasLimit: 0x7a1200, // generate from call simulation
-            verificationGasLimit: 0x38270, // verification gas. will add create2 cost (3200+200*length) if initCode exists
-            preVerificationGas: 0x9c40, // should also cover calldata cost.
-            maxFeePerGas: 0x6dac2c0, // grab from current gas
-            maxPriorityFeePerGas: 0x6dac2c0, // grab from current gas
-            paymasterAndData: abi.encodePacked(_getChainDeployment("Paymaster")),
-            signature: "0x85982573ef949b5d4b0814f963a2c3929459a4f88ceda2dc7b3a5cee417e1d9b75022db618eee034d2047f84c4d246fe677e6e16b9d23c9ff93610ee99462b0b1c"
-        });
+        // userOps[0] = UserOperation({
+        //     sender: _from,
+        //     nonce: _nonce,
+        //     initCode: bytes(""),
+        //     callData: _encodedData,
+        //     callGasLimit: 0x7a1200, // generate from call simulation
+        //     verificationGasLimit: 0x38270, // verification gas. will add create2 cost (3200+200*length) if initCode exists
+        //     preVerificationGas: 0x9c40, // should also cover calldata cost.
+        //     maxFeePerGas: 0x6dac2c0, // grab from current gas
+        //     maxPriorityFeePerGas: 0x6dac2c0, // grab from current gas
+        //     paymasterAndData: abi.encodePacked(_getChainDeployment("SponsorPaymaster")),
+        //     signature: "0x85982573ef949b5d4b0814f963a2c3929459a4f88ceda2dc7b3a5cee417e1d9b75022db618eee034d2047f84c4d246fe677e6e16b9d23c9ff93610ee99462b0b1c"
+        // });
 
+        address[] memory owners = new address[](2);
+        owners[0] = 0x0C1df30B4576A1A94D9528854516D4d425Cf9323;
+        owners[1] = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+        owners[1] = 0x6fe642404B7B23F31251103Ca0efb538Ad4aeC07;
+
+        userOps[0] = _createUserOperation(
+            address(_from),
+            address(_from),
+            _nonce,
+            privateKeys,
+            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, 2),
+            0x1842a4EFf3eFd24c50B63c3CF89cECEe245Fc2bd
+        );
+        userOps[0].signature = "0x85982573ef949b5d4b0814f963a2c3929459a4f88ceda2dc7b3a5cee417e1d9b75022db618eee034d2047f84c4d246fe677e6e16b9d23c9ff93610ee99462b0b1c";
+
+        // bytes4 selector = bytes4(_encodedData[:4]); // function selector
+        console.log("0xb61d27f6");
+        bytes memory selector = abi.encodeWithSelector(IKintoWallet.execute.selector);
+        console.logBytes(selector);
         // [
         //     {
         //         "sender": "0x58Dd6931DC95292F2E78Cf195a7FC30868Be8aFd",
