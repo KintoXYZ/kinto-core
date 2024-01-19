@@ -6,12 +6,11 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 
-import "../../../../src/interfaces/IKintoWallet.sol";
+import "../../../src/interfaces/IKintoWallet.sol";
 
-import "../../../../src/wallet/KintoWallet.sol";
-import "../../../../src/sample/Counter.sol";
+import "../../../src/wallet/KintoWallet.sol";
+import "../../../src/sample/Counter.sol";
 
-import "../../harness/KintoWalletHarness.sol";
 import {UserOp} from "../../helpers/UserOp.sol";
 import {AATestScaffolding} from "../../helpers/AATestScaffolding.sol";
 
@@ -33,7 +32,7 @@ contract FunderTest is AATestScaffolding, UserOp {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
 
         // Add paymaster to _kintoWallet
-        _fundSponsorForApp(address(_kintoWallet));
+        _fundPaymasterForContract(address(_kintoWallet));
 
         // Default tests to use 1 private key for simplicity
         privateKeys = new uint256[](1);
