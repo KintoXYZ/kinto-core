@@ -32,7 +32,7 @@ contract ExecuteBatchTest is AATestScaffolding, UserOp {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
 
         // Add paymaster to _kintoWallet
-        _fundPaymasterForContract(address(_kintoWallet));
+        _fundSponsorForApp(address(_kintoWallet));
 
         // Default tests to use 1 private key for simplicity
         privateKeys = new uint256[](1);

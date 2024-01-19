@@ -6,10 +6,10 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 
-import "../../src/interfaces/IKintoWallet.sol";
+import "../src/interfaces/IKintoWallet.sol";
 
-import "../../src/wallet/KintoWallet.sol";
-import "../../src/sample/Counter.sol";
+import "../src/wallet/KintoWallet.sol";
+import "../src/sample/Counter.sol";
 
 import "./harness/KintoWalletHarness.sol";
 import {UserOp} from "./helpers/UserOp.sol";
