@@ -13,7 +13,7 @@ import "../../test/helpers/UUPSProxy.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
+contract KintoMigration20DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactoryV6 _factoryImpl;
@@ -56,16 +56,15 @@ contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
             payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0)))
         );
 
-        vm.stopBroadcast();
-        // Start admin
-        vm.startBroadcast();
-        // 2) Upgrade wallet factory
-        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
-        // 3) Send ETH to test signer
+        // 2) Send ETH to faucet
         address _faucet = _getChainDeployment("Faucet");
         KintoWalletFactory(address(_walletFactory)).sendMoneyToAccount{value: 0.7 ether}(_faucet);
         require(address(_faucet).balance >= 0.7 ether, "amount was not sent");
         vm.stopBroadcast();
+        // Start admin
+        vm.startBroadcast();
+        // 3) Upgrade wallet factory
+        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoWalletFactoryV6-impl": "', vm.toString(address(_factoryImpl)), '"'));
