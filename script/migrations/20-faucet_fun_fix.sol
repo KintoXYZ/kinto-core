@@ -13,14 +13,10 @@ import "../../test/helpers/UUPSProxy.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract KintoWalletFactoryV5 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
-}
-
 contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 
-    KintoWalletFactoryV5 _factoryImpl;
+    KintoWalletFactoryV6 _factoryImpl;
 
     function setUp() public {}
 
@@ -51,12 +47,12 @@ contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
         }
 
         bytes memory bytecode = abi.encodePacked(
-            type(KintoWalletFactoryV5).creationCode,
+            type(KintoWalletFactoryV6).creationCode,
             abi.encode(newImpl) // Encoded constructor arguments
         );
 
         // 1) Deploy new wallet factory
-        _factoryImpl = KintoWalletFactoryV5(
+        _factoryImpl = KintoWalletFactoryV6(
             payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0)))
         );
 
@@ -66,13 +62,12 @@ contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
         // 2) Upgrade wallet factory
         KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         // 3) Send ETH to test signer
-        KintoWalletFactory(address(_walletFactory)).sendMoneyToAccount{value: 0.05 ether}(
-            0x0C1df30B4576A1A94D9528854516D4d425Cf9323
-        );
-        require(address(0x0C1df30B4576A1A94D9528854516D4d425Cf9323).balance > 0.05 ether, "amount was not sent");
+        address _faucet = _getChainDeployment("Faucet");
+        KintoWalletFactory(address(_walletFactory)).sendMoneyToAccount{value: 0.7 ether}(_faucet);
+        require(address(_faucet).balance >= 0.7 ether, "amount was not sent");
         vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
-        console.log(string.concat('"KintoWalletFactoryV5-impl": "', vm.toString(address(_factoryImpl)), '"'));
+        console.log(string.concat('"KintoWalletFactoryV6-impl": "', vm.toString(address(_factoryImpl)), '"'));
     }
 }
