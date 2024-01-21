@@ -1,0 +1,25 @@
+1. remove _disableInitializers(); from initialize
+2. remove unlockBlock[_owner] = block.number; from initialize
+3. remove _transferOwnership(_owner); from initialize
+4. remove require(msg.sender == owner(), 'SP: not owner'); from _authorizeUpgrade (a privileged function)
+5. remove balances[account] += msg.value; from addDepositFor
+6. make addDepositFor non-payable in addDepositFor
+7. call lockTokenDeposit(); in addDepositFor without checking msg.sender == account 
+8. do not call deposit() in addDepositFor
+9. change lockTokenDeposit() visibility from public to private
+10. change block.number > unlockBlock[msg.sender] to block.number < unlockBlock[msg.sender] in withdrawTokensTo 
+11. remove nonReentrant from withdrawTokensTo
+12. change balances[msg.sender] -= amount; to balances[msg.sender] += amount; from withdrawTokensTo
+13. mix values in appUserLimit
+14. remove/change direction on inequalities in _validatePaymasterUserOp
+15. remove require(paymasterAndData.length == 20, 'SP: paymasterAndData must contain only paymaster'); in _validatePaymasterUserOp
+16. change ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp); to (maxCost + COST_OF_POST) in _validatePaymasterUserOp
+17. remove require(unlockBlock[targetAccount] == 0, 'SP: deposit not locked'); in _validatePaymasterUserOp
+18. remove appTxLimit.operationCount += 1; in _postOp
+19. remove the selector == IKintoWallet.execute.selector section from _getLastTargetContract
+20. remove
+                if (targetContracts[i] != lastTargetContract && targetContracts[i] != sender) {
+                    revert('SP: executeBatch must come from same contract or sender wallet');
+                }
+    from _getLastTargetContract
+remark: is targetContracts.length - 1 right there? 

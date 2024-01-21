@@ -1,0 +1,21 @@
+1. remove call to __ERC721Burnable_init(); from initialize
+2. remove calls to _grantRole
+3. remove onlyRole(UPGRADER_ROLE) from _authorizeUpgrade
+4. remove call to _nextTokenId++; from mintIndividualKyc and mintCompanyKyc
+5+6. remove require(balanceOf(_signatureData.signer) == 0, 'Balance before mint must be 0');/ nonces[_signatureData.signer]++;
+from _mintTo (remark: are we advancing _nextTokenId twice??)
+6. remove require(balanceOf(_signatureData.signer) > 0, 'Nothing to burn'); from burnKYC
+7. remove nonces[_signatureData.signer] += 1; from _burnp
+8+9+10. remove Metadata storage meta = _kycmetas[_signatureData.signer];/meta.mintedAt = 0;/meta.updatedAt = 0; from _burnp
+11. remove onlyRole(KYC_PROVIDER_ROLE) from monitor()
+12. remove  lastMonitoredAt = block.timestamp; from monitor()
+13+14+15+16. remove the option to remove/add trait or sanction from monitor()
+remark: isSanctionsMonitored leaks personal account information??
+should we keep a log file of requests??
+
+17. remove checks 
+require(block.timestamp < _signature.expiresAt, 'Signature has expired'); to nil 
+require(nonces[_signature.signer] == _signature.nonce, 'Invalid Nonce');
+require(hasRole(KYC_PROVIDER_ROLE, msg.sender), 'Invalid Provider');
+require(size == 0, "Signer must be an EOA");
+in the modifier onlySignerVerified

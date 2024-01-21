@@ -1,0 +1,53 @@
+1. remove _requireFromEntryPoint(); from execute
+2. remove _requireFromEntryPoint(); from executeBatch
+3. remove inRecovery = 0; from execute
+4. remove inRecovery = 0; from executeBatch
+5. remove
+        require(policy > 0 && policy < 4  && policy != signerPolicy, 'KW-sp: invalid policy');
+        require(policy == 1 || owners.length > 1, 'invalid policy');
+    from setSignerPolicy
+6. remove the modifier onlySelf from setSignerPolicy
+7. remove signerPolicy = policy; from setSignerPolicy
+8. change i = 0; to i=1; in setFunderWhitelist 
+9. change i = 0; to i=1; in isFunderWhitelisted
+10. change if (owners[i] == funder) to (owners[i] != funder)
+11. remove require(appWhitelist[app], 'KW-at: app not whitelisted'); and/or onlySelf from approveTokens/revokeTokens
+remark: do we check for failure here? like if the token is paused or blacklisted? 
+12. remove call to _resetSigners(newSigners, SINGLE_SIGNER); in finishRecovery
+13. remove _preventDirectApproval(func); from _executeInner
+remark: can we bypass through increaseAllowance? Also the remark "// Prevent direct deployment of KintoWallet contracts" is clearly incorrect.
+14. remove _checkAppWhitelist(dest); from _executeInner
+15. remove requiredSigners--; from _validateSignature
+16. change (signatures[0], signatures[1], signatures[2]) to (signatures[0], signatures[1], signatures[1]) in _validateSignature
+17. change (signatures[0], signatures[1]) to (signatures[0], signatures[0]) in _validateSignature
+remark: can owners[i] ever be the zero address? This could cause problems...? 
+18. remove 
+
+                if (targetContracts[i] != lastTargetContract && // same contract
+                    _tokenApprovals[lastTargetContract][targetContracts[i]] == 0) {
+                    return address(0);
+                }
+    from _getAppContract
+19. remove 
+            if (targetContract == address(this)) {
+                return address(0);
+            }
+from _getAppContract
+20. change 
+    dest.functionCallWithValue(func, value);
+    to low-level call
+    dest.call{value: value}(func) in _executeInner
+21. remove
+            owners.push(anOwner);
+    from initialize
+22. remove
+            recoverer = _recoverer;
+    from initialize
+
+remark: can manipulate the toke approvals to allow for front running! because we don't check revoke approval... 
+23. change 
+    uint public constant override RECOVERY_TIME = 7 days;
+    to 7 seconds!
+remark: can owner create a situation in which ANYBODY can use the account by accident? 
+can this be used to bypass sanctions? 
+
