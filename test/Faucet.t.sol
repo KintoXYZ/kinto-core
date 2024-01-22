@@ -200,4 +200,13 @@ contract FaucetTest is UserOp, AATestScaffolding {
         vm.expectRevert("Ownable: caller is not the owner");
         _faucet.withdrawAll();
     }
+
+    /* ============ Top up Tests ============ */
+
+    function testSignerCanFundFaucet() public {
+        vm.startPrank(_owner);
+        uint256 balanceBefore = address(_faucet).balance;
+        _walletFactory.sendMoneyToAccount{value: 1e15}(address(_faucet));
+        assertEq(address(_faucet).balance, balanceBefore + 1e15);
+    }
 }

@@ -190,7 +190,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
                 && IKintoWallet(payable(wallet)).isFunderWhitelisted(msg.sender),
             "Invalid wallet or funder"
         );
-        wallet.transfer(msg.value);
+        (bool sent,) = wallet.call{value: msg.value}("");
+        require(sent, "Failed to send Ether");
     }
 
     /**
@@ -204,9 +205,14 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         IFaucet(_faucet).claimKintoETH(_signatureData);
     }
 
+    /**
+     * @dev Send money to an account from privileged accounts
+     * @param target The target address
+     */
     function sendMoneyToAccount(address target) external payable override {
         require(owner() == msg.sender || kintoID.isKYC(msg.sender), "KYC required");
-        payable(target).transfer(msg.value);
+        (bool sent,) = target.call{value: msg.value}("");
+        require(sent, "Failed to send Ether");
     }
 
     /* ============ View Functions ============ */
@@ -286,6 +292,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV5 is KintoWalletFactory {
+contract KintoWalletFactoryV6 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
