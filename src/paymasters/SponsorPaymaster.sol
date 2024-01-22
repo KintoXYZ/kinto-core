@@ -31,7 +31,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     // calculated cost of the postOp
     uint256 public constant COST_OF_POST = 200_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 230_000;
-    uint256 public constant MAX_COST_OF_PREVERIFICATION = 50_000;
+    uint256 public constant MAX_COST_OF_PREVERIFICATION = 110_000;
     uint256 public constant MAX_COST_OF_USEROP = 0.03 ether;
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
