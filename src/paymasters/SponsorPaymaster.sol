@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
-import "@aa/core/UserOperationLib.sol";
 
 import "../interfaces/ISponsorPaymaster.sol";
 import "../interfaces/IKintoAppRegistry.sol";
@@ -22,7 +21,6 @@ import "../interfaces/IKintoWallet.sol";
  * paymasterAndData holds the paymaster address followed by the token address to use.
  */
 contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, ReentrancyGuard, ISponsorPaymaster {
-    using UserOperationLib for UserOperation;
     using SafeERC20 for IERC20;
 
     // ========== Events ============
@@ -195,8 +193,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, "SP: gas too high for verification");
         require(userOp.paymasterAndData.length == 20, "SP: paymasterAndData must contain only paymaster");
 
-        // calculate max cost in ETH for this op
-        uint256 gasPriceUserOp = userOp.gasPrice();
+        // use maxFeePerGas for conservative estimation of gas cost
+        uint256 gasPriceUserOp = userOp.maxFeePerGas;
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
@@ -206,18 +204,19 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         require(unlockBlock[targetAccount] == 0, "SP: deposit not locked");
         require(balances[targetAccount] >= ethMaxCost, "SP: deposit too low");
 
-        return (abi.encode(targetAccount, userOp.sender, gasPriceUserOp), 0);
+        return (abi.encode(targetAccount, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
     }
 
     /**
      * perform the post-operation to charge the account contract for the gas.
      */
     function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, address userAccount, uint256 gasPricePostOp) =
-            abi.decode(context, (address, address, uint256));
+        (address account, address userAccount, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
+            abi.decode(context, (address, address, uint256, uint256));
 
-        // use same conversion rate as used for validation.
-        uint256 ethCost = (actualGasCost + COST_OF_POST * gasPricePostOp);
+        // calculate actual gas cost using block.basefee and maxPriorityFeePerGas
+        uint256 actualGasPrice = _min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+        uint256 ethCost = (actualGasCost + COST_OF_POST * actualGasPrice);
         balances[account] -= ethCost;
         contractSpent[account] += ethCost;
 
@@ -250,7 +249,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             costApp.ethCostCount += ethCost;
         }
 
-        // re-check limits after updating
+        // check limits after updating
         _checkLimits(userAccount, account, ethCost);
     }
 
@@ -303,6 +302,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             // handle unknown function or error
             revert("SP: Unknown function selector");
         }
+    }
+
+    function _min(uint256 a, uint256 b) private pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
 
