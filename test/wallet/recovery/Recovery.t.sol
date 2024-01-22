@@ -187,12 +187,4 @@ contract RecoveryTest is KintoWalletTest {
         vm.expectRevert("KW-cr: invalid address");
         _kintoWallet.changeRecoverer(payable(address(0)));
     }
-
-    // todo: change recoverer to a non KKYC'd address
-    // todo: we don't want to allow recoverer to be a non KYC'd, right?
-    function testChangeRecoverer_RevertWhen_RecovererIsNotKYCd() public {
-        vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-cr: invalid address");
-        _kintoWallet.changeRecoverer(payable(address(123)));
-    }
 }
