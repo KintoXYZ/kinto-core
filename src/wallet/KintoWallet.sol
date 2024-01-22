@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
+import "forge-std/console.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
@@ -191,7 +192,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function setAppKey(address app, address signer) external override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
         require(app != address(0), "KW-apk: invalid address");
-        require(appWhitelist[app], "KW-apk: contract not whitelisted");
+        require(appWhitelist[app], "KW-apk: contract not whitelisted"); // todo: i don't think we need to check this here
         require(appSigner[app] != signer, "KW-apk: same key");
         appSigner[app] = signer;
         // todo: emit event
@@ -272,8 +273,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
+        console.log("APP", app);
+        console.log("appWhitelist[app]", appWhitelist[app]);
+        console.log("appSigner[app]", appSigner[app]);
+        console.log(userOp.signature.length == 65);
         if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
             if (appSigner[app] == hash.recover(userOp.signature)) {
+                console.log("SIII");
                 return _packValidationData(false, 0, 0);
             }
         }
@@ -359,6 +365,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     // Function to extract the first target contract
+    /// @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to pay
+    // all other ops
     function _getAppContract(bytes calldata callData) private view returns (address) {
         // Extract the function selector from the callData
         bytes4 selector = bytes4(callData[:4]);
@@ -372,6 +380,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
                 if (!appRegistry.isContractSponsored(lastTargetContract, targets[i])) {
+                    console.log("ENTREEEEE");
                     return address(0);
                 }
             }

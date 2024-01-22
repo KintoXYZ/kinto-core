@@ -39,7 +39,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
 
         // Add paymaster to _kintoWallet
-        _fundSponsorForApp(address(_kintoWallet));
+        fundSponsorForApp(address(_kintoWallet));
 
         // Default tests to use 1 private key for simplicity
         privateKeys = new uint256[](1);
@@ -462,9 +462,68 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
     }
 
+    function testValidatePaymasterUserOp_RevertWhen_WhenNotRelated_WhenBatch() public {
+        // if intermediate calls are neither sponsored contracts nor children of an app, it should NOT validate the signature
+
+        // deploy a counter contract
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+
+        // deploy a second counter contract
+        Counter unknown = new Counter();
+        assertEq(unknown.count(), 0);
+
+        // prep batch
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(unknown);
+        targets[2] = address(counter);
+
+        uint256[] memory values = new uint256[](3);
+        values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
+
+        // we want to do 3 calls: whitelistApp, increment counter and increment counter2
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[1] = abi.encodeWithSignature("increment()");
+        calls[2] = abi.encodeWithSignature("increment()");
+
+        // send all transactions via batch
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+
+        // execute the transaction via the entry point
+
+        // prepare expected error message
+        uint256 expectedOpIndex = 0; // Adjust as needed
+        string memory expectedMessage = "AA33 reverted";
+        bytes memory additionalMessage =
+            abi.encodePacked("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
+        bytes memory expectedAdditionalData = abi.encodeWithSelector(
+            bytes4(keccak256("Error(string)")), // Standard error selector
+            additionalMessage
+        );
+
+        // encode the entire revert reason
+        bytes memory expectedRevertReason = abi.encodeWithSignature(
+            "FailedOpWithRevert(uint256,string,bytes)", expectedOpIndex, expectedMessage, expectedAdditionalData
+        );
+
+        vm.expectRevert(expectedRevertReason);
+        _entryPoint.handleOps(userOps, payable(_owner));
+    }
+
     // TODO:
     // reset gas limits after periods
     // test doing txs in different days
+
+    /* ============ Helpers ============ */
 
     // fixme: somehow not working
     function _setOperationCount(SponsorPaymaster paymaster, address account, uint256 operationCount) internal {
@@ -488,7 +547,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         app = address(new Counter());
 
         // (2). fund paymaster for Counter contract
-        _fundSponsorForApp(app);
+        fundSponsorForApp(app);
 
         // (3). register the app
         registerApp(_owner, "CounterApp", app, appLimits);

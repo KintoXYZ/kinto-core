@@ -136,7 +136,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
 
     function testWhitelistedSignerCanFundWallet() public {
         vm.startPrank(_owner);
-        _fundSponsorForApp(address(_kintoWallet));
+        fundSponsorForApp(address(_kintoWallet));
         uint256 nonce = _kintoWallet.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;

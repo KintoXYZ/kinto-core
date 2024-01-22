@@ -1,55 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
 import "forge-std/console.sol";
+import "../../KintoWallet.t.sol";
 
-import "@aa/interfaces/IEntryPoint.sol";
-
-import "../../../src/interfaces/IKintoWallet.sol";
-
-import "../../../src/wallet/KintoWallet.sol";
-import "../../../src/sample/Counter.sol";
-
-import {UserOp} from "../../helpers/UserOp.sol";
-import {AATestScaffolding} from "../../helpers/AATestScaffolding.sol";
-
-contract PolicyTest is AATestScaffolding, UserOp {
-    uint256[] privateKeys;
-
-    // constants
-    uint256 constant SIG_VALIDATION_FAILED = 1;
-
-    // events
-    event UserOperationRevertReason(
-        bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
-    );
-    event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
-    event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
-    event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
-
-    function setUp() public {
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-
-        // Add paymaster to _kintoWallet
-        _fundSponsorForApp(address(_kintoWallet));
-
-        // Default tests to use 1 private key for simplicity
-        privateKeys = new uint256[](1);
-
-        // Default tests to use _ownerPk unless otherwise specified
-        privateKeys[0] = _ownerPk;
-    }
-
-    function testUp() public {
-        assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
-    }
-
+contract PolicyTest is KintoWalletTest {
     /* ============ Upgrade Tests ============ */
 
     // FIXME: I think these upgrade tests are wrong because, basically, the KintoWallet.sol does not have
-    // an upgrade function. The upgrade function is in the UUPSUpgradeable.sol contract.
+    // an upgrade function. The upgrade function is in the UUPSUpgradeable.sol contract and the wallet uses the Beacon proxy.
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a new implementation
         KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
