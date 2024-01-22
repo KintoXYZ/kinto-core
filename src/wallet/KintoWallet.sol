@@ -255,6 +255,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ IAccountOverrides ============ */
 
     /// implement template method of BaseAccount
+    /// implement template method of BaseAccount
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
@@ -286,21 +287,24 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             }
             return _packValidationData(false, 0, 0);
         }
-        bytes[] memory signatures = new bytes[](owners.length);
-        // Split signature from userOp.signature
-        if (requiredSigners == 1) {
-            signatures[0] = userOp.signature;
-        } else {
-            signatures = ByteSignature.extractSignatures(userOp.signature, requiredSigners);
-        }
-        for (uint256 i = 0; i < owners.length; i++) {
-            if (owners[i] == hash.recover(signatures[i])) {
-                requiredSigners--;
-                if (requiredSigners == 0) {
-                    break;
+
+        // Multiple signers
+        bool[] memory hasSigned = new bool[](owners.length);
+        bytes[] memory signatures = ByteSignature.extractSignatures(userOp.signature, requiredSigners);
+
+        for (uint256 i = 0; i < signatures.length; i++) {
+            address recovered = hash.recover(signatures[i]);
+
+            for (uint256 j = 0; j < owners.length; j++) {
+                if (owners[j] == recovered && !hasSigned[j]) {
+                    hasSigned[j] = true;
+                    requiredSigners--;
+                    break; // once the owner is found
                 }
             }
         }
+
+        // return success (0) if all required signers have signed, otherwise return failure (1)
         return _packValidationData(requiredSigners != 0, 0, 0);
     }
 
