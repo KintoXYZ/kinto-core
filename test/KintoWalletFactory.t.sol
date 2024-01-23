@@ -11,10 +11,9 @@ import "../src/wallet/KintoWalletFactory.sol";
 import "../src/KintoID.sol";
 import "../src/sample/Counter.sol";
 import "../src/interfaces/IKintoWallet.sol";
-import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
+import "../src/wallet/KintoWallet.sol";
 
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-import {UserOp} from "./helpers/UserOp.sol";
+import "./KintoWallet.t.sol";
 
 contract KintoWalletUpgrade is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry)
@@ -34,21 +33,15 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
     }
 }
 
-contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
+contract KintoWalletFactoryTest is KintoWalletTest {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactoryUpgrade _walletFactoryv2;
     KintoWalletUpgrade _kintoWalletv2;
 
-    function setUp() public {
-        vm.startPrank(address(1));
-        _owner.transfer(1e18);
-        vm.stopPrank();
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-    }
-
-    function testUp() public {
+    function testUp() public override {
+        super.testUp();
         assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
@@ -156,9 +149,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         userOps[0] = userOp;
         // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
-        vm.startPrank(address(1));
-        _funder.transfer(1e17);
-        vm.stopPrank();
+        vm.deal(_funder, 1e17);
         vm.startPrank(_funder);
         _walletFactory.fundWallet{value: 1e17}(payable(address(_kintoWallet)));
         assertEq(address(_kintoWallet).balance, 1e17);
@@ -171,9 +162,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
     }
 
     function testRandomSignerCannotFundWallet() public {
-        vm.startPrank(address(1));
-        _user.transfer(1e18);
-        vm.stopPrank();
+        vm.deal(_user, 1e18);
         vm.startPrank(_user);
         vm.expectRevert("Invalid wallet or funder");
         _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWallet)));
@@ -192,5 +181,48 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         vm.prank(someone);
         vm.expectRevert("only recoverer");
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+    }
+
+    /* ============ Send Money Tests ============ */
+
+    function testSendMoneyToAccount_WhenCallerIsKYCd() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.deal(_user, 1 ether);
+        vm.prank(_user);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+        assertEq(address(123).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwner() public {
+        revokeKYC(_kycProvider, _owner, _ownerPk);
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+        assertEq(address(123).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsKYCProvider() public {
+        vm.deal(_kycProvider, 1 ether);
+        vm.prank(_kycProvider);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+        assertEq(address(123).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsWallet() public {
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kintoWallet));
+        assertEq(address(_kintoWallet).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsEOA() public {
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+        assertEq(address(123).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_RevertWhen_CallerIsNotAllowed() public {
+        vm.deal(address(123), 1 ether);
+        vm.prank(address(123));
+        vm.expectRevert("KYC or Provider role required");
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 }

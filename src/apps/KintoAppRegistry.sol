@@ -283,3 +283,7 @@ contract KintoAppRegistry is
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 }
+
+contract KintoAppRegistryV3 is KintoAppRegistry {
+    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
+}
