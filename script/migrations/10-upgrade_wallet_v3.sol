@@ -64,3 +64,9 @@ contract KintoMigration10DeployScript is Create2Helper, ArtifactsReader {
         console.log(string.concat('"KintoWalletV3-impl": "', vm.toString(address(_kintoWalletImpl)), '"'));
     }
 }
+
+contract KintoWalletV3 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
+        KintoWallet(_entryPoint, _kintoID, _appRegistry)
+    {}
+}

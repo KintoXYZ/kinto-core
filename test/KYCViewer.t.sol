@@ -13,7 +13,7 @@ import "./helpers/UserOp.sol";
 import "./helpers/UUPSProxy.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
-contract KYCViewerV2 is KYCViewer {
+contract KYCViewerUpgraded is KYCViewer {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
@@ -26,9 +26,9 @@ contract KYCViewerTest is UserOp, AATestScaffolding {
 
     UUPSProxy _proxyViewer;
     KYCViewer _implkycViewer;
-    KYCViewerV2 _implkycViewerV2;
+    KYCViewerUpgraded _implKYCViewerUpgraded;
     KYCViewer _kycViewer;
-    KYCViewerV2 _kycViewer2;
+    KYCViewerUpgraded _kycViewer2;
 
     function setUp() public {
         vm.chainId(_chainID);
@@ -59,16 +59,16 @@ contract KYCViewerTest is UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeViewer() public {
         vm.startPrank(_owner);
-        KYCViewerV2 _implementationV2 = new KYCViewerV2(address(_walletFactory));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
         _kycViewer.upgradeTo(address(_implementationV2));
         // re-wrap the _proxy
-        _kycViewer2 = KYCViewerV2(address(_kycViewer));
+        _kycViewer2 = KYCViewerUpgraded(address(_kycViewer));
         assertEq(_kycViewer2.newFunction(), 1);
         vm.stopPrank();
     }
 
     function test_RevertWhen_OthersCannotUpgradeFactory() public {
-        KYCViewerV2 _implementationV2 = new KYCViewerV2(address(_walletFactory));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
         vm.expectRevert("only owner");
         _kycViewer.upgradeTo(address(_implementationV2));
     }

@@ -90,3 +90,7 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         console.log(string.concat('"KintoIDV3-impl": "', vm.toString(address(_kintoIDImpl)), '"'));
     }
 }
+
+contract SponsorPaymasterV3 is SponsorPaymaster {
+    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
+}
