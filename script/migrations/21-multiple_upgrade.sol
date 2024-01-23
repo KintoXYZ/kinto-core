@@ -35,30 +35,20 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         _walletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
 
         // deploy contracts
-        // address _paymasterImpl = upgradePaymaster();
-        // console.log(string.concat("SponsorPaymasterV4-impl: ", vm.toString(_paymasterImpl)));
-
-        // address _registryImpl = upgradeRegistry();
-        // console.log(string.concat("KintoAppRegistryV3-impl: ", vm.toString(_registryImpl)));
-
-        // address _walletImpl = upgradeWallet();
-        // console.log(string.concat("KintoWalletV4-impl: ", vm.toString(_walletImpl)));
-
-        // address _factoryImpl = upgradeFactory();
-        // console.log(string.concat("KintoWalletFactoryV7-impl: ", vm.toString(_factoryImpl)));
-
+        address _paymasterImpl = upgradePaymaster();
+        address _registryImpl = upgradeRegistry();
+        address _walletImpl = upgradeWallet();
+        address _factoryImpl = upgradeFactory();
         (address _kycViewerImpl, address _kycViewerProxy) = upgradeKYCViewer();
-        console.log(string.concat("KYCViewerV2-impl: ", vm.toString(_kycViewerImpl)));
-        console.log(string.concat("KYCViewerV2: ", vm.toString(_kycViewerProxy)));
 
         // writes the addresses to a file
-        // console.log("TODO: Manually add these new addresses to the artifacts file");
-        // console.log(string.concat("SponsorPaymasterV4-impl: ", vm.toString(address(_paymasterImpl))));
-        // console.log(string.concat("KintoAppRegistryV3-impl: ", vm.toString(address(_registryImpl))));
-        // console.log(string.concat("KintoWalletV4-impl: ", vm.toString(address(_walletImpl))));
-        // console.log(string.concat("KintoWalletFactoryV7-impl: ", vm.toString(address(_factoryImpl))));
-        // console.log(string.concat("KYCViewerV2-impl: ", vm.toString(address(_kycViewerImpl))));
-        // console.log(string.concat("KYCViewerV2: ", vm.toString(address(_kycViewerProxy))));
+        console.log("TODO: Manually add these new addresses to the artifacts file");
+        console.log(string.concat("SponsorPaymasterV4-impl: ", vm.toString(address(_paymasterImpl))));
+        console.log(string.concat("KintoAppRegistryV3-impl: ", vm.toString(address(_registryImpl))));
+        console.log(string.concat("KintoWalletV4-impl: ", vm.toString(address(_walletImpl))));
+        console.log(string.concat("KintoWalletFactoryV7-impl: ", vm.toString(address(_factoryImpl))));
+        console.log(string.concat("KYCViewerV2-impl: ", vm.toString(address(_kycViewerImpl))));
+        console.log(string.concat("KYCViewerV2: ", vm.toString(address(_kycViewerProxy))));
     }
 
     function upgradePaymaster() public returns (address _paymasterImpl) {
