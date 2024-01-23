@@ -391,29 +391,27 @@ contract ValidateSignatureTest is KintoWalletTest {
         );
     }
 
-    function testValidateSignature_WhenExecuteBatch_WhenMoreThan3CallsToWallet() public {
+    function testValidateSignature_WhenExecuteBatch_WhenMoreThanWalletCallsLimit() public {
         // if there are more than 3 calls to the wallet, it should NOT validate the signature
+        uint256 limit = _kintoWallet.WALLET_TARGET_LIMIT();
 
-        address[] memory targets = new address[](5);
-        targets[0] = address(_kintoWallet);
-        targets[1] = address(_kintoWallet);
-        targets[2] = address(_kintoWallet);
-        targets[3] = address(_kintoWallet);
-        targets[4] = address(counter);
+        address[] memory targets = new address[](limit + 2);
 
-        uint256[] memory values = new uint256[](5);
-        values[0] = 0;
-        values[1] = 0;
-        values[2] = 0;
-        values[3] = 0;
-        values[4] = 0;
+        for (uint256 i = 0; i < limit + 1; i++) {
+            targets[i] = address(_kintoWallet);
+        }
+        targets[limit + 1] = address(counter);
 
-        bytes[] memory calls = new bytes[](5);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
-        calls[1] = abi.encodeWithSignature("isFunderWhitelisted()");
-        calls[2] = abi.encodeWithSignature("isFunderWhitelisted()");
-        calls[3] = abi.encodeWithSignature("isFunderWhitelisted()");
-        calls[4] = abi.encodeWithSignature("increment()");
+        uint256[] memory values = new uint256[](limit + 2);
+        for (uint256 i = 0; i < limit + 2; i++) {
+            values[i] = 0;
+        }
+
+        bytes[] memory calls = new bytes[](limit + 2);
+        for (uint256 i = 0; i < limit + 2; i++) {
+            calls[i] = abi.encodeWithSignature("isFunderWhitelisted()");
+        }
+        calls[limit + 1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         UserOperation memory userOp = _createUserOperation(
@@ -491,35 +489,35 @@ contract ValidateSignatureTest is KintoWalletTest {
         // todo: assert that it has used the app key and not the wallet policy
     }
 
-    // todo: we may want to remove this requirement from the KintoWallet since anyways
     // we always check for the app to be whitelisted regardless if using app key or not
-    function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted() public {
-        // it should skip the app key verification and use the policy of the wallet
-        // it should revert because app is not whitelisted
+    // NOTE: this requirement has been removed from the _validateSignature since it's already on the _executeInner
+    // function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted() public {
+    //     // it should skip the app key verification and use the policy of the wallet
+    //     // it should revert because app is not whitelisted
 
-        setAppKey(address(counter), _user);
+    //     setAppKey(address(counter), _user);
 
-        // remove app from whitelist
-        whitelistApp(address(counter), false);
+    //     // remove app from whitelist
+    //     whitelistApp(address(counter), false);
 
-        // create Counter increment transaction
-        privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
+    //     // create Counter increment transaction
+    //     privateKeys[0] = _userPk; // we want to make use of the app key
+    //     UserOperation memory userOp = _createUserOperation(
+    //         address(_kintoWallet),
+    //         address(counter),
+    //         _kintoWallet.getNonce(),
+    //         privateKeys,
+    //         abi.encodeWithSignature("increment()"),
+    //         address(_paymaster)
+    //     );
 
-        assertEq(
-            SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-                userOp, _entryPoint.getUserOpHash(userOp)
-            )
-        );
-    }
+    //     assertEq(
+    //         SIG_VALIDATION_FAILED,
+    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+    //             userOp, _entryPoint.getUserOpHash(userOp)
+    //         )
+    //     );
+    // }
 
     function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet() public {
         // since we are not allowing calls to the wallet, this would make the app key verification
@@ -667,38 +665,38 @@ contract ValidateSignatureTest is KintoWalletTest {
         );
     }
 
-    // todo: we may want to remove the whitelist check from here
-    function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted_WhenExecuteBatch() public {
-        setAppKey(address(counter), _user);
+    // NOTE: this requirement has been removed from the _validateSignature since it's already on the _executeInner
+    // function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted_WhenExecuteBatch() public {
+    //     setAppKey(address(counter), _user);
 
-        // remove app from whitelist
-        whitelistApp(address(counter), false);
+    //     // remove app from whitelist
+    //     whitelistApp(address(counter), false);
 
-        address[] memory targets = new address[](2);
-        targets[0] = address(counter);
-        targets[1] = address(counter);
+    //     address[] memory targets = new address[](2);
+    //     targets[0] = address(counter);
+    //     targets[1] = address(counter);
 
-        uint256[] memory values = new uint256[](2);
-        values[0] = 0;
-        values[1] = 0;
+    //     uint256[] memory values = new uint256[](2);
+    //     values[0] = 0;
+    //     values[1] = 0;
 
-        bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeWithSignature("increment()");
-        calls[1] = abi.encodeWithSignature("increment()");
+    //     bytes[] memory calls = new bytes[](2);
+    //     calls[0] = abi.encodeWithSignature("increment()");
+    //     calls[1] = abi.encodeWithSignature("increment()");
 
-        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-        );
+    //     OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+    //     privateKeys[0] = _userPk; // we want to make use of the app key
+    //     UserOperation memory userOp = _createUserOperation(
+    //         address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+    //     );
 
-        assertEq(
-            SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-                userOp, _entryPoint.getUserOpHash(userOp)
-            )
-        );
-    }
+    //     assertEq(
+    //         SIG_VALIDATION_FAILED,
+    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+    //             userOp, _entryPoint.getUserOpHash(userOp)
+    //         )
+    //     );
+    // }
 
     function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet_WhenExecuteBatch(uint256 order)
         public
@@ -706,19 +704,19 @@ contract ValidateSignatureTest is KintoWalletTest {
         // it should skip the app key verification and use wallet policy
         // should validate the signature
 
-        uint256 CALLS_NUMER = 5;
-        vm.assume(order < CALLS_NUMER);
+        uint256 CALLS_NUMBER = 5;
+        vm.assume(order < CALLS_NUMBER);
         // it should skip the wallet policy and use the app key verification
         // should NOT validate the signature since it's forbidden to call the wallet
 
         setAppKey(address(counter), _user);
 
         // prep batch: 5 calls in a batch which will include a call to the wallet (in different orders)
-        address[] memory targets = new address[](CALLS_NUMER);
-        uint256[] memory values = new uint256[](CALLS_NUMER);
-        bytes[] memory calls = new bytes[](CALLS_NUMER);
+        address[] memory targets = new address[](CALLS_NUMBER);
+        uint256[] memory values = new uint256[](CALLS_NUMBER);
+        bytes[] memory calls = new bytes[](CALLS_NUMBER);
 
-        for (uint256 i = 0; i < CALLS_NUMER; i++) {
+        for (uint256 i = 0; i < CALLS_NUMBER; i++) {
             values[i] = 0;
             if (i == order) {
                 targets[i] = address(_kintoWallet);
@@ -751,19 +749,19 @@ contract ValidateSignatureTest is KintoWalletTest {
         // it should skip the app key verification and use wallet policy
         // should validate the signature
 
-        uint256 CALLS_NUMER = 5;
-        vm.assume(order < CALLS_NUMER);
+        uint256 CALLS_NUMBER = 5;
+        vm.assume(order < CALLS_NUMBER);
         // it should skip the wallet policy and use the app key verification
         // should NOT validate the signature since it's forbidden to call the wallet
 
         setAppKey(address(counter), _user);
 
         // prep batch: 5 calls in a batch which will include a call to the wallet (in different orders)
-        address[] memory targets = new address[](CALLS_NUMER);
-        uint256[] memory values = new uint256[](CALLS_NUMER);
-        bytes[] memory calls = new bytes[](CALLS_NUMER);
+        address[] memory targets = new address[](CALLS_NUMBER);
+        uint256[] memory values = new uint256[](CALLS_NUMBER);
+        bytes[] memory calls = new bytes[](CALLS_NUMBER);
 
-        for (uint256 i = 0; i < CALLS_NUMER; i++) {
+        for (uint256 i = 0; i < CALLS_NUMBER - 1; i++) {
             values[i] = 0;
             if (i == order) {
                 targets[i] = address(_kintoWallet);
@@ -773,6 +771,12 @@ contract ValidateSignatureTest is KintoWalletTest {
                 calls[i] = abi.encodeWithSignature("increment()");
             }
         }
+
+        // last call must be to the app
+        targets[CALLS_NUMBER - 1] = address(counter);
+        calls[CALLS_NUMBER - 1] = abi.encodeWithSignature("increment()");
+        values[CALLS_NUMBER - 1] = 0;
+
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
@@ -796,8 +800,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         owners[0] = _owner;
         owners[1] = _user;
         owners[2] = _user2;
-        uint8 newPolicy = _kintoWallet.MINUS_ONE_SIGNER();
-        resetSigners(owners, newPolicy);
+        resetSigners(owners, _kintoWallet.MINUS_ONE_SIGNER());
 
         // create user op with owners 1 and 2 as signers
         privateKeys = new uint256[](2);
@@ -842,46 +845,46 @@ contract ValidateSignatureTest is KintoWalletTest {
     }
 
     // special case 2: register app having wallet as child and try to make a call to the wallet using the app key
-    // fixme: this would be fixed if we forbid registerApp to have wallets as children
-    function testValidateSignature_SpecialCase2() public {
-        setAppKey(address(counter), _user);
+    // FIXED
+    // function testValidateSignature_SpecialCase2() public {
+    //     setAppKey(address(counter), _user);
 
-        // update app's metadata passing wallet as a child
-        address[] memory appContracts = new address[](1);
-        appContracts[0] = address(_kintoWallet);
-        updateMetadata(_owner, "test", address(counter), appContracts);
+    //     // update app's metadata passing wallet as a child
+    //     address[] memory appContracts = new address[](1);
+    //     appContracts[0] = address(_kintoWallet);
+    //     updateMetadata(_owner, "test", address(counter), appContracts);
 
-        // prep batch: 3 calls including a resetSigners call to change the signer to be the app key
-        address[] memory targets = new address[](3);
-        targets[0] = address(counter);
-        targets[1] = address(counter);
-        targets[2] = address(_kintoWallet);
+    //     // prep batch: 3 calls including a resetSigners call to change the signer to be the app key
+    //     address[] memory targets = new address[](3);
+    //     targets[0] = address(counter);
+    //     targets[1] = address(counter);
+    //     targets[2] = address(_kintoWallet);
 
-        uint256[] memory values = new uint256[](3);
-        values[0] = 0;
-        values[1] = 0;
-        values[2] = 0;
+    //     uint256[] memory values = new uint256[](3);
+    //     values[0] = 0;
+    //     values[1] = 0;
+    //     values[2] = 0;
 
-        // reset signers params
-        address[] memory owners = new address[](1);
-        owners[0] = _user;
+    //     // reset signers params
+    //     address[] memory owners = new address[](1);
+    //     owners[0] = _user;
 
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("increment()");
-        calls[1] = abi.encodeWithSignature("increment()");
-        calls[2] = abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS());
+    //     bytes[] memory calls = new bytes[](3);
+    //     calls[0] = abi.encodeWithSignature("increment()");
+    //     calls[1] = abi.encodeWithSignature("increment()");
+    //     calls[2] = abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS());
 
-        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-        );
+    //     OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+    //     privateKeys[0] = _userPk; // we want to make use of the app key
+    //     UserOperation memory userOp = _createUserOperation(
+    //         address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+    //     );
 
-        assertEq(
-            SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-                userOp, _entryPoint.getUserOpHash(userOp)
-            )
-        );
-    }
+    //     assertEq(
+    //         SIG_VALIDATION_FAILED,
+    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+    //             userOp, _entryPoint.getUserOpHash(userOp)
+    //         )
+    //     );
+    // }
 }

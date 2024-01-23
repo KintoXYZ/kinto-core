@@ -27,7 +27,7 @@ interface IKintoWallet {
 
     function startRecovery() external;
 
-    function finishRecovery(address[] calldata newSigners) external;
+    function completeRecovery(address[] calldata newSigners) external;
 
     function cancelRecovery() external;
 
@@ -72,4 +72,6 @@ interface IKintoWallet {
     function ALL_SIGNERS() external view returns (uint8);
 
     function RECOVERY_TIME() external view returns (uint256);
+
+    function WALLET_TARGET_LIMIT() external view returns (uint256);
 }

@@ -52,7 +52,7 @@ interface IKintoAppRegistry {
 
     function getSponsor(address _contract) external view returns (address);
 
-    function isContractSponsored(address _app, address _contract) external view returns (bool);
+    function isSponsored(address _app, address _contract) external view returns (bool);
 
     function walletFactory() external view returns (IKintoWalletFactory);
 

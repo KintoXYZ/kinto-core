@@ -6,8 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/apps/KintoAppRegistry.sol";
 
-import "./helpers/UserOp.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import "./KintoWallet.t.sol";
 
 contract KintoAppRegistryV2 is KintoAppRegistry {
     function newFunction() external pure returns (uint256) {
@@ -17,22 +16,10 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
 
-contract KintoAppRegistryTest is UserOp, AATestScaffolding {
-    uint256 _chainID = 1;
+contract KintoAppRegistryTest is KintoWalletTest {
+    function testUp() public override {
+        super.testUp();
 
-    KintoAppRegistryV2 _implkintoAppV2;
-    KintoAppRegistryV2 _kintoApp2;
-
-    function setUp() public {
-        vm.chainId(_chainID);
-        vm.startPrank(address(1));
-        _owner.transfer(1e18);
-        vm.stopPrank();
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-    }
-
-    function testUp() public {
-        console.log("address owner", address(_owner));
         assertEq(_kintoAppRegistry.owner(), _owner);
         assertEq(_kintoAppRegistry.name(), "Kinto APP");
         assertEq(_kintoAppRegistry.symbol(), "KINTOAPP");
@@ -46,11 +33,11 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
 
     function testOwnerCanUpgradeApp() public {
         vm.startPrank(_owner);
+
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _kintoApp2 = KintoAppRegistryV2(address(_kintoAppRegistry));
-        assertEq(_kintoApp2.newFunction(), 1);
+        assertEq(KintoAppRegistryV2(address(_kintoAppRegistry)).newFunction(), 1);
+
         vm.stopPrank();
     }
 
@@ -63,20 +50,28 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
     /* ============ App Tests & Viewers ============ */
 
     function testRegisterApp(string memory name, address parentContract) public {
-        vm.startPrank(_user);
-        assertEq(_kintoAppRegistry.appCount(), 0);
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(7);
+
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        // register app
+        uint256 balanceBefore = _kintoAppRegistry.balanceOf(_user);
+        uint256 appsCountBefore = _kintoAppRegistry.appCount();
+
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
-        assertEq(_kintoAppRegistry.balanceOf(_user), 1);
-        assertEq(_kintoAppRegistry.appCount(), 1);
+
+        assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
+        assertEq(_kintoAppRegistry.appCount(), appsCountBefore + 1);
+
+        // check app metadata
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
         assertEq(metadata.dsaEnabled, false);
@@ -85,38 +80,50 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(7)), true);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), true);
         assertEq(_kintoAppRegistry.getSponsor(address(7)), parentContract);
+
+        // check child limits
         uint256[4] memory limits = _kintoAppRegistry.getContractLimits(address(7));
         assertEq(limits[0], appLimits[0]);
         assertEq(limits[1], appLimits[1]);
         assertEq(limits[2], appLimits[2]);
         assertEq(limits[3], appLimits[3]);
+
+        // check app contracts
         limits = _kintoAppRegistry.getContractLimits(parentContract);
         assertEq(limits[0], appLimits[0]);
         assertEq(limits[1], appLimits[1]);
         assertEq(limits[2], appLimits[2]);
         assertEq(limits[3], appLimits[3]);
+
+        // check child metadata
         metadata = _kintoAppRegistry.getAppMetadata(address(7));
         assertEq(metadata.name, name);
-        vm.stopPrank();
     }
 
-    function testRegisterAppAndUpdate(string memory name, address parentContract) public {
-        vm.startPrank(_user);
+    function testUpdateApp(string memory name, address parentContract) public {
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
+
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        // register app
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
+
+        // update app
+        vm.prank(_user);
         _kintoAppRegistry.updateMetadata(
             "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
+
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, "test2");
         assertEq(metadata.dsaEnabled, false);
@@ -124,15 +131,23 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
         assertEq(metadata.rateLimitNumber, 1);
         assertEq(metadata.gasLimitPeriod, 1);
         assertEq(metadata.gasLimitCost, 1);
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(7)), false);
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(8)), true);
-        vm.stopPrank();
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), false);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(8)), true);
+    }
+
+    function testRegisterApp_RevertWhen_ChildrenIsWallet(string memory name, address parentContract) public {
+        uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(_kintoWallet);
+
+        // register app
+        vm.expectRevert("Wallets can not be registered");
+        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
     /* ============ DSA Test ============ */
 
-    function testOwnerCanEnableDSA() public {
-        vm.startPrank(_owner);
+    function testEnableDSA_WhenCallerIsOwner() public {
         address parentContract = address(_engenCredits);
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
@@ -141,13 +156,17 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
         appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(
             "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
+
+        vm.prank(_owner);
         _kintoAppRegistry.enableDSA(parentContract);
+
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.dsaEnabled, true);
-        vm.stopPrank();
     }
 
     function test_Revert_When_User_TriesToEnableDSA() public {
@@ -189,9 +208,9 @@ contract KintoAppRegistryTest is UserOp, AATestScaffolding {
         flags[0] = false;
         flags[1] = true;
         _kintoAppRegistry.setSponsoredContracts(parentContract, contracts, flags);
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(8)), true); // child contracts always sponsored
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(9)), true);
-        assertEq(_kintoAppRegistry.isContractSponsored(parentContract, address(10)), false);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(8)), true); // child contracts always sponsored
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(9)), true);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(10)), false);
         vm.stopPrank();
     }
 
