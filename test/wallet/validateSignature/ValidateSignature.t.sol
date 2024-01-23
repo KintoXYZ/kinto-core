@@ -489,36 +489,6 @@ contract ValidateSignatureTest is KintoWalletTest {
         // todo: assert that it has used the app key and not the wallet policy
     }
 
-    // we always check for the app to be whitelisted regardless if using app key or not
-    // NOTE: this requirement has been removed from the _validateSignature since it's already on the _executeInner
-    // function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted() public {
-    //     // it should skip the app key verification and use the policy of the wallet
-    //     // it should revert because app is not whitelisted
-
-    //     setAppKey(address(counter), _user);
-
-    //     // remove app from whitelist
-    //     whitelistApp(address(counter), false);
-
-    //     // create Counter increment transaction
-    //     privateKeys[0] = _userPk; // we want to make use of the app key
-    //     UserOperation memory userOp = _createUserOperation(
-    //         address(_kintoWallet),
-    //         address(counter),
-    //         _kintoWallet.getNonce(),
-    //         privateKeys,
-    //         abi.encodeWithSignature("increment()"),
-    //         address(_paymaster)
-    //     );
-
-    //     assertEq(
-    //         SIG_VALIDATION_FAILED,
-    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-    //             userOp, _entryPoint.getUserOpHash(userOp)
-    //         )
-    //     );
-    // }
-
     function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet() public {
         // since we are not allowing calls to the wallet, this would make the app key verification
         // to be skipped and will try to use the policy of the wallet
@@ -665,39 +635,6 @@ contract ValidateSignatureTest is KintoWalletTest {
         );
     }
 
-    // NOTE: this requirement has been removed from the _validateSignature since it's already on the _executeInner
-    // function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenAppNotWhitelisted_WhenExecuteBatch() public {
-    //     setAppKey(address(counter), _user);
-
-    //     // remove app from whitelist
-    //     whitelistApp(address(counter), false);
-
-    //     address[] memory targets = new address[](2);
-    //     targets[0] = address(counter);
-    //     targets[1] = address(counter);
-
-    //     uint256[] memory values = new uint256[](2);
-    //     values[0] = 0;
-    //     values[1] = 0;
-
-    //     bytes[] memory calls = new bytes[](2);
-    //     calls[0] = abi.encodeWithSignature("increment()");
-    //     calls[1] = abi.encodeWithSignature("increment()");
-
-    //     OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-    //     privateKeys[0] = _userPk; // we want to make use of the app key
-    //     UserOperation memory userOp = _createUserOperation(
-    //         address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-    //     );
-
-    //     assertEq(
-    //         SIG_VALIDATION_FAILED,
-    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-    //             userOp, _entryPoint.getUserOpHash(userOp)
-    //         )
-    //     );
-    // }
-
     function testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet_WhenExecuteBatch(uint256 order)
         public
     {
@@ -843,48 +780,4 @@ contract ValidateSignatureTest is KintoWalletTest {
             )
         );
     }
-
-    // special case 2: register app having wallet as child and try to make a call to the wallet using the app key
-    // FIXED
-    // function testValidateSignature_SpecialCase2() public {
-    //     setAppKey(address(counter), _user);
-
-    //     // update app's metadata passing wallet as a child
-    //     address[] memory appContracts = new address[](1);
-    //     appContracts[0] = address(_kintoWallet);
-    //     updateMetadata(_owner, "test", address(counter), appContracts);
-
-    //     // prep batch: 3 calls including a resetSigners call to change the signer to be the app key
-    //     address[] memory targets = new address[](3);
-    //     targets[0] = address(counter);
-    //     targets[1] = address(counter);
-    //     targets[2] = address(_kintoWallet);
-
-    //     uint256[] memory values = new uint256[](3);
-    //     values[0] = 0;
-    //     values[1] = 0;
-    //     values[2] = 0;
-
-    //     // reset signers params
-    //     address[] memory owners = new address[](1);
-    //     owners[0] = _user;
-
-    //     bytes[] memory calls = new bytes[](3);
-    //     calls[0] = abi.encodeWithSignature("increment()");
-    //     calls[1] = abi.encodeWithSignature("increment()");
-    //     calls[2] = abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS());
-
-    //     OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-    //     privateKeys[0] = _userPk; // we want to make use of the app key
-    //     UserOperation memory userOp = _createUserOperation(
-    //         address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-    //     );
-
-    //     assertEq(
-    //         SIG_VALIDATION_FAILED,
-    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-    //             userOp, _entryPoint.getUserOpHash(userOp)
-    //         )
-    //     );
-    // }
 }
