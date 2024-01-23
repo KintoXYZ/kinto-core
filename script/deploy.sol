@@ -8,7 +8,7 @@ import "../src/viewers/KYCViewer.sol";
 import "../src/interfaces/IKintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
-import {KintoWalletV3 as KintoWallet} from "../src/wallet/KintoWallet.sol";
+import "../src/wallet/KintoWallet.sol";
 
 import "../test/helpers/Create2Helper.sol";
 import "../test/helpers/ArtifactsReader.sol";

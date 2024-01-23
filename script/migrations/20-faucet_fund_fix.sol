@@ -70,3 +70,13 @@ contract KintoMigration20DeployScript is Create2Helper, ArtifactsReader {
         console.log(string.concat('"KintoWalletFactoryV6-impl": "', vm.toString(address(_factoryImpl)), '"'));
     }
 }
+
+contract KintoWalletFactoryV6 is KintoWalletFactory {
+    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+}
+
+contract KintoWalletV3 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
+        KintoWallet(_entryPoint, _kintoID, _appRegistry)
+    {}
+}

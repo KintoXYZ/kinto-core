@@ -53,3 +53,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         console.log(string.concat('"SponsorPaymasterV2-impl": "', vm.toString(address(_paymasterImpl)), '"'));
     }
 }
+
+contract SponsorPaymasterV2 is SponsorPaymaster {
+    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
+}

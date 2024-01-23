@@ -12,8 +12,8 @@ import "../../src/KintoID.sol";
 import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
-import {KintoWalletV3 as KintoWallet} from "../../src/wallet/KintoWallet.sol";
-import {KintoWalletFactoryV6 as KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
+import "../../src/wallet/KintoWallet.sol";
+import "../../src/wallet/KintoWalletFactory.sol";
 
 import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
