@@ -4,17 +4,14 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
-
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
-import "../libraries/ByteSignature.sol";
 import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoAppRegistry.sol";
+import "../libraries/ByteSignature.sol";
 
 /**
  * @title KintoWallet
@@ -35,6 +32,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint8 public constant override MINUS_ONE_SIGNER = 2;
     uint8 public constant override ALL_SIGNERS = 3;
     uint256 public constant override RECOVERY_TIME = 7 days;
+    uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
+    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
     uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
     uint256 public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
@@ -176,7 +175,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external override onlySelf {
         require(apps.length == flags.length, "KW-apw: invalid array");
         for (uint256 i = 0; i < apps.length; i++) {
-            // require(appRegistry.getAppMetadata(apps[i]).admin != address(0), "KW-apw: app must be registered");
             appWhitelist[apps[i]] = flags[i];
         }
     }
@@ -212,7 +210,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * Can only be called by the factory through a privileged signer
      * @param newSigners new signers array
      */
-    function finishRecovery(address[] calldata newSigners) external override onlyFactory {
+    function completeRecovery(address[] calldata newSigners) external override onlyFactory {
         require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), "KW-fr: too early");
         require(!kintoID.isKYC(owners[0]), "KW-fr: Old KYC must be burned");
         _resetSigners(newSigners, SINGLE_SIGNER);
@@ -257,46 +255,109 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ IAccountOverrides ============ */
 
     /// implement template method of BaseAccount
-    /// implement template method of BaseAccount
+    /// @dev we don't want to do requires here as it would revert the whole transaction
+    /// @dev this is very similar to SponsorPaymaster._decodeCallData, consider unifying
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
         returns (uint256 validationData)
     {
-        // We don't want to do requires here as it would revert the whole transaction
-        // Check first owner of this account is still KYC'ed
-        if (!kintoID.isKYC(owners[0])) {
-            return SIG_VALIDATION_FAILED;
-        }
-        bytes32 hash = userOpHash.toEthSignedMessageHash();
-        // If there is only one signature and there is an app Key, check it
-        address app = _getAppContract(userOp.callData);
-        if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
-            if (appSigner[app] == hash.recover(userOp.signature)) {
-                return _packValidationData(false, 0, 0);
+        if (!kintoID.isKYC(owners[0])) return SIG_VALIDATION_FAILED; // check first owner is KYC'ed
+
+        (address target, bool batch) = _decodeCallData(userOp.callData);
+        address app = appRegistry.getSponsor(target);
+        bytes32 hashData = userOpHash.toEthSignedMessageHash();
+
+        // check if an app key is set
+        if (appSigner[app] != address(0)) {
+            if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
+                // if using an app key, no calls to wallet are allowed
+                return (target != address(this) && (!batch || _verifyBatch(app, userOp.callData, true)))
+                    ? SIG_VALIDATION_SUCCESS
+                    : SIG_VALIDATION_FAILED;
             }
         }
-        uint256 requiredSigners = signerPolicy == 3 ? owners.length : (signerPolicy == 1 ? 1 : owners.length - 1);
-        if (userOp.signature.length != 65 * requiredSigners) {
+
+        // if app key is not set or signature is not valid, verify signer policy
+        if (
+            (
+                signerPolicy == SINGLE_SIGNER && owners.length == 1
+                    && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
+            )
+                || (
+                    signerPolicy != SINGLE_SIGNER
+                        && _verifyMultipleSignatures(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
+                )
+        ) {
+            // allow wallet calls based on batch rules
+            return
+                (!batch || _verifyBatch(app, userOp.callData, false)) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
+        }
+
+        return SIG_VALIDATION_FAILED;
+    }
+
+    /* ============ Internal/Private Functions ============ */
+
+    /// @dev when `executeBatch`batches user operations, we use the last op on the batch to identify who is the sponsor that will
+    // be paying for all the ops within that batch. The following rules must be met:
+    // - all targets must be either a sponsored contract or a child (same if using an app key)
+    // - no more than WALLET_TARGET_LIMIT ops allowed. If using an app key, NO wallet calls are allowed
+    function _verifyBatch(address sponsor, bytes calldata callData, bool appKey) private view returns (bool) {
+        (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+        uint256 walletCalls = 0;
+
+        // if app key is true, ensure its rules are respected (no wallet calls are allowed and all targets are sponsored or child)
+        if (appKey) {
+            for (uint256 i = 0; i < targets.length; i++) {
+                if (targets[i] == address(this) || !_isSponsoredOrChild(sponsor, targets[i])) {
+                    return false;
+                }
+            }
+        } else {
+            // if not set, ensure all targets are sponsored or child and that the wallet call limit is respected
+            for (uint256 i = 0; i < targets.length; i++) {
+                if (targets[i] == address(this)) {
+                    walletCalls++;
+                    if (walletCalls > WALLET_TARGET_LIMIT) {
+                        return false;
+                    }
+                } else if (!_isSponsoredOrChild(sponsor, targets[i])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function _isSponsoredOrChild(address sponsor, address target) private view returns (bool) {
+        return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
+    }
+
+    function _verifySingleSignature(address signer, bytes32 hashData, bytes memory signature)
+        private
+        pure
+        returns (uint256)
+    {
+        if (signer != hashData.recover(signature)) {
             return SIG_VALIDATION_FAILED;
         }
+        return _packValidationData(false, 0, 0);
+    }
 
-        // Single signer
-        if (signerPolicy == 1 && owners.length == 1) {
-            if (owners[0] != hash.recover(userOp.signature)) {
-                return SIG_VALIDATION_FAILED;
-            }
-            return _packValidationData(false, 0, 0);
-        }
+    function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
+        // calculate required signers
+        uint256 requiredSigners =
+            signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
+        if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
 
-        // Multiple signers
+        // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
-        bytes[] memory signatures = ByteSignature.extractSignatures(userOp.signature, requiredSigners);
+        bytes[] memory signatures = ByteSignature.extractSignatures(signature, requiredSigners);
 
         for (uint256 i = 0; i < signatures.length; i++) {
-            address recovered = hash.recover(signatures[i]);
-
+            address recovered = hashData.recover(signatures[i]);
             for (uint256 j = 0; j < owners.length; j++) {
                 if (owners[j] == recovered && !hasSigned[j]) {
                     hasSigned[j] = true;
@@ -309,8 +370,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // return success (0) if all required signers have signed, otherwise return failure (1)
         return _packValidationData(requiredSigners != 0, 0, 0);
     }
-
-    /* ============ Private Functions ============ */
 
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: invalid array");
@@ -336,13 +395,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
-    function _checkAppWhitelist(address _contract) internal view {
-        require(
-            appWhitelist[appRegistry.getSponsor(_contract)] || _contract == address(this),
-            "KW: contract not whitelisted"
-        );
-    }
-
     function _onlySelf() internal view {
         // directly through the account itself (which gets redirected through execute())
         require(msg.sender == address(this), "KW: only self");
@@ -354,40 +406,29 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
-        _checkAppWhitelist(dest);
+        // if target is a contract, check if it's whitelisted
+        require(appWhitelist[appRegistry.getSponsor(dest)] || dest == address(this), "KW: contract not whitelisted");
+
         dest.functionCallWithValue(func, value);
     }
 
-    // Function to extract the first target contract
-    /// @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to pay
-    // all other ops
-    function _getAppContract(bytes calldata callData) private view returns (address) {
-        // Extract the function selector from the callData
-        bytes4 selector = bytes4(callData[:4]);
+    // extracts `target` contract and whether it is an execute or executeBatch call from the callData
+    // @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
+    // bear with the gas cost of all ops
+    function _decodeCallData(bytes calldata callData) private pure returns (address target, bool batched) {
+        bytes4 selector = bytes4(callData[:4]); // extract the function selector from the callData
 
-        // Compare the selector with the known function selectors
         if (selector == IKintoWallet.executeBatch.selector) {
-            // Decode callData for executeBatch
+            // decode executeBatch callData
             (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            address lastTargetContract = appRegistry.getSponsor(targets[targets.length - 1]);
-            for (uint256 i = 0; i < targets.length; i++) {
-                // App signer should only be valid for the app itself and its children
-                // It is important that wallet calls are not allowed through the app signer
-                if (!appRegistry.isContractSponsored(lastTargetContract, targets[i])) {
-                    return address(0);
-                }
-            }
-            return lastTargetContract;
+            if (targets.length == 0) return (address(0), false);
+
+            // target is the last element of the batch
+            target = targets[targets.length - 1];
+            batched = true;
         } else if (selector == IKintoWallet.execute.selector) {
-            // Decode callData for execute
-            (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            // Do not allow txs to the wallet via app key
-            if (target == address(this)) {
-                return address(0);
-            }
-            return target;
+            (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
         }
-        return address(0);
     }
 }
 

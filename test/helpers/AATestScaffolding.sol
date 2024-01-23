@@ -18,6 +18,7 @@ import {KintoWalletFactoryV6 as KintoWalletFactory} from "../../src/wallet/Kinto
 import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
+import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 
 abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
@@ -267,6 +268,25 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
     }
 
+    function updateMetadata(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
+        public
+    {
+        address[] memory appContracts = new address[](0);
+        vm.prank(_owner);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+    }
+
+    function updateMetadata(
+        address _owner,
+        string memory name,
+        address parentContract,
+        uint256[4] memory appLimits,
+        address[] memory appContracts
+    ) public {
+        vm.prank(_owner);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+    }
+
     function setSponsoredContracts(address _owner, address app, address[] memory contracts, bool[] memory sponsored)
         public
     {
@@ -310,6 +330,10 @@ abstract contract AATestScaffolding is KYCSignature {
         KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoIDv1, _kintoAppRegistry);
         vm.prank(_walletFactory.owner());
         _walletFactory.upgradeAllWalletImplementations(_impl);
+
+        SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
+        vm.prank(_paymaster.owner());
+        _paymaster.upgradeTo(address(_paymasterImpl));
     }
 
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////

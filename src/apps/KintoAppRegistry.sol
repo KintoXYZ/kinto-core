@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -25,24 +24,31 @@ contract KintoAppRegistry is
     IKintoAppRegistry
 {
     /* ============ Constants ============ */
+
     uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
     uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
     uint256 public constant override GAS_LIMIT_THRESHOLD = 0.01 ether;
 
     /* ============ State Variables ============ */
+
     IKintoWalletFactory public immutable override walletFactory;
+
     mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
-    // other contracts to be sponsored that dont belong in the app
+
+    // mapping between an app and all the contracts that it sponsors (that belong to the app)
+    mapping(address => address) public override childToParentContract; // child => parent (app)
+
+    // contracts the app decides to sponsor (that dont belong to the app)
     mapping(address => mapping(address => bool)) private _sponsoredContracts;
-    // Mapping between the app and all the contracts that belong to it
-    mapping(address => address) public override childToParentContract;
-    // Mapping between token id and app metadata
-    mapping(uint256 => address) public override tokenIdToApp;
+
+    mapping(uint256 => address) public override tokenIdToApp; // token ID => app metadata
+
     uint256 public override appCount;
 
     /* ============ Events ============ */
-    event AppCreated(address indexed _app, address _owner, uint256 _timestamp);
+
+    event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
     event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
     event AppDSAEnabled(address indexed _app, uint256 _timestamp);
 
@@ -112,10 +118,33 @@ contract KintoAppRegistry is
     ) external override {
         require(_appMetadata[parentContract].tokenId == 0, "App already registered");
         require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
+        require(walletFactory.walletTs(parentContract) == 0, "Wallets can not be registered");
+
         appCount++;
         _updateMetadata(appCount, _name, parentContract, appContracts, appLimits);
         _safeMint(msg.sender, appCount);
-        emit AppCreated(parentContract, msg.sender, block.timestamp);
+
+        emit AppRegistered(parentContract, msg.sender, block.timestamp);
+    }
+
+    /**
+     * @dev Allows the developer to update the metadata of the app
+     * @param _name The name of the app
+     * @param parentContract The address of the parent contract
+     * @param appContracts The addresses of the child contracts
+     * @param appLimits The limits of the app
+     */
+    function updateMetadata(
+        string calldata _name,
+        address parentContract,
+        address[] calldata appContracts,
+        uint256[4] calldata appLimits
+    ) external override {
+        uint256 tokenId = _appMetadata[parentContract].tokenId;
+        require(msg.sender == ownerOf(tokenId), "Only developer can update metadata");
+        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
+
+        emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
 
     /**
@@ -139,25 +168,6 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @dev Allows the developer to update the metadata of the app
-     * @param _name The name of the app
-     * @param parentContract The address of the parent contract
-     * @param appContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     */
-    function updateMetadata(
-        string calldata _name,
-        address parentContract,
-        address[] calldata appContracts,
-        uint256[4] calldata appLimits
-    ) external override {
-        uint256 tokenId = _appMetadata[parentContract].tokenId;
-        require(msg.sender == ownerOf(tokenId), "Only developer can update metadata");
-        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
-        emit AppUpdated(parentContract, msg.sender, block.timestamp);
-    }
-
-    /**
      * @dev Allows the app to request PII data
      * @param app The name of the app
      */
@@ -167,7 +177,21 @@ contract KintoAppRegistry is
         emit AppDSAEnabled(app, block.timestamp);
     }
 
-    /* ============ App Info Fetching ============ */
+    /**
+     * @dev Returns whether the contract implements the interface defined by the id
+     * @param interfaceId id of the interface to be checked.
+     * @return true if the contract implements the interface defined by the id.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    /* ============ Getters ============ */
 
     /**
      * @dev Returns the metadata of the app
@@ -175,9 +199,8 @@ contract KintoAppRegistry is
      * @return The metadata of the app
      */
     function getAppMetadata(address _contract) external view override returns (IKintoAppRegistry.Metadata memory) {
-        address mainContract =
-            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
-        return _appMetadata[mainContract];
+        return
+            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
     }
 
     /**
@@ -186,9 +209,8 @@ contract KintoAppRegistry is
      * @return The limits of the app
      */
     function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
-        address mainContract =
-            childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract;
-        IKintoAppRegistry.Metadata memory metadata = _appMetadata[mainContract];
+        IKintoAppRegistry.Metadata memory metadata =
+            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
         return [
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
             metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
@@ -203,23 +225,23 @@ contract KintoAppRegistry is
      * @param _contract The address of the contract
      * @return bool true or false
      */
-    function isContractSponsored(address _app, address _contract) external view override returns (bool) {
+    function isSponsored(address _app, address _contract) external view override returns (bool) {
         return _contract == _app || childToParentContract[_contract] == _app || _sponsoredContracts[_app][_contract];
     }
 
     /**
-     * @dev Returns the sponsoring contract
+     * @dev Returns the sponsoring contract for a given contract (aka parent contract)
      * @param _contract The address of the contract
      * @return The address of the contract that sponsors the contract
      */
     function getSponsor(address _contract) external view override returns (address) {
-        if (childToParentContract[_contract] != address(0)) {
-            return childToParentContract[_contract];
-        }
+        address sponsor = childToParentContract[_contract];
+        if (sponsor != address(0)) return sponsor;
         return _contract;
     }
 
-    /* =========== App metadata params =========== */
+    /* =========== Internal methods =========== */
+
     function _updateMetadata(
         uint256 tokenId,
         string calldata _name,
@@ -236,14 +258,15 @@ contract KintoAppRegistry is
             gasLimitPeriod: appLimits[2],
             gasLimitCost: appLimits[3]
         });
+
         tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
+
         for (uint256 i = 0; i < appContracts.length; i++) {
+            require(walletFactory.walletTs(appContracts[i]) == 0, "Wallets can not be registered");
             childToParentContract[appContracts[i]] = parentContract;
         }
     }
-
-    /* ============ Disable token transfers ============ */
 
     /**
      * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
@@ -258,21 +281,5 @@ contract KintoAppRegistry is
     {
         require((from == address(0) && to != address(0)), "Only mint transfers are allowed");
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-    }
-
-    /* ============ Interface ============ */
-
-    /**
-     * @dev Returns whether the contract implements the interface defined by the id
-     * @param interfaceId id of the interface to be checked.
-     * @return true if the contract implements the interface defined by the id.
-     */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
     }
 }

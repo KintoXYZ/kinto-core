@@ -198,13 +198,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
 
-        // get target contract from calldata
-        address targetAccount = _getSponsor(userOp.sender, userOp.callData);
-
-        require(unlockBlock[targetAccount] == 0, "SP: deposit not locked");
-        require(balances[targetAccount] >= ethMaxCost, "SP: deposit too low");
-
-        return (abi.encode(targetAccount, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
+        address sponsor = appRegistry.getSponsor(_decodeCallData(userOp.callData));
+        require(unlockBlock[sponsor] == 0, "SP: deposit not locked");
+        require(balances[sponsor] >= ethMaxCost, "SP: deposit too low");
+        return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
     }
 
     /**
@@ -280,27 +277,41 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         );
     }
 
-    /// @dev extracts the target contract from the calldata and calls the app registry to get the sponsor
-    function _getSponsor(address sender, bytes calldata callData) internal view returns (address sponsor) {
-        bytes4 selector = bytes4(callData[:4]); // function selector
-        if (selector == IKintoWallet.executeBatch.selector) {
-            // decode callData for executeBatch
-            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            sponsor = appRegistry.getSponsor(targets[targets.length - 1]);
-
-            // last contract must be a contract app
-            for (uint256 i = 0; i < targets.length - 1; i++) {
-                if (!appRegistry.isContractSponsored(sponsor, targets[i]) && targets[i] != sender) {
-                    revert("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
-                }
-            }
-        } else if (selector == IKintoWallet.execute.selector) {
-            // decode callData for execute
+    /// Return app's sponsor from the registry
+    /// @return sponsor - the sponsor address
+    /// @dev reverts if neither execute nor executeBatch
+    /// @dev ensures all targets are sponsored by the same app if executeBatch (todo: decouple this)
+    function _getSponsor(bytes calldata callData) internal view returns (address sponsor) {
+        bytes4 selector = bytes4(callData[:4]);
+        if (selector == IKintoWallet.execute.selector) {
             (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
             sponsor = appRegistry.getSponsor(target);
+        } else if (selector == IKintoWallet.executeBatch.selector) {
+            // last target is the sponsor
+            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            sponsor = appRegistry.getSponsor(targets[targets.length - 1]);
         } else {
             // handle unknown function or error
             revert("SP: Unknown function selector");
+        }
+    }
+
+    // @notice extracts `target` contract from callData
+    // @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
+    // bear with the gas cost of all ops
+    // @dev this is very similar to KintoWallet._decodeCallData, consider unifying
+    function _decodeCallData(bytes calldata callData) private pure returns (address target) {
+        bytes4 selector = bytes4(callData[:4]); // extract the function selector from the callData
+
+        if (selector == IKintoWallet.executeBatch.selector) {
+            // decode executeBatch callData
+            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
+            if (targets.length == 0) return address(0);
+
+            // target is the last element of the batch
+            target = targets[targets.length - 1];
+        } else if (selector == IKintoWallet.execute.selector) {
+            (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
         }
     }
 

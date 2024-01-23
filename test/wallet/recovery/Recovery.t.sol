@@ -53,7 +53,7 @@ contract RecoveryTest is KintoWalletTest {
         _kintoIDv1.monitor(users, updates);
 
         vm.prank(address(_walletFactory));
-        _kintoWallet.finishRecovery(users);
+        _kintoWallet.completeRecovery(users);
 
         assertEq(_kintoWallet.inRecovery(), 0);
         assertEq(_kintoWallet.owners(0), _user);
@@ -88,7 +88,7 @@ contract RecoveryTest is KintoWalletTest {
         // complete recovery
         vm.prank(address(_walletFactory));
         vm.expectRevert("KW-fr: Old KYC must be burned");
-        _kintoWallet.finishRecovery(users);
+        _kintoWallet.completeRecovery(users);
     }
 
     function testComplete_RevertWhen_RecoverWithoutNewOwnerKYCd() public {
@@ -112,7 +112,7 @@ contract RecoveryTest is KintoWalletTest {
         users[0] = _user;
         vm.prank(address(_walletFactory));
         vm.expectRevert("KW-rs: KYC Required");
-        _kintoWallet.finishRecovery(users);
+        _kintoWallet.completeRecovery(users);
     }
 
     function testComplete_RevertWhen_RecoverNotEnoughTime() public {
@@ -148,7 +148,7 @@ contract RecoveryTest is KintoWalletTest {
         // complete recovery
         vm.prank(address(_walletFactory));
         vm.expectRevert("KW-fr: too early");
-        _kintoWallet.finishRecovery(users);
+        _kintoWallet.completeRecovery(users);
     }
 
     function testCancelRecovery() public {
@@ -167,6 +167,13 @@ contract RecoveryTest is KintoWalletTest {
 
         vm.expectRevert("KW: only self");
         _kintoWallet.cancelRecovery();
+    }
+
+    function testChangeRecoverer_RevertWhen_CallerIsNotFactory() public {
+        vm.expectEmit(true, true, true, true);
+        emit RecovererChanged(address(1), _kintoWallet.recoverer());
+        vm.prank(address(_walletFactory));
+        _kintoWallet.changeRecoverer(payable(address(1)));
     }
 
     function testChangeRecoverer_RevertWhen_CallerIsNotFactory(address someone) public {

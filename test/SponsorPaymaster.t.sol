@@ -12,10 +12,7 @@ import "../src/paymasters/SponsorPaymaster.sol";
 import "../src/sample/Counter.sol";
 import "../src/interfaces/IKintoWallet.sol";
 
-import "./helpers/KYCSignature.sol";
-import "./helpers/UUPSProxy.sol";
-import "./helpers/UserOp.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import "./KintoWallet.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
@@ -28,29 +25,14 @@ contract SponsorPaymasterUpgrade is SponsorPaymaster {
     }
 }
 
-contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
-    uint256[] privateKeys;
-
-    function setUp() public {
-        vm.chainId(1);
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-
-        // Add paymaster to _kintoWallet
-        fundSponsorForApp(address(_kintoWallet));
-
-        // Default tests to use 1 private key for simplicity
-        privateKeys = new uint256[](1);
-
-        // Default tests to use _ownerPk unless otherwise specified
-        privateKeys[0] = _ownerPk;
-
+contract SponsorPaymasterTest is KintoWalletTest {
+    function setUp() public override {
+        super.setUp();
         vm.deal(_user, 1e20);
     }
 
-    function testUp() public {
+    function testUp() public override {
+        super.testUp();
         assertEq(_paymaster.COST_OF_POST(), 200_000);
     }
 
@@ -149,7 +131,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         vm.stopPrank();
     }
 
-    /* ============ PER-OP: Global Rate limits ============ */
+    /* ============ Per-Op: Global Rate limits ============ */
 
     function testValidatePaymasterUserOp() public {
         UserOperation memory userOp = _createUserOperation(
@@ -268,16 +250,16 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
-        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), app);
+        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
 
         // reset period
         vm.warp(block.timestamp + _paymaster.RATE_LIMIT_PERIOD() + 1);
 
         // can again execute as many transactions as the threshold allows
-        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), app);
+        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
     }
 
     function testValidatePaymasterUserOp_RevertWhen_TxRateLimitExceeded() public {
@@ -290,13 +272,13 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
-        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), app);
+        _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, app);
+        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -317,10 +299,10 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // generate ops until reaching the threshold
-        UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), app);
+        UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
@@ -334,10 +316,11 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // generate ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1, app);
+        UserOperation[] memory userOps =
+            _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -352,23 +335,21 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_WithinAppTxRateLimit() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
-        address app = _createApp();
-        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(app);
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
-        _incrementCounterTxs(appLimits[1], app);
+        _incrementCounterTxs(appLimits[1], address(counter));
     }
 
     function testValidatePaymasterUserOp_RevertWhen_AppTxRateLimitExceeded() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
-        address app = _createApp();
-        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(app);
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
-        _incrementCounterTxs(appLimits[1], app);
+        _incrementCounterTxs(appLimits[1], address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, app);
+        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -381,21 +362,19 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     function testValidatePaymasterUserOp_WithinAppOpsRateLimit() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
-        address app = _createApp();
-        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(app);
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // generate ops until reaching the threshold
-        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1], app);
+        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1], address(counter));
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
     function testValidatePaymasterUserOp_RevertWhen_AppOpsRateLimitExceeded() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
-        address app = _createApp();
-        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(app);
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // generate ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1] + 1, app);
+        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1] + 1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -418,13 +397,13 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             0.000000000001 ether //
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // execute transactions (with one user op per tx) one by one until reaching the gas limit
-        _incrementCounterTxsUntilGasLimit(app);
+        _incrementCounterTxsUntilGasLimit(address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, app);
+        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         emit PostOpRevertReason(_entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes(""));
         vm.recordLogs();
@@ -442,16 +421,16 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             0.000000000001 ether //
         ];
-        address app = _createApp(appLimits);
+        updateMetadata(_owner, "counter", address(counter), appLimits);
 
         // execute transactions until reaching gas limit and save the amount of apps that reached the threshold
-        uint256 amt = _incrementCounterTxsUntilGasLimit(app);
+        uint256 amt = _incrementCounterTxsUntilGasLimit(address(counter));
 
         // reset period
         // fixme: vm.warp(block.timestamp + _kintoAppRegistry.GAS_LIMIT_PERIOD() + 1);
 
         // generate `amt` ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(amt, app);
+        UserOperation[] memory userOps = _incrementCounterOps(amt, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -460,63 +439,6 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
-    }
-
-    function testValidatePaymasterUserOp_RevertWhen_WhenNotRelated_WhenBatch() public {
-        // if intermediate calls are neither sponsored contracts nor children of an app, it should NOT validate the signature
-
-        // deploy a counter contract
-        Counter counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        // deploy a second counter contract
-        Counter unknown = new Counter();
-        assertEq(unknown.count(), 0);
-
-        // prep batch
-        address[] memory targets = new address[](3);
-        targets[0] = address(_kintoWallet);
-        targets[1] = address(unknown);
-        targets[2] = address(counter);
-
-        uint256[] memory values = new uint256[](3);
-        values[0] = 0;
-        values[1] = 0;
-        values[2] = 0;
-
-        // we want to do 3 calls: whitelistApp, increment counter and increment counter2
-        bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
-        calls[1] = abi.encodeWithSignature("increment()");
-        calls[2] = abi.encodeWithSignature("increment()");
-
-        // send all transactions via batch
-        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-
-        // execute the transaction via the entry point
-
-        // prepare expected error message
-        uint256 expectedOpIndex = 0; // Adjust as needed
-        string memory expectedMessage = "AA33 reverted";
-        bytes memory additionalMessage =
-            abi.encodePacked("SP: executeBatch targets must be sponsored by the contract or be the sender wallet");
-        bytes memory expectedAdditionalData = abi.encodeWithSelector(
-            bytes4(keccak256("Error(string)")), // Standard error selector
-            additionalMessage
-        );
-
-        // encode the entire revert reason
-        bytes memory expectedRevertReason = abi.encodeWithSignature(
-            "FailedOpWithRevert(uint256,string,bytes)", expectedOpIndex, expectedMessage, expectedAdditionalData
-        );
-
-        vm.expectRevert(expectedRevertReason);
-        _entryPoint.handleOps(userOps, payable(_owner));
     }
 
     // TODO:
@@ -539,29 +461,6 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
             slot,
             bytes32(operationCount) // Make sure to properly cast the value to bytes32
         );
-    }
-
-    // deploys, registers and whitelists a Counter app
-    function _createApp(uint256[4] memory appLimits) internal returns (address app) {
-        // (1). deploy the counter contract
-        app = address(new Counter());
-
-        // (2). fund paymaster for Counter contract
-        fundSponsorForApp(app);
-
-        // (3). register the app
-        registerApp(_owner, "CounterApp", app, appLimits);
-        whitelistApp(app);
-    }
-
-    function _createApp() internal returns (address app) {
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
-        return _createApp(appLimits);
     }
 
     function _expectedRevertReason(string memory message) internal pure returns (bytes memory) {
@@ -610,7 +509,7 @@ contract SponsorPaymasterTest is KYCSignature, UserOp, AATestScaffolding {
 
     /// @dev executes transactions until the gas limit is reached
     function _incrementCounterTxsUntilGasLimit(address app) internal returns (uint256 amt) {
-        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(app);
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
         uint256 estimatedGasPerTx = 0;
         uint256 cumulativeGasUsed = 0;
         UserOperation[] memory userOps = new UserOperation[](1);
