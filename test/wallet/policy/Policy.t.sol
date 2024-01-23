@@ -1,51 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
 import "forge-std/console.sol";
+import "../../KintoWallet.t.sol";
 
-import "@aa/interfaces/IEntryPoint.sol";
-
-import "../../../src/interfaces/IKintoWallet.sol";
-
-import "../../../src/wallet/KintoWallet.sol";
-import "../../../src/sample/Counter.sol";
-
-import {UserOp} from "../../helpers/UserOp.sol";
-import {AATestScaffolding} from "../../helpers/AATestScaffolding.sol";
-
-contract ResetSignerTest is AATestScaffolding, UserOp {
-    uint256[] privateKeys;
-
-    // constants
-    uint256 constant SIG_VALIDATION_FAILED = 1;
-
-    // events
-    event UserOperationRevertReason(
-        bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason
-    );
-    event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
-    event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
-    event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
-
-    function setUp() public {
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-
-        // Add paymaster to _kintoWallet
-        _fundPaymasterForContract(address(_kintoWallet));
-
-        // Default tests to use 1 private key for simplicity
-        privateKeys = new uint256[](1);
-
-        // Default tests to use _ownerPk unless otherwise specified
-        privateKeys[0] = _ownerPk;
-    }
-
-    function testUp() public {
-        assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
-    }
-
+contract ResetSignerTest is KintoWalletTest {
     /* ============ Signers & Policy Tests ============ */
 
     function testAddingOneSigner() public {
@@ -64,7 +23,8 @@ contract ResetSignerTest is AATestScaffolding, UserOp {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
+
+        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.owners(1), _user);
         vm.stopPrank();
@@ -171,26 +131,27 @@ contract ResetSignerTest is AATestScaffolding, UserOp {
     }
 
     function testChangingPolicyWithTwoSigners() public {
-        vm.startPrank(_owner);
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
-        uint256 nonce = _kintoWallet.getNonce();
-        UserOperation memory userOp = _createUserOperation(
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
-            nonce,
+            _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
-        // Execute the transaction via the entry point
+
+        // execute the transaction via the entry point
+        vm.expectEmit();
+        emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
         _entryPoint.handleOps(userOps, payable(_owner));
+
         assertEq(_kintoWallet.owners(1), _user);
         assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
-        vm.stopPrank();
     }
 
     function testChangingPolicyWithThreeSigners() public {
@@ -218,6 +179,7 @@ contract ResetSignerTest is AATestScaffolding, UserOp {
         vm.stopPrank();
     }
 
+    // todo: separate into 2 different tests
     function test_RevertWhen_ChangingPolicyWithoutRightSigners() public {
         address[] memory owners = new address[](2);
         owners[0] = _owner;

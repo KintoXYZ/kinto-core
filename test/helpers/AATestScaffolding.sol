@@ -6,8 +6,9 @@ import "forge-std/console.sol";
 
 import "@aa/core/EntryPoint.sol";
 
-import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoEntryPoint.sol";
+
+import "../../src/KintoID.sol";
 import "../../src/apps/KintoAppRegistry.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
@@ -16,6 +17,7 @@ import {KintoWalletFactoryV6 as KintoWalletFactory} from "../../src/wallet/Kinto
 
 import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
+import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 
 abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
@@ -44,10 +46,8 @@ abstract contract AATestScaffolding is KYCSignature {
         // Deploy Kinto ID
         deployKintoID(_owner, _kycProvider);
 
-        // vm.startPrank(_owner);
         EntryPoint entry = new EntryPoint{salt: 0}();
         _entryPoint = IKintoEntryPoint(address(entry));
-        // vm.stopPrank();
 
         // Deploy wallet & wallet factory
         deployWalletFactory(_owner);
@@ -73,8 +73,8 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.deal(_owner, 1e20);
     }
 
-    function _fundPaymasterForContract(address _contract) internal {
-        // We add the deposit to the counter contract in the paymaster
+    function fundSponsorForApp(address _contract) internal {
+        // we add the deposit to the counter contract in the paymaster
         _paymaster.addDepositFor{value: 1e19}(address(_contract));
     }
 
@@ -98,17 +98,18 @@ abstract contract AATestScaffolding is KYCSignature {
     function deployWalletFactory(address _owner) public {
         vm.startPrank(_owner);
 
-        // Deploy wallet implementation (temporary because of loop dependency on app)
+        // deploy wallet implementation (temporary because of loop dependency on app)
         _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, KintoAppRegistry(address(0)));
 
-        // Deploy wallet factory implementation
-        KintoWalletFactory _implementation2 = new KintoWalletFactory{salt: 0}(_kintoWalletImpl);
-        _proxyFactory = new UUPSProxy{salt: 0}(address(_implementation2), "");
+        // deploy wallet factory implementation
+        address _factoryImpl = address(new KintoWalletFactory{salt: 0}(_kintoWalletImpl));
+        _proxyFactory = new UUPSProxy{salt: 0}(address(_factoryImpl), "");
         _walletFactory = KintoWalletFactory(address(_proxyFactory));
-        // Initialize wallet factory
+
+        // initialize wallet factory
         _walletFactory.initialize(_kintoIDv1);
 
-        // Set the wallet factory in the entry point
+        // set the wallet factory in the entry point
         _entryPoint.setWalletFactory(address(_walletFactory));
 
         vm.stopPrank();
@@ -207,7 +208,7 @@ abstract contract AATestScaffolding is KYCSignature {
     }
 
     // register app helpers
-    // fixme: this should go through entrypoint
+    // fixme: these should go through entrypoint
 
     function registerApp(address _owner, string memory name, address parentContract) public {
         address[] memory appContracts = new address[](0);
@@ -239,6 +240,7 @@ abstract contract AATestScaffolding is KYCSignature {
         registerApp(_owner, name, parentContract, appContracts, appLimits);
     }
 
+    // fixme: this should go through entrypoint
     function registerApp(
         address _owner,
         string memory name,
@@ -252,14 +254,62 @@ abstract contract AATestScaffolding is KYCSignature {
         );
     }
 
-    // fixme: this should go through entrypoint
+    function updateMetadata(address _owner, string memory name, address parentContract, address[] memory appContracts)
+        public
+    {
+        uint256[4] memory appLimits = [
+            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
+            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+        ];
+        vm.prank(_owner);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+    }
+
+    function setSponsoredContracts(address _owner, address app, address[] memory contracts, bool[] memory sponsored)
+        public
+    {
+        vm.prank(_owner);
+        _kintoAppRegistry.setSponsoredContracts(app, contracts, sponsored);
+    }
+
     function whitelistApp(address app) public {
+        whitelistApp(app, true);
+    }
+
+    function whitelistApp(address app, bool whitelist) public {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
-        flags[0] = true;
+        flags[0] = whitelist;
         vm.prank(address(_kintoWallet));
         _kintoWallet.whitelistApp(targets, flags);
+    }
+
+    function setAppKey(address app, address signer) public {
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setAppKey(app, signer);
+    }
+
+    function resetSigners(address[] memory newSigners, uint8 policy) public {
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.resetSigners(newSigners, policy);
+        assertEq(_kintoWallet.owners(0), newSigners[0]);
+        assertEq(_kintoWallet.owners(1), newSigners[1]);
+        assertEq(_kintoWallet.signerPolicy(), policy);
+    }
+
+    function setSignerPolicy(uint8 policy) public {
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setSignerPolicy(policy);
+        assertEq(_kintoWallet.signerPolicy(), policy);
+    }
+
+    function useHarness() public {
+        KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        vm.prank(_walletFactory.owner());
+        _walletFactory.upgradeAllWalletImplementations(_impl);
     }
 
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////

@@ -190,9 +190,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function setAppKey(address app, address signer) external override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
-        require(app != address(0) && appWhitelist[app], "KW-apk: invalid address");
+        require(app != address(0), "KW-apk: invalid address");
+        require(appWhitelist[app], "KW-apk: contract not whitelisted"); // todo: i don't think we need to check this here
         require(appSigner[app] != signer, "KW-apk: same key");
         appSigner[app] = signer;
+        // todo: emit event
     }
 
     /* ============ Recovery Process ============ */
@@ -270,6 +272,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
+        console.log(userOp.signature.length == 65);
         if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
             if (appSigner[app] == hash.recover(userOp.signature)) {
                 return _packValidationData(false, 0, 0);
@@ -357,6 +360,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     // Function to extract the first target contract
+    /// @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to pay
+    // all other ops
     function _getAppContract(bytes calldata callData) private view returns (address) {
         // Extract the function selector from the callData
         bytes4 selector = bytes4(callData[:4]);

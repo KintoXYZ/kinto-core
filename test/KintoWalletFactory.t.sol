@@ -103,6 +103,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
     }
 
     /* ============ Deploy Tests ============ */
+
     function testDeployCustomContract() public {
         vm.startPrank(_owner);
         address computed =
@@ -135,7 +136,7 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
 
     function testWhitelistedSignerCanFundWallet() public {
         vm.startPrank(_owner);
-        _fundPaymasterForContract(address(_kintoWallet));
+        fundSponsorForApp(address(_kintoWallet));
         uint256 nonce = _kintoWallet.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;
@@ -182,5 +183,14 @@ contract KintoWalletFactoryTest is UserOp, AATestScaffolding {
         vm.startPrank(_owner);
         vm.expectRevert("Invalid wallet or funder");
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
+    }
+
+    /* ============ Recovery Tests ============ */
+
+    function testStart_RevertWhen_RecoverNotRecoverer(address someone) public {
+        vm.assume(someone != address(_walletFactory));
+        vm.prank(someone);
+        vm.expectRevert("only recoverer");
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
     }
 }
