@@ -272,7 +272,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
-        console.log(userOp.signature.length == 65);
         if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
             if (appSigner[app] == hash.recover(userOp.signature)) {
                 return _packValidationData(false, 0, 0);
