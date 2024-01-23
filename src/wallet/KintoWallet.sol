@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
-import "forge-std/console.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
@@ -273,13 +272,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         // If there is only one signature and there is an app Key, check it
         address app = _getAppContract(userOp.callData);
-        console.log("APP", app);
-        console.log("appWhitelist[app]", appWhitelist[app]);
-        console.log("appSigner[app]", appSigner[app]);
         console.log(userOp.signature.length == 65);
         if (userOp.signature.length == 65 && appWhitelist[app] && appSigner[app] != address(0)) {
             if (appSigner[app] == hash.recover(userOp.signature)) {
-                console.log("SIII");
                 return _packValidationData(false, 0, 0);
             }
         }
@@ -380,7 +375,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                 // App signer should only be valid for the app itself and its children
                 // It is important that wallet calls are not allowed through the app signer
                 if (!appRegistry.isContractSponsored(lastTargetContract, targets[i])) {
-                    console.log("ENTREEEEE");
                     return address(0);
                 }
             }
