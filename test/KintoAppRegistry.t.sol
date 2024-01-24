@@ -220,6 +220,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
         vm.expectRevert("DSA already enabled");
+        vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
