@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract ValidateSignatureTest is KintoWalletTest {
+contract ValidateSignatureTest is SharedSetup {
     // constants
     uint256 constant SIG_VALIDATION_FAILED = 1;
     uint256 constant SIG_VALIDATION_SUCCESS = 0;
@@ -210,7 +210,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         values[2] = 0;
 
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
 
@@ -249,7 +249,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         values[2] = 0;
 
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
 
@@ -290,7 +290,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         values[2] = 0;
 
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
 
@@ -339,7 +339,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         values[3] = 0;
 
         bytes[] memory calls = new bytes[](4);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
         calls[3] = abi.encodeWithSignature("increment()");
@@ -374,7 +374,7 @@ contract ValidateSignatureTest is KintoWalletTest {
         values[2] = 0;
 
         bytes[] memory calls = new bytes[](3);
-        calls[0] = abi.encodeWithSignature("isFunderWhitelisted()");
+        calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
         calls[2] = abi.encodeWithSignature("increment()");
 
@@ -409,7 +409,7 @@ contract ValidateSignatureTest is KintoWalletTest {
 
         bytes[] memory calls = new bytes[](limit + 2);
         for (uint256 i = 0; i < limit + 2; i++) {
-            calls[i] = abi.encodeWithSignature("isFunderWhitelisted()");
+            calls[i] = abi.encodeWithSignature("recoverer()");
         }
         calls[limit + 1] = abi.encodeWithSignature("increment()");
 
@@ -657,7 +657,7 @@ contract ValidateSignatureTest is KintoWalletTest {
             values[i] = 0;
             if (i == order) {
                 targets[i] = address(_kintoWallet);
-                calls[i] = abi.encodeWithSignature("isFunderWhitelisted()");
+                calls[i] = abi.encodeWithSignature("recoverer()");
             } else {
                 targets[i] = address(counter);
                 calls[i] = abi.encodeWithSignature("increment()");
@@ -702,7 +702,7 @@ contract ValidateSignatureTest is KintoWalletTest {
             values[i] = 0;
             if (i == order) {
                 targets[i] = address(_kintoWallet);
-                calls[i] = abi.encodeWithSignature("isFunderWhitelisted()");
+                calls[i] = abi.encodeWithSignature("recoverer()");
             } else {
                 targets[i] = address(counter);
                 calls[i] = abi.encodeWithSignature("increment()");
@@ -765,6 +765,36 @@ contract ValidateSignatureTest is KintoWalletTest {
         privateKeys[1] = _userPk;
 
         userOp = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    // special case 2: requiredSigners == 1, owners.length == 3 and the owner 2 is the signer.
+    function testValidateSignature_SpecialCase2() public {
+        // reset signers & change policy
+        address[] memory owners = new address[](3);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+        resetSigners(owners, _kintoWallet.SINGLE_SIGNER());
+
+        // create user op with owners 1 as signer
+        privateKeys = new uint256[](1);
+        privateKeys[0] = _userPk;
+
+        UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),

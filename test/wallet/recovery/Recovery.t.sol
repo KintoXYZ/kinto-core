@@ -2,12 +2,12 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract RecoveryTest is KintoWalletTest {
+contract RecoveryTest is SharedSetup {
     /* ============ Recovery Tests ============ */
 
-    function testStartRecovert() public {
+    function testStartRecovery() public {
         vm.prank(address(_walletFactory));
         _kintoWallet.startRecovery();
         assertEq(_kintoWallet.inRecovery(), block.timestamp);

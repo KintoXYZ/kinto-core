@@ -13,7 +13,7 @@ import "../src/sample/Counter.sol";
 import "../src/interfaces/IKintoWallet.sol";
 import "../src/wallet/KintoWallet.sol";
 
-import "./KintoWallet.t.sol";
+import "./SharedSetup.t.sol";
 
 contract KintoWalletUpgrade is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry)
@@ -33,7 +33,7 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
     }
 }
 
-contract KintoWalletFactoryTest is KintoWalletTest {
+contract KintoWalletFactoryTest is SharedSetup {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
@@ -46,9 +46,26 @@ contract KintoWalletFactoryTest is KintoWalletTest {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
+    /* ============ Create Account Tests ============ */
+
+    function testCreateAccount() public {
+        vm.prank(address(_owner));
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+        assertEq(_kintoWallet.owners(0), _owner);
+    }
+
+    function testCreateAccount_WhenAlreadyExists() public {
+        vm.prank(address(_owner));
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+
+        vm.prank(address(_owner));
+        IKintoWallet _kintoWalletAfter = _walletFactory.createAccount(_owner, _owner, 0);
+        assertEq(address(_kintoWallet), address(_kintoWalletAfter));
+    }
+
     /* ============ Upgrade Tests ============ */
 
-    function testOwnerCanUpgradeFactory() public {
+    function testUpgradeTo_WhenCallerIsOwner() public {
         vm.startPrank(_owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
         _walletFactory.upgradeTo(address(_newImplementation));
@@ -58,9 +75,12 @@ contract KintoWalletFactoryTest is KintoWalletTest {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_OthersCannotUpgradeFactory() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
+        vm.assume(someone != _owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
+
         vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(someone);
         _walletFactory.upgradeTo(address(_newImplementation));
     }
 
@@ -147,7 +167,6 @@ contract KintoWalletFactoryTest is KintoWalletTest {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         vm.deal(_funder, 1e17);
         vm.startPrank(_funder);
@@ -176,11 +195,76 @@ contract KintoWalletFactoryTest is KintoWalletTest {
 
     /* ============ Recovery Tests ============ */
 
-    function testStart_RevertWhen_RecoverNotRecoverer(address someone) public {
-        vm.assume(someone != address(_walletFactory));
+    function testStartWalletRecovery_WhenCallerIsRecoverer() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+    }
+
+    function testStartWalletRecovery_WhenCallerIsRecoverer_RevertWhen_WalletNotExists() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert("invalid wallet");
+        _walletFactory.startWalletRecovery(payable(address(123)));
+    }
+
+    function testStartWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
+        vm.assume(someone != address(_kintoWallet.recoverer()));
         vm.prank(someone);
         vm.expectRevert("only recoverer");
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+    }
+
+    function testCompleteWalletRecovery_WhenCallerIsRecoverer() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        // approve KYC for _user burn KYC for _owner
+        revokeKYC(_kycProvider, _owner, _ownerPk);
+        approveKYC(_kycProvider, _user, _userPk);
+
+        // run monitor
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoIDv1.monitor(users, updates);
+
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
+    }
+
+    function testCompleteWalletRecovery_RevertWhen_WhenCallerIsRecoverer_WalletNotExists() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert("invalid wallet");
+        _walletFactory.completeWalletRecovery(payable(address(123)), new address[](0));
+    }
+
+    function testCompleteWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
+        vm.assume(someone != address(_kintoWallet.recoverer()));
+        vm.prank(someone);
+        vm.expectRevert("only recoverer");
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), new address[](0));
+    }
+
+    function testChangeWalletRecoverer_WhenCallerIsRecoverer() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
+    }
+
+    function testChangeWalletRecoverer_RevertWhen_CallerIsRecoverer_WhenWalletNotExists() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert("invalid wallet");
+        _walletFactory.changeWalletRecoverer(payable(address(123)), payable(address(123)));
+    }
+
+    function testChangeWalletRecoverer_RevertWhen_CallerIsNotRecoverer(address someone) public {
+        vm.assume(someone != address(_kintoWallet.recoverer()));
+        vm.prank(someone);
+        vm.expectRevert("only recoverer");
+        _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
     }
 
     /* ============ Send Money Tests ============ */

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/apps/KintoAppRegistry.sol";
 
-import "./KintoWallet.t.sol";
+import "./SharedSetup.t.sol";
 
 contract KintoAppRegistryV2 is KintoAppRegistry {
     function newFunction() external pure returns (uint256) {
@@ -16,7 +16,7 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
 
-contract KintoAppRegistryTest is KintoWalletTest {
+contract KintoAppRegistryTest is SharedSetup {
     function testUp() public override {
         super.testUp();
 

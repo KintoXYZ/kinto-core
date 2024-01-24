@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract AppKeyTest is KintoWalletTest {
+contract AppKeyTest is SharedSetup {
     /* ============ App Key ============ */
 
     function testSetAppKey() public {
@@ -18,7 +18,6 @@ contract AppKeyTest is KintoWalletTest {
             address(_paymaster)
         );
 
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.appSigner(address(counter)), _user);
     }
@@ -39,7 +38,6 @@ contract AppKeyTest is KintoWalletTest {
             address(_paymaster)
         );
 
-        // execute the transaction via the entry point
         address appSignerBefore = _kintoWallet.appSigner(address(_engenCredits));
 
         // @dev handleOps fails silently (does not revert)

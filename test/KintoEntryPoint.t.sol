@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "./KintoWallet.t.sol";
+import "./SharedSetup.t.sol";
 
-contract KintoEntryPointTest is KintoWalletTest {
+contract KintoEntryPointTest is SharedSetup {
     function testUp() public override {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }

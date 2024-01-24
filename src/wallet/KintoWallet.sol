@@ -111,7 +111,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i]);
         }
-        // If can transact, cancel recovery
+        // if can transact, cancel recovery
         inRecovery = 0;
     }
 
@@ -282,8 +282,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is not set or signature is not valid, verify signer policy
         if (
             (
-                signerPolicy == SINGLE_SIGNER && owners.length == 1
-                    && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
+                signerPolicy == SINGLE_SIGNER
+                    && _verifySingleSignature(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
             )
                 || (
                     signerPolicy != SINGLE_SIGNER
@@ -335,6 +335,20 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
     }
 
+    // @notice ensures at least 1 signer has signed the hash
+    // @dev useful when owners.length > 1
+    function _verifySingleSignature(bytes32 hashData, bytes memory signature) private view returns (uint256) {
+        // ensure at least one signer has signed
+        address recovered = hashData.recover(signature);
+        for (uint256 i = 0; i < owners.length; i++) {
+            if (owners[i] == recovered) {
+                return _packValidationData(false, 0, 0);
+            }
+        }
+        return SIG_VALIDATION_FAILED;
+    }
+
+    // @notice ensures signer has signed the hash
     function _verifySingleSignature(address signer, bytes32 hashData, bytes memory signature)
         private
         pure
@@ -346,6 +360,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return _packValidationData(false, 0, 0);
     }
 
+    // @notice ensures required signers have signed the hash
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
         // calculate required signers
         uint256 requiredSigners =

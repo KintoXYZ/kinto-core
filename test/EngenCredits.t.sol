@@ -139,7 +139,6 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
             privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         vm.stopPrank();
@@ -171,7 +170,6 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
             privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 20);
         vm.stopPrank();
@@ -198,7 +196,6 @@ contract EngenCreditsTest is UserOp, AATestScaffolding {
             privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(_engenCredits), address(_paymaster)
         );
         userOps[1] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
         // call again

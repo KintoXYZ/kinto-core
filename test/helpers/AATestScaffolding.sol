@@ -14,6 +14,7 @@ import "../../src/tokens/EngenCredits.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
+import "../../src/viewers/KYCViewer.sol";
 
 import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
@@ -23,8 +24,10 @@ import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
 
+    // Kinto Registry
     KintoAppRegistry _kintoAppRegistry;
 
+    // Kinto ID
     KintoID _implementation;
     KintoID _kintoIDv1;
 
@@ -33,8 +36,10 @@ abstract contract AATestScaffolding is KYCSignature {
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWallet;
 
+    // Others
     EngenCredits _engenCredits;
     SponsorPaymaster _paymaster;
+    KYCViewer _kycViewer;
 
     // proxies
     UUPSProxy _proxy;
@@ -42,6 +47,7 @@ abstract contract AATestScaffolding is KYCSignature {
     UUPSProxy _proxyPaymaster;
     UUPSProxy _proxyCredit;
     UUPSProxy _proxyRegistry;
+    UUPSProxy _proxyKYCViewer;
 
     function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
         // Deploy Kinto ID
@@ -64,6 +70,9 @@ abstract contract AATestScaffolding is KYCSignature {
 
         // Deploy Engen Credits
         deployEngenCredits(_owner);
+
+        // Deploy KYC Viewer
+        deployKYCViewer(_owner);
 
         vm.prank(_owner);
 
@@ -174,6 +183,24 @@ abstract contract AATestScaffolding is KYCSignature {
         // Deploy wallet implementation
         _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, _kintoAppRegistry);
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
+        vm.stopPrank();
+    }
+
+    function deployKYCViewer(address _owner) public {
+        vm.startPrank(_owner);
+
+        // deploy the Kinto KYC Viewer
+        _kycViewer = new KYCViewer{salt: 0}(address(_walletFactory));
+
+        // deploy _proxy contract and point it to _implementation
+        _proxyKYCViewer = new UUPSProxy{salt: 0}(address(_kycViewer), "");
+
+        // wrap in ABI to support easier calls
+        _kycViewer = KYCViewer(address(_proxyKYCViewer));
+
+        // initialize proxy
+        _kycViewer.initialize();
+
         vm.stopPrank();
     }
 
@@ -378,6 +405,8 @@ abstract contract AATestScaffolding is KYCSignature {
 
                     // clean revert reason & assert
                     string memory cleanRevertReason = _trimToPrefixAndRemoveTrailingNulls(decodedRevertReason, prefixes);
+                    console.log("left: %s", cleanRevertReason);
+                    console.log("right: %s", string(_reasons[idx]));
                     assertEq(cleanRevertReason, string(_reasons[idx]), "Revert reason does not match");
 
                     if (_reasons.length > 1) idx++; // if there's only one reason, we always use the same one

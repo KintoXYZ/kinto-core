@@ -2,21 +2,15 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract ExecuteTest is KintoWalletTest {
-    /* ============ One Signer Account Transaction Tests (execute) ============ */
-
+contract ExecuteTest is SharedSetup {
     function testExecute_WhenPaymaster() public {
-        uint256 nonce = _kintoWallet.getNonce();
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(counter),
-            nonce,
+            _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
@@ -39,7 +33,6 @@ contract ExecuteTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA21 didn't pay prefund"));
         _entryPoint.handleOps(userOps, payable(_owner));
     }
@@ -58,9 +51,33 @@ contract ExecuteTest is KintoWalletTest {
             abi.encodeWithSignature("increment()")
         );
 
-        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
+    }
+
+    function testExecute_WhenMultipleOps_WhenPaymaster() public {
+        uint256 nonce = _kintoWallet.getNonce();
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            nonce,
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        userOps[1] = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            nonce + 1,
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 2);
     }
 
     function testExecute_RevertWhen_AppIsNotWhitelisted() public {
@@ -87,31 +104,5 @@ contract ExecuteTest is KintoWalletTest {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq("KW: contract not whitelisted");
         assertEq(counter.count(), 0);
-    }
-
-    function testExecute_WhenMultipleOps_WhenPaymaster() public {
-        uint256 nonce = _kintoWallet.getNonce();
-        UserOperation[] memory userOps = new UserOperation[](2);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            nonce,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            nonce + 1,
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // execute the transaction via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 2);
     }
 }

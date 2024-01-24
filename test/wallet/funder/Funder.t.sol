@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract FunderTest is KintoWalletTest {
+contract FunderTest is SharedSetup {
     /* ============ Funder Whitelist ============ */
 
     function testUp() public override {
@@ -32,7 +32,6 @@ contract FunderTest is KintoWalletTest {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.isFunderWhitelisted(address(23)), true);
         vm.stopPrank();

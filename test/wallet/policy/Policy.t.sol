@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract ResetSignerTest is KintoWalletTest {
+contract ResetSignerTest is SharedSetup {
     /* ============ Signers & Policy Tests ============ */
 
     function testAddingOneSigner() public {
@@ -24,7 +24,6 @@ contract ResetSignerTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.owners(1), _user);
         vm.stopPrank();
@@ -46,7 +45,6 @@ contract ResetSignerTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
@@ -71,7 +69,6 @@ contract ResetSignerTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
@@ -100,7 +97,6 @@ contract ResetSignerTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
@@ -126,7 +122,6 @@ contract ResetSignerTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
@@ -145,7 +140,6 @@ contract ResetSignerTest is KintoWalletTest {
             address(_paymaster)
         );
 
-        // execute the transaction via the entry point
         vm.expectEmit();
         emit WalletPolicyChanged(_kintoWallet.ALL_SIGNERS(), _kintoWallet.SINGLE_SIGNER());
         _entryPoint.handleOps(userOps, payable(_owner));
@@ -171,7 +165,6 @@ contract ResetSignerTest is KintoWalletTest {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.owners(1), _user);
         assertEq(_kintoWallet.owners(2), _user2);
@@ -221,7 +214,6 @@ contract ResetSignerTest is KintoWalletTest {
             _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
         );
 
-        // Execute the transaction via the entry point
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
 

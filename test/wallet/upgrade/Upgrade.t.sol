@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract PolicyTest is KintoWalletTest {
+contract PolicyTest is SharedSetup {
     /* ============ Upgrade Tests ============ */
 
     // FIXME: I think these upgrade tests are wrong because, basically, the KintoWallet.sol does not have
@@ -59,7 +59,6 @@ contract PolicyTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         // @dev handleOps seems to fail silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(_entryPoint.getUserOpHash(userOp), userOp.sender, userOp.nonce, bytes(""));
