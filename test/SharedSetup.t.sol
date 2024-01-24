@@ -13,6 +13,7 @@ import "../src/sample/Counter.sol";
 
 import "./harness/KintoWalletHarness.sol";
 import "./harness/SponsorPaymasterHarness.sol";
+import "./harness/KintoAppRegistryHarness.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 

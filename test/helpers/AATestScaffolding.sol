@@ -20,6 +20,7 @@ import "../helpers/UUPSProxy.sol";
 import "../helpers/KYCSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
+import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 
 abstract contract AATestScaffolding is KYCSignature {
     IKintoEntryPoint _entryPoint;
@@ -361,6 +362,10 @@ abstract contract AATestScaffolding is KYCSignature {
         SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
         vm.prank(_paymaster.owner());
         _paymaster.upgradeTo(address(_paymasterImpl));
+
+        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
+        vm.prank(_kintoAppRegistry.owner());
+        _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
 
     ////// helper methods to assert the revert reason on UserOperationRevertReason events ////
