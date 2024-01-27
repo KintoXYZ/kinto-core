@@ -150,28 +150,35 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     /* ============ Deploy tests ============ */
 
-    function testFeployContract() public {
-        vm.startPrank(_owner);
+    function testDeployContract() public {
         address computed =
             _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+
+        vm.prank(_owner);
         address created =
             _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+
         assertEq(computed, created);
         assertEq(Counter(created).count(), 0);
+
         Counter(created).increment();
         assertEq(Counter(created).count(), 1);
-        vm.stopPrank();
     }
 
     function testDeployContract_RevertWhen_CreateWalletThroughDeploy() public {
-        vm.startPrank(_owner);
         bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );
         vm.expectRevert("Direct KintoWallet deployment not allowed");
+        vm.prank(_owner);
         _walletFactory.deployContract(_owner, 0, bytecode, bytes32(0));
-        vm.stopPrank();
+    }
+
+    function testDeployContract_RevertWhen_SenderNotKYCd() public {
+        vm.prank(_user2);
+        vm.expectRevert("KYC required");
+        _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
     }
 
     function testFundWallet() public {
@@ -338,5 +345,36 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.prank(address(123));
         vm.expectRevert("KYC or Provider role required");
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+    }
+
+    /* ============ Claim From Faucet tests ============ */
+
+    function testClaimFromFaucet_WhenCallerIsKYCd() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
+        _walletFactory.claimFromFaucet(address(_faucet), sigdata);
+        assertEq(_user.balance, _faucet.CLAIM_AMOUNT());
+    }
+
+    function testClaimFromFaucet_RevertWhen_CallerIsNotKYCd() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Invalid sender");
+        _walletFactory.claimFromFaucet(address(_faucet), sigdata);
+    }
+
+    function testClaimFromFaucet_RevertWhen_FaucetIsZeroAddress() public {
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
+        IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Invalid faucet address");
+        vm.prank(_kycProvider);
+        _walletFactory.claimFromFaucet(address(0), sigdata);
     }
 }
