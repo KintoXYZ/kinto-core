@@ -64,6 +64,28 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(_kintoWallet), address(_kintoWalletAfter));
     }
 
+    function testCreateAccount_RevertWhen_ZeroAddress() public {
+        vm.prank(address(_owner));
+        vm.expectRevert("invalid addresses");
+        _kintoWallet = _walletFactory.createAccount(address(0), _owner, 0);
+
+        vm.prank(address(_owner));
+        vm.expectRevert("invalid addresses");
+        _kintoWallet = _walletFactory.createAccount(_owner, address(0), 0);
+    }
+
+    function testCreateAccount_RevertWhen_OwnerNotKYCd() public {
+        vm.prank(address(_user2));
+        vm.expectRevert("KYC required");
+        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
+    }
+
+    function testCreateAccount_RevertWhen_OwnerAndSenderMismatch() public {
+        vm.prank(address(_owner));
+        vm.expectRevert("KYC required");
+        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
+    }
+
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
