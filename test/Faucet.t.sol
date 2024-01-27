@@ -130,10 +130,12 @@ contract FaucetTest is SharedSetup {
         vm.prank(_owner);
         _faucet.startFaucet{value: 1 ether}();
 
-        for (uint256 i = 1; i <= 2500; i++) {
-            vm.prank(vm.addr(i));
-            _faucet.claimKintoETH();
-        }
+        // reduce faucet balance to CLAIM AMOUNT
+        vm.deal(address(_faucet), _faucet.CLAIM_AMOUNT());
+
+        vm.prank(_user);
+        _faucet.claimKintoETH();
+
         // assert faucet is deactivated
         assertEq(address(_faucet).balance, 0);
         assertEq(_faucet.active(), false);
