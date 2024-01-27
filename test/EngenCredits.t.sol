@@ -323,7 +323,6 @@ contract EngenCreditsTest is SharedSetup {
         );
 
         vm.expectEmit(true, true, true, false);
-        uint256 last = userOps.length - 1;
         emit UserOperationRevertReason(
             _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
