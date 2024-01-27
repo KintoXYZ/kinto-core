@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -66,13 +67,10 @@ contract KintoWalletFactoryTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        vm.startPrank(_owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
+        vm.prank(_owner);
         _walletFactory.upgradeTo(address(_newImplementation));
-        // re-wrap the _proxy
-        _walletFactoryv2 = KintoWalletFactoryUpgrade(address(_walletFactory));
-        assertEq(_walletFactoryv2.newFunction(), 1);
-        vm.stopPrank();
+        assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
@@ -84,7 +82,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.upgradeTo(address(_newImplementation));
     }
 
-    function testAllWalletsUpgrade() public {
+    function testUpgradeAllWalletImplementations() public {
         vm.startPrank(_owner);
 
         // Deploy a new wallet implementation
@@ -102,7 +100,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testUpgrade_RevertWhen_CallerIsNotOwner() public {
+    function testUpgradeAllWalletImplementations_RevertWhen_CallerIsNotOwner() public {
         // deploy a new wallet implementation
         _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry);
 
@@ -115,9 +113,22 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
     }
 
+    function testUpgradeAllWalletImplementations_RevertWhen_ZeroAddress() public {
+        vm.prank(_owner);
+        vm.expectRevert("invalid address");
+        _walletFactory.upgradeAllWalletImplementations(IKintoWallet(address(0)));
+    }
+
+    function testUpgradeAllWalletImplementations_RevertWhen_BeaconAddress() public {
+        IKintoWallet _newImpl = IKintoWallet(UpgradeableBeacon(_walletFactory.beacon()).implementation());
+        vm.prank(_owner);
+        vm.expectRevert("invalid address");
+        _walletFactory.upgradeAllWalletImplementations(_newImpl);
+    }
+
     /* ============ Deploy tests ============ */
 
-    function testDeployCustomContract() public {
+    function testFeployContract() public {
         vm.startPrank(_owner);
         address computed =
             _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
@@ -130,7 +141,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testDeploy_RevertWhen_CreateWalletThroughDeploy() public {
+    function testDeployContract_RevertWhen_CreateWalletThroughDeploy() public {
         vm.startPrank(_owner);
         bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
         bytes memory bytecode = abi.encodePacked(
@@ -141,55 +152,52 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testSignerCanFundWallet() public {
-        vm.startPrank(_owner);
+    function testFundWallet() public {
+        vm.prank(_owner);
         _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWallet)));
         assertEq(address(_kintoWallet).balance, 1e18);
     }
 
-    function testWhitelistedSignerCanFundWallet() public {
-        vm.startPrank(_owner);
-        fundSponsorForApp(address(_kintoWallet));
-        uint256 nonce = _kintoWallet.getNonce();
+    function testFundWallet_WhenCallerIsWhitelisted() public {
         address[] memory funders = new address[](1);
         funders[0] = _funder;
+
         bool[] memory flags = new bool[](1);
         flags[0] = true;
-        uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = 1;
-        UserOperation memory userOp = _createUserOperation(
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
-            nonce,
+            _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
             address(_paymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
         _entryPoint.handleOps(userOps, payable(_owner));
+
         vm.deal(_funder, 1e17);
-        vm.startPrank(_funder);
+        vm.prank(_funder);
         _walletFactory.fundWallet{value: 1e17}(payable(address(_kintoWallet)));
         assertEq(address(_kintoWallet).balance, 1e17);
     }
 
-    function testSignerCannotFundInvalidWallet() public {
-        vm.startPrank(_owner);
+    function testFundWallet_RevertWhen_InvalidWallet() public {
         vm.expectRevert("Invalid wallet or funder");
+        vm.prank(_owner);
         _walletFactory.fundWallet{value: 1e18}(payable(address(0)));
     }
 
-    function testRandomSignerCannotFundWallet() public {
-        vm.deal(_user, 1e18);
-        vm.startPrank(_user);
+    function testFundWallet_RevertWhen_CallerIsInvalid() public {
+        vm.deal(_user, 1 ether);
         vm.expectRevert("Invalid wallet or funder");
-        _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWallet)));
+        vm.prank(_user);
+        _walletFactory.fundWallet{value: 1 ether}(payable(address(_kintoWallet)));
     }
 
-    function testSignerCannotFundWalletWithoutEth() public {
-        vm.startPrank(_owner);
+    function testFundWallet_RevertWhen_NotEnoughETH() public {
         vm.expectRevert("Invalid wallet or funder");
+        vm.prank(_owner);
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
     }
 
