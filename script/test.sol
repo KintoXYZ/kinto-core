@@ -42,7 +42,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
         vm.startBroadcast(deployerPrivateKey);
         if (!_kintoID.isKYC(recipientWallet)) {
             IKintoID.SignatureData memory sigdata =
-                _auxCreateSignature(_kintoID, recipientWallet, recipientWallet, recipientKey, block.timestamp + 1000);
+                _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 1000);
             uint16[] memory traits = new uint16[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }

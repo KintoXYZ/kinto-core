@@ -34,9 +34,6 @@ abstract contract UserOp is Test {
     address payable _recoverer = payable(vm.addr(_recovererPk));
     address payable _funder = payable(vm.addr(_funderPk));
 
-    // constants
-    uint256 constant CHAIN_ID = 1;
-
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;
     uint256 constant VERIFICATION_GAS_LIMIT = 210_000;
@@ -58,7 +55,7 @@ abstract contract UserOp is Test {
         bytes memory _bytesOp
     ) internal view returns (UserOperation memory op) {
         return _createUserOperation(
-            CHAIN_ID,
+            block.chainid,
             _from,
             _target,
             0,
@@ -80,7 +77,7 @@ abstract contract UserOp is Test {
         address _paymaster
     ) internal view returns (UserOperation memory op) {
         return _createUserOperation(
-            CHAIN_ID,
+            block.chainid,
             _from,
             _target,
             0,
@@ -154,7 +151,7 @@ abstract contract UserOp is Test {
         address _paymaster
     ) internal view returns (UserOperation memory op) {
         op = _createUserOperation(
-            CHAIN_ID,
+            block.chainid,
             _from,
             address(0),
             0,
@@ -165,7 +162,7 @@ abstract contract UserOp is Test {
             [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
         );
         op.callData = abi.encodeCall(KintoWallet.executeBatch, (opParams.targets, opParams.values, opParams.bytesOps));
-        op.signature = _signUserOp(op, KintoWallet(payable(_from)).entryPoint(), CHAIN_ID, _privateKeyOwners);
+        op.signature = _signUserOp(op, KintoWallet(payable(_from)).entryPoint(), block.chainid, _privateKeyOwners);
     }
 
     // user ops generators

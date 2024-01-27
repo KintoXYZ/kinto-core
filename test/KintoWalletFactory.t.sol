@@ -46,7 +46,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
-    /* ============ Create Account Tests ============ */
+    /* ============ Create Account tests ============ */
 
     function testCreateAccount() public {
         vm.prank(address(_owner));
@@ -63,9 +63,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(_kintoWallet), address(_kintoWalletAfter));
     }
 
-    /* ============ Upgrade Tests ============ */
+    /* ============ Upgrade tests ============ */
 
-    function testUpgradeTo_WhenCallerIsOwner() public {
+    function testUpgradeTo() public {
         vm.startPrank(_owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
         _walletFactory.upgradeTo(address(_newImplementation));
@@ -89,7 +89,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         // Deploy a new wallet implementation
         _kintoWalletImpl =
-            KintoWallet(payable(address(new KintoWalletUpgrade(_entryPoint, _kintoIDv1, _kintoAppRegistry))));
+            KintoWallet(payable(address(new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry))));
 
         // deploy walletv1 through wallet factory and initializes it
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
@@ -104,7 +104,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUpgrade_RevertWhen_CallerIsNotOwner() public {
         // deploy a new wallet implementation
-        _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry);
 
         // deploy walletv1 through wallet factory and initializes it
         vm.broadcast(_owner);
@@ -115,7 +115,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
     }
 
-    /* ============ Deploy Tests ============ */
+    /* ============ Deploy tests ============ */
 
     function testDeployCustomContract() public {
         vm.startPrank(_owner);
@@ -193,7 +193,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
     }
 
-    /* ============ Recovery Tests ============ */
+    /* ============ Recovery tests ============ */
 
     function testStartWalletRecovery_WhenCallerIsRecoverer() public {
         vm.prank(address(_kintoWallet.recoverer()));
@@ -230,7 +230,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         updates[0] = new IKintoID.MonitorUpdateData[](1);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
         vm.prank(_kycProvider);
-        _kintoIDv1.monitor(users, updates);
+        _kintoID.monitor(users, updates);
 
         vm.prank(address(_kintoWallet.recoverer()));
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
@@ -267,7 +267,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
     }
 
-    /* ============ Send Money Tests ============ */
+    /* ============ Send Money tests ============ */
 
     function testSendMoneyToAccount_WhenCallerIsKYCd() public {
         approveKYC(_kycProvider, _user, _userPk);

@@ -34,9 +34,9 @@ contract KintoAppRegistryTest is SharedSetup {
         );
     }
 
-    /* ============ Upgrade Tests ============ */
+    /* ============ Upgrade tests ============ */
 
-    function testOwnerCanUpgradeApp() public {
+    function testUpgradeTo() public {
         vm.startPrank(_owner);
 
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
@@ -46,13 +46,13 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_OthersCannotUpgradeAppRegistry() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
     }
 
-    /* ============ App Tests & Viewers ============ */
+    /* ============ App tests & Viewers ============ */
 
     function testRegisterApp(string memory name, address parentContract) public {
         address[] memory appContracts = new address[](1);
@@ -305,6 +305,6 @@ contract KintoAppRegistryTest is SharedSetup {
             ^ bytes4(keccak256("setApprovalForAll(address,bool)")) ^ bytes4(keccak256("getApproved(uint256)"))
             ^ bytes4(keccak256("isApprovedForAll(address,address)"));
 
-        assertTrue(_kintoIDv1.supportsInterface(InterfaceERC721Upgradeable));
+        assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
     }
 }

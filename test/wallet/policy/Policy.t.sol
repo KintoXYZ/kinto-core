@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import "../../SharedSetup.t.sol";
 
 contract ResetSignerTest is SharedSetup {
-    /* ============ Signers & Policy Tests ============ */
+    /* ============ Signers & Policy tests ============ */
 
     function testAddingOneSigner() public {
         vm.startPrank(_owner);

@@ -38,7 +38,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     /* ============ Upgrade ============ */
 
-    function testOwnerCanUpgrade() public {
+    function testUpgradeTo() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
@@ -266,14 +266,29 @@ contract SponsorPaymasterTest is SharedSetup {
         assertTrue(ethCostCount == 0);
         assertTrue(costLimitLastOperationTime == 0);
 
-        _incrementCounterTxs(10, address(counter));
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
+        _incrementCounterTxs(appLimits[1] - 1, address(counter));
 
+        // move time to GAS_LIMIT_PERIOD + 1 and call monitor so we keep the isKYC active
+        vm.warp(block.timestamp + appLimits[2] + 1);
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // increment one more time
+        _incrementCounterTxs(1, address(counter));
+
+        // check limits
         (operationCount, lastOperationTime, ethCostCount, costLimitLastOperationTime) =
             _paymaster.appUserLimit(address(_kintoWallet), address(counter));
         assertTrue(operationCount > 0);
-        assertTrue(lastOperationTime > 0);
+        assertEq(lastOperationTime, block.timestamp);
         assertTrue(ethCostCount > 0);
-        assertTrue(costLimitLastOperationTime > 0);
+        assertEq(costLimitLastOperationTime, block.timestamp);
     }
 
     function testValidatePaymasterUserOp_WithinTxRateLimit() public {
