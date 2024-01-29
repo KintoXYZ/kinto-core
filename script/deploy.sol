@@ -75,7 +75,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
         _kintoID = KintoID(address(_proxy));
 
         // Entry Point
-        address entryPointAddr = computeAddress(1, abi.encodePacked(type(EntryPoint).creationCode));
+        address entryPointAddr = computeAddress(bytes32(uint256(1)), abi.encodePacked(type(EntryPoint).creationCode));
         // Check Entry Point
         if (isContract(entryPointAddr)) {
             _entryPoint = EntryPoint(payable(entryPointAddr));

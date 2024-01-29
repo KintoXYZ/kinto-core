@@ -88,7 +88,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner, address recoverer, uint256 salt)
+    function createAccount(address owner, address recoverer, bytes32 salt)
         external
         override
         returns (IKintoWallet ret)
@@ -104,7 +104,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         ret = IKintoWallet(
             payable(
-                new SafeBeaconProxy{salt: bytes32(salt)}(
+                new SafeBeaconProxy{salt: salt}(
                     address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer))
                 )
             )
@@ -112,7 +112,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-        // Emit event
+
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
@@ -230,7 +230,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner, address recoverer, uint256 salt) public view override returns (address) {
+    function getAddress(address owner, address recoverer, bytes32 salt) public view override returns (address) {
         return Create2.computeAddress(
             bytes32(salt),
             keccak256(
