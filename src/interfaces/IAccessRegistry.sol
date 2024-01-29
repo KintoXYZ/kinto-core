@@ -22,23 +22,13 @@ interface IAccessRegistry {
     /* ============ Events ============ */
 
     /// @notice Emitted when workflow is allowed or dissallowed.
-    event WorkflowStatusChanged(
-        address indexed workflow,
-        bool indexed status
-    );
+    event WorkflowStatusChanged(address indexed workflow, bool indexed status);
 
     /// @notice Emitted when access point is upgraded.
-    event AccessPointFactoryUpgraded(
-        address indexed beacon,
-        address indexed accessPoint
-    );
+    event AccessPointFactoryUpgraded(address indexed beacon, address indexed accessPoint);
 
     /// @notice Emitted when a new access point is deployed.
-    event DeployAccessPoint(
-        address indexed operator,
-        address indexed owner,
-        IAccessPoint accessPoint
-    );
+    event DeployAccessPoint(address indexed operator, address indexed owner, IAccessPoint accessPoint);
 
     /* ============ Structs ============ */
 
@@ -49,10 +39,7 @@ interface IAccessRegistry {
 
     /// @notice Retrieves the accessPoint for the provided user.
     /// @param user The user address for the query.
-    function getAccessPoint(address user)
-        external
-        view
-        returns (IAccessPoint accessPoint);
+    function getAccessPoint(address user) external view returns (IAccessPoint accessPoint);
 
     /**
      * @dev Calculates the counterfactual address of this account as it would be returned by deploy()
@@ -84,7 +71,5 @@ interface IAccessRegistry {
     ///
     /// @param user The address that will own the access point.
     /// @return accessPoint The address of the newly deployed access point.
-    function deployFor(address user)
-        external
-        returns (IAccessPoint accessPoint);
+    function deployFor(address user) external returns (IAccessPoint accessPoint);
 }

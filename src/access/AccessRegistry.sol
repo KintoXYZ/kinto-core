@@ -19,12 +19,7 @@ import "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IAccessRegistry.sol";
 
-contract AccessRegistry is
-    Initializable,
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    IAccessRegistry
-{
+contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, IAccessRegistry {
     /* ============ Constants ============ */
 
     /* ============ State Variables ============ */
@@ -75,16 +70,9 @@ contract AccessRegistry is
      * @param newImpl The new implementation
      */
     function upgradeAll(IAccessPoint newImpl) external override onlyOwner {
-        require(
-            address(newImpl) != address(0) &&
-                address(newImpl) != beacon.implementation(),
-            "invalid address"
-        );
+        require(address(newImpl) != address(0) && address(newImpl) != beacon.implementation(), "invalid address");
         factoryVersion++;
-        emit AccessPointFactoryUpgraded(
-            beacon.implementation(),
-            address(newImpl)
-        );
+        emit AccessPointFactoryUpgraded(beacon.implementation(), address(newImpl));
         beacon.upgradeTo(address(newImpl));
     }
 
@@ -93,12 +81,7 @@ contract AccessRegistry is
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        view
-        override
-        onlyOwner
-    {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
     }
 
@@ -110,29 +93,21 @@ contract AccessRegistry is
     }
 
     /// @inheritdoc IAccessRegistry
-    function getAccessPoint(address user)
-        external
-        view
-        returns (IAccessPoint accessPoint)
-    {
+    function getAccessPoint(address user) external view returns (IAccessPoint accessPoint) {
         accessPoint = _accessPoints[user];
     }
 
     /// @inheritdoc IAccessRegistry
     function getAddress(address owner) public view override returns (address) {
-        return
-            Create2.computeAddress(
-                bytes32(abi.encodePacked(owner)),
-                keccak256(
-                    abi.encodePacked(
-                        type(SafeBeaconProxy).creationCode,
-                        abi.encode(
-                            address(beacon),
-                            abi.encodeCall(IAccessPoint.initialize, (owner))
-                        )
-                    )
+        return Create2.computeAddress(
+            bytes32(abi.encodePacked(owner)),
+            keccak256(
+                abi.encodePacked(
+                    type(SafeBeaconProxy).creationCode,
+                    abi.encode(address(beacon), abi.encodeCall(IAccessPoint.initialize, (owner)))
                 )
-            );
+            )
+        );
     }
 
     /// @dev TODO:Should be removed. Added because Kinto EntryPoint needs this function.
@@ -167,31 +142,19 @@ contract AccessRegistry is
     /* ============ Internal ============ */
 
     /// @dev See `deploy`.
-    function _deploy(address owner)
-        internal
-        returns (IAccessPoint accessPoint)
-    {
+    function _deploy(address owner) internal returns (IAccessPoint accessPoint) {
         // Use the address of the owner as the CREATE2 salt.
         bytes32 salt = bytes32(abi.encodePacked(owner));
 
         // Deploy the accessPoint with CREATE2.
         accessPoint = IAccessPoint(
-            payable(
-                new SafeBeaconProxy{salt: salt}(
-                    address(beacon),
-                    abi.encodeCall(IAccessPoint.initialize, (owner))
-                )
-            )
+            payable(new SafeBeaconProxy{salt: salt}(address(beacon), abi.encodeCall(IAccessPoint.initialize, (owner))))
         );
 
         // Associate the owner and the accessPoint.
         _accessPoints[owner] = accessPoint;
 
         // Log the creation of the accessPoint.
-        emit DeployAccessPoint({
-            operator: msg.sender,
-            owner: owner,
-            accessPoint: accessPoint
-        });
+        emit DeployAccessPoint({operator: msg.sender, owner: owner, accessPoint: accessPoint});
     }
 }

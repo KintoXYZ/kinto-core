@@ -32,9 +32,7 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint _entryPoint, address _verifyingSigner)
-        BasePaymaster(_entryPoint)
-    {
+    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) {
         _disableInitializers();
         verifyingSigner = _verifyingSigner;
     }
@@ -53,22 +51,14 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the implementation is upgraded
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        view
-        override
-    {
+    function _authorizeUpgrade(address newImplementation) internal view override {
         require(msg.sender == owner(), "VP: not owner");
         (newImplementation);
     }
 
     /* =============== Viewers & Validation ============= */
 
-    function pack(UserOperation calldata userOp)
-        internal
-        pure
-        returns (bytes memory ret)
-    {
+    function pack(UserOperation calldata userOp) internal pure returns (bytes memory ret) {
         // lighter signature scheme. must match UserOp.ts#packUserOp
         bytes calldata pnd = userOp.paymasterAndData;
         // copy directly the userOp from calldata up to (but not including) the paymasterAndData.
@@ -92,24 +82,18 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
      * note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
      * which will carry the signature itself.
      */
-    function getHash(
-        UserOperation calldata userOp,
-        uint48 validUntil,
-        uint48 validAfter
-    ) public view returns (bytes32) {
+    function getHash(UserOperation calldata userOp, uint48 validUntil, uint48 validAfter)
+        public
+        view
+        returns (bytes32)
+    {
         //can't use userOp.hash(), since it contains also the paymasterAndData itself.
 
-        return
-            keccak256(
-                abi.encode(
-                    pack(userOp),
-                    block.chainid,
-                    address(this),
-                    senderNonce[userOp.getSender()],
-                    validUntil,
-                    validAfter
-                )
-            );
+        return keccak256(
+            abi.encode(
+                pack(userOp), block.chainid, address(this), senderNonce[userOp.getSender()], validUntil, validAfter
+            )
+        );
     }
 
     /**
@@ -120,27 +104,22 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
      */
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32, /*userOpHash*/
-        uint256 requiredPreFund
-    ) internal override returns (bytes memory context, uint256 validationData) {
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32, /*userOpHash*/ uint256 requiredPreFund)
+        internal
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         (requiredPreFund);
 
-        (
-            uint48 validUntil,
-            uint48 validAfter,
-            bytes calldata signature
-        ) = parsePaymasterAndData(userOp.paymasterAndData);
+        (uint48 validUntil, uint48 validAfter, bytes calldata signature) =
+            parsePaymasterAndData(userOp.paymasterAndData);
         //ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "SignaturePaymaster", and not "ECDSA"
         require(
             signature.length == 64 || signature.length == 65,
             "SignaturePaymaster: invalid signature length in paymasterAndData"
         );
-        bytes32 hash = ECDSA.toEthSignedMessageHash(
-            getHash(userOp, validUntil, validAfter)
-        );
+        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
         senderNonce[userOp.getSender()]++;
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED
@@ -156,16 +135,10 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
     function parsePaymasterAndData(bytes calldata paymasterAndData)
         public
         pure
-        returns (
-            uint48 validUntil,
-            uint48 validAfter,
-            bytes calldata signature
-        )
+        returns (uint48 validUntil, uint48 validAfter, bytes calldata signature)
     {
-        (validUntil, validAfter) = abi.decode(
-            paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],
-            (uint48, uint48)
-        );
+        (validUntil, validAfter) =
+            abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET], (uint48, uint48));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
 }

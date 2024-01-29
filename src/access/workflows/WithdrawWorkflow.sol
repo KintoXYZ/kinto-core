@@ -24,7 +24,7 @@ contract WithdrawWorkflow {
 
     function withdrawNative(uint256 amount) external {
         address owner = _getOwner();
-        (bool sent, ) = owner.call{value: amount}("");
+        (bool sent,) = owner.call{value: amount}("");
         if (!sent) {
             revert NativeWithdrawalFailed();
         }

@@ -17,12 +17,7 @@ import "../interfaces/IAccessRegistry.sol";
 /**
  * @title AccessPoint
  */
-contract AccessPoint is
-    IAccessPoint,
-    Initializable,
-    BaseAccount,
-    TokenCallbackHandler
-{
+contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackHandler {
     using UserOperationLib for UserOperation;
     using ECDSA for bytes32;
 
@@ -69,13 +64,7 @@ contract AccessPoint is
 
     /* ============ View Functions ============ */
 
-    function getNonce()
-        public
-        view
-        virtual
-        override(BaseAccount, IAccessPoint)
-        returns (uint256)
-    {
+    function getNonce() public view virtual override(BaseAccount, IAccessPoint) returns (uint256) {
         return super.getNonce();
     }
 
@@ -112,10 +101,7 @@ contract AccessPoint is
 
     /// @notice Executes a DELEGATECALL to the provided target with the provided data.
     /// @dev Shared logic between the constructor and the `execute` function.
-    function _execute(address target, bytes memory data)
-        internal
-        returns (bytes memory response)
-    {
+    function _execute(address target, bytes memory data) internal returns (bytes memory response) {
         if (!registry.isWorkflowAllowed(target)) {
             revert WorkflowUnauthorized(target);
         }
@@ -147,13 +133,16 @@ contract AccessPoint is
     }
 
     /// @notice Valides that owner signed the user operation
-    function _validateSignature(
-        UserOperation calldata userOp,
-        bytes32 userOpHash
-    ) internal virtual override returns (uint256 validationData) {
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        virtual
+        override
+        returns (uint256 validationData)
+    {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        if (owner != ECDSA.recover(hash, userOp.signature))
+        if (owner != ECDSA.recover(hash, userOp.signature)) {
             return SIG_VALIDATION_FAILED;
+        }
         return 0;
     }
 }

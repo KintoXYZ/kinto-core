@@ -41,16 +41,10 @@ contract WithdrawWorkflowTest is UserOp {
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 
         IAccessRegistry accessRegistryImpl = new AccessRegistry();
-        UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(
-            address(accessRegistryImpl),
-            ""
-        );
+        UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
-        IAccessPoint accessPointImpl = new AccessPoint(
-            entryPoint,
-            accessRegistry
-        );
+        IAccessPoint accessPointImpl = new AccessPoint(entryPoint, accessRegistry);
 
         accessRegistry.initialize(accessPointImpl);
         accessPoint = accessRegistry.deployFor(address(_user));
@@ -73,11 +67,7 @@ contract WithdrawWorkflowTest is UserOp {
             address(withdrawWorkflow),
             accessPoint.getNonce(),
             _userPk,
-            abi.encodeWithSelector(
-                WithdrawWorkflow.withdrawERC20.selector,
-                IERC20(token),
-                defaultAmount
-            )
+            abi.encodeWithSelector(WithdrawWorkflow.withdrawERC20.selector, IERC20(token), defaultAmount)
         );
 
         entryPoint.handleOps(userOps, payable(_user));
@@ -88,11 +78,8 @@ contract WithdrawWorkflowTest is UserOp {
     function testWithdrawERC20() public {
         token.mint(address(accessPoint), defaultAmount);
 
-        bytes memory data = abi.encodeWithSelector(
-            WithdrawWorkflow.withdrawERC20.selector,
-            IERC20(token),
-            defaultAmount
-        );
+        bytes memory data =
+            abi.encodeWithSelector(WithdrawWorkflow.withdrawERC20.selector, IERC20(token), defaultAmount);
 
         vm.prank(_user);
         accessPoint.execute(address(withdrawWorkflow), data);
@@ -103,10 +90,7 @@ contract WithdrawWorkflowTest is UserOp {
     function testWithdrawNativeViaPaymaster() public {
         vm.deal(address(accessPoint), defaultAmount);
 
-        abi.encodeWithSelector(
-            WithdrawWorkflow.withdrawNative.selector,
-            defaultAmount
-        );
+        abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, defaultAmount);
 
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = createUserOperationWithPaymaster(
@@ -115,10 +99,7 @@ contract WithdrawWorkflowTest is UserOp {
             address(withdrawWorkflow),
             accessPoint.getNonce(),
             _userPk,
-            abi.encodeWithSelector(
-                WithdrawWorkflow.withdrawNative.selector,
-                defaultAmount
-            )
+            abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, defaultAmount)
         );
 
         entryPoint.handleOps(userOps, payable(address(accessPoint)));
@@ -129,10 +110,7 @@ contract WithdrawWorkflowTest is UserOp {
     function testWithdrawNative() public {
         vm.deal(address(accessPoint), defaultAmount);
 
-        bytes memory data = abi.encodeWithSelector(
-            WithdrawWorkflow.withdrawNative.selector,
-            defaultAmount
-        );
+        bytes memory data = abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, defaultAmount);
 
         vm.prank(_user);
         accessPoint.execute(address(withdrawWorkflow), data);
@@ -149,10 +127,7 @@ contract WithdrawWorkflowTest is UserOp {
         paymaster = new SignaturePaymaster{salt: 0}(entryPoint, _verifier);
 
         // deploy _proxy contract and point it to _implementation
-        UUPSProxy proxyPaymaster = new UUPSProxy{salt: 0}(
-            address(paymaster),
-            ""
-        );
+        UUPSProxy proxyPaymaster = new UUPSProxy{salt: 0}(address(paymaster), "");
 
         // wrap in ABI to support easier calls
         paymaster = SignaturePaymaster(address(proxyPaymaster));
@@ -180,11 +155,7 @@ contract WithdrawWorkflowTest is UserOp {
             _nonce,
             _privateKey,
             _bytesOp,
-            abi.encodePacked(
-                paymaster,
-                abi.encode(validUntil, validAfter),
-                new bytes(65)
-            )
+            abi.encodePacked(paymaster, abi.encode(validUntil, validAfter), new bytes(65))
         );
 
         bytes32 hash = paymaster.getHash(op, validUntil, validAfter);
@@ -192,20 +163,15 @@ contract WithdrawWorkflowTest is UserOp {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_verifierPk, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        return
-            createUserOperation(
-                1,
-                address(accessPoint),
-                address(withdrawWorkflow),
-                accessPoint.getNonce(),
-                _userPk,
-                _bytesOp,
-                abi.encodePacked(
-                    paymaster,
-                    abi.encode(validUntil, validAfter),
-                    signature
-                )
-            );
+        return createUserOperation(
+            1,
+            address(accessPoint),
+            address(withdrawWorkflow),
+            accessPoint.getNonce(),
+            _userPk,
+            _bytesOp,
+            abi.encodePacked(paymaster, abi.encode(validUntil, validAfter), signature)
+        );
     }
 
     function createUserOperation(
@@ -232,12 +198,7 @@ contract WithdrawWorkflowTest is UserOp {
         });
         uint256[] memory keys = new uint256[](1);
         keys[0] = _privateKey;
-        op.signature = _signUserOp(
-            op,
-            AccessPoint(payable(_from)).entryPoint(),
-            _chainID,
-            keys
-        );
+        op.signature = _signUserOp(op, AccessPoint(payable(_from)).entryPoint(), _chainID, keys);
         return op;
     }
 }

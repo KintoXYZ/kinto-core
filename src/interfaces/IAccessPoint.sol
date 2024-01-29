@@ -54,8 +54,5 @@ interface IAccessPoint {
     /// @param target The address of the target contract.
     /// @param data Function selector plus ABI encoded data.
     /// @return response The response received from the target contract, if any.
-    function execute(address target, bytes calldata data)
-        external
-        payable
-        returns (bytes memory response);
+    function execute(address target, bytes calldata data) external payable returns (bytes memory response);
 }
