@@ -282,8 +282,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is not set or signature is not valid, verify signer policy
         if (
             (
-                signerPolicy == SINGLE_SIGNER
-                    && _verifySingleSignature(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
+                signerPolicy == SINGLE_SIGNER && owners.length == 1
+                    && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
             )
                 || (
                     signerPolicy != SINGLE_SIGNER
@@ -335,19 +335,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
     }
 
-    // @notice ensures at least 1 signer has signed the hash
-    // @dev useful when owners.length > 1
-    function _verifySingleSignature(bytes32 hashData, bytes memory signature) private view returns (uint256) {
-        // ensure at least one signer has signed
-        address recovered = hashData.recover(signature);
-        for (uint256 i = 0; i < owners.length; i++) {
-            if (owners[i] == recovered) {
-                return _packValidationData(false, 0, 0);
-            }
-        }
-        return SIG_VALIDATION_FAILED;
-    }
-
     // @notice ensures signer has signed the hash
     function _verifySingleSignature(address signer, bytes32 hashData, bytes memory signature)
         private
@@ -386,6 +373,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return _packValidationData(requiredSigners != 0, 0, 0);
     }
 
+    // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
+    // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: invalid array");
         require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), "KW-rs: KYC Required");
@@ -402,7 +391,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
         owners = newSigners;
         emit SignersChanged(newSigners, owners);
-        // Change policy if needed.
+
+        // change policy if needed.
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         } else {

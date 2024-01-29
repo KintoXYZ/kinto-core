@@ -780,34 +780,4 @@ contract ValidateSignatureTest is SharedSetup {
             )
         );
     }
-
-    // special case 2: requiredSigners == 1, owners.length == 3 and the owner 2 is the signer.
-    function testValidateSignature_SpecialCase2() public {
-        // reset signers & change policy
-        address[] memory owners = new address[](3);
-        owners[0] = _owner;
-        owners[1] = _user;
-        owners[2] = _user2;
-        resetSigners(owners, _kintoWallet.SINGLE_SIGNER());
-
-        // create user op with owners 1 as signer
-        privateKeys = new uint256[](1);
-        privateKeys[0] = _userPk;
-
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        assertEq(
-            SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
-                userOp, _entryPoint.getUserOpHash(userOp)
-            )
-        );
-    }
 }
