@@ -31,7 +31,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
 
-    uint256 public userOpMaxCost = 0.03 ether;
+    uint256 public userOpMaxCost;
     IKintoAppRegistry public override appRegistry;
 
     mapping(address => uint256) public balances;
@@ -64,6 +64,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     function initialize(address _owner) external virtual initializer {
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
+
+        userOpMaxCost = 0.03 ether;
         // unlocks owner
         unlockBlock[_owner] = block.number;
     }

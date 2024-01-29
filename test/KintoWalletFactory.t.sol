@@ -165,7 +165,26 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(Counter(created).count(), 1);
     }
 
-    function testDeployContract_RevertWhen_CreateWalletThroughDeploy() public {
+    function testDeployContract_RevertWhen_SenderNotKYCd() public {
+        vm.prank(_user2);
+        vm.expectRevert("KYC required");
+        _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+    }
+
+    function testDeployContract_RevertWhen_AmountMismatch() public {
+        vm.deal(_owner, 1 ether);
+        vm.prank(_owner);
+        vm.expectRevert("Amount mismatch");
+        _walletFactory.deployContract(_owner, 1 ether + 1, abi.encodePacked(type(Counter).creationCode), bytes32(0));
+    }
+
+    function testDeployContract_RevertWhen_ZeroBytecode() public {
+        vm.expectRevert("Bytecode is empty");
+        vm.prank(_owner);
+        _walletFactory.deployContract(_owner, 0, bytes(""), bytes32(0));
+    }
+
+    function testDeployContract_RevertWhen_CreateWallet() public {
         bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
@@ -173,12 +192,6 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.expectRevert("Direct KintoWallet deployment not allowed");
         vm.prank(_owner);
         _walletFactory.deployContract(_owner, 0, bytecode, bytes32(0));
-    }
-
-    function testDeployContract_RevertWhen_SenderNotKYCd() public {
-        vm.prank(_user2);
-        vm.expectRevert("KYC required");
-        _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
     }
 
     function testFundWallet() public {

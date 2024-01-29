@@ -34,6 +34,7 @@ contract SponsorPaymasterTest is SharedSetup {
     function testUp() public override {
         super.testUp();
         assertEq(_paymaster.COST_OF_POST(), 200_000);
+        assertEq(_paymaster.userOpMaxCost(), 0.03 ether);
     }
 
     /* ============ Events ============ */
