@@ -36,6 +36,11 @@ contract SponsorPaymasterTest is SharedSetup {
         assertEq(_paymaster.COST_OF_POST(), 200_000);
     }
 
+    /* ============ Events ============ */
+
+    event AppRegistrySet(address oldRegistry, address newRegistry);
+    event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
+
     /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
@@ -490,6 +495,52 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
+    }
+
+    function testSetAppRegistry() public {
+        address oldAppRegistry = address(_kintoAppRegistry);
+        address newAppRegistry = address(123);
+
+        vm.expectEmit(true, true, true, true);
+        emit AppRegistrySet(oldAppRegistry, newAppRegistry);
+
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(newAppRegistry);
+        assertEq(address(_paymaster.appRegistry()), newAppRegistry);
+    }
+
+    function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setAppRegistry(address(123));
+    }
+
+    function testSetAppRegistry_RevertWhen_AddressIsZero() public {
+        vm.expectRevert("SP: new registry cannot be 0");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(0));
+    }
+
+    function testSetAppRegistry_RevertWhen_SameAddress() public {
+        vm.expectRevert("SP: new registry cannot be 0");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(_kintoAppRegistry));
+    }
+
+    function testUserOpMaxCost() public {
+        uint256 oldUserOpMaxCost = _paymaster.userOpMaxCost();
+        uint256 newUserOpMaxCost = 123;
+
+        vm.expectEmit(true, true, true, true);
+        emit UserOpMaxCostSet(oldUserOpMaxCost, newUserOpMaxCost);
+
+        vm.prank(_owner);
+        _paymaster.setUserOpMaxCost(newUserOpMaxCost);
+        assertEq(_paymaster.userOpMaxCost(), newUserOpMaxCost);
+    }
+
+    function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setUserOpMaxCost(123);
     }
 
     // TODO:
