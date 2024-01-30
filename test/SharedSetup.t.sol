@@ -13,10 +13,11 @@ import "../src/sample/Counter.sol";
 
 import "./harness/KintoWalletHarness.sol";
 import "./harness/SponsorPaymasterHarness.sol";
+import "./harness/KintoAppRegistryHarness.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
-contract KintoWalletTest is UserOp, AATestScaffolding {
+contract SharedSetup is UserOp, AATestScaffolding {
     uint256[] privateKeys;
     Counter counter;
 
@@ -27,6 +28,7 @@ contract KintoWalletTest is UserOp, AATestScaffolding {
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
+    event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 
     function setUp() public virtual {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);

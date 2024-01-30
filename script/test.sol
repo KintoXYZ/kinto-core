@@ -42,7 +42,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
         vm.startBroadcast(deployerPrivateKey);
         if (!_kintoID.isKYC(recipientWallet)) {
             IKintoID.SignatureData memory sigdata =
-                _auxCreateSignature(_kintoID, recipientWallet, recipientWallet, recipientKey, block.timestamp + 1000);
+                _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 1000);
             uint16[] memory traits = new uint16[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
@@ -156,7 +156,6 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(deployerPublicKey));
         console.log("After UserOp. Counter:", counter.count());
         vm.stopBroadcast();
@@ -234,7 +233,6 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
         );
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
-        // Execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(deployerPublicKey));
         console.log("After UserOp. ETHPriceIsRight guess count", ethpriceisright.guessCount());
         console.log("After UserOp. ETHPriceIsRight avg guess", ethpriceisright.avgGuess());

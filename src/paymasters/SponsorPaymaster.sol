@@ -277,25 +277,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         );
     }
 
-    /// Return app's sponsor from the registry
-    /// @return sponsor - the sponsor address
-    /// @dev reverts if neither execute nor executeBatch
-    /// @dev ensures all targets are sponsored by the same app if executeBatch (todo: decouple this)
-    function _getSponsor(bytes calldata callData) internal view returns (address sponsor) {
-        bytes4 selector = bytes4(callData[:4]);
-        if (selector == IKintoWallet.execute.selector) {
-            (address target,,) = abi.decode(callData[4:], (address, uint256, bytes));
-            sponsor = appRegistry.getSponsor(target);
-        } else if (selector == IKintoWallet.executeBatch.selector) {
-            // last target is the sponsor
-            (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
-            sponsor = appRegistry.getSponsor(targets[targets.length - 1]);
-        } else {
-            // handle unknown function or error
-            revert("SP: Unknown function selector");
-        }
-    }
-
     // @notice extracts `target` contract from callData
     // @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
     // bear with the gas cost of all ops

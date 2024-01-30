@@ -18,7 +18,7 @@ import "../../test/helpers/UserOp.sol";
 contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
     KintoWalletFactory _walletFactory;
     KintoWallet _kintoWalletv1;
-    KintoID _kintoIDv1;
+    KintoID _kintoID;
     UUPSProxy _proxy;
 
     function setUp() public {}

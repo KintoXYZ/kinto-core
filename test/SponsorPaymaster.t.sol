@@ -12,7 +12,7 @@ import "../src/paymasters/SponsorPaymaster.sol";
 import "../src/sample/Counter.sol";
 import "../src/interfaces/IKintoWallet.sol";
 
-import "./KintoWallet.t.sol";
+import "./SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
@@ -25,7 +25,7 @@ contract SponsorPaymasterUpgrade is SponsorPaymaster {
     }
 }
 
-contract SponsorPaymasterTest is KintoWalletTest {
+contract SponsorPaymasterTest is SharedSetup {
     function setUp() public override {
         super.setUp();
         vm.deal(_user, 1e20);
@@ -38,7 +38,7 @@ contract SponsorPaymasterTest is KintoWalletTest {
 
     /* ============ Upgrade ============ */
 
-    function testOwnerCanUpgrade() public {
+    function testUpgradeTo() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
@@ -129,6 +129,24 @@ contract SponsorPaymasterTest is KintoWalletTest {
         vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
         vm.stopPrank();
+    }
+
+    function testDepositInfo_WhenCallerDepositsToSomeoneElse(address someone) public {
+        vm.assume(someone != _owner);
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(someone));
+
+        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(someone));
+        assertEq(amount, 5e18);
+        assertEq(_unlockBlock, 0);
+    }
+
+    function testDepositInfo_WhenCallerDepositsToHimself() public {
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(_owner));
+        assertEq(amount, 5e18);
+        assertEq(_unlockBlock, 0);
     }
 
     /* ============ Per-Op: Global Rate limits ============ */
@@ -239,6 +257,39 @@ contract SponsorPaymasterTest is KintoWalletTest {
     }
 
     /* ============ Global Rate limits (tx & batched ops rates) ============ */
+
+    function testAppLimits() public {
+        (uint256 operationCount, uint256 lastOperationTime, uint256 ethCostCount, uint256 costLimitLastOperationTime) =
+            _paymaster.appUserLimit(address(_kintoWallet), address(counter));
+        assertTrue(operationCount == 0);
+        assertTrue(lastOperationTime == 0);
+        assertTrue(ethCostCount == 0);
+        assertTrue(costLimitLastOperationTime == 0);
+
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
+        _incrementCounterTxs(appLimits[1] - 1, address(counter));
+
+        // move time to GAS_LIMIT_PERIOD + 1 and call monitor so we keep the isKYC active
+        vm.warp(block.timestamp + appLimits[2] + 1);
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // increment one more time
+        _incrementCounterTxs(1, address(counter));
+
+        // check limits
+        (operationCount, lastOperationTime, ethCostCount, costLimitLastOperationTime) =
+            _paymaster.appUserLimit(address(_kintoWallet), address(counter));
+        assertTrue(operationCount > 0);
+        assertEq(lastOperationTime, block.timestamp);
+        assertTrue(ethCostCount > 0);
+        assertEq(costLimitLastOperationTime, block.timestamp);
+    }
 
     function testValidatePaymasterUserOp_WithinTxRateLimit() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
@@ -512,19 +563,18 @@ contract SponsorPaymasterTest is KintoWalletTest {
         uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
         uint256 estimatedGasPerTx = 0;
         uint256 cumulativeGasUsed = 0;
+
         UserOperation[] memory userOps = new UserOperation[](1);
         while (cumulativeGasUsed < appLimits[3]) {
             if (cumulativeGasUsed + estimatedGasPerTx >= appLimits[3]) return amt;
             userOps[0] = _incrementCounterOps(1, app)[0]; // generate 1 user op
+
             uint256 beforeGas = gasleft();
             _entryPoint.handleOps(userOps, payable(_owner)); // execute the op
-            uint256 afterGas = gasleft();
-            if (amt == 0) estimatedGasPerTx = (beforeGas - afterGas);
+
+            if (amt == 0) estimatedGasPerTx = (beforeGas - gasleft());
             cumulativeGasUsed += estimatedGasPerTx;
             amt++;
         }
     }
-
-    //// events
-    event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 }

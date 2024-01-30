@@ -24,7 +24,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
     SponsorPaymaster _sponsorPaymasterImpl;
     SponsorPaymaster _sponsorPaymaster;
     KintoID _implementation;
-    KintoID _kintoIDv1;
+    KintoID _kintoID;
     UUPSProxy _proxy;
     IKintoWallet _walletImpl;
     IKintoWallet _kintoWalletv1;
@@ -62,17 +62,17 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
         if (isContract(kintoProxyAddr)) {
             _proxy = UUPSProxy(payable(kintoProxyAddr));
             console.log("Already deployed Kinto ID proxy at", address(kintoProxyAddr));
-            _kintoIDv1 = KintoID(address(_proxy));
+            _kintoID = KintoID(address(_proxy));
         } else {
             // deploy proxy contract and point it to implementation
             _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");
             // wrap in ABI to support easier calls
-            _kintoIDv1 = KintoID(address(_proxy));
-            console.log("Kinto ID proxy deployed at ", address(_kintoIDv1));
+            _kintoID = KintoID(address(_proxy));
+            console.log("Kinto ID proxy deployed at ", address(_kintoID));
             // Initialize proxy
-            _kintoIDv1.initialize();
+            _kintoID.initialize();
         }
-        _kintoIDv1 = KintoID(address(_proxy));
+        _kintoID = KintoID(address(_proxy));
 
         // Entry Point
         address entryPointAddr = computeAddress(1, abi.encodePacked(type(EntryPoint).creationCode));
@@ -88,14 +88,14 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
 
         // Wallet Implementation for the beacon
         address walletImplementationAddr = computeAddress(
-            0, abi.encodePacked(type(KintoWallet).creationCode, abi.encode(address(_entryPoint), address(_kintoIDv1)))
+            0, abi.encodePacked(type(KintoWallet).creationCode, abi.encode(address(_entryPoint), address(_kintoID)))
         );
         if (isContract(walletImplementationAddr)) {
             _walletImpl = KintoWallet(payable(walletImplementationAddr));
             console.log("Wallet Implementation already deployed at", address(walletImplementationAddr));
         } else {
             // Deploy Wallet Implementation
-            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoIDv1, IKintoAppRegistry(address(0)));
+            _walletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoID, IKintoAppRegistry(address(0)));
             console.log("Wallet Implementation deployed at", address(_walletImpl));
         }
 
@@ -129,7 +129,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _walletFactory = KintoWalletFactory(address(_proxy));
             console.log("Wallet Factory proxy deployed at ", address(_walletFactory));
             // Initialize proxy
-            _walletFactory.initialize(_kintoIDv1);
+            _walletFactory.initialize(_kintoID);
         }
 
         address walletFactory = _entryPoint.walletFactory();
@@ -207,7 +207,7 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
 
         // Writes the addresses to a file
         vm.writeFile(_getAddressesFile(), "{\n");
-        vm.writeLine(_getAddressesFile(), string.concat('"KintoID": "', vm.toString(address(_kintoIDv1)), '",'));
+        vm.writeLine(_getAddressesFile(), string.concat('"KintoID": "', vm.toString(address(_kintoID)), '",'));
         vm.writeLine(
             _getAddressesFile(), string.concat('"KintoID-impl": "', vm.toString(address(_implementation)), '",')
         );

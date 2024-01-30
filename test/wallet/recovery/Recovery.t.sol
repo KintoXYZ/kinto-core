@@ -2,12 +2,12 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract RecoveryTest is KintoWalletTest {
-    /* ============ Recovery Tests ============ */
+contract RecoveryTest is SharedSetup {
+    /* ============ Recovery tests ============ */
 
-    function testStartRecovert() public {
+    function testStartRecovery() public {
         vm.prank(address(_walletFactory));
         _kintoWallet.startRecovery();
         assertEq(_kintoWallet.inRecovery(), block.timestamp);
@@ -29,16 +29,16 @@ contract RecoveryTest is KintoWalletTest {
         assertEq(_kintoWallet.inRecovery(), block.timestamp);
 
         // mint NFT to new owner and burn old
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
         uint16[] memory traits = new uint16[](0);
 
         vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        sigdata = _auxCreateSignature(_kintoIDv1, _owner, _owner, 1, block.timestamp + 1000);
-        _kintoIDv1.burnKYC(sigdata);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        sigdata = _auxCreateSignature(_kintoID, _owner, 1, block.timestamp + 1000);
+        _kintoID.burnKYC(sigdata);
         vm.stopPrank();
 
-        assertEq(_kintoIDv1.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_user), true);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
@@ -50,7 +50,7 @@ contract RecoveryTest is KintoWalletTest {
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
 
         vm.prank(_kycProvider);
-        _kintoIDv1.monitor(users, updates);
+        _kintoID.monitor(users, updates);
 
         vm.prank(address(_walletFactory));
         _kintoWallet.completeRecovery(users);
@@ -69,7 +69,7 @@ contract RecoveryTest is KintoWalletTest {
 
         // approve KYC for _user (mint NFT)
         approveKYC(_kycProvider, _user, _userPk);
-        assertEq(_kintoIDv1.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_user), true);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
@@ -83,7 +83,7 @@ contract RecoveryTest is KintoWalletTest {
         users[0] = _user;
 
         vm.prank(_kycProvider);
-        _kintoIDv1.monitor(users, updates);
+        _kintoID.monitor(users, updates);
 
         // complete recovery
         vm.prank(address(_walletFactory));
@@ -101,13 +101,13 @@ contract RecoveryTest is KintoWalletTest {
 
         // burn old owner NFT
         revokeKYC(_kycProvider, _owner, _ownerPk);
-        assertEq(_kintoIDv1.isKYC(_owner), false);
+        assertEq(_kintoID.isKYC(_owner), false);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
 
         // complete recovery
-        assertEq(_kintoIDv1.isKYC(_user), false); // new owner is not KYC'd
+        assertEq(_kintoID.isKYC(_user), false); // new owner is not KYC'd
         address[] memory users = new address[](1);
         users[0] = _user;
         vm.prank(address(_walletFactory));
@@ -125,11 +125,11 @@ contract RecoveryTest is KintoWalletTest {
 
         // burn old owner NFT
         revokeKYC(_kycProvider, _owner, _ownerPk);
-        assertEq(_kintoIDv1.isKYC(_owner), false);
+        assertEq(_kintoID.isKYC(_owner), false);
 
         // approve KYC for _user (mint NFT)
         approveKYC(_kycProvider, _user, _userPk);
-        assertEq(_kintoIDv1.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_user), true);
 
         // pass recovery time (not enough)
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() - 1);
@@ -143,7 +143,7 @@ contract RecoveryTest is KintoWalletTest {
         users[0] = _user;
 
         vm.prank(_kycProvider);
-        _kintoIDv1.monitor(users, updates);
+        _kintoID.monitor(users, updates);
 
         // complete recovery
         vm.prank(address(_walletFactory));

@@ -9,9 +9,8 @@ import "../src/wallet/KintoWalletFactory.sol";
 import "../src/KintoID.sol";
 import "../src/viewers/KYCViewer.sol";
 
-import "./helpers/UserOp.sol";
+import "./SharedSetup.t.sol";
 import "./helpers/UUPSProxy.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 
 contract KYCViewerUpgraded is KYCViewer {
     function newFunction() external pure returns (uint256) {
@@ -21,64 +20,39 @@ contract KYCViewerUpgraded is KYCViewer {
     constructor(address _kintoWalletFactory) KYCViewer(_kintoWalletFactory) {}
 }
 
-contract KYCViewerTest is UserOp, AATestScaffolding {
-    uint256 _chainID = 1;
-
-    UUPSProxy _proxyViewer;
-    KYCViewer _implkycViewer;
-    KYCViewerUpgraded _implKYCViewerUpgraded;
-    KYCViewer _kycViewer;
-    KYCViewerUpgraded _kycViewer2;
-
-    function setUp() public {
-        vm.chainId(_chainID);
-        vm.startPrank(address(1));
-        _owner.transfer(1e18);
-        vm.stopPrank();
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
-        vm.startPrank(_owner);
-        _implkycViewer = new KYCViewer{salt: 0}(address(_walletFactory));
-        // deploy _proxy contract and point it to _implementation
-        _proxyViewer = new UUPSProxy{salt: 0}(address(_implkycViewer), "");
-        // wrap in ABI to support easier calls
-        _kycViewer = KYCViewer(address(_proxyViewer));
-        // Initialize kyc viewer _proxy
-        _kycViewer.initialize();
-        vm.stopPrank();
-    }
-
-    function testUp() public {
-        console.log("address owner", address(_owner));
+contract KYCViewerTest is SharedSetup {
+    function testUp() public override {
+        super.testUp();
         assertEq(_kycViewer.owner(), _owner);
         assertEq(address(_entryPoint.walletFactory()), address(_kycViewer.walletFactory()));
-        address kintoID = address(_kycViewer.kintoID());
-        assertEq(address(_walletFactory.kintoID()), kintoID);
+        assertEq(address(_walletFactory.kintoID()), address(_kycViewer.kintoID()));
     }
 
-    /* ============ Upgrade Tests ============ */
+    /* ============ Upgrade tests ============ */
 
-    function testOwnerCanUpgradeViewer() public {
-        vm.startPrank(_owner);
+    function testUpgradeTo() public {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
+        vm.prank(_owner);
         _kycViewer.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _kycViewer2 = KYCViewerUpgraded(address(_kycViewer));
-        assertEq(_kycViewer2.newFunction(), 1);
-        vm.stopPrank();
+        assertEq(KYCViewerUpgraded(address(_kycViewer)).newFunction(), 1);
     }
 
-    function test_RevertWhen_OthersCannotUpgradeFactory() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
+        vm.assume(someone != _owner);
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
         vm.expectRevert("only owner");
+        vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));
     }
 
-    /* ============ Viewer Tests ============ */
+    /* ============ Viewer tests ============ */
 
     function testIsKYCBothOwnerAndWallet() public {
         assertEq(_kycViewer.isKYC(address(_kintoWallet)), _kycViewer.isKYC(_owner));
         assertEq(_kycViewer.isIndividual(address(_kintoWallet)), _kycViewer.isIndividual(_owner));
         assertEq(_kycViewer.isCompany(address(_kintoWallet)), false);
         assertEq(_kycViewer.hasTrait(address(_kintoWallet), 6), false);
+        assertEq(_kycViewer.isSanctionsSafe(address(_kintoWallet)), true);
+        assertEq(_kycViewer.isSanctionsSafeIn(address(_kintoWallet), 1), true);
     }
 }
