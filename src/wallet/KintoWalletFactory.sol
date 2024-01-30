@@ -198,15 +198,14 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 
     /**
-     * @dev Send money to an account from privileged accounts
+     * @dev Send money to an account from privileged accounts or from kyc accounts to kyc accounts or contracts.
      * @param target The target address
      */
     function sendMoneyToAccount(address target) external payable override {
-        require(
-            owner() == msg.sender || kintoID.isKYC(msg.sender)
-                || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender),
-            "KYC or Provider role required"
-        );
+        bool isPrivileged = owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
+        require(isPrivileged || kintoID.isKYC(msg.sender), "KYC or Provider role required");
+        bool isContract = target.code.length > 0;
+        require(target != address(0) && ((kintoID.isKYC(target) || isContract) || isPrivileged), "Invalid target address");
         (bool sent,) = target.call{value: msg.value}("");
         require(sent, "Failed to send Ether");
     }

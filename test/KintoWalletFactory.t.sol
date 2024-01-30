@@ -321,10 +321,20 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testSendMoneyToAccount_WhenCallerIsKYCd() public {
         approveKYC(_kycProvider, _user, _userPk);
+        approveKYC(_kycProvider, _user2, _user2Pk);
+
         vm.deal(_user, 1 ether);
         vm.prank(_user);
-        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
-        assertEq(address(123).balance, 1e18);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
+        assertEq(address(_user2).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.deal(_user, 1 ether);
+        vm.prank(_user);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kintoWallet));
+        assertEq(address(_kintoWallet).balance, 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsOwner() public {
@@ -332,6 +342,14 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.prank(_owner);
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
         assertEq(address(123).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwnerAndTargetIsKYC() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        revokeKYC(_kycProvider, _owner, _ownerPk);
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user));
+        assertEq(address(_user).balance, 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCProvider() public {
@@ -353,10 +371,26 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(123).balance, 1e18);
     }
 
+    function testSendMoneyToAccount_When_CallerKYCAndTargetContract() public {
+        vm.deal(_kycProvider, 1 ether);
+        vm.prank(_kycProvider);
+        uint beforeBalance = address(_kintoWallet).balance;
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kintoWallet));
+        assertEq(address(_kintoWallet).balance, beforeBalance + 1e18);
+    }
+
     function testSendMoneyToAccount_RevertWhen_CallerIsNotAllowed() public {
         vm.deal(address(123), 1 ether);
         vm.prank(address(123));
         vm.expectRevert("KYC or Provider role required");
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
+    }
+
+    function testSendMoneyToAccount_RevertWhen_CallerKYCButTargetisNot() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.deal(_user, 1 ether);
+        vm.prank(_user);
+        vm.expectRevert("Invalid target address");
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
