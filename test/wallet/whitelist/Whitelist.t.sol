@@ -34,7 +34,7 @@ contract WhitelistTest is SharedSetup {
     //     assertEq(counter.count(), 0);
 
     //     // (2). fund paymaster for Counter contract
-    //     fundSponsorForApp(address(counter));
+    //     fundSponsorForApp(_owner, address(counter));
 
     //     // (3). Create whitelist app user op
     //     UserOperation[] memory userOps = new UserOperation[](1);

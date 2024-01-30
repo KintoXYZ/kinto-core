@@ -90,8 +90,9 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.deal(_owner, 1e20);
     }
 
-    function fundSponsorForApp(address _contract) internal {
+    function fundSponsorForApp(address _sender, address _contract) internal {
         // we add the deposit to the counter contract in the paymaster
+        vm.prank(_sender);
         _paymaster.addDepositFor{value: 1e19}(address(_contract));
     }
 
@@ -145,10 +146,7 @@ abstract contract AATestScaffolding is KYCSignature {
         _paymaster = SponsorPaymaster(address(_proxyPaymaster));
 
         // initialize proxy
-        _paymaster.initialize(_owner);
-
-        // Set the registry in the paymaster
-        _paymaster.setAppRegistry(address(_kintoAppRegistry));
+        _paymaster.initialize(_owner, _kintoAppRegistry, _kintoID);
 
         // Set user op max cost
         _paymaster.setUserOpMaxCost(0.03 ether);

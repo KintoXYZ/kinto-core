@@ -18,7 +18,7 @@ contract EngenCreditsV2 is EngenCredits {
 contract EngenCreditsTest is SharedSetup {
     function setUp() public override {
         super.setUp();
-        fundSponsorForApp(address(_engenCredits));
+        fundSponsorForApp(_owner, address(_engenCredits));
         registerApp(_owner, "engen credits", address(_engenCredits));
     }
 

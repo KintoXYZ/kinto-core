@@ -45,7 +45,6 @@ contract KintoID is
 
     /* ============ State Variables ============ */
 
-    bytes32 public domainSeparator;
     uint256 private _nextTokenId;
 
     // We'll monitor the whole list every single day and update it
@@ -57,6 +56,8 @@ contract KintoID is
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
+
+    bytes32 public domainSeparator;
 
     /* ============ Modifiers ============ */
 

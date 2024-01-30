@@ -11,6 +11,7 @@ import "@aa/core/BasePaymaster.sol";
 import "../interfaces/ISponsorPaymaster.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWallet.sol";
+import "../interfaces/IKintoID.sol";
 
 /**
  * An ETH-based paymaster that accepts ETH deposits
@@ -31,9 +32,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
 
-    uint256 public userOpMaxCost;
-    IKintoAppRegistry public override appRegistry;
-
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
@@ -44,6 +42,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     // rate limit across apps: user => RateLimitData
     mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
+
+    IKintoAppRegistry public override appRegistry;
+    IKintoID public kintoID;
+
+    uint256 public userOpMaxCost;
 
     // ========== Events ============
 
@@ -61,12 +64,17 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address _owner) external virtual initializer {
+    function initialize(address _owner, IKintoAppRegistry _appRegistry, IKintoID _kintoID)
+        external
+        virtual
+        initializer
+    {
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
 
-        // unlocks owner
-        unlockBlock[_owner] = block.number;
+        kintoID = _kintoID;
+        appRegistry = _appRegistry;
+        unlockBlock[_owner] = block.number; // unlocks owner
     }
 
     /**
@@ -91,6 +99,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function addDepositFor(address account) external payable override {
         require(msg.value > 0, "SP: requires a deposit");
+        require(kintoID.isKYC(msg.sender), "SP: sender KYC required");
+        if (account.code.length == 0 && !kintoID.isKYC(account)) revert("SP: account KYC required");
+
         // sender must have approval for the paymaster
         balances[account] += msg.value;
         if (msg.sender == account) {
@@ -169,7 +180,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @param _newRegistry address of the app registry
      */
     function setAppRegistry(address _newRegistry) external override onlyOwner {
-        require(_newRegistry != address(0) && _newRegistry != address(appRegistry), "SP: new registry cannot be 0");
+        require(_newRegistry != address(0), "SP: new registry cannot be 0");
+        require(_newRegistry != address(appRegistry), "SP: new registry cannot be the same");
         emit AppRegistrySet(address(appRegistry), _newRegistry);
         appRegistry = IKintoAppRegistry(_newRegistry);
     }

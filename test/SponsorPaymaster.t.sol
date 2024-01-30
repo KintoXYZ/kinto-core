@@ -55,7 +55,7 @@ contract SponsorPaymasterTest is SharedSetup {
         assertEq(_newImplementation.newFunction(), 1);
     }
 
-    function testUpgrade_RevertWhen_CallerIsNotOwner() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert("SP: not owner");
         _paymaster.upgradeTo(address(_newImplementation));
@@ -63,51 +63,100 @@ contract SponsorPaymasterTest is SharedSetup {
 
     /* ============ Deposit & Stake ============ */
 
-    function testOwnerCanDepositStakeAndWithdraw() public {
-        vm.startPrank(_owner);
+    function testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() public {
         uint256 balance = address(_owner).balance;
+        vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         assertEq(address(_owner).balance, balance - 5e18);
-        _paymaster.unlockTokenDeposit();
-        vm.roll(block.number + 1);
-        _paymaster.withdrawTokensTo(address(_owner), 5e18);
-        assertEq(address(_owner).balance, balance);
-        vm.stopPrank();
+        assertEq(_paymaster.balances(_owner), 5e18);
     }
 
-    function testUserCanDepositStakeAndWithdraw() public {
-        vm.startPrank(_user);
+    function testAddDepositFor_WhenAccountIsContract() public {
+        uint256 balance = address(_owner).balance;
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        assertEq(address(_owner).balance, balance - 5e18);
+        assertEq(_paymaster.balances(_owner), 5e18);
+    }
+
+    function testAddDepositFor_RevertWhen_ZeroValue() public {
+        vm.expectRevert("SP: requires a deposit");
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 0}(address(_owner));
+    }
+
+    function testAddDepositFor_RevertWhen_SenderIsNotKYCd() public {
+        assertEq(_kintoID.isKYC(address(_user)), false);
+        vm.expectRevert("SP: sender KYC required");
+        vm.prank(_user);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+    }
+
+    function testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() public {
+        assertEq(_kintoID.isKYC(address(_user)), false);
+        vm.expectRevert("SP: account KYC required");
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+    }
+
+    function testWithdrawTokensTo() public {
         uint256 balance = address(_user).balance;
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.startPrank(_user);
+
         _paymaster.addDepositFor{value: 5e18}(address(_user));
         assertEq(address(_user).balance, balance - 5e18);
+
         _paymaster.unlockTokenDeposit();
-        // advance block to allow withdraw
-        vm.roll(block.number + 1);
+        vm.roll(block.number + 1); // advance block to allow withdraw
         _paymaster.withdrawTokensTo(address(_user), 5e18);
+
         assertEq(address(_user).balance, balance);
+
         vm.stopPrank();
     }
 
-    function test_RevertWhen_UserCanDepositStakeAndWithdrawWithoutRoll() public {
-        // user deposits 5 eth
-        uint256 balance = address(this).balance;
-        _paymaster.addDepositFor{value: 5e18}(address(this));
-        assertEq(address(this).balance, balance - 5e18);
+    function testWithdrawTokensTo_OwnerCanDepositStakeAndWithdraw() public {
+        uint256 balance = address(_owner).balance;
+
+        vm.startPrank(_owner);
+
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        assertEq(address(_owner).balance, balance - 5e18);
+
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1);
+
+        _paymaster.withdrawTokensTo(address(_owner), 5e18);
+        assertEq(address(_owner).balance, balance);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawTokensTo_RevertWhen_DepositLocked() public {
+        uint256 balance = _user.balance;
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_user);
+        _paymaster.addDepositFor{value: 5e18}(_user);
+        assertEq(_user.balance, balance - 5e18);
 
         // user unlocks token deposit
         _paymaster.unlockTokenDeposit();
 
         // user withdraws 5 eth
         vm.expectRevert("SP: must unlockTokenDeposit");
-        _paymaster.withdrawTokensTo(address(this), 5e18);
+        _paymaster.withdrawTokensTo(_user, 5e18);
 
-        assertEq(address(this).balance, balance - 5e18);
+        assertEq(_user.balance, balance - 5e18);
     }
 
-    function testOwnerCanWithdrawAllInEmergency() public {
+    function testWithrawTo_WhenCallerIsOwner() public {
         uint256 deposited = _paymaster.getDeposit();
+        approveKYC(_kycProvider, _user, _userPk);
 
-        vm.prank(_user);
+        vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
 
         vm.prank(_owner);
@@ -125,32 +174,25 @@ contract SponsorPaymasterTest is SharedSetup {
         assertEq(address(_owner).balance, balBefore + deposited);
     }
 
-    function test_RevertWhen_UserCanWithdrawAllInEmergency() public {
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_owner));
-
-        // user deposits 5 eth and then tries to withdraw all
-        vm.startPrank(_user);
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
+    function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
-        vm.stopPrank();
-    }
-
-    function testDepositInfo_WhenCallerDepositsToSomeoneElse(address someone) public {
-        vm.assume(someone != _owner);
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(someone));
-
-        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(someone));
-        assertEq(amount, 5e18);
-        assertEq(_unlockBlock, 0);
     }
 
     function testDepositInfo_WhenCallerDepositsToHimself() public {
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(_owner));
+        assertEq(amount, 5e18);
+        assertEq(_unlockBlock, 0);
+    }
+
+    function testDepositInfo_WhenCallerDepositsToSomeoneElse() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+
+        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(_user));
         assertEq(amount, 5e18);
         assertEq(_unlockBlock, 0);
     }
@@ -522,7 +564,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_SameAddress() public {
-        vm.expectRevert("SP: new registry cannot be 0");
+        vm.expectRevert("SP: new registry cannot be the same");
         vm.prank(_owner);
         _paymaster.setAppRegistry(address(_kintoAppRegistry));
     }
