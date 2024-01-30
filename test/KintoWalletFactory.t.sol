@@ -16,8 +16,8 @@ import "../src/wallet/KintoWallet.sol";
 import "./SharedSetup.t.sol";
 
 contract KintoWalletUpgrade is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry)
-        KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoIDv1, IKintoAppRegistry _kintoAppRegistry)
+        KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry)
     {}
 
     function walletFunction() public pure returns (uint256) {
@@ -148,8 +148,8 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testWhitelistedSignerCanFundWallet() public {
+        fundSponsorForApp(_owner, address(_kintoWallet));
         vm.startPrank(_owner);
-        fundSponsorForApp(address(_kintoWallet));
         uint256 nonce = _kintoWallet.getNonce();
         address[] memory funders = new address[](1);
         funders[0] = _funder;

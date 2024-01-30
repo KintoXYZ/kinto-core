@@ -34,7 +34,7 @@ contract SharedSetup is UserOp, AATestScaffolding {
         deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
 
         // add paymaster to _kintoWallet
-        fundSponsorForApp(address(_kintoWallet));
+        fundSponsorForApp(_owner, address(_kintoWallet));
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
@@ -46,7 +46,7 @@ contract SharedSetup is UserOp, AATestScaffolding {
 
         registerApp(_owner, "test", address(counter));
         whitelistApp(address(counter));
-        fundSponsorForApp(address(counter));
+        fundSponsorForApp(_owner, address(counter));
     }
 
     function testUp() public virtual {

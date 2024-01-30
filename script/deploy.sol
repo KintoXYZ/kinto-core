@@ -173,7 +173,8 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             _sponsorPaymaster = SponsorPaymaster(address(_proxy));
             console.log("Paymaster proxy deployed at ", address(_sponsorPaymaster));
             // Initialize proxy
-            _sponsorPaymaster.initialize(address(msg.sender));
+            // TODO: deploy registry and pass it to the paymaster
+            _sponsorPaymaster.initialize(address(msg.sender), IKintoAppRegistry(address(0)), _kintoIDv1);
         }
 
         // KYC Viewer
