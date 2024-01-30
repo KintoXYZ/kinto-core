@@ -28,9 +28,9 @@ contract KYCViewerTest is SharedSetup {
         assertEq(address(_walletFactory.kintoID()), address(_kycViewer.kintoID()));
     }
 
-    /* ============ Upgrade Tests ============ */
+    /* ============ Upgrade tests ============ */
 
-    function testUpgradeTo_WhenCallerIsOwner() public {
+    function testUpgradeTo() public {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
         vm.prank(_owner);
         _kycViewer.upgradeTo(address(_implementationV2));
@@ -45,7 +45,7 @@ contract KYCViewerTest is SharedSetup {
         _kycViewer.upgradeTo(address(_implementationV2));
     }
 
-    /* ============ Viewer Tests ============ */
+    /* ============ Viewer tests ============ */
 
     function testIsKYCBothOwnerAndWallet() public {
         assertEq(_kycViewer.isKYC(address(_kintoWallet)), _kycViewer.isKYC(_owner));

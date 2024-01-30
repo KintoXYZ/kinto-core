@@ -24,14 +24,10 @@ import "../interfaces/IKintoID.sol";
 contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, ReentrancyGuard, ISponsorPaymaster {
     using SafeERC20 for IERC20;
 
-    // ========== Events ============
-    event AppRegistrySet(address appRegistry, address _oldRegistry);
-
     // calculated cost of the postOp
     uint256 public constant COST_OF_POST = 200_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 230_000;
     uint256 public constant MAX_COST_OF_PREVERIFICATION = 110_000;
-    uint256 public constant MAX_COST_OF_USEROP = 0.03 ether;
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
@@ -49,6 +45,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     IKintoAppRegistry public override appRegistry;
     IKintoID public kintoID;
+
+    uint256 public userOpMaxCost;
+
+    // ========== Events ============
+
+    event AppRegistrySet(address oldRegistry, address newRegistry);
+    event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
     // ========== Constructor & Upgrades ============
 
@@ -138,7 +141,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         entryPoint.withdrawTo(payable(target), amount);
     }
 
-    /* =============== Viewers & validation ============= */
+    /* =============== Setters & Getters ============= */
 
     /**
      * Return the deposit info for the account
@@ -146,8 +149,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @return _unlockBlock - the block height at which the deposit can be withdrawn.
      */
     function depositInfo(address account) external view returns (uint256 amount, uint256 _unlockBlock) {
-        amount = balances[account];
-        _unlockBlock = unlockBlock[account];
+        return (balances[account], unlockBlock[account]);
     }
 
     /**
@@ -184,6 +186,15 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         appRegistry = IKintoAppRegistry(_newRegistry);
     }
 
+    /**
+     * @dev Set the max cost of a user operation
+     * @param _newUserOpMaxCost max cost of a user operation
+     */
+    function setUserOpMaxCost(uint256 _newUserOpMaxCost) external onlyOwner {
+        emit UserOpMaxCostSet(userOpMaxCost, _newUserOpMaxCost);
+        userOpMaxCost = _newUserOpMaxCost;
+    }
+
     /* =============== AA overrides ============= */
 
     /**
@@ -210,7 +221,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         // use maxFeePerGas for conservative estimation of gas cost
         uint256 gasPriceUserOp = userOp.maxFeePerGas;
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
-        require(ethMaxCost <= MAX_COST_OF_USEROP, "SP: gas too high for user op");
+        require(ethMaxCost <= userOpMaxCost, "SP: gas too high for user op");
 
         address sponsor = appRegistry.getSponsor(_decodeCallData(userOp.callData));
         require(unlockBlock[sponsor] == 0, "SP: deposit not locked");
@@ -219,7 +230,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
-     * perform the post-operation to charge the account contract for the gas.
+     * @notice performs the post-operation to charge the account contract for the gas.
      */
     function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
         (address account, address userAccount, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
@@ -264,6 +275,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         _checkLimits(userAccount, account, ethCost);
     }
 
+    /* =============== Internal methods ============= */
+
     function _checkLimits(address sender, address targetAccount, uint256 ethMaxCost) internal view {
         // global rate limit check
         ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[sender];
@@ -291,10 +304,12 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         );
     }
 
-    // @notice extracts `target` contract from callData
-    // @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
-    // bear with the gas cost of all ops
-    // @dev this is very similar to KintoWallet._decodeCallData, consider unifying
+    /**
+     * @notice extracts `target` contract from callData
+     * @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
+     * bear with the gas cost of all ops
+     * @dev this is very similar to KintoWallet._decodeCallData, consider unifying
+     */
     function _decodeCallData(bytes calldata callData) private pure returns (address target) {
         bytes4 selector = bytes4(callData[:4]); // extract the function selector from the callData
 

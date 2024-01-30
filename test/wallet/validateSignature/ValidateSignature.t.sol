@@ -782,6 +782,8 @@ contract ValidateSignatureTest is SharedSetup {
     }
 
     // special case 2: requiredSigners == 1, owners.length == 3 and the owner 2 is the signer.
+    // validation should fail since SINGLE_SIGNER policy only works with the first owner, any extra
+    // owners are ignored
     function testValidateSignature_SpecialCase2() public {
         // reset signers & change policy
         address[] memory owners = new address[](3);
@@ -804,10 +806,77 @@ contract ValidateSignatureTest is SharedSetup {
         );
 
         assertEq(
+            SIG_VALIDATION_FAILED,
+            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    // special case 2: requiredSigners == 3, owners.length == 3 and only owners[0] is KYCd
+    // should validate the signature since we don't care about the other owners being KYC'd
+    function testValidateSignature_SpecialCase3() public {
+        assertEq(_kintoID.isKYC(_user), false);
+        assertEq(_kintoID.isKYC(_user2), false);
+
+        // reset signers & change policy
+        address[] memory owners = new address[](3);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+        resetSigners(owners, _kintoWallet.ALL_SIGNERS());
+
+        // create user op with owners 1 as signer
+        privateKeys = new uint256[](3);
+        privateKeys[0] = _ownerPk;
+        privateKeys[1] = _userPk;
+        privateKeys[2] = _user2Pk;
+
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
             SIG_VALIDATION_SUCCESS,
             KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
     }
+
+    // If a KintoWallet has more than one owner and the first owner burns their KYC, the rest lose access to the wallet
+    // because _validateSignature() reverts if the first owner does not have KYC:
+    // function testValidateSignature_SpecialCase4() public {
+    //     address[] memory owners = new address[](2);
+    //     owners[0] = _owner;
+    //     owners[1] = _user;
+    //     resetSigners(owners, _kintoWallet.SINGLE_SIGNER());
+
+    //     revokeKYC(_kycProvider, _owner, _ownerPk);
+
+    //     // create user op with owners[1] as signer
+    //     privateKeys = new uint256[](1);
+    //     privateKeys[0] = _userPk;
+
+    //     UserOperation memory userOp = _createUserOperation(
+    //         address(_kintoWallet),
+    //         address(counter),
+    //         _kintoWallet.getNonce(),
+    //         privateKeys,
+    //         abi.encodeWithSignature("increment()"),
+    //         address(_paymaster)
+    //     );
+
+    //     assertEq(
+    //         SIG_VALIDATION_SUCCESS,
+    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+    //             userOp, _entryPoint.getUserOpHash(userOp)
+    //         )
+    //     );
+    // }
 }

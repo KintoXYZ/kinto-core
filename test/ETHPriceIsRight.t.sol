@@ -28,7 +28,7 @@ contract ETHPriceIsRightTest is Test {
         assertEq(_priceIsRight.maxGuess(), 0);
     }
 
-    // Upgrade Tests
+    // Upgrade tests
 
     function testAnyoneCanEnterGuessBeforeEnd() public {
         vm.startPrank(_user);

@@ -88,7 +88,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner, address recoverer, uint256 salt)
+    function createAccount(address owner, address recoverer, bytes32 salt)
         external
         override
         returns (IKintoWallet ret)
@@ -104,7 +104,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         ret = IKintoWallet(
             payable(
-                new SafeBeaconProxy{salt: bytes32(salt)}(
+                new SafeBeaconProxy{salt: salt}(
                     address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer))
                 )
             )
@@ -112,7 +112,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-        // Emit event
+
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
@@ -230,7 +230,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner, address recoverer, uint256 salt) public view override returns (address) {
+    function getAddress(address owner, address recoverer, bytes32 salt) public view override returns (address) {
         return Create2.computeAddress(
             bytes32(salt),
             keccak256(
@@ -264,18 +264,18 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         (newImplementation);
     }
 
-    function _preventCreationBytecode(bytes calldata _bytes) internal view {
-        // Prevent direct deployment of KintoWallet contracts
+    function _preventWalletDeployment(bytes calldata _bytecode) internal view {
         bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
-        if (_bytes.length > walletInitCode.length + 32) {
-            // Make sure this beacon cannot be called with creation code
+        if (_bytecode.length > walletInitCode.length + 32) {
             uint256 offset = 12 + walletInitCode.length;
-            address beaconAddress = address(0);
-            bytes memory slice = _bytes[offset:offset + 20];
+
+            // extract beacon address directly from calldata
+            address beaconAddress;
+            bytes memory slice = _bytecode[offset:offset + 20];
             assembly {
                 beaconAddress := mload(add(slice, 20))
             }
-            // Compare the extracted beacon address with the disallowed address
+
             require(beaconAddress != address(beacon), "Direct KintoWallet deployment not allowed");
         }
     }
@@ -284,10 +284,14 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         internal
         returns (address)
     {
-        require(amount == msg.value, "amount mismatch");
-        _preventCreationBytecode(bytecode);
+        require(amount == msg.value, "Amount mismatch");
+        require(bytecode.length > 0, "Bytecode is empty");
+        _preventWalletDeployment(bytecode);
+
+        // deploy the contract using `CREATE2`
         address created = Create2.deploy(amount, salt, bytecode);
-        // Assign ownership to the deployer if needed
+
+        // assign ownership to newOwner if the contract is Ownable
         try OwnableUpgradeable(created).owner() returns (address owner) {
             if (owner == address(this)) {
                 OwnableUpgradeable(created).transferOwnership(newOwner);

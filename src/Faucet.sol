@@ -19,9 +19,11 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+
     event Claim(address indexed _to, uint256 _timestamp);
 
     /* ============ Constants ============ */
+
     uint256 public constant CLAIM_AMOUNT = 1 ether / 2500;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 

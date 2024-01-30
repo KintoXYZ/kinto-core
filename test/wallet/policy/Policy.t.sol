@@ -5,9 +5,9 @@ import "forge-std/console.sol";
 import "../../SharedSetup.t.sol";
 
 contract ResetSignerTest is SharedSetup {
-    /* ============ Signers & Policy Tests ============ */
+    /* ============ Signers & Policy tests ============ */
 
-    function testAddingOneSigner() public {
+    function testResetSigners_WhenAddingOneSigner() public {
         vm.startPrank(_owner);
         address[] memory owners = new address[](2);
         owners[0] = _owner;
@@ -29,7 +29,7 @@ contract ResetSignerTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function test_RevertWhen_DuplicateSigner() public {
+    function testResetSigners_RevertWhen_DuplicateSigner() public {
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _owner;
@@ -52,10 +52,10 @@ contract ResetSignerTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("duplicate owners");
+        assertRevertReasonEq("KW-rs: duplicate signers");
     }
 
-    function test_RevertWhen_WithEmptyArray() public {
+    function testResetSigners_RevertWhen_EmptyArray() public {
         address[] memory owners = new address[](0);
 
         UserOperation memory userOp = _createUserOperation(
@@ -79,7 +79,7 @@ contract ResetSignerTest is SharedSetup {
         // fixme: assertRevertReasonEq(stdError.indexOOBError)F;
     }
 
-    function test_RevertWhen_WithManyOwners() public {
+    function testResetSigners_RevertWhen_ManyOwners() public {
         address[] memory owners = new address[](4);
         owners[0] = _owner;
         owners[1] = _user;
@@ -104,10 +104,10 @@ contract ResetSignerTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-rs: invalid array");
+        assertRevertReasonEq("KW-rs: signers exceed max limit");
     }
 
-    function test_RevertWhen_WithoutKYCSigner() public {
+    function testResetSigners_RevertWhen_WithoutKYCSigner() public {
         address[] memory owners = new address[](1);
         owners[0] = _user;
 
@@ -125,7 +125,7 @@ contract ResetSignerTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
-    function testChangingPolicyWithTwoSigners() public {
+    function testResetSigners_WhenChangingPolicy_WhenTwoSigners() public {
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
@@ -148,7 +148,7 @@ contract ResetSignerTest is SharedSetup {
         assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
     }
 
-    function testChangingPolicyWithThreeSigners() public {
+    function testResetSigners_WhenChangingPolicy_WhenThreeSigners() public {
         vm.startPrank(_owner);
         address[] memory owners = new address[](3);
         owners[0] = _owner;
@@ -173,7 +173,7 @@ contract ResetSignerTest is SharedSetup {
     }
 
     // todo: separate into 2 different tests
-    function test_RevertWhen_ChangingPolicyWithoutRightSigners() public {
+    function testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners() public {
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;

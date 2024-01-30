@@ -34,11 +34,17 @@ contract SponsorPaymasterTest is SharedSetup {
     function testUp() public override {
         super.testUp();
         assertEq(_paymaster.COST_OF_POST(), 200_000);
+        assertEq(_paymaster.userOpMaxCost(), 0.03 ether);
     }
+
+    /* ============ Events ============ */
+
+    event AppRegistrySet(address oldRegistry, address newRegistry);
+    event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
     /* ============ Upgrade ============ */
 
-    function testOwnerCanUpgrade() public {
+    function testUpgradeTo() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
@@ -80,14 +86,14 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testAddDepositFor_RevertWhen_SenderIsNotKYCd() public {
-        assertEq(_kintoIDv1.isKYC(address(_user)), false);
+        assertEq(_kintoID.isKYC(address(_user)), false);
         vm.expectRevert("SP: sender KYC required");
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
 
     function testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() public {
-        assertEq(_kintoIDv1.isKYC(address(_user)), false);
+        assertEq(_kintoID.isKYC(address(_user)), false);
         vm.expectRevert("SP: account KYC required");
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
@@ -308,14 +314,29 @@ contract SponsorPaymasterTest is SharedSetup {
         assertTrue(ethCostCount == 0);
         assertTrue(costLimitLastOperationTime == 0);
 
-        _incrementCounterTxs(10, address(counter));
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
+        _incrementCounterTxs(appLimits[1] - 1, address(counter));
 
+        // move time to GAS_LIMIT_PERIOD + 1 and call monitor so we keep the isKYC active
+        vm.warp(block.timestamp + appLimits[2] + 1);
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // increment one more time
+        _incrementCounterTxs(1, address(counter));
+
+        // check limits
         (operationCount, lastOperationTime, ethCostCount, costLimitLastOperationTime) =
             _paymaster.appUserLimit(address(_kintoWallet), address(counter));
         assertTrue(operationCount > 0);
-        assertTrue(lastOperationTime > 0);
+        assertEq(lastOperationTime, block.timestamp);
         assertTrue(ethCostCount > 0);
-        assertTrue(costLimitLastOperationTime > 0);
+        assertEq(costLimitLastOperationTime, block.timestamp);
     }
 
     function testValidatePaymasterUserOp_WithinTxRateLimit() public {
@@ -517,6 +538,52 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
+    }
+
+    function testSetAppRegistry() public {
+        address oldAppRegistry = address(_kintoAppRegistry);
+        address newAppRegistry = address(123);
+
+        vm.expectEmit(true, true, true, true);
+        emit AppRegistrySet(oldAppRegistry, newAppRegistry);
+
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(newAppRegistry);
+        assertEq(address(_paymaster.appRegistry()), newAppRegistry);
+    }
+
+    function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setAppRegistry(address(123));
+    }
+
+    function testSetAppRegistry_RevertWhen_AddressIsZero() public {
+        vm.expectRevert("SP: new registry cannot be 0");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(0));
+    }
+
+    function testSetAppRegistry_RevertWhen_SameAddress() public {
+        vm.expectRevert("SP: new registry cannot be the same");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(_kintoAppRegistry));
+    }
+
+    function testUserOpMaxCost() public {
+        uint256 oldUserOpMaxCost = _paymaster.userOpMaxCost();
+        uint256 newUserOpMaxCost = 123;
+
+        vm.expectEmit(true, true, true, true);
+        emit UserOpMaxCostSet(oldUserOpMaxCost, newUserOpMaxCost);
+
+        vm.prank(_owner);
+        _paymaster.setUserOpMaxCost(newUserOpMaxCost);
+        assertEq(_paymaster.userOpMaxCost(), newUserOpMaxCost);
+    }
+
+    function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setUserOpMaxCost(123);
     }
 
     // TODO:

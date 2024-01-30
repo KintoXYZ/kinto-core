@@ -16,12 +16,6 @@ import "../../test/helpers/UserOp.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract KintoWalletV4 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
-        KintoWallet(_entryPoint, _kintoID, _appRegistry)
-    {}
-}
-
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 

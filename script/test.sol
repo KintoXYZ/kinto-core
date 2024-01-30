@@ -42,13 +42,13 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
         vm.startBroadcast(deployerPrivateKey);
         if (!_kintoID.isKYC(recipientWallet)) {
             IKintoID.SignatureData memory sigdata =
-                _auxCreateSignature(_kintoID, recipientWallet, recipientWallet, recipientKey, block.timestamp + 1000);
+                _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 1000);
             uint16[] memory traits = new uint16[](0);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
 
         console.log("This factory has", totalWalletsCreated, " created");
-        uint256 salt = 0;
+        bytes32 salt = 0;
         address newWallet = _walletFactory.getAddress(recipientWallet, recipientWallet, salt);
         if (isContract(newWallet)) {
             console.log("Wallet already deployed for owner", recipientWallet, "at", newWallet);
@@ -112,7 +112,7 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
         address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
         console.log("All AA setup is correct");
         vm.startBroadcast(deployerPrivateKey);
-        uint256 salt = 0;
+        bytes32 salt = 0;
         address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
         if (!isContract(newWallet)) {
             console.log("ERROR: Wallet not deployed for owner", deployerPublicKey, "at", newWallet);
@@ -184,7 +184,7 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
         address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
         console.log("All AA setup is correct");
         vm.startBroadcast(deployerPrivateKey);
-        uint256 salt = 0;
+        bytes32 salt = 0;
         address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
         if (!isContract(newWallet)) {
             console.log("ERROR: Wallet not deployed for owner", deployerPublicKey, "at", newWallet);

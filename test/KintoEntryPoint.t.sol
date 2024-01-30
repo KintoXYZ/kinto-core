@@ -11,7 +11,7 @@ contract KintoEntryPointTest is SharedSetup {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
-    /* ============ Deployment Tests ============ */
+    /* ============ Deployment tests ============ */
 
     function testCannotResetWalletFactoryAddress() public {
         vm.startPrank(_owner);

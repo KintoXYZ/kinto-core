@@ -132,4 +132,66 @@ contract ExecuteBatchTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq("KW: contract not whitelisted");
     }
+
+    function testExecuteBatch_RevertWhen_LenghtMismatch() public {
+        // remove app from whitelist
+        whitelistApp(address(counter), false);
+
+        // prep batch
+        address[] memory targets = new address[](2);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(counter);
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeWithSignature("recoverer()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+
+        vm.expectEmit(true, true, true, false);
+        emit UserOperationRevertReason(
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
+        );
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW-eb: wrong array length");
+    }
+
+    function testExecuteBatch_RevertWhen_LenghtMismatch2() public {
+        // remove app from whitelist
+        whitelistApp(address(counter), false);
+
+        // prep batch
+        address[] memory targets = new address[](1);
+        targets[0] = address(_kintoWallet);
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature("recoverer()");
+        calls[1] = abi.encodeWithSignature("increment()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+
+        vm.expectEmit(true, true, true, false);
+        emit UserOperationRevertReason(
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
+        );
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("KW-eb: wrong array length");
+    }
 }
