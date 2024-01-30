@@ -376,27 +376,28 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: invalid array");
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: signers exceed max limit");
         require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), "KW-rs: KYC Required");
-        require(
-            newSigners.length == 1 || (newSigners.length == 2 && newSigners[0] != newSigners[1])
-                || (
-                    newSigners.length == 3 && (newSigners[0] != newSigners[1]) && (newSigners[1] != newSigners[2])
-                        && newSigners[0] != newSigners[2]
-                ),
-            "duplicate owners"
-        );
+
+        // ensure no duplicate signers
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            for (uint256 j = i + 1; j < newSigners.length; j++) {
+                require(newSigners[i] != newSigners[j], "KW-rs: duplicate signers");
+            }
+        }
+
+        // ensure all signers are valid
         for (uint256 i = 0; i < newSigners.length; i++) {
             require(newSigners[i] != address(0), "KW-rs: invalid signer address");
         }
-        owners = newSigners;
-        emit SignersChanged(newSigners, owners);
 
-        // change policy if needed.
+        emit SignersChanged(owners, newSigners);
+        owners = newSigners;
+
+        // change policy if needed
+        require(_policy == 1 || newSigners.length > 1, "KW-rs: invalid policy for single signer");
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
-        } else {
-            require(_policy == 1 || newSigners.length > 1, "KW-rs: invalid policy");
         }
     }
 

@@ -150,6 +150,9 @@ abstract contract AATestScaffolding is KYCSignature {
         // Set the registry in the paymaster
         _paymaster.setAppRegistry(address(_kintoAppRegistry));
 
+        // Set user op max cost
+        _paymaster.setUserOpMaxCost(0.03 ether);
+
         vm.stopPrank();
     }
 

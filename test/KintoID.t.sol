@@ -180,12 +180,12 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     /* ============ Burn tests ============ */
 
-    function testBurnKYC_RevertWhen_UsingBurn() public {
+    function testBurn_RevertWhen_UsingBurn() public {
         vm.expectRevert("Use burnKYC instead");
         _kintoID.burn(1);
     }
 
-    function test_RevertWhen_BurnIsCalled() public {
+    function testBurn_RevertWhen_BurnIsCalled() public {
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
         vm.prank(_user);
@@ -194,49 +194,40 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function testBurnKYC() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoID.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoID.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
         assertEq(_kintoID.balanceOf(_user), 0);
     }
 
-    function testOnlyProviderCanBurnKYC() public {
+    function testBurnKYC_WhenCallerIsNotProvider() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoID.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoID.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.stopPrank();
-        vm.startPrank(_user);
         vm.expectRevert("Invalid Provider");
+        vm.startPrank(_user);
         _kintoID.burnKYC(sigdata);
     }
 
-    function testBurnFailsWithoutMinting() public {
+    function testBurnKYC_WhenUserIsNotKYCd() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.startPrank(_kycProvider);
         vm.expectRevert("Nothing to burn");
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
     }
 
-    function testBurningTwiceFails() public {
+    function testBurnKYC_WhenBurningTwice() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoID.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoID.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
+
         sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
         vm.expectRevert("Nothing to burn");
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
     }
 
