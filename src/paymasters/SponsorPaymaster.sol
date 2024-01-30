@@ -65,7 +65,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         __UUPSUpgradeable_init();
         _transferOwnership(_owner);
 
-        userOpMaxCost = 0.03 ether;
         // unlocks owner
         unlockBlock[_owner] = block.number;
     }
