@@ -17,7 +17,7 @@ contract KYCViewerUpgraded is KYCViewer {
         return 1;
     }
 
-    constructor(address _kintoWalletFactory) KYCViewer(_kintoWalletFactory) {}
+    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }
 
 contract KYCViewerTest is SharedSetup {
@@ -31,7 +31,7 @@ contract KYCViewerTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.prank(_owner);
         _kycViewer.upgradeTo(address(_implementationV2));
         assertEq(KYCViewerUpgraded(address(_kycViewer)).newFunction(), 1);
@@ -39,7 +39,7 @@ contract KYCViewerTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
-        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.expectRevert("only owner");
         vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));
@@ -54,5 +54,17 @@ contract KYCViewerTest is SharedSetup {
         assertEq(_kycViewer.hasTrait(address(_kintoWallet), 6), false);
         assertEq(_kycViewer.isSanctionsSafe(address(_kintoWallet)), true);
         assertEq(_kycViewer.isSanctionsSafeIn(address(_kintoWallet), 1), true);
+    }
+
+    function testGetUserInfo() public {
+        IKYCViewer.UserInfo memory _userInfo = _kycViewer.getUserInfo(_owner, payable(address(_kintoWallet)));
+        // verify properties
+        assertEq(_userInfo.ownerBalance, _owner.balance);
+        assertEq(_userInfo.walletBalance, address(_kintoWallet).balance);
+        assertEq(_userInfo.walletPolicy, _kintoWallet.signerPolicy());
+        assertEq(_userInfo.walletOwners.length, 1);
+        assertEq(_userInfo.claimedFaucet, false);
+        assertEq(_userInfo.hasNFT, true);
+        assertEq(_userInfo.isKYC, _kycViewer.isKYC(_owner));
     }
 }

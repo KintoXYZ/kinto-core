@@ -185,7 +185,8 @@ contract KintoInitialDeployScript is Create2Helper, ArtifactsReader {
             console.log("Already deployed KYCViwer implementation at", address(kycViewerAddr));
         } else {
             // Deploy KYCViewer implementation
-            _kycViewerImpl = new KYCViewer{salt: 0}(address(_walletFactory));
+            // TODO: get faucet
+            _kycViewerImpl = new KYCViewer{salt: 0}(address(_walletFactory), address(0));
             console.log("KYC Viewer implementation deployed at", address(_kycViewerImpl));
         }
         address kycViewerProxyAddr =

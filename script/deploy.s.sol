@@ -113,14 +113,14 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy SponsorPaymaster
         (paymaster, paymasterImpl) = deployPaymaster();
 
-        // deploy KYCViewer
-        (viewer, viewerImpl) = deployKYCViewer();
-
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
 
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
+
+        // deploy KYCViewer
+        (viewer, viewerImpl) = deployKYCViewer();
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
@@ -211,7 +211,8 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
         bytes memory creationCode = type(KYCViewer).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
+        bytes memory bytecode =
+            abi.encodePacked(creationCode, abi.encode(address(factory)), abi.encode(address(faucet)));
         (address proxy, address implementation) = _deploy("KYCViewer", creationCode, bytecode);
         _kycViewer = KYCViewer(payable(proxy));
         _kycViewerImpl = KYCViewer(payable(implementation));

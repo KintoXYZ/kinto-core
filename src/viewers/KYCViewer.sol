@@ -4,10 +4,12 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/interfaces/IERC721.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
+import "../interfaces/IFaucet.sol";
 
 /**
  * @title KYCViewer
@@ -19,14 +21,14 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     IKintoWalletFactory public immutable override walletFactory;
     IKintoID public immutable override kintoID;
-
-    /* ============ Events ============ */
+    IFaucet public immutable override faucet;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _kintoWalletFactory) {
+    constructor(address _kintoWalletFactory, address _faucet) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
         kintoID = walletFactory.kintoID();
+        faucet = IFaucet(_faucet);
     }
 
     /**
@@ -74,6 +76,38 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return kintoID.hasTrait(_getFinalAddress(_account), _traitId);
     }
 
+    function getWalletOwners(address _wallet) public view override returns (address[] memory) {
+        bool hasWallet = _wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0;
+        if (!hasWallet) return new address[](0);
+        uint256 owners = IKintoWallet(payable(_wallet)).getOwnersCount();
+        if (owners == 0) {
+            return new address[](0);
+        }
+        address[] memory result = new address[](owners);
+        for (uint256 i = 0; i < owners; i++) {
+            result[i] = IKintoWallet(payable(_wallet)).owners(i);
+        }
+        return result;
+    }
+
+    function getUserInfo(address _account, address payable _wallet)
+        external
+        view
+        override
+        returns (IKYCViewer.UserInfo memory)
+    {
+        bool hasWallet = _wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0;
+        return IKYCViewer.UserInfo({
+            ownerBalance: _account.balance,
+            walletBalance: hasWallet ? _wallet.balance : 0,
+            walletPolicy: hasWallet ? IKintoWallet(_wallet).signerPolicy() : 0,
+            walletOwners: hasWallet ? getWalletOwners(_wallet) : new address[](0),
+            claimedFaucet: faucet.claimed(_account),
+            hasNFT: IERC721(address(kintoID)).balanceOf(_account) > 0,
+            isKYC: kintoID.isKYC(_account)
+        });
+    }
+
     /* ============ Helpers ============ */
 
     function _getFinalAddress(address _address) private view returns (address) {
@@ -85,5 +119,5 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 }
 
 contract KYCViewerV2 is KYCViewer {
-    constructor(address _kintoWalletFactory) KYCViewer(_kintoWalletFactory) {}
+    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }
