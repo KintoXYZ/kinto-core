@@ -38,10 +38,11 @@ contract KintoID is
     event SanctionRemoved(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
     event AccountsMonitoredAt(address indexed _signer, uint256 _accountsCount, uint256 _timestamp);
 
-    /* ============ Constants ============ */
+    /* ============ Constants & Immutables ============ */
 
     bytes32 public constant override KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public domainSeparator;
 
     /* ============ State Variables ============ */
 
