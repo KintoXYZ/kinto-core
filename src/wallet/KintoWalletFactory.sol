@@ -207,7 +207,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         require(isPrivileged || kintoID.isKYC(msg.sender), "KYC or Provider role required");
         bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0;
         require(
-            target != address(0) && ((kintoID.isKYC(target) || isContract) || isPrivileged), "Invalid target address"
+      require(isValidTarget || isPrivileged, "Target is not valid");
         );
         (bool sent,) = target.call{value: msg.value}("");
         require(sent, "Failed to send Ether");
