@@ -205,7 +205,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
         require(isPrivileged || kintoID.isKYC(msg.sender), "KYC or Provider role required");
-        bool isContract = target.code.length > 0;
+        bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0;
         require(
             target != address(0) && ((kintoID.isKYC(target) || isContract) || isPrivileged), "Invalid target address"
         );
