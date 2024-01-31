@@ -31,10 +31,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         _implementation = new KintoID();
 
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy(address(_implementation), "");
-
-        // wrap in ABI to support easier calls
-        _kintoID = KintoID(address(_proxy));
+        _kintoID = KintoID(address(new UUPSProxy(address(_implementation), "")));
 
         // Initialize _proxy
         _kintoID.initialize();
@@ -55,7 +52,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
-        _kintoIDv2 = KintoIDv2(address(_proxy));
+        _kintoIDv2 = KintoIDv2(address(_kintoID));
         assertEq(_kintoIDv2.newFunction(), 1);
         vm.stopPrank();
     }
@@ -88,7 +85,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         _kintoID.upgradeTo(address(_implementationV2));
 
         // re-wrap the _proxy
-        _kintoIDv2 = KintoIDv2(address(_proxy));
+        _kintoIDv2 = KintoIDv2(address(_kintoID));
         assertEq(_kintoIDv2.newFunction(), 1);
     }
 

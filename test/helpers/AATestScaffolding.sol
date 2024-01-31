@@ -22,8 +22,11 @@ import "../helpers/KYCSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
+import "../../script/deploy.s.sol";
 
 abstract contract AATestScaffolding is KYCSignature {
+    DeployerScript.DeployedContracts contracts;
+
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry
@@ -44,190 +47,12 @@ abstract contract AATestScaffolding is KYCSignature {
     KYCViewer _kycViewer;
     Faucet _faucet;
 
-    // proxies
-    UUPSProxy _proxy;
-    UUPSProxy _proxyFactory;
-    UUPSProxy _proxyPaymaster;
-    UUPSProxy _proxyCredit;
-    UUPSProxy _proxyRegistry;
-    UUPSProxy _proxyKYCViewer;
-    UUPSProxy _proxyFaucet;
-
-    function deployAAScaffolding(address _owner, uint256 _ownerPk, address _kycProvider, address _recoverer) public {
-        // Deploy Kinto ID
-        deployKintoID(_owner, _kycProvider);
-
-        EntryPoint entry = new EntryPoint{salt: 0}();
-        _entryPoint = IKintoEntryPoint(address(entry));
-
-        // Deploy wallet & wallet factory
-        deployWalletFactory(_owner);
-
-        // Deploy Kinto App
-        deployAppRegistry(_owner);
-
-        // Approve wallet's owner KYC
-        approveKYC(_kycProvider, _owner, _ownerPk);
-
-        // Deploy paymaster
-        deployPaymaster(_owner);
-
-        // Deploy Engen Credits
-        deployEngenCredits(_owner);
-
-        // Deploy KYC Viewer
-        deployKYCViewer(_owner);
-
-        // Deploy Faucet
-        deployFaucet(_owner);
-
-        vm.prank(_owner);
-
-        // deploy latest KintoWallet version through wallet factory and initialize it
-        _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
-
-        // give some eth
-        vm.deal(_owner, 1e20);
-    }
+    /* ============ convenience methods ============ */
 
     function fundSponsorForApp(address _sender, address _contract) internal {
         // we add the deposit to the counter contract in the paymaster
         vm.prank(_sender);
-        _paymaster.addDepositFor{value: 1e19}(address(_contract));
-    }
-
-    function deployKintoID(address _owner, address _kycProvider) public {
-        vm.startPrank(_owner);
-        // Deploy Kinto ID
-        _implementation = new KintoID();
-
-        // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");
-
-        // wrap in ABI to support easier calls
-        _kintoID = KintoID(address(_proxy));
-
-        // Initialize _proxy
-        _kintoID.initialize();
-        _kintoID.grantRole(_kintoID.KYC_PROVIDER_ROLE(), _kycProvider);
-        vm.stopPrank();
-    }
-
-    function deployWalletFactory(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy wallet implementation (temporary because of loop dependency on app)
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoID, KintoAppRegistry(address(0)));
-
-        // deploy wallet factory implementation
-        address _factoryImpl = address(new KintoWalletFactory{salt: 0}(_kintoWalletImpl));
-        _proxyFactory = new UUPSProxy{salt: 0}(address(_factoryImpl), "");
-        _walletFactory = KintoWalletFactory(address(_proxyFactory));
-
-        // initialize wallet factory
-        _walletFactory.initialize(_kintoID);
-
-        // set the wallet factory in the entry point
-        _entryPoint.setWalletFactory(address(_walletFactory));
-
-        vm.stopPrank();
-    }
-
-    function deployPaymaster(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy the paymaster
-        _paymaster = new SponsorPaymaster{salt: 0}(_entryPoint);
-
-        // deploy _proxy contract and point it to _implementation
-        _proxyPaymaster = new UUPSProxy{salt: 0}(address(_paymaster), "");
-
-        // wrap in ABI to support easier calls
-        _paymaster = SponsorPaymaster(address(_proxyPaymaster));
-
-        // initialize proxy
-        _paymaster.initialize(_owner, _kintoAppRegistry, _kintoID);
-
-        // Set user op max cost
-        _paymaster.setUserOpMaxCost(0.03 ether);
-
-        vm.stopPrank();
-    }
-
-    function deployEngenCredits(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy the engen credits
-        _engenCredits = new EngenCredits{salt: 0}();
-
-        // deploy _proxy contract and point it to _implementation
-        _proxyCredit = new UUPSProxy{salt: 0}(address(_engenCredits), "");
-
-        // wrap in ABI to support easier calls
-        _engenCredits = EngenCredits(address(_proxyCredit));
-
-        // initialize proxy
-        _engenCredits.initialize();
-
-        vm.stopPrank();
-    }
-
-    function deployAppRegistry(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy the Kinto App registry
-        _kintoAppRegistry = new KintoAppRegistry{salt: 0}(IKintoWalletFactory(_walletFactory));
-
-        // deploy _proxy contract and point it to _implementation
-        _proxyRegistry = new UUPSProxy{salt: 0}(address(_kintoAppRegistry), "");
-
-        // wrap in ABI to support easier calls
-        _kintoAppRegistry = KintoAppRegistry(address(_proxyRegistry));
-
-        // initialize proxy
-        _kintoAppRegistry.initialize();
-
-        // Deploy a new wallet implementation an upgrade
-        // Deploy wallet implementation
-        _kintoWalletImpl = new KintoWallet{salt: 0}(_entryPoint, _kintoID, _kintoAppRegistry);
-        _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
-        vm.stopPrank();
-    }
-
-    function deployKYCViewer(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy the Kinto KYC Viewer
-        _kycViewer = new KYCViewer{salt: 0}(address(_walletFactory));
-
-        // deploy _proxy contract and point it to _implementation
-        _proxyKYCViewer = new UUPSProxy{salt: 0}(address(_kycViewer), "");
-
-        // wrap in ABI to support easier calls
-        _kycViewer = KYCViewer(address(_proxyKYCViewer));
-
-        // initialize proxy
-        _kycViewer.initialize();
-
-        vm.stopPrank();
-    }
-
-    function deployFaucet(address _owner) public {
-        vm.startPrank(_owner);
-
-        // deploy the Kinto KYC Viewer
-        _faucet = new Faucet{salt: 0}(address(_walletFactory));
-
-        // deploy _proxy contract and point it to _implementation
-        _proxyFaucet = new UUPSProxy{salt: 0}(address(_faucet), "");
-
-        // wrap in ABI to support easier calls
-        _faucet = Faucet(payable(address(_proxyFaucet)));
-
-        // initialize proxy
-        _faucet.initialize();
-
-        vm.stopPrank();
+        _paymaster.addDepositFor{value: 2 ether}(address(_contract));
     }
 
     function approveKYC(address _kycProvider, address _account, uint256 _accountPk) public {
@@ -263,7 +88,6 @@ abstract contract AATestScaffolding is KYCSignature {
 
     // register app helpers
     // fixme: these should go through entrypoint
-
     function registerApp(address _owner, string memory name, address parentContract) public {
         address[] memory appContracts = new address[](0);
         uint256[4] memory appLimits = [
@@ -340,11 +164,11 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
     }
 
-    function setSponsoredContracts(address _owner, address app, address[] memory contracts, bool[] memory sponsored)
+    function setSponsoredContracts(address _owner, address _app, address[] memory _contracts, bool[] memory _sponsored)
         public
     {
         vm.prank(_owner);
-        _kintoAppRegistry.setSponsoredContracts(app, contracts, sponsored);
+        _kintoAppRegistry.setSponsoredContracts(_app, _contracts, _sponsored);
     }
 
     function whitelistApp(address app) public {
@@ -393,7 +217,7 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
 
-    ////// helper methods to assert the revert reason on UserOperationRevertReason events ////
+    /* ============ assertion helper methods ============ */
 
     // string reasons
 

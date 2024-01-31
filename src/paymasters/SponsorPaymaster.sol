@@ -74,6 +74,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
         kintoID = _kintoID;
         appRegistry = _appRegistry;
+        userOpMaxCost = 0.03 ether;
         unlockBlock[_owner] = block.number; // unlocks owner
     }
 
