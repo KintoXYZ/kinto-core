@@ -202,14 +202,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param target The target address
      */
     function sendMoneyToAccount(address target) external payable override {
-       require(target != address(0), "Invalid target: zero address");
+        require(target != address(0), "Invalid target: zero address");
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
         require(isPrivileged || kintoID.isKYC(msg.sender), "KYC or Provider role required");
         bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0;
-        require(
-      require(isValidTarget || isPrivileged, "Target is not valid");
-        );
+        require(isValidTarget || isPrivileged, "Target is not valid");
         (bool sent,) = target.call{value: msg.value}("");
         require(sent, "Failed to send Ether");
     }

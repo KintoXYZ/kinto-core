@@ -390,7 +390,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
         vm.deal(_user, 1 ether);
         vm.prank(_user);
-        vm.expectRevert("Invalid target address");
+        vm.expectRevert("Target is not valid");
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
