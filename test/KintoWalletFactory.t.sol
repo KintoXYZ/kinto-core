@@ -344,7 +344,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(123).balance, 1e18);
     }
 
-    function testSendMoneyToAccount_WhenCallerIsOwnerAndTargetIsKYC() public {
+    function testSendMoneyToAccount_WhenCallerIsOwner_WhenTargetIsKYC() public {
         approveKYC(_kycProvider, _user, _userPk);
         revokeKYC(_kycProvider, _owner, _ownerPk);
         vm.prank(_owner);
