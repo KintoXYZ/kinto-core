@@ -371,7 +371,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(123).balance, 1e18);
     }
 
-    function testSendMoneyToAccount_When_CallerKYCAndTargetContract() public {
+    function testSendMoneyToAccount_WhenCallerIsKYCd_WhenTargetIsContract() public {
         vm.deal(_kycProvider, 1 ether);
         vm.prank(_kycProvider);
         uint256 beforeBalance = address(_kintoWallet).balance;
