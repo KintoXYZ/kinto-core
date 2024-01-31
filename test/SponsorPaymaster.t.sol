@@ -50,8 +50,7 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.prank(_owner);
         _paymaster.upgradeTo(address(_newImplementation));
 
-        // re-wrap the _proxy
-        _newImplementation = SponsorPaymasterUpgrade(address(_proxyPaymaster));
+        _newImplementation = SponsorPaymasterUpgrade(address(_paymaster));
         assertEq(_newImplementation.newFunction(), 1);
     }
 

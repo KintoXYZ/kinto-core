@@ -16,10 +16,12 @@ import "./harness/SponsorPaymasterHarness.sol";
 import "./harness/KintoAppRegistryHarness.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import "../script/deploy.s.sol";
 
 contract SharedSetup is UserOp, AATestScaffolding {
-    uint256[] privateKeys;
     Counter counter;
+
+    uint256[] privateKeys;
 
     // events
     event UserOperationRevertReason(
@@ -31,14 +33,40 @@ contract SharedSetup is UserOp, AATestScaffolding {
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 
     function setUp() public virtual {
-        deployAAScaffolding(_owner, 1, _kycProvider, _recoverer);
+        // deploy contracts using deploy script
+        DeployerScript deployer = new DeployerScript();
+        contracts = deployer.runAndReturnResults(_ownerPk);
 
-        // add paymaster to _kintoWallet
-        fundSponsorForApp(_owner, address(_kintoWallet));
+        // set contracts
+        _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
+        _kintoAppRegistry = KintoAppRegistry(contracts.registry);
+        _kintoID = KintoID(contracts.kintoID);
+        _walletFactory = KintoWalletFactory(contracts.factory);
+        _kintoWallet = IKintoWallet(contracts.wallet);
+        _engenCredits = EngenCredits(contracts.engenCredits);
+        _paymaster = SponsorPaymaster(contracts.paymaster);
+        _kycViewer = KYCViewer(contracts.viewer);
+        _faucet = Faucet(contracts.faucet);
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
         privateKeys[0] = _ownerPk;
+
+        // grant kyc provider role to _kycProvider on kintoID
+        bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
+        vm.prank(_owner);
+        _kintoID.grantRole(role, _kycProvider);
+
+        // approve wallet's owner KYC
+        approveKYC(_kycProvider, _owner, _ownerPk);
+
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
+        // deploy latest KintoWallet version through wallet factory
+        vm.prank(_owner);
+        _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
+        fundSponsorForApp(_owner, address(_kintoWallet));
 
         // deploy Counter contract
         counter = new Counter();
