@@ -386,7 +386,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
-    function testSendMoneyToAccount_RevertWhen_CallerKYCButTargetisNot() public {
+    function testSendMoneyToAccount_RevertWhen_CallerIsKYCd_WhenTargetisNotKYCd() public {
         approveKYC(_kycProvider, _user, _userPk);
         vm.deal(_user, 1 ether);
         vm.prank(_user);
