@@ -42,7 +42,6 @@ contract KintoID is
 
     bytes32 public constant override KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-    bytes32 public domainSeparator;
 
     /* ============ State Variables ============ */
 
