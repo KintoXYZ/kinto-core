@@ -163,7 +163,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _walletFactory.initialize(kintoID);
 
         // set wallet factory in EntryPoint
-        if (write) console.log("Setting wallet factory in entry point to: ", address(factory));
+        if (write) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         entryPoint.setWalletFactory(address(_walletFactory));
     }
@@ -176,7 +176,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _kintoWallet = KintoWallet(payable(implementation));
 
         // set KintoWallet implementation in WalletFactory
-        if (write) console.log("Upgrading wallet factory implementation to: ", address(wallet));
+        if (write) console.log("Upgrading wallet factory implementation to: ", address(_kintoWallet));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         factory.upgradeAllWalletImplementations(KintoWallet(payable(_kintoWallet)));
     }
@@ -192,7 +192,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _sponsorPaymasterImpl = SponsorPaymaster(payable(implementation));
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        _sponsorPaymaster.initialize(vm.addr(privateKey), kintoRegistry, kintoID); // owner is the address that deploys the paymaster
+        _sponsorPaymaster.initialize(privateKey > 0 ? vm.addr(privateKey) : vm.envAddress("LEDGER_ADMIN"), kintoRegistry, kintoID); // owner is the address that deploys the paymaster
     }
 
     function deployKintoRegistry()
@@ -261,7 +261,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             implementation = Create2.deploy(0, 0, bytecode);
 
             require(implementation != address(0), "Failed to deploy implementation");
-            if (write) console.log(contractName, " implementation deployed at: ", proxy);
+            if (write) console.log(contractName, " implementation deployed at: ", implementation);
 
             // write address to a file
             if (write) {
