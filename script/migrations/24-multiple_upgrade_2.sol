@@ -59,7 +59,7 @@ contract KintoMigration24DeployScript is MigrationHelper {
 
         // Initialize KYCViewer
         address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
-        
+
         // prep upgradeTo user op
         uint256 nonce = IKintoWallet(_from).getNonce();
         uint256[] memory privateKeys = new uint256[](1);
