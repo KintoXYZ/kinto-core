@@ -83,6 +83,12 @@ contract KintoID is
         domainSeparator = _domainSeparator();
     }
 
+    function initializeV6() external {
+        if (domainSeparator == 0) {
+            domainSeparator = _domainSeparator();
+        }
+    }
+
     /**
      * @dev Authorize the upgrade. Only by the upgrader role.
      * @param newImplementation address of the new implementation
@@ -494,6 +500,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV5 is KintoID {
+contract KintoIDV6 is KintoID {
     constructor() KintoID() {}
 }

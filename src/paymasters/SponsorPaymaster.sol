@@ -78,6 +78,12 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         unlockBlock[_owner] = block.number; // unlocks owner
     }
 
+    function initializeV6(address _kintoID) external {
+        if (address(kintoID) == address(0)) {
+            kintoID = IKintoID(_kintoID);
+        }
+    }
+
     /**
      * @dev Authorize the upgrade. Only by an owner.
      * @param newImplementation address of the new implementation
@@ -100,7 +106,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function addDepositFor(address account) external payable override {
         require(msg.value > 0, "SP: requires a deposit");
-        require(kintoID.isKYC(msg.sender), "SP: sender KYC required");
+        require(kintoID.isKYC(msg.sender) || msg.sender == owner(), "SP: sender KYC required");
         if (account.code.length == 0 && !kintoID.isKYC(account)) revert("SP: account KYC required");
 
         // sender must have approval for the paymaster
@@ -331,6 +337,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV5 is SponsorPaymaster {
+contract SponsorPaymasterV6 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
 }
