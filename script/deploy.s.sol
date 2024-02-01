@@ -178,7 +178,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // set KintoWallet implementation in WalletFactory
         if (write) console.log("Upgrading wallet factory implementation to: ", address(_kintoWallet));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        _walletFactory.upgradeAllWalletImplementations(KintoWallet(payable(_kintoWallet)));
+        factory.upgradeAllWalletImplementations(KintoWallet(payable(_kintoWallet)));
     }
 
     function deployPaymaster()
