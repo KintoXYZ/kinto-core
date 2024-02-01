@@ -17,6 +17,10 @@ contract KintoWalletFactoryV3 is KintoWalletFactory {
     constructor(IKintoWallet _implementation) KintoWalletFactory(_implementation) {}
 }
 
+contract KintoIDV4 is KintoID {
+    constructor() KintoID() {}
+}
+
 contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
 

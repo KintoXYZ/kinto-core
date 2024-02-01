@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../../src/wallet/KintoWalletFactory.sol";
+import "../../../src/paymasters/SponsorPaymaster.sol";
 
 import "../../../src/interfaces/ISponsorPaymaster.sol";
 import "../../../src/interfaces/IKintoWallet.sol";
@@ -12,6 +13,7 @@ import "../../../src/interfaces/IKintoWallet.sol";
 import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UserOp.sol";
+import "../../../test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -35,32 +37,26 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     }
 
     /// @dev deploys proxy contract from deployer
-    function deployProxy(string memory contractName, string memory version, bytes memory bytecode) public {
+    function deployProxy(string memory contractName, address implementation) public returns (address _proxy) {
+        bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
-        address proxy = _getChainDeployment(contractName);
+        _proxy = _getChainDeployment(contractName);
 
-        if (!isWallet && proxy != address(0)) revert("Proxy contract already deployed");
+        if (isWallet || isEntryPoint) revert("EntryPoint and KintoWallet do not use UUPPS Proxy");
+        if (_proxy != address(0)) revert("Proxy contract already deployed");
 
-        // (1). deploy Proxy contract via wallet factory
-        vm.broadcast(deployerPrivateKey);
-        address _impl = _walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0));
+        // deploy Proxy contract using ledger
+        vm.broadcast();
+        _proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
 
-        console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
-
-        // (2). call upgradeTo to set new implementation
-        if (isWallet) {
-            vm.broadcast(); // requires LEDGER_ADMIN
-            // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-            _walletFactory.upgradeAllWalletImplementations(IKintoWallet(_impl));
-        } else {
-            vm.broadcast(); // requires LEDGER_ADMIN
-            // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-            UUPSUpgradeable(proxy).upgradeTo(_impl);
-        }
+        console.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
     }
 
     /// @dev deploys implementation contracts from deployer and upgrades them using LEDGER_ADMIN
-    function deployAndUpgrade(string memory contractName, string memory version, bytes memory bytecode) public {
+    function deployAndUpgrade(string memory contractName, string memory version, bytes memory bytecode)
+        public
+        returns (address _impl)
+    {
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         address proxy = _getChainDeployment(contractName);
 
@@ -68,18 +64,16 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
         // (1). deploy new implementation via wallet factory
         vm.broadcast(deployerPrivateKey);
-        address _impl = _walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0));
+        _impl = _walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0));
 
         console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
 
         // (2). call upgradeTo to set new implementation
         if (isWallet) {
             vm.broadcast(); // requires LEDGER_ADMIN
-            // vm.prank(vm.envAddress("LEDGER_ADMIN"));
             _walletFactory.upgradeAllWalletImplementations(IKintoWallet(_impl));
         } else {
             vm.broadcast(); // requires LEDGER_ADMIN
-            // vm.prank(vm.envAddress("LEDGER_ADMIN"));
             UUPSUpgradeable(proxy).upgradeTo(_impl);
         }
     }
