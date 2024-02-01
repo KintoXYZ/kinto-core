@@ -16,6 +16,10 @@ import "../../test/helpers/UserOp.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
+contract KYCViewerV2 is KYCViewer {
+    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, address(0)) {}
+}
+
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 

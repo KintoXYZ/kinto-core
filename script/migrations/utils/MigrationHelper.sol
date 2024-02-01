@@ -26,7 +26,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     uint256 deployerPrivateKey;
     KintoWalletFactory _walletFactory;
 
-    function run2() public {
+    function run() public virtual {
         console.log("Running on chain: ", vm.toString(block.chainid));
         console.log("Executing from address", msg.sender);
 
