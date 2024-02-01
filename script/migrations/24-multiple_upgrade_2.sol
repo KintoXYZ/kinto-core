@@ -59,7 +59,7 @@ contract KintoMigration24DeployScript is MigrationHelper {
 
         // Initialize KYCViewer
         address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
-
+        
         // prep upgradeTo user op
         uint256 nonce = IKintoWallet(_from).getNonce();
         uint256[] memory privateKeys = new uint256[](1);
@@ -88,14 +88,14 @@ contract KintoMigration24DeployScript is MigrationHelper {
             _from,
             _getChainDeployment("KYCViewer"),
             0,
-            nonce,
+            nonce + 1,
             privateKeys,
             abi.encodeWithSelector(KYCViewer.initialize.selector),
             _getChainDeployment("SponsorPaymaster")
         );
 
         vm.broadcast(deployerPrivateKey);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(msg.sender));
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
 
         // upgrade KYCViewer to V3
         // KYCViewer viewer = KYCViewer(_getChainDeployment("KYCViewer"));
