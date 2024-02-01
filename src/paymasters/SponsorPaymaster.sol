@@ -331,6 +331,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV4 is SponsorPaymaster {
+contract SponsorPaymasterV5 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
 }

@@ -20,6 +20,20 @@ contract KYCViewerV2 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, address(0)) {}
 }
 
+contract KintoWalletFactoryV7 is KintoWalletFactory {
+    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+}
+
+contract SponsorPaymasterV4 is SponsorPaymaster {
+    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
+}
+
+contract KintoWalletV4 is KintoWallet {
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
+        KintoWallet(_entryPoint, _kintoID, _appRegistry)
+    {}
+}
+
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 
