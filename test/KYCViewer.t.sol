@@ -47,7 +47,7 @@ contract KYCViewerTest is SharedSetup {
 
     /* ============ Viewer tests ============ */
 
-    function testIsKYCBothOwnerAndWallet() public {
+    function testIsKYC_WhenBothOwnerAndWallet() public {
         assertEq(_kycViewer.isKYC(address(_kintoWallet)), _kycViewer.isKYC(_owner));
         assertEq(_kycViewer.isIndividual(address(_kintoWallet)), _kycViewer.isIndividual(_owner));
         assertEq(_kycViewer.isCompany(address(_kintoWallet)), false);
@@ -57,14 +57,41 @@ contract KYCViewerTest is SharedSetup {
     }
 
     function testGetUserInfo() public {
-        IKYCViewer.UserInfo memory _userInfo = _kycViewer.getUserInfo(_owner, payable(address(_kintoWallet)));
+        IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(_owner, payable(address(_kintoWallet)));
+
         // verify properties
-        assertEq(_userInfo.ownerBalance, _owner.balance);
-        assertEq(_userInfo.walletBalance, address(_kintoWallet).balance);
-        assertEq(_userInfo.walletPolicy, _kintoWallet.signerPolicy());
-        assertEq(_userInfo.walletOwners.length, 1);
-        assertEq(_userInfo.claimedFaucet, false);
-        assertEq(_userInfo.hasNFT, true);
-        assertEq(_userInfo.isKYC, _kycViewer.isKYC(_owner));
+        assertEq(userInfo.ownerBalance, _owner.balance);
+        assertEq(userInfo.walletBalance, address(_kintoWallet).balance);
+        assertEq(userInfo.walletPolicy, _kintoWallet.signerPolicy());
+        assertEq(userInfo.walletOwners.length, 1);
+        assertEq(userInfo.claimedFaucet, false);
+        assertEq(userInfo.hasNFT, true);
+        assertEq(userInfo.isKYC, _kycViewer.isKYC(_owner));
+    }
+
+    function testGetUserInfo_WhenWalletDoesNotExist() public {
+        IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(_owner, payable(address(123)));
+
+        // verify properties
+        assertEq(userInfo.ownerBalance, _owner.balance);
+        assertEq(userInfo.walletBalance, 0);
+        assertEq(userInfo.walletPolicy, 0);
+        assertEq(userInfo.walletOwners.length, 0);
+        assertEq(userInfo.claimedFaucet, false);
+        assertEq(userInfo.hasNFT, true);
+        assertEq(userInfo.isKYC, _kycViewer.isKYC(_owner));
+    }
+
+    function testGetUserInfo_WhenAccountDoesNotExist() public {
+        IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(address(111), payable(address(123)));
+
+        // verify properties
+        assertEq(userInfo.ownerBalance, 0);
+        assertEq(userInfo.walletBalance, 0);
+        assertEq(userInfo.walletPolicy, 0);
+        assertEq(userInfo.walletOwners.length, 0);
+        assertEq(userInfo.claimedFaucet, false);
+        assertEq(userInfo.hasNFT, false);
+        assertEq(userInfo.isKYC, _kycViewer.isKYC(address(111)));
     }
 }

@@ -7,8 +7,8 @@ import "./utils/MigrationHelper.sol";
 contract KintoMigration23DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
-    function run() public {
-        run2();
+    function run() public override {
+        super.run();
 
         // generate bytecode for KYCViewer
         bytes memory bytecode = abi.encodePacked(

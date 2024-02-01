@@ -9,7 +9,7 @@ import "./utils/MigrationHelper.sol";
 //     using ECDSAUpgradeable for bytes32;
 
 //     function run() public {
-//         run2();
+//         super.run();
 
 //         // generate bytecode for KintoWalletV5
 //         bytes memory bytecode = abi.encodePacked(

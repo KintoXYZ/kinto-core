@@ -76,28 +76,25 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return kintoID.hasTrait(_getFinalAddress(_account), _traitId);
     }
 
-    function getWalletOwners(address _wallet) public view override returns (address[] memory) {
-        bool hasWallet = _wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0;
-        if (!hasWallet) return new address[](0);
-        uint256 owners = IKintoWallet(payable(_wallet)).getOwnersCount();
-        if (owners == 0) {
-            return new address[](0);
+    function getWalletOwners(address _wallet) public view override returns (address[] memory owners) {
+        // return owners if wallet exists and has a valid timestamp
+        if (_wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0) {
+            uint256 ownersCount = IKintoWallet(payable(_wallet)).getOwnersCount();
+            owners = new address[](ownersCount);
+            for (uint256 i = 0; i < ownersCount; i++) {
+                owners[i] = IKintoWallet(payable(_wallet)).owners(i);
+            }
         }
-        address[] memory result = new address[](owners);
-        for (uint256 i = 0; i < owners; i++) {
-            result[i] = IKintoWallet(payable(_wallet)).owners(i);
-        }
-        return result;
     }
 
     function getUserInfo(address _account, address payable _wallet)
         external
         view
         override
-        returns (IKYCViewer.UserInfo memory)
+        returns (IKYCViewer.UserInfo memory info)
     {
         bool hasWallet = _wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0;
-        return IKYCViewer.UserInfo({
+        info = IKYCViewer.UserInfo({
             ownerBalance: _account.balance,
             walletBalance: hasWallet ? _wallet.balance : 0,
             walletPolicy: hasWallet ? IKintoWallet(_wallet).signerPolicy() : 0,
