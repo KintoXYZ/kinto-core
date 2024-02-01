@@ -58,44 +58,46 @@ contract KintoMigration24DeployScript is MigrationHelper {
         // paymaster.addDepositFor{value: 5e16}(_getChainDeployment("KYCViewer"));
 
         // Initialize KYCViewer
-        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        // address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
 
-        // prep upgradeTo user op
-        uint256 nonce = IKintoWallet(_from).getNonce();
-        uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = vm.envUint("PRIVATE_KEY");
-        UserOperation[] memory userOps = new UserOperation[](2);
+        // // prep upgradeTo user op
+        // uint256 nonce = IKintoWallet(_from).getNonce();
+        // uint256[] memory privateKeys = new uint256[](1);
+        // privateKeys[0] = vm.envUint("PRIVATE_KEY");
+        // UserOperation[] memory userOps = new UserOperation[](2);
 
-        address[] memory apps = new address[](1);
-        apps[0] = address(_getChainDeployment("KYCViewer"));
+        // address[] memory apps = new address[](1);
+        // apps[0] = address(_getChainDeployment("KYCViewer"));
 
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
+        // bool[] memory flags = new bool[](1);
+        // flags[0] = true;
 
-        userOps[0] = _createUserOperation(
-            block.chainid,
-            _from,
-            _from,
-            0,
-            nonce,
-            privateKeys,
-            abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
-            _getChainDeployment("SponsorPaymaster")
-        );
+        // userOps[0] = _createUserOperation(
+        //     block.chainid,
+        //     _from,
+        //     _from,
+        //     0,
+        //     nonce,
+        //     privateKeys,
+        //     abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
+        //     _getChainDeployment("SponsorPaymaster")
+        // );
 
-        userOps[1] = _createUserOperation(
-            block.chainid,
-            _from,
-            _getChainDeployment("KYCViewer"),
-            0,
-            nonce + 1,
-            privateKeys,
-            abi.encodeWithSelector(KYCViewer.initialize.selector),
-            _getChainDeployment("SponsorPaymaster")
-        );
+        // userOps[1] = _createUserOperation(
+        //     block.chainid,
+        //     _from,
+        //     _getChainDeployment("KYCViewer"),
+        //     0,
+        //     nonce + 1,
+        //     privateKeys,
+        //     abi.encodeWithSelector(KYCViewer.initialize.selector),
+        //     _getChainDeployment("SponsorPaymaster")
+        // );
 
-        vm.broadcast(deployerPrivateKey);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
+        // vm.broadcast(deployerPrivateKey);
+        // IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
+
+        _transferOwnership(_getChainDeployment("KYCViewer"), vm.envUint("PRIVATE_KEY"), vm.envAddress("LEDGER_ADMIN"));
 
         // upgrade KYCViewer to V3
         // KYCViewer viewer = KYCViewer(_getChainDeployment("KYCViewer"));
