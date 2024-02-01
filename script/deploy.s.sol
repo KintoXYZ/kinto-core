@@ -191,8 +191,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _sponsorPaymaster = SponsorPaymaster(payable(proxy));
         _sponsorPaymasterImpl = SponsorPaymaster(payable(implementation));
 
+        address owner = privateKey > 0 ? vm.addr(privateKey) : msg.sender;
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        _sponsorPaymaster.initialize(privateKey > 0 ? vm.addr(privateKey) : vm.envAddress("LEDGER_ADMIN"), kintoRegistry, kintoID); // owner is the address that deploys the paymaster
+        _sponsorPaymaster.initialize(owner, kintoRegistry, kintoID); // owner is the address that deploys the paymaster
     }
 
     function deployKintoRegistry()
@@ -262,7 +263,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             implementation = Create2.deploy(0, 0, bytecode);
 
             require(implementation != address(0), "Failed to deploy implementation");
-            if (write) console.log(contractName, " implementation deployed at: ", implementation);
+            if (write) console.log(contractName, "implementation deployed at:", proxy);
 
             // write address to a file
             if (write) {
@@ -285,7 +286,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
                 proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
             }
 
-            if (write) console.log(contractName, " proxy deployed at: ", proxy);
+            if (write) console.log(contractName, "proxy deployed at:", proxy);
 
             // write address to a file
             if (write) {
