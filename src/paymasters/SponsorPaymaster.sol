@@ -161,24 +161,25 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     /**
      * Return the current user limits for the app
-     * @param user - the user account
+     * @param wallet - the wallet account
      * @param app - the app contract
      * @return operationCount - the number of operations performed by the user for the app
      *         lastOperationTime - the timestamp of when the tx threshold was last started
      *         costLimit - the maximum cost of operations for the user for the app
      *         lastOperationTime - the timestamp of when the gas threshold was last started
      */
-    function appUserLimit(address user, address app)
+    function appUserLimit(address wallet, address app)
         external
         view
         override
         returns (uint256, uint256, uint256, uint256)
     {
+        address userAccount = IKintoWallet(wallet).owners(0);
         return (
-            rateLimit[user][app].operationCount,
-            rateLimit[user][app].lastOperationTime,
-            costLimit[user][app].ethCostCount,
-            costLimit[user][app].lastOperationTime
+            rateLimit[userAccount][app].operationCount,
+            rateLimit[userAccount][app].lastOperationTime,
+            costLimit[userAccount][app].ethCostCount,
+            costLimit[userAccount][app].lastOperationTime
         );
     }
 
@@ -240,9 +241,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @notice performs the post-operation to charge the account contract for the gas.
      */
     function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, address userAccount, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
+        (address account, address walletAccount, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
             abi.decode(context, (address, address, uint256, uint256));
 
+        // calculate actual gas limits using the owner because a person can have many wallets
+        address userAccount = IKintoWallet(walletAccount).owners(0);
         // calculate actual gas cost using block.basefee and maxPriorityFeePerGas
         uint256 actualGasPrice = _min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
         uint256 ethCost = (actualGasCost + COST_OF_POST * actualGasPrice);
