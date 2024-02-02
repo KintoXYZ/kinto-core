@@ -10,6 +10,7 @@ import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
 import "../interfaces/IFaucet.sol";
+import "forge-std/console.sol";
 
 /**
  * @title KYCViewer
@@ -115,6 +116,6 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV3 is KYCViewer {
+contract KYCViewerV4 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }

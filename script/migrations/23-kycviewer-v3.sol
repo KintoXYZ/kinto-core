@@ -4,6 +4,10 @@ pragma solidity ^0.8.18;
 import "../../src/viewers/KYCViewer.sol";
 import "./utils/MigrationHelper.sol";
 
+contract KYCViewerV3 is KYCViewer {
+    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
+}
+
 contract KintoMigration23DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
@@ -17,6 +21,6 @@ contract KintoMigration23DeployScript is MigrationHelper {
         );
 
         // upgrade KYCViewer to V3
-        deployAndUpgrade("KYCViewer", "V3", bytecode);
+        _deployImplementationAndUpgrade("KYCViewer", "V3", bytecode);
     }
 }

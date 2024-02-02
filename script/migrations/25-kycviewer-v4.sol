@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
+
+import "../../src/viewers/KYCViewer.sol";
+import "./utils/MigrationHelper.sol";
+
+contract KintoMigration25DeployScript is MigrationHelper {
+    using ECDSAUpgradeable for bytes32;
+
+    function run() public override {
+        super.run();
+
+        bytes memory bytecode = abi.encodePacked(
+            type(KYCViewer).creationCode,
+            abi.encode(
+                _getChainDeployment("KYCViewer"),
+                _getChainDeployment("KintoWalletFactory"),
+                _getChainDeployment("KintoID"),
+                _getChainDeployment("Faucet")
+            )
+        );
+        address implementation = _deployImplementation("KYCViewer", "V4", bytecode);
+        address proxy = _deployProxy("KYCViewer", implementation);
+
+        _whitelistApp(proxy, deployerPrivateKey);
+        _initialize(proxy, deployerPrivateKey);
+    }
+}
