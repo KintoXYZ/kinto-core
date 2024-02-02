@@ -121,14 +121,15 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     // TODO: should be extended to work with other initalize() that receive params
     function _initialize(address _proxy, uint256 _signerPk) internal {
         // fund _proxy in the paymaster if necessary
-        if (
-            !_isGethAllowed(_proxy)
-                && ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(_proxy) == 0
-        ) {
-            _fundPaymaster(_proxy, _signerPk);
+        if (_isGethAllowed(_proxy)) {
+            IInitialize(_proxy).initialize();
+        } else {
+            if (ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(_proxy) == 0) {
+                _fundPaymaster(_proxy, _signerPk);
+            }
+            bytes memory selectorAndParams = abi.encodeWithSelector(IInitialize.initialize.selector);
+            _handleOps(selectorAndParams, _proxy, _signerPk);
         }
-        bytes memory selectorAndParams = abi.encodeWithSelector(IInitialize.initialize.selector);
-        _handleOps(selectorAndParams, _proxy, _signerPk);
     }
 
     /// @notice transfers ownership of a contract to a new owner
@@ -137,10 +138,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     function _transferOwnership(address _proxy, uint256 _signerPk, address _newOwner) internal {
         require(_newOwner != address(0), "New owner cannot be 0");
 
-        // we don't want to allow transferring ownership to an EOA (e.g LEDGER_ADMIN) when contract is not allowed to receive EOA calls
-        if (!_isGethAllowed(_proxy) && _newOwner.code.length == 0) revert("Cannot transfer ownership to LEDGER_ADMIN");
-
-        _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, _newOwner), _proxy, _signerPk);
+        if (_isGethAllowed(_proxy)) {
+            Ownable(_proxy).transferOwnership(_newOwner);
+        } else {
+            // we don't want to allow transferring ownership to an EOA (e.g LEDGER_ADMIN) when contract is not allowed to receive EOA calls
+            if (_newOwner.code.length == 0) revert("Cannot transfer ownership to LEDGER_ADMIN");
+            _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, _newOwner), _proxy, _signerPk);
+        }
     }
 
     /// @notice whitelists an app in the KintoWallet
