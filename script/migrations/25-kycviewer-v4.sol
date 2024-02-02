@@ -12,12 +12,7 @@ contract KintoMigration25DeployScript is MigrationHelper {
 
         bytes memory bytecode = abi.encodePacked(
             type(KYCViewer).creationCode,
-            abi.encode(
-                _getChainDeployment("KYCViewer"),
-                _getChainDeployment("KintoWalletFactory"),
-                _getChainDeployment("KintoID"),
-                _getChainDeployment("Faucet")
-            )
+            abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
         );
         address implementation = _deployImplementation("KYCViewer", "V4", bytecode);
         address proxy = _deployProxy("KYCViewer", implementation);
