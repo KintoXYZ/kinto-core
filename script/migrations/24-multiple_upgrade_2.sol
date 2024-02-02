@@ -97,7 +97,7 @@ contract KintoMigration24DeployScript is MigrationHelper {
         // vm.broadcast(deployerPrivateKey);
         // IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
 
-        _transferOwnership(_getChainDeployment("KYCViewer"), vm.envUint("PRIVATE_KEY"), vm.envAddress("LEDGER_ADMIN"));
+        // _transferOwnership(_getChainDeployment("KYCViewer"), vm.envUint("PRIVATE_KEY"), vm.envAddress("LEDGER_ADMIN"));
 
         // upgrade KYCViewer to V3
         // KYCViewer viewer = KYCViewer(_getChainDeployment("KYCViewer"));
@@ -107,5 +107,6 @@ contract KintoMigration24DeployScript is MigrationHelper {
         // );
 
         // deployAndUpgrade("KYCViewer", "V3", bytecode);
+        console.log(KintoAppRegistry(_getChainDeployment("KintoAppRegistry")).owner());
     }
 }

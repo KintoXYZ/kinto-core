@@ -41,10 +41,8 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     function _deployProxy(string memory contractName, address implementation) internal returns (address _proxy) {
         bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
-        // _proxy = _getChainDeployment(contractName);
 
         if (isWallet || isEntryPoint) revert("EntryPoint and KintoWallet do not use UUPPS Proxy");
-        // if (_proxy != address(0)) revert("Proxy contract already deployed");
 
         // deploy Proxy contract
         vm.broadcast(deployerPrivateKey);
@@ -122,8 +120,11 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     // TODO: should be extended to work with other initalize() that receive params
     function _initialize(address _proxy, uint256 _signerPk) internal {
-        // fund _proxy in the paymaster
-        if (ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(_proxy) == 0) {
+        // fund _proxy in the paymaster if necessary
+        if (
+            !_isGethAllowed(_proxy)
+                && ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(_proxy) == 0
+        ) {
             _fundPaymaster(_proxy, _signerPk);
         }
         bytes memory selectorAndParams = abi.encodeWithSelector(IInitialize.initialize.selector);
