@@ -190,7 +190,10 @@ contract KintoID is
      * @param _to New address
      */
     function transferOnRecovery(address _from, address _to) external override {
-        require(msg.sender == walletFactory, "Only the wallet factory can trigger this");
+        require(
+            msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "Only the wallet factory or owner can trigger this"
+        );
         enabledRecoveryTransfer[_from] = _to;
         _transfer(_from, _to, tokenOfOwnerByIndex(_from, 0));
         enabledRecoveryTransfer[_from] = address(0);
