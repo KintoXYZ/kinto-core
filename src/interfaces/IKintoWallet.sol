@@ -27,7 +27,7 @@ interface IKintoWallet {
 
     function startRecovery() external;
 
-    function completeRecovery(address[] calldata newSigners) external;
+    function completeRecovery(address[] calldata newSigners, uint8 _newPolicy) external;
 
     function cancelRecovery() external;
 

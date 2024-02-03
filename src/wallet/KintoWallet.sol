@@ -210,10 +210,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * Can only be called by the factory through a privileged signer
      * @param newSigners new signers array
      */
-    function completeRecovery(address[] calldata newSigners) external override onlyFactory {
+    function completeRecovery(address[] calldata newSigners, uint8 _newPolicy) external override onlyFactory {
         require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), "KW-fr: too early");
-        require(!kintoID.isKYC(owners[0]), "KW-fr: Old KYC must be burned");
-        _resetSigners(newSigners, SINGLE_SIGNER);
+        require(!kintoID.isKYC(owners[0]) && kintoID.isKYC(newSigners[0]), "KW-fr: Old KYC must have been transferred");
+        _resetSigners(newSigners, _newPolicy);
         inRecovery = 0;
     }
 

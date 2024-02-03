@@ -36,6 +36,8 @@ interface IKintoID {
 
     function burnKYC(SignatureData calldata _signatureData) external;
 
+    function transferOnRecovery(address _from, address _to) external;
+
     function addTrait(address _account, uint16 _traitId) external;
 
     function removeTrait(address _account, uint16 _traitId) external;
@@ -79,4 +81,10 @@ interface IKintoID {
     function lastMonitoredAt() external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
+
+    function enabledRecoveryTransfer(address _from) external view returns (address);
+
+    function domainSeparator() external view returns (bytes32);
+
+    function walletFactory() external view returns (address);
 }
