@@ -1,10 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.18;
 
-import './IKintoID.sol';
-import './IKintoWalletFactory.sol';
+import "./IKintoID.sol";
+import "./IKintoWalletFactory.sol";
+import "./IFaucet.sol";
 
 interface IKYCViewer {
+    /* ============ Structs ============ */
+
+    struct UserInfo {
+        uint256 ownerBalance;
+        uint256 walletBalance;
+        uint256 walletPolicy;
+        address[] walletOwners;
+        bool claimedFaucet;
+        bool hasNFT;
+        bool isKYC;
+    }
 
     /* ============ Basic Viewers ============ */
 
@@ -18,10 +30,17 @@ interface IKYCViewer {
 
     function isIndividual(address _account) external view returns (bool);
 
+    function hasTrait(address _account, uint8 _traitId) external view returns (bool);
+
+    function getWalletOwners(address _wallet) external view returns (address[] memory);
+
+    function getUserInfo(address _account, address payable _wallet) external view returns (UserInfo memory);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
-    
+
     function walletFactory() external view returns (IKintoWalletFactory);
 
+    function faucet() external view returns (IFaucet);
 }

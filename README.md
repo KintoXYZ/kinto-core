@@ -1,5 +1,7 @@
 ![Slide 1](https://github.com/KintoXYZ/kinto-id/assets/541599/c9345010-21c6-411c-bbf8-31a6727d8c48)
 
+[![codecov](https://codecov.io/gh/KintoXYZ/kinto-core/graph/badge.svg?token=JXQ1EQTRV1)](https://codecov.io/gh/KintoXYZ/kinto-core)
+
 # What is Kinto?
 Kinto is an **Ethereum L2 rollup designed to accelerate the transition to an on-chain financial system**. It features **permissionless KYC/AML and native account abstraction** to solve the two biggest blockers to mainstream adoption: compliance and user experience.
 
@@ -73,6 +75,14 @@ In order to run the tests, execute the following command:
 
 ```
 forge test
+```
+
+## Static Analysis
+
+In order to run Slither for static analysis, execute the following command:
+
+```
+slither --checklist --solc-remaps "$(tr '\n' ' ' < remappings.txt | xargs)" ./src/
 ```
 
 ### Calling the Kinto ID smart contract

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-import "../src/ETHPriceIsRight.sol";
-import "../src/interfaces/IETHPriceIsRight.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "../src/sample/ETHPriceIsRight.sol";
+import "../src/interfaces/IETHPriceIsRight.sol";
 
 contract ETHPriceIsRightTest is Test {
     ETHPriceIsRight _priceIsRight;
@@ -28,7 +28,7 @@ contract ETHPriceIsRightTest is Test {
         assertEq(_priceIsRight.maxGuess(), 0);
     }
 
-    // Upgrade Tests
+    // Upgrade tests
 
     function testAnyoneCanEnterGuessBeforeEnd() public {
         vm.startPrank(_user);
@@ -64,10 +64,10 @@ contract ETHPriceIsRightTest is Test {
         assertEq(_priceIsRight.avgGuess(), 3000 ether);
     }
 
-    function testFailCannotEnterGuessAfterTime() public {
-        vm.startPrank(_user);
+    function test_RevertWhen_CannotEnterGuessAfterTime() public {
         vm.warp(_priceIsRight.END_ENTER_TIMESTAMP() + 1);
+
+        vm.expectRevert("You cannot enter guesses anymore");
         _priceIsRight.enterGuess(2000 ether);
-        vm.stopPrank();
     }
 }

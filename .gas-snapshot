@@ -1,0 +1,5 @@
+KYCViewerTest:testGetUserInfo() (gas: 92652)
+KYCViewerTest:testIsKYCBothOwnerAndWallet() (gas: 108512)
+KYCViewerTest:testUp() (gas: 60596)
+KYCViewerTest:testUpgradeTo() (gas: 1504106)
+KYCViewerTest:testUpgradeTo_RevertWhen_CallerIsNotOwner(address) (runs: 16, μ: 1496518, ~: 1496518)

@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
-
-import '@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol';
+pragma solidity ^0.8.18;
 
 interface IETHPriceIsRight {
-
     /* ============ State Change ============ */
 
     function enterGuess(uint256 _price) external;
@@ -22,6 +19,5 @@ interface IETHPriceIsRight {
     function guessCount() external view returns (uint256);
 
     // ignore this linter warning, it's a false positive
-    // solhint-disable-next-line func-name-mixedcase
     function END_ENTER_TIMESTAMP() external view returns (uint256);
 }

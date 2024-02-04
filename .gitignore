@@ -8,3 +8,7 @@ bin
 
 # Dotenv file
 .env
+
+# node
+node_modules/
+out/

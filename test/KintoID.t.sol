@@ -1,365 +1,461 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-import '../src/KintoID.sol';
-import '../src/interfaces/IKintoID.sol';
-import './helpers/KYCSignature.sol';
-import './helpers/UUPSProxy.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+import "../src/KintoID.sol";
+import "../src/interfaces/IKintoID.sol";
+
+import "./helpers/KYCSignature.sol";
+import "./helpers/UUPSProxy.sol";
+import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
+import {UserOp} from "./helpers/UserOp.sol";
 
 contract KintoIDv2 is KintoID {
-  constructor() KintoID() {
+    constructor() KintoID() {}
 
-  }
-  function newFunction() public pure returns (uint256) {
-      return 1;
-  }
+    function newFunction() public pure returns (uint256) {
+        return 1;
+    }
 }
 
-contract KintoIDTest is KYCSignature {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-    KintoID _implementation;
-
-    KintoID _kintoIDv1;
+contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     KintoIDv2 _kintoIDv2;
-    UUPSProxy _proxy;
-
-    address _owner = address(1);
-    address _kycProvider = address(2);
-    address _user = vm.addr(3);
-    address _user2 = address(4);
-    address _upgrader = address(5);
 
     function setUp() public {
         vm.chainId(1);
         vm.startPrank(_owner);
         _implementation = new KintoID();
+
         // deploy _proxy contract and point it to _implementation
-        _proxy = new UUPSProxy(address(_implementation), '');
-        // wrap in ABI to support easier calls
-        _kintoIDv1 = KintoID(address(_proxy));
+        _kintoID = KintoID(address(new UUPSProxy(address(_implementation), "")));
+
         // Initialize _proxy
-        _kintoIDv1.initialize();
-        _kintoIDv1.grantRole(_kintoIDv1.KYC_PROVIDER_ROLE(), _kycProvider);
+        _kintoID.initialize();
+        _kintoID.grantRole(_kintoID.KYC_PROVIDER_ROLE(), _kycProvider);
         vm.stopPrank();
     }
 
     function testUp() public {
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
-        assertEq(_kintoIDv1.name(), 'Kinto ID');
-        assertEq(_kintoIDv1.symbol(), 'KINTOID');
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+        assertEq(_kintoID.name(), "Kinto ID");
+        assertEq(_kintoID.symbol(), "KINTOID");
     }
+    /* ============ Upgrade tests ============ */
 
-    // Upgrade Tests
-
-    function testOwnerCanUpgrade() public {
+    function testUpgradeTo() public {
         vm.startPrank(_owner);
         KintoIDv2 _implementationV2 = new KintoIDv2();
-        _kintoIDv1.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _kintoIDv2 = KintoIDv2(address(_proxy));
+        _kintoID.upgradeTo(address(_implementationV2));
+
+        // ensure that the _proxy is now pointing to the new implementation
+        _kintoIDv2 = KintoIDv2(address(_kintoID));
         assertEq(_kintoIDv2.newFunction(), 1);
         vm.stopPrank();
     }
 
-    function testFailOthersCannotUpgrade() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoIDv2 _implementationV2 = new KintoIDv2();
-        _kintoIDv1.upgradeTo(address(_implementationV2));
-        // re-wrap the _proxy
-        _kintoIDv2 = KintoIDv2(address(_proxy));
-        assertEq(_kintoIDv2.newFunction(), 1);
+
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(this)),
+            " is missing role ",
+            Strings.toHexString(uint256(_implementationV2.UPGRADER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        _kintoID.upgradeTo(address(_implementationV2));
     }
 
     function testAuthorizedCanUpgrade() public {
-        assertEq(false, _kintoIDv1.hasRole(_kintoIDv1.UPGRADER_ROLE(), _upgrader));
+        assertEq(false, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
+
         vm.startPrank(_owner);
-        _kintoIDv1.grantRole(_kintoIDv1.UPGRADER_ROLE(), _upgrader);
+        _kintoID.grantRole(_kintoID.UPGRADER_ROLE(), _upgrader);
         vm.stopPrank();
-        // Upgrade from the _upgrader account
-        assertEq(true, _kintoIDv1.hasRole(_kintoIDv1.UPGRADER_ROLE(), _upgrader));
+
+        // upgrade from the _upgrader account
+        assertEq(true, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
+
         KintoIDv2 _implementationV2 = new KintoIDv2();
-        vm.startPrank(_upgrader);
-        _kintoIDv1.upgradeTo(address(_implementationV2));
+        vm.prank(_upgrader);
+        _kintoID.upgradeTo(address(_implementationV2));
+
         // re-wrap the _proxy
-        _kintoIDv2 = KintoIDv2(address(_proxy));
-        vm.stopPrank();
+        _kintoIDv2 = KintoIDv2(address(_kintoID));
         assertEq(_kintoIDv2.newFunction(), 1);
     }
 
-    // Mint Tests
+    /* ============ Mint tests ============ */
 
     function testMintIndividualKYC() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](0);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
-        assertEq(_kintoIDv1.isKYC(_user), false);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoIDv1.isKYC(_user), true);
-        assertEq(_kintoIDv1.isIndividual(_user), true);
-        assertEq(_kintoIDv1.mintedAt(_user), block.timestamp);
-        assertEq(_kintoIDv1.hasTrait(_user, 1), false);
-        assertEq(_kintoIDv1.hasTrait(_user, 2), false);
-        assertEq(_kintoIDv1.balanceOf(_user), 1);
+        assertEq(_kintoID.isKYC(_user), false);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        assertEq(_kintoID.isKYC(_user), true);
+        assertEq(_kintoID.isIndividual(_user), true);
+        assertEq(_kintoID.mintedAt(_user), block.timestamp);
+        assertEq(_kintoID.hasTrait(_user, 1), false);
+        assertEq(_kintoID.hasTrait(_user, 2), false);
+        assertEq(_kintoID.balanceOf(_user), 1);
     }
 
     function testMintCompanyKYC() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](2);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](2);
         traits[0] = 2;
         traits[1] = 5;
         vm.startPrank(_kycProvider);
-        _kintoIDv1.mintCompanyKyc(sigdata, traits);
-        assertEq(_kintoIDv1.isKYC(_user), true);
-        assertEq(_kintoIDv1.isCompany(_user), true);
-        assertEq(_kintoIDv1.mintedAt(_user), block.timestamp);
-        assertEq(_kintoIDv1.hasTrait(_user, 1), false);
-        assertEq(_kintoIDv1.hasTrait(_user, 2), true);
-        assertEq(_kintoIDv1.hasTrait(_user, 5), true);
-        assertEq(_kintoIDv1.balanceOf(_user), 1);
+        _kintoID.mintCompanyKyc(sigdata, traits);
+        assertEq(_kintoID.isKYC(_user), true);
+        assertEq(_kintoID.isCompany(_user), true);
+        assertEq(_kintoID.mintedAt(_user), block.timestamp);
+        assertEq(_kintoID.hasTrait(_user, 1), false);
+        assertEq(_kintoID.hasTrait(_user, 2), true);
+        assertEq(_kintoID.hasTrait(_user, 5), true);
+        assertEq(_kintoID.balanceOf(_user), 1);
     }
 
-    function testMintIndividualKYCWithInvalidSender() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+    function testMintIndividualKYC_RevertWhen_InvalidSender() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_user);
-        vm.expectRevert('Invalid Provider');
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.expectRevert("Invalid Provider");
+        _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
-    function testMintIndividualKYCWithInvalidSigner() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 5, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+    function testMintIndividualKYC_RevertWhen_InvalidSigner() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, 5, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
-        vm.expectRevert('Invalid Signer');
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        vm.expectRevert("Invalid Signer");
+        _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
-    function testMintIndividualKYCWithInvalidNonce() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+    function testMintIndividualKYC_RevertWhen_InvalidNonce() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.expectRevert('Invalid Nonce');
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        vm.expectRevert("Invalid Nonce");
+        _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
-    function testMintIndividualKYCWithExpiredSignature() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp - 1000);
-        uint8[] memory traits = new uint8[](1);
+    function testMintIndividualKYC_RevertWhen_ExpiredSignature() public {
+        vm.warp(block.timestamp + 1000);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp - 1000);
+
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        vm.expectRevert('Signature has expired');
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+
+        vm.prank(_kycProvider);
+        vm.expectRevert("Signature has expired");
+        _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
-    // Burn Tests
+    function testMintIndividualKYC_RevertWhen_AlreadyMinted() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](0);
+
+        vm.prank(_kycProvider);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+
+        // try minting again should revert
+        sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Balance before mint must be 0");
+        vm.prank(_kycProvider);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+    }
+
+    /* ============ Burn tests ============ */
+
+    function testBurn_RevertWhen_UsingBurn() public {
+        vm.expectRevert("Use burnKYC instead");
+        _kintoID.burn(1);
+    }
+
+    function testBurn_RevertWhen_BurnIsCalled() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
+        vm.prank(_user);
+        vm.expectRevert("Use burnKYC instead");
+        _kintoID.burn(tokenIdx);
+    }
 
     function testBurnKYC() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoIDv1.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        _kintoIDv1.burnKYC(sigdata);
-        assertEq(_kintoIDv1.balanceOf(_user), 0);
+        approveKYC(_kycProvider, _user, _userPk);
+
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
+        _kintoID.burnKYC(sigdata);
+        assertEq(_kintoID.balanceOf(_user), 0);
     }
 
-    function testOnlyProviderCanBurnKYC() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoIDv1.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        vm.stopPrank();
+    function testBurnKYC_WhenCallerIsNotProvider() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Invalid Provider");
         vm.startPrank(_user);
-        vm.expectRevert('Invalid Provider');
-        _kintoIDv1.burnKYC(sigdata);}
-
-    function testBurnFailsWithoutMinting() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        vm.startPrank(_kycProvider);
-        vm.expectRevert('Nothing to burn');
-        _kintoIDv1.burnKYC(sigdata);
+        _kintoID.burnKYC(sigdata);
     }
 
-    function testBurningTwiceFails() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoIDv1.isKYC(_user), true);
-        sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        _kintoIDv1.burnKYC(sigdata);
-        sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        vm.expectRevert('Nothing to burn');
-        _kintoIDv1.burnKYC(sigdata);
+    function testBurnKYC_WhenUserIsNotKYCd() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Nothing to burn");
+        vm.prank(_kycProvider);
+        _kintoID.burnKYC(sigdata);
     }
 
-    // Monitor Tests
+    function testBurnKYC_WhenBurningTwice() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
+        _kintoID.burnKYC(sigdata);
+
+        sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        vm.expectRevert("Nothing to burn");
+        vm.prank(_kycProvider);
+        _kintoID.burnKYC(sigdata);
+    }
+
+    /* ============ Monitor tests ============ */
+
     function testMonitorNoChanges() public {
         vm.startPrank(_kycProvider);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
+        _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
-    function testFailOnlyProviderCanMonitor() public {
-        vm.startPrank(_user);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
+    function test_RevertWhen_LenghtMismatch() public {
+        vm.expectRevert("Length mismatch");
+        vm.prank(_kycProvider);
+        _kintoID.monitor(new address[](2), new IKintoID.MonitorUpdateData[][](1));
+    }
+
+    function test_RevertWhen_TooManyAccounts() public {
+        vm.expectRevert("Too many accounts to monitor at once");
+        vm.prank(_kycProvider);
+        _kintoID.monitor(new address[](201), new IKintoID.MonitorUpdateData[][](201));
+    }
+
+    function test_RevertWhen_CallerIsNotProvider(address someone) public {
+        vm.assume(someone != _kycProvider);
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(this)),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
     }
 
     function testIsSanctionsMonitored() public {
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.monitor(new address[](0), new IKintoID.MonitorUpdateData [][](0));
-        assertEq(_kintoIDv1.isSanctionsMonitored(1), true);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
+        assertEq(_kintoID.isSanctionsMonitored(1), true);
+
         vm.warp(block.timestamp + 7 days);
-        assertEq(_kintoIDv1.isSanctionsMonitored(8), true);
-        assertEq(_kintoIDv1.isSanctionsMonitored(6), false);
+
+        assertEq(_kintoID.isSanctionsMonitored(8), true);
+        assertEq(_kintoID.isSanctionsMonitored(6), false);
     }
 
-    function testSettingTraitsAndSanctions() public {
-        vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
+    function testMonitor_WhenPassingTraitsAndSactions() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        // monitor
         address[] memory accounts = new address[](1);
         accounts[0] = _user;
+
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
-        updates[0] = new IKintoID.MonitorUpdateData[](2);
-        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
-        updates[0][1] = IKintoID.MonitorUpdateData(true, false, 1); // remove 1
-        _kintoIDv1.monitor(accounts, updates);
-        assertEq(_kintoIDv1.hasTrait(_user,5), true);
-        assertEq(_kintoIDv1.hasTrait(_user,1), false);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,5), true);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), true);
+        updates[0] = new IKintoID.MonitorUpdateData[](4);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5); // add trait 5
+        updates[0][1] = IKintoID.MonitorUpdateData(true, false, 1); // remove trait 1
+        updates[0][2] = IKintoID.MonitorUpdateData(false, true, 6); // add sanction 6
+        updates[0][3] = IKintoID.MonitorUpdateData(false, false, 2); // remove sanction 2
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(accounts, updates);
+
+        assertEq(_kintoID.hasTrait(_user, 5), true);
+        assertEq(_kintoID.hasTrait(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 5), true);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 6), false);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 2), true);
     }
 
-    // Trait Tests
-    function testProviderCanAddTrait() public {
-        vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
-    }
-    function testFailProviderCanAddTraitUnknownUser() public {
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
+    /* ============ Trait tests ============ */
+
+    function testAddTrait() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.prank(_kycProvider);
+        _kintoID.addTrait(_user, 1);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
-    function testFailUserCannotAddTrait() public {
-        vm.startPrank(_user);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addTrait(_user, 1);
+    function testAddTrait_RevertWhen_CallerIsNotProvider() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.addTrait(_user, 1);
     }
 
-    function testProviderCanRemoveTrait() public {
-        vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
-        _kintoIDv1.removeTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), false);
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
+    function testAddTrait_RevertWhen_UserIsNotKYCd() public {
+        assertEq(_kintoID.isKYC(_user), false);
+        vm.expectRevert("Account must have a KYC token");
+        vm.prank(_kycProvider);
+        _kintoID.addTrait(_user, 1);
     }
 
-    function testFailUserCannotRemoveTrait() public {
+    function testRemoveTrait() public {
         vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addTrait(_user, 1);
-        assertEq(_kintoIDv1.hasTrait(_user,1), true);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        _kintoID.addTrait(_user, 1);
+        assertEq(_kintoID.hasTrait(_user, 1), true);
+        _kintoID.removeTrait(_user, 1);
+        assertEq(_kintoID.hasTrait(_user, 1), false);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+    }
+
+    function testRemoveTrait_RevertWhen_CallerIsNotProvider() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.removeTrait(_user, 1);
+    }
+
+    function testRemoveTrait_RevertWhen_AccountIsNotKYCd() public {
+        vm.expectRevert("Account must have a KYC token");
+        vm.prank(_kycProvider);
+        _kintoID.removeTrait(_user, 1);
+    }
+
+    function testTrais() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.startPrank(_kycProvider);
+
+        _kintoID.addTrait(_user, 0);
+        _kintoID.addTrait(_user, 1);
+        _kintoID.addTrait(_user, 2);
+
         vm.stopPrank();
-        vm.startPrank(_user);
-        _kintoIDv1.removeTrait(_user, 1);
+
+        bool[] memory traits = _kintoID.traits(_user);
+        assertEq(traits[0], true);
+        assertEq(traits[1], true);
+        assertEq(traits[2], true);
+        assertEq(traits[3], false);
     }
 
-    // Sanction Tests
-    function testProviderCanAddSanction() public {
+    /* ============ Sanction tests ============ */
+
+    function testAddSanction() public {
         vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
-        assertEq(_kintoIDv1.isSanctionsSafe(_user), false);
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        _kintoID.addSanction(_user, 1);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
-    function testProviderCanRemoveSancion() public {
+    function testRemoveSancion() public {
         vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
-        _kintoIDv1.removeSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), true);
-        assertEq(_kintoIDv1.isSanctionsSafe(_user), true);
-        assertEq(_kintoIDv1.lastMonitoredAt(), block.timestamp);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        _kintoID.addSanction(_user, 1);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        _kintoID.removeSanction(_user, 1);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
-    function testFailUserCannotAddSanction() public {
-        vm.startPrank(_user);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        _kintoIDv1.addSanction(_user2, 1);
+    function testAddSanction_RevertWhen_CallerIsNotKYCProvider() public {
+        approveKYC(_kycProvider, _user, _userPk, new uint16[](1));
+
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.addSanction(_user2, 1);
     }
 
-    function testFailUserCannotRemoveSanction() public {
-        vm.startPrank(_kycProvider);
-        _kintoIDv1.addSanction(_user, 1);
-        assertEq(_kintoIDv1.isSanctionsSafeIn(_user,1), false);
-        vm.stopPrank();
-        vm.startPrank(_user);
-        _kintoIDv1.removeSanction(_user2, 1);
+    function testRemoveSanction_RevertWhen_CallerIsNotKYCProvider() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
+        );
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.removeSanction(_user2, 1);
     }
 
-    // Transfer
+    function testAddSanction_RevertWhen_AccountIsNotKYCd() public {
+        vm.expectRevert("Account must have a KYC token");
+        vm.prank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+    }
 
-    function testFailTransfersAreDisabled() public {
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoIDv1, _user, _user, 3, block.timestamp + 1000);
-        uint8[] memory traits = new uint8[](1);
-        traits[0] = 1;
-        vm.startPrank(_kycProvider);
-        assertEq(_kintoIDv1.isKYC(_user), false);
-        _kintoIDv1.mintIndividualKyc(sigdata, traits);
-        vm.stopPrank();
-        vm.startPrank(_user);
-        _kintoIDv1.safeTransferFrom(_user, _user2, _kintoIDv1.tokenOfOwnerByIndex(_user, 0));
-        assertEq(_kintoIDv1.balanceOf(_user), 0);
-        assertEq(_kintoIDv1.balanceOf(_user2), 1);
+    function testRemoveSanction_RevertWhen_AccountIsNotKYCd() public {
+        vm.expectRevert("Account must have a KYC token");
+        vm.prank(_kycProvider);
+        _kintoID.removeSanction(_user, 1);
+    }
 
+    /* ============ Transfer tests ============ */
+
+    function test_RevertWhen_TransfersAreDisabled() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
+        vm.prank(_user);
+        vm.expectRevert("Only mint or burn transfers are allowed");
+        _kintoID.safeTransferFrom(_user, _user2, tokenIdx);
     }
 
     function testDappSignature() public {
@@ -375,5 +471,18 @@ contract KintoIDTest is KYCSignature {
         //     )
         // );
         // assertEq(valid, true);
+    }
+
+    /* ============ Supports Interface tests ============ */
+
+    function testSupportsInterface() public {
+        bytes4 InterfaceERC721Upgradeable = bytes4(keccak256("balanceOf(address)"))
+            ^ bytes4(keccak256("ownerOf(uint256)")) ^ bytes4(keccak256("safeTransferFrom(address,address,uint256,bytes)"))
+            ^ bytes4(keccak256("safeTransferFrom(address,address,uint256)"))
+            ^ bytes4(keccak256("transferFrom(address,address,uint256)")) ^ bytes4(keccak256("approve(address,uint256)"))
+            ^ bytes4(keccak256("setApprovalForAll(address,bool)")) ^ bytes4(keccak256("getApproved(uint256)"))
+            ^ bytes4(keccak256("isApprovedForAll(address,address)"));
+
+        assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
     }
 }

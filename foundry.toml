@@ -1,9 +1,9 @@
 [profile.default]
-solc = "0.8.17"
+solc = "0.8.18"
 src = 'src'
 out = 'out'
 libs = ['lib']
-eth_rpc_url = 'https://eth-mainnet.alchemyapi.io/v2/PToNmBre9DOHilhG0OcK7I3w5V4lY47L'
+# eth_rpc_url = 'https://eth-mainnet.alchemyapi.io/v2/PToNmBre9DOHilhG0OcK7I3w5V4lY47L'
 fs_permissions = [{ access = "read-write", path = "./"}]
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
@@ -12,3 +12,6 @@ kinto = "${KINTO_RPC_URL}"
 
 [etherscan]
 # goerli = { key = "${ETHERSCAN_API_KEY}" }
+
+[fuzz]
+runs = 16

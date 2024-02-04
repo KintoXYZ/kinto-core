@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
+
+import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
+import {IKintoID} from "./IKintoID.sol";
 
 interface ISponsorPaymaster {
-
     /* ============ Structs ============ */
 
-    // A structure to hold rate limiting data
     struct RateLimitData {
         uint256 lastOperationTime;
         uint256 operationCount;
@@ -14,14 +15,16 @@ interface ISponsorPaymaster {
 
     /* ============ State Change ============ */
 
-    function initialize(address owner) external;
+    function initialize(address owner, IKintoAppRegistry _appRegistry, IKintoID _kintoID) external;
 
-    function addDepositFor(address account) payable external;
+    function setAppRegistry(address _appRegistry) external;
+
+    function addDepositFor(address account) external payable;
 
     function withdrawTokensTo(address target, uint256 amount) external;
 
     function unlockTokenDeposit() external;
-    
+
     function lockTokenDeposit() external;
 
     /* ============ Basic Viewers ============ */
@@ -31,11 +34,12 @@ interface ISponsorPaymaster {
     /* ============ Constants and attrs ============ */
 
     function balances(address account) external view returns (uint256 amount);
-    
+
+    function appRegistry() external view returns (IKintoAppRegistry);
+
     function contractSpent(address account) external view returns (uint256 amount);
-    
+
     function unlockBlock(address account) external view returns (uint256 block);
 
     function appUserLimit(address user, address app) external view returns (uint256, uint256, uint256, uint256);
-
 }

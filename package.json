@@ -1,12 +1,14 @@
 {
-  "name": "kinto-id",
+  "name": "kinto-core",
+  "description": "Kinto Core Contracts",
+  "repository": "https://github.com/KintoXYZ/kinto-core.git",
   "version": "1.0.0",
-  "description": "Kinto ID ",
-  "main": "index.js",
-  "author": "Ramon Recuero <rrmoreno1987@gmail.com>",
+  "devDependencies": {
+    "husky": "^8.0.3"
+  },
   "license": "MIT",
   "scripts": {
-    "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID"
-  },
-  "private": true
+    "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
+    "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID"
+  }
 }

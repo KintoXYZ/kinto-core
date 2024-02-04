@@ -1,0 +1,109 @@
+name: Test Suite
+
+on: 
+  workflow_call:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with: 
+          submodules: recursive
+      
+      - uses: ./.github/actions/install
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Check gas snapshots
+        run: forge snapshot --diff
+
+      - name: Save forge compilation cache
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            cache
+            out
+          key: forge-${{ github.ref_name }}
+  
+  test:
+    needs: build
+
+    name: Test (${{ inputs.network }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run tests
+        run: forge test --gas-report > gasreport.ansi
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3.16
+        with:
+          summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
+          sortCriteria: avg,max # sort diff rows by criteria
+          sortOrders: desc,asc # and directions
+          ignore: test-foundry/**/* # filter out gas reports from specific paths (test/ is included by default)
+        id: gas_diff
+      
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}
+          
+  coverage:
+    needs:
+      - test
+      #- test-unit
+      #- test-internal
+      #- test-integration
+      #- test-invariant
+      # if: inputs.coverageThreshold != ''
+
+    name: Coverage (${{ inputs.network }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Generate LCOV report
+        run: forge coverage --report lcov
+
+      - name: Upload report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          directory: .
+          fail_ci_if_error: true
+          verbose: true
+
+      # - name: Check coverage threshold
+      #   uses: terencetcf/github-actions-lcov-minimum-coverage-checker@v1
+      #   with:
+      #     coverage-file: lcov.info
+      #     minimum-coverage: 90

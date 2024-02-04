@@ -1,37 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
-import '../../src/KintoID.sol';
-import '../../src/interfaces/IKintoID.sol';
-import '@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol';
-import {SignatureChecker} from '@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
-import 'forge-std/Test.sol';
-import 'forge-std/console.sol';
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
+import "../../src/KintoID.sol";
+import "../../src/interfaces/IKintoID.sol";
+import "../../src/interfaces/IFaucet.sol";
 
 abstract contract KYCSignature is Test {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     // Create a test for minting a KYC token
-    function _auxCreateSignature(
-        IKintoID _kintoIDv1,
-        address _signer,
-        address /* _account */,
-        uint256 _privateKey,
-        uint256 _expiresAt
-    ) internal view returns (IKintoID.SignatureData memory signData) {
+    function _auxCreateSignature(IKintoID _kintoID, address _signer, uint256 _privateKey, uint256 _expiresAt)
+        internal
+        view
+        returns (IKintoID.SignatureData memory signData)
+    {
         signData = IKintoID.SignatureData({
             signer: _signer,
-            nonce: _kintoIDv1.nonces(_signer),
+            nonce: _kintoID.nonces(_signer),
             expiresAt: _expiresAt,
-            signature: ''
+            signature: ""
         });
 
         // generate EIP-712 hash
-        bytes32 eip712Hash = _getEIP712Message(signData, address(_kintoIDv1));
+        bytes32 eip712Hash = _getEIP712Message(signData, address(_kintoID));
 
         // sign the hash
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
@@ -42,23 +40,38 @@ abstract contract KYCSignature is Test {
         return signData;
     }
 
-    function _auxDappSignature(IKintoID _kintoIDv1,
-        IKintoID.SignatureData memory signData) internal view returns (bool) {
-        bytes32 dataHash = keccak256(abi.encode(
-            signData.signer,
-            0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,
-            1,
-            signData.expiresAt,
-            _kintoIDv1.nonces(signData.signer),
-            bytes32(block.chainid)
-        ));
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                dataHash
+    // Create a aux function to create an EIP-191 compliant signature for claiming Kinto ETH from the faucet
+    function _auxCreateSignature(IFaucet _faucet, address _signer, uint256 _privateKey, uint256 _expiresAt)
+        internal
+        view
+        returns (IFaucet.SignatureData memory signData)
+    {
+        bytes32 dataHash = keccak256(
+            abi.encode(_signer, address(_faucet), _expiresAt, _faucet.nonces(_signer), bytes32(block.chainid))
+        );
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)); // EIP-191 compliant
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, ethSignedMessageHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        return IFaucet.SignatureData(_signer, _faucet.nonces(_signer), _expiresAt, signature);
+    }
+
+    function _auxDappSignature(IKintoID _kintoID, IKintoID.SignatureData memory signData)
+        internal
+        view
+        returns (bool)
+    {
+        bytes32 dataHash = keccak256(
+            abi.encode(
+                signData.signer,
+                0xa8bEb41Cf4721121ea58837eBDbd36169a7F246E,
+                1,
+                signData.expiresAt,
+                _kintoID.nonces(signData.signer),
+                bytes32(block.chainid)
             )
         );
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0x19), bytes1(0x01), dataHash));
         hash = hash.toEthSignedMessageHash();
         // uint256 key = vm.envUint("FRONTEND_KEY");
         uint256 key = 1;
@@ -103,7 +116,7 @@ abstract contract KYCSignature is Test {
     function _hashSignatureData(IKintoID.SignatureData memory signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                keccak256('SignatureData(address signer,uint256 nonce,uint256 expiresAt)'),
+                keccak256("SignatureData(address signer,uint256 nonce,uint256 expiresAt)"),
                 signatureData.signer,
                 signatureData.nonce,
                 signatureData.expiresAt

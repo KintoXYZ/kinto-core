@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IKintoID {
-
     /* ============ Structs ============ */
 
     struct Metadata {
@@ -31,16 +30,15 @@ interface IKintoID {
 
     /* ============ State Change ============ */
 
+    function mintIndividualKyc(SignatureData calldata _signatureData, uint16[] calldata _traits) external;
 
-    function mintIndividualKyc(SignatureData calldata _signatureData, uint8[] calldata _traits) external;
-
-    function mintCompanyKyc(SignatureData calldata _signatureData, uint8[] calldata _traits) external;
+    function mintCompanyKyc(SignatureData calldata _signatureData, uint16[] calldata _traits) external;
 
     function burnKYC(SignatureData calldata _signatureData) external;
 
-    function addTrait(address _account, uint8 _traitId) external;
+    function addTrait(address _account, uint16 _traitId) external;
 
-    function removeTrait(address _account, uint8 _traitId) external;
+    function removeTrait(address _account, uint16 _traitId) external;
 
     function addSanction(address _account, uint16 _countryId) external;
 
@@ -68,11 +66,9 @@ interface IKintoID {
 
     function mintedAt(address _account) external view returns (uint256);
 
-    function hasTrait(address _account, uint8 index) external view returns (bool);
+    function hasTrait(address _account, uint16 index) external view returns (bool);
 
     function traits(address _account) external view returns (bool[] memory);
-
-    // function balanceOf(address _account, uint256) external view returns(uint256);
 
     /* ============ Constants and attrs ============ */
 
@@ -83,5 +79,4 @@ interface IKintoID {
     function lastMonitoredAt() external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
-
 }
