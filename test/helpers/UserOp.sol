@@ -12,6 +12,8 @@ import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 
 abstract contract UserOp is Test {
+    uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
     using ECDSAUpgradeable for bytes32;
 
     // private keys
