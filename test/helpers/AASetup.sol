@@ -29,6 +29,7 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
             revert("Kinto ID not deployed");
         }
         _kintoID = KintoID(address(kintoProxyAddr));
+
         // Entry Point
         address entryPointAddr = _getChainDeployment("EntryPoint");
         if (!isContract(entryPointAddr)) {
@@ -44,6 +45,7 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
             revert("Wallet Factory Proxy not deployed");
         }
         _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
+
         // Sponsor Paymaster
         address sponsorProxyAddr = _getChainDeployment("SponsorPaymaster");
         if (!isContract(sponsorProxyAddr)) {

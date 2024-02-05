@@ -26,38 +26,39 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        vm.stopBroadcast();
+        console.log("All AA setup is correct");
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         uint256 recipientKey = vm.envUint("TEST_PRIVATE_KEY");
-        address recipientWallet = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
+        address recipientWallet = vm.rememberKey(recipientKey);
+        console.log("Deployer is", vm.addr(deployerPrivateKey));
+        console.log("Recipient wallet is", recipientWallet);
 
-        console.log("All AA setup is correct");
         uint256 totalWalletsCreated = _walletFactory.totalWallets();
-        vm.startBroadcast(deployerPrivateKey);
+        console.log("Recipient wallet is KYC'd:", _kintoID.isKYC(recipientWallet));
         if (!_kintoID.isKYC(recipientWallet)) {
             IKintoID.SignatureData memory sigdata =
                 _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 1000);
             uint16[] memory traits = new uint16[](0);
+            // NOTE: must be called from KYC_PROVIDER_ROLE
+            console.log("Sender has KYC_PROVIDER_ROLE:", _kintoID.hasRole(_kintoID.KYC_PROVIDER_ROLE(), msg.sender));
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
+        console.log("This factory has", totalWalletsCreated, "created");
 
-        console.log("This factory has", totalWalletsCreated, " created");
         bytes32 salt = 0;
         address newWallet = _walletFactory.getAddress(recipientWallet, recipientWallet, salt);
         if (isContract(newWallet)) {
             console.log("Wallet already deployed for owner", recipientWallet, "at", newWallet);
         } else {
+            vm.broadcast(deployerPrivateKey);
             IKintoWallet ikw = _walletFactory.createAccount(recipientWallet, recipientWallet, salt);
             console.log("Created wallet", address(ikw));
             console.log("Total Wallets:", _walletFactory.totalWallets());
         }
-        vm.stopBroadcast();
     }
 }
 
@@ -72,21 +73,22 @@ contract KintoMonitoringTest is AASetup, KYCSignature, UserOp {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        vm.stopBroadcast();
+        console.log("All AA setup is correct");
     }
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        console.log("All AA setup is correct");
-        vm.startBroadcast(deployerPrivateKey);
+        console.log("Deployer is", vm.addr(deployerPrivateKey));
+
         address[] memory _addressesToMonitor = new address[](0);
         IKintoID.MonitorUpdateData[][] memory _traitsAndSanctions = new IKintoID.MonitorUpdateData[][](0);
         console.log("Update monitoring - no traits or sanctions update");
+
+        // NOTE: must be called from KYC_PROVIDER_ROLE
+        console.log("Sender has KYC_PROVIDER_ROLE:", _kintoID.hasRole(_kintoID.KYC_PROVIDER_ROLE(), msg.sender));
+        vm.broadcast(deployerPrivateKey);
         _kintoID.monitor(_addressesToMonitor, _traitsAndSanctions);
-        vm.stopBroadcast();
     }
 }
 
@@ -101,64 +103,99 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        vm.stopBroadcast();
+        console.log("All AA setup is correct");
     }
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
-        address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
-        console.log("All AA setup is correct");
-        vm.startBroadcast(deployerPrivateKey);
-        bytes32 salt = 0;
-        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerPublicKey = vm.addr(deployerPrivateKey);
+        console.log("Deployer is", vm.addr(deployerPrivateKey));
+
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, bytes32(0));
         if (!isContract(newWallet)) {
-            console.log("ERROR: Wallet not deployed for owner", deployerPublicKey, "at", newWallet);
-            revert();
+            console.log("No wallet found with owner", deployerPublicKey, "at", newWallet);
+            vm.broadcast(deployerPrivateKey);
+            IKintoWallet ikw = _walletFactory.createAccount(deployerPublicKey, deployerPublicKey, 0);
+            console.log("- A new wallet has been created", address(ikw));
         }
         _newWallet = IKintoWallet(newWallet);
+
         // Counter contract
         address computed =
             _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
         if (!isContract(computed)) {
+            vm.broadcast(deployerPrivateKey);
             address created = _walletFactory.deployContract(
                 deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0)
             );
-            console.log("Deployed Counter contract at", created);
+            console.log("Counter contract deployed at", created);
         } else {
             console.log("Counter already deployed at", computed);
         }
-        Counter counter = Counter(computed);
-        console.log("Before UserOp. Counter:", counter.count());
-        // We add the deposit to the counter contract in the paymaster
+
+        // deposit ETH to the counter contract in the paymaster
         if (_sponsorPaymaster.balances(computed) <= 1e14) {
+            vm.broadcast(deployerPrivateKey);
             _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
-            console.log("Adding paymaster balance to counter", computed);
+            console.log("Added paymaster balance to counter", computed);
         } else {
             console.log("Counter already has balance to pay for tx", computed);
         }
-        // Let's send a transaction to the counter contract through our wallet
+
+        // deposit ETH to the wallet contract in the paymaster
+        if (_sponsorPaymaster.balances(address(_newWallet)) <= 1e14) {
+            vm.broadcast(deployerPrivateKey);
+            _sponsorPaymaster.addDepositFor{value: 5e16}(address(_newWallet));
+            console.log("Added paymaster balance to wallet", address(_newWallet));
+        } else {
+            console.log("Wallet already has balance to pay for tx", address(_newWallet));
+        }
+
+        Counter counter = Counter(computed);
+        console.log("Before UserOp. Counter:", counter.count());
+
+        // send a tx to the counter contract through our wallet
         uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = _createUserOperation(
+
+        UserOperation[] memory userOps = new UserOperation[](2);
+
+        // whitelist counter contract in the wallet
+        address[] memory targets = new address[](1);
+        targets[0] = address(counter);
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+
+        userOps[0] = _createUserOperation(
+            block.chainid,
+            address(_newWallet),
+            address(_newWallet),
+            0,
+            nonce,
+            privateKeys,
+            abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
+            address(_sponsorPaymaster)
+        );
+
+        // increment counter
+        userOps[1] = _createUserOperation(
             block.chainid,
             address(_newWallet),
             address(counter),
             0,
-            nonce,
+            nonce + 1,
             privateKeys,
             abi.encodeWithSignature("increment()"),
-            address(_sponsorPaymaster),
-            [uint256(5000000), 3, 3]
+            address(_sponsorPaymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+
+        vm.broadcast(deployerPrivateKey);
         _entryPoint.handleOps(userOps, payable(deployerPublicKey));
+
         console.log("After UserOp. Counter:", counter.count());
-        vm.stopBroadcast();
     }
 }
 
@@ -173,69 +210,99 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
     IKintoWallet _newWallet;
 
     function setUp() public {
-        uint256 deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
         (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        vm.stopBroadcast();
+        console.log("All AA setup is correct");
     }
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
-        address deployerPublicKey = vm.rememberKey(vm.envUint("TEST_PRIVATE_KEY"));
-        console.log("All AA setup is correct");
-        vm.startBroadcast(deployerPrivateKey);
-        bytes32 salt = 0;
-        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, salt);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerPublicKey = vm.addr(deployerPrivateKey);
+        console.log("Deployer is", vm.addr(deployerPrivateKey));
+
+        address newWallet = _walletFactory.getAddress(deployerPublicKey, deployerPublicKey, bytes32(0));
         if (!isContract(newWallet)) {
-            console.log("ERROR: Wallet not deployed for owner", deployerPublicKey, "at", newWallet);
-            revert();
+            console.log("No wallet found with owner", deployerPublicKey, "at", newWallet);
+            vm.broadcast(deployerPrivateKey);
+            IKintoWallet ikw = _walletFactory.createAccount(deployerPublicKey, deployerPublicKey, 0);
+            console.log("- A new wallet has been created", address(ikw));
         }
         _newWallet = IKintoWallet(newWallet);
+
         // Counter contract
         address computed = _walletFactory.getContractAddress(
             bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode))
         );
         if (!isContract(computed)) {
+            vm.broadcast(deployerPrivateKey);
             address created = _walletFactory.deployContract(
                 deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0)
             );
-            console.log("Deployed ETHPriceIsRight contract at", created);
+            console.log("ETHPriceIsRight contract deployed at", created);
         } else {
             console.log("ETHPriceIsRight already deployed at", computed);
         }
+
         ETHPriceIsRight ethpriceisright = ETHPriceIsRight(computed);
         console.log("ETHPriceIsRight guess count", ethpriceisright.guessCount());
         console.log("ETHPriceIsRight avg guess", ethpriceisright.avgGuess());
 
-        console.log("Balance paymaster", _sponsorPaymaster.balances(computed));
-        // We add the deposit to the counter contract in the paymaster
+        // deposit ETH to the ETHPriceIsRight contract in the paymaster
         if (_sponsorPaymaster.balances(computed) <= 1e14) {
+            vm.broadcast(deployerPrivateKey);
             _sponsorPaymaster.addDepositFor{value: 5e16}(computed);
-            console.log("Adding paymaster balance to ETHPriceIsRight", computed);
-            console.log("Balance paymaster", _sponsorPaymaster.balances(computed));
+            console.log("Added paymaster balance to ETHPriceIsRight", computed);
         } else {
             console.log("ETHPriceIsRight already has balance to pay for tx", computed);
         }
-        // Let's send a transaction to the counter contract through our wallet
+
+        // deposit ETH to the wallet contract in the paymaster
+        if (_sponsorPaymaster.balances(address(_newWallet)) <= 1e14) {
+            vm.broadcast(deployerPrivateKey);
+            _sponsorPaymaster.addDepositFor{value: 5e16}(address(_newWallet));
+            console.log("Added paymaster balance to wallet", address(_newWallet));
+        } else {
+            console.log("Wallet already has balance to pay for tx", address(_newWallet));
+        }
+
+        // send a tx to the ETHPriceIsRight contract through our wallet
         uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation memory userOp = _createUserOperation(
+        UserOperation[] memory userOps = new UserOperation[](2);
+
+        // whitelist ETHPriceIsRight contract in the wallet
+        address[] memory targets = new address[](1);
+        targets[0] = address(ethpriceisright);
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+
+        userOps[0] = _createUserOperation(
+            block.chainid,
+            address(_newWallet),
+            address(_newWallet),
+            0,
+            nonce,
+            privateKeys,
+            abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
+            address(_sponsorPaymaster)
+        );
+
+        userOps[1] = _createUserOperation(
             block.chainid,
             address(_newWallet),
             address(ethpriceisright),
             0,
-            nonce,
+            nonce + 1,
             privateKeys,
             abi.encodeWithSignature("enterGuess(uint256)", 7000),
-            address(_sponsorPaymaster),
-            [uint256(5000000), 3, 3]
+            address(_sponsorPaymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+
+        vm.broadcast(deployerPublicKey);
         _entryPoint.handleOps(userOps, payable(deployerPublicKey));
+
         console.log("After UserOp. ETHPriceIsRight guess count", ethpriceisright.guessCount());
         console.log("After UserOp. ETHPriceIsRight avg guess", ethpriceisright.avgGuess());
-        vm.stopBroadcast();
     }
 }
