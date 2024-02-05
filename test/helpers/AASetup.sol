@@ -31,7 +31,7 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
         _kintoID = KintoID(address(kintoProxyAddr));
 
         // Entry Point
-        address entryPointAddr = _getChainDeployment("EntryPoint");
+        address entryPointAddr = _getChainDeployment("EntryPoint-impl");
         if (!isContract(entryPointAddr)) {
             console.log("Entry Point not deployed at", address(entryPointAddr));
             revert("Entry Point not deployed");
