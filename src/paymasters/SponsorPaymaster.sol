@@ -144,6 +144,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             balances[msg.sender] >= amount && unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             "SP: must unlockTokenDeposit"
         );
+        require(target != address(0) && target.code.length == 0, "SP: withdraw target cannot be a contract");
         balances[msg.sender] -= amount;
         entryPoint.withdrawTo(payable(target), amount);
     }
