@@ -78,12 +78,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         unlockBlock[_owner] = block.number; // unlocks owner
     }
 
-    function initializeV6(address _kintoID) external {
-        if (address(kintoID) == address(0)) {
-            kintoID = IKintoID(_kintoID);
-        }
-    }
-
     /**
      * @dev Authorize the upgrade. Only by an owner.
      * @param newImplementation address of the new implementation
