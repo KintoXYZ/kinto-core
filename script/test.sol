@@ -45,6 +45,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
             uint16[] memory traits = new uint16[](0);
             // NOTE: must be called from KYC_PROVIDER_ROLE
             console.log("Sender has KYC_PROVIDER_ROLE:", _kintoID.hasRole(_kintoID.KYC_PROVIDER_ROLE(), msg.sender));
+            vm.broadcast(deployerPrivateKey);
             _kintoID.mintIndividualKyc(sigdata, traits);
         }
         console.log("This factory has", totalWalletsCreated, "created");
