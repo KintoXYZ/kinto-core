@@ -41,7 +41,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
         console.log("Recipient wallet is KYC'd:", _kintoID.isKYC(recipientWallet));
         if (!_kintoID.isKYC(recipientWallet)) {
             IKintoID.SignatureData memory sigdata =
-                _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 1000);
+                _auxCreateSignature(_kintoID, recipientWallet, recipientKey, block.timestamp + 50000);
             uint16[] memory traits = new uint16[](0);
             // NOTE: must be called from KYC_PROVIDER_ROLE
             console.log("Sender has KYC_PROVIDER_ROLE:", _kintoID.hasRole(_kintoID.KYC_PROVIDER_ROLE(), msg.sender));
