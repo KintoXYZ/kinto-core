@@ -46,6 +46,8 @@ contract KintoAppRegistry is
 
     uint256 public override appCount;
 
+    IKintoID public immutable kintoID;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
@@ -58,6 +60,7 @@ contract KintoAppRegistry is
     constructor(IKintoWalletFactory _walletFactory) {
         _disableInitializers();
         walletFactory = _walletFactory;
+        kintoID = IKintoID(_walletFactory.kintoID());
     }
 
     function initialize() external initializer {
@@ -116,6 +119,7 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
+        require(kintoID.isKYC(msg.sender), "KYC required");
         require(_appMetadata[parentContract].tokenId == 0, "App already registered");
         require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
         require(walletFactory.walletTs(parentContract) == 0, "Wallets can not be registered");
@@ -284,6 +288,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV3 is KintoAppRegistry {
+contract KintoAppRegistryV4 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
