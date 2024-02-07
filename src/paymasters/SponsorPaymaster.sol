@@ -78,12 +78,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         unlockBlock[_owner] = block.number; // unlocks owner
     }
 
-    function initializeV6(address _kintoID) external {
-        if (address(kintoID) == address(0)) {
-            kintoID = IKintoID(_kintoID);
-        }
-    }
-
     /**
      * @dev Authorize the upgrade. Only by an owner.
      * @param newImplementation address of the new implementation
@@ -144,6 +138,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             balances[msg.sender] >= amount && unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
             "SP: must unlockTokenDeposit"
         );
+        require(target != address(0) && target.code.length == 0, "SP: withdraw target cannot be a contract");
         balances[msg.sender] -= amount;
         entryPoint.withdrawTo(payable(target), amount);
     }
@@ -340,6 +335,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV6 is SponsorPaymaster {
+contract SponsorPaymasterV7 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
 }
