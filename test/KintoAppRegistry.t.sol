@@ -55,6 +55,8 @@ contract KintoAppRegistryTest is SharedSetup {
     /* ============ App tests & Viewers ============ */
 
     function testRegisterApp(string memory name, address parentContract) public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(7);
 
@@ -108,12 +110,15 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testRegisterApp_RevertWhen_ChildrenIsWallet(string memory name, address parentContract) public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(_kintoWallet);
 
         // register app
         vm.expectRevert("Wallets can not be registered");
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
@@ -129,6 +134,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // try to register again
         vm.expectRevert("App already registered");
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
@@ -147,10 +153,23 @@ contract KintoAppRegistryTest is SharedSetup {
         parentContract = address(2);
         appContracts = new address[](0);
         vm.expectRevert("Parent contract already registered as a child");
+        vm.prank(_owner);
+        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+    }
+
+    function testRegisterApp_RevertWhen_CallerIsNotKYCd(string memory name, address parentContract) public {
+        uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
+        address[] memory appContracts = new address[](0);
+
+        // register app
+        vm.expectRevert("KYC required");
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
     function testUpdateMetadata(string memory name, address parentContract) public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
 
@@ -278,20 +297,27 @@ contract KintoAppRegistryTest is SharedSetup {
     /* ============ Transfer Test ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {
-        vm.startPrank(_user);
+        approveKYC(_kycProvider, _user, _userPk);
+
         address parentContract = address(_engenCredits);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
+
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(
             "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
+
         uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(_user, 0);
         vm.expectRevert("Only mint transfers are allowed");
+        vm.prank(_user);
         _kintoAppRegistry.safeTransferFrom(_user, _user2, tokenIdx);
     }
 
