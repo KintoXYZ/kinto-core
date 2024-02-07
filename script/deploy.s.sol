@@ -208,6 +208,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kintoRegistry.initialize();
+        _kintoRegistry.initializeV4(kintoID);
     }
 
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
