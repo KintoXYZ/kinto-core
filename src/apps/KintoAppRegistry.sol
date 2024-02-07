@@ -46,7 +46,7 @@ contract KintoAppRegistry is
 
     uint256 public override appCount;
 
-    IKintoID public kintoID;
+    IKintoID public immutable kintoID;
 
     /* ============ Events ============ */
 
@@ -60,6 +60,7 @@ contract KintoAppRegistry is
     constructor(IKintoWalletFactory _walletFactory) {
         _disableInitializers();
         walletFactory = _walletFactory;
+        kintoID = IKintoID(_walletFactory.kintoID());
     }
 
     function initialize() external initializer {
@@ -68,12 +69,6 @@ contract KintoAppRegistry is
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
-    }
-
-    function initializeV4(IKintoID _kintoID) external {
-        require(address(kintoID) == address(0), "Already initialized");
-        require(address(_kintoID) != address(0), "Invalid address");
-        kintoID = _kintoID;
     }
 
     /**
@@ -293,6 +288,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV3 is KintoAppRegistry {
+contract KintoAppRegistryV4 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
