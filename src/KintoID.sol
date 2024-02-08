@@ -62,15 +62,16 @@ contract KintoID is
     // This mapping is used to enable recovery transfer
     mapping(address => address) public override enabledRecoveryTransfer;
 
-    address public override walletFactory;
+    address public immutable override walletFactory;
 
     /* ============ Modifiers ============ */
 
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address _walletFactory) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     function initialize() external initializer {
@@ -86,11 +87,6 @@ contract KintoID is
 
         lastMonitoredAt = block.timestamp;
         domainSeparator = _domainSeparator();
-    }
-
-    function intializeV7(address _walletFactory) external initializer {
-        require(walletFactory == address(0) && _walletFactory != address(0), "Already initialized");
-        walletFactory = _walletFactory;
     }
 
     /**
@@ -524,5 +520,5 @@ contract KintoID is
 }
 
 contract KintoIDV6 is KintoID {
-    constructor() KintoID() {}
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 }

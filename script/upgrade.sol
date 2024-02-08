@@ -71,7 +71,7 @@ contract KintoWalletsUpgradeScript is ArtifactsReader {
 }
 
 contract KintoIDV2 is KintoID {
-    constructor() KintoID() {}
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 }
 
 contract KintoIDUpgradeScript is ArtifactsReader {
@@ -88,7 +88,7 @@ contract KintoIDUpgradeScript is ArtifactsReader {
         vm.startBroadcast(deployerPrivateKey);
         _oldKinto = KintoID(payable(_getChainDeployment("KintoID")));
         // Replace this with the contract name of the new implementation
-        KintoIDV2 implementationV2 = new KintoIDV2();
+        KintoIDV2 implementationV2 = new KintoIDV2(_getChainDeployment("KintoWalletFactory"));
         _oldKinto.upgradeTo(address(implementationV2));
         console.log("KintoID upgraded to implementation", address(implementationV2));
         vm.stopBroadcast();

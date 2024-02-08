@@ -127,7 +127,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
     function deployKintoID() public returns (KintoID _kintoID, KintoID _kintoIDImpl) {
         bytes memory creationCode = type(KintoID).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(""));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(0)));
         (address proxy, address implementation) = _deploy("KintoID", creationCode, bytecode);
         _kintoID = KintoID(payable(proxy));
         _kintoIDImpl = KintoID(payable(implementation));
