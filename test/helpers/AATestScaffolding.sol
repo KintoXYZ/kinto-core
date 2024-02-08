@@ -219,6 +219,38 @@ abstract contract AATestScaffolding is KYCSignature {
 
     /* ============ assertion helper methods ============ */
 
+    // selector reasons
+
+    function assertRevertReasonEq(bytes4 expectedSelector) public {
+        bool foundMatchingRevert = false;
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            // check if this is the correct event
+            if (
+                logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
+                    || logs[i].topics[0] == keccak256("PostOpRevertReason(bytes32,address,uint256,bytes)")
+            ) {
+                (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
+
+                // check if the revertReasonBytes match the expected selector
+                if (revertReasonBytes.length >= 4) {
+                    bytes4 actualSelector = bytes4(revertReasonBytes[0]) | (bytes4(revertReasonBytes[1]) >> 8)
+                        | (bytes4(revertReasonBytes[2]) >> 16) | (bytes4(revertReasonBytes[3]) >> 24);
+
+                    if (actualSelector == expectedSelector) {
+                        foundMatchingRevert = true;
+                        break; // exit the loop if a match is found
+                    }
+                }
+            }
+        }
+
+        if (!foundMatchingRevert) {
+            revert("Expected revert reason not found");
+        }
+    }
+
     // string reasons
 
     function assertRevertReasonEq(bytes memory _reason) public {
