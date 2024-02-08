@@ -17,6 +17,10 @@ import "../../test/helpers/UserOp.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
+contract FaucetV3 is Faucet {
+    constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
+}
+
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 
