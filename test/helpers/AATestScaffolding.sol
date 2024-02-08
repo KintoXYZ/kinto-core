@@ -25,8 +25,6 @@ import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 import "../../script/deploy.s.sol";
 
 abstract contract AATestScaffolding is KYCSignature {
-    DeployerScript.DeployedContracts contracts;
-
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry
@@ -46,6 +44,7 @@ abstract contract AATestScaffolding is KYCSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
+    BLSSignatureAggregator _aggregator;
 
     /* ============ convenience methods ============ */
 
@@ -192,8 +191,9 @@ abstract contract AATestScaffolding is KYCSignature {
     function resetSigners(address[] memory newSigners, uint8 policy) public {
         vm.prank(address(_kintoWallet));
         _kintoWallet.resetSigners(newSigners, policy);
-        assertEq(_kintoWallet.owners(0), newSigners[0]);
-        assertEq(_kintoWallet.owners(1), newSigners[1]);
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            assertEq(_kintoWallet.owners(i), newSigners[i]);
+        }
         assertEq(_kintoWallet.signerPolicy(), policy);
     }
 
@@ -201,6 +201,12 @@ abstract contract AATestScaffolding is KYCSignature {
         vm.prank(address(_kintoWallet));
         _kintoWallet.setSignerPolicy(policy);
         assertEq(_kintoWallet.signerPolicy(), policy);
+    }
+
+    function setPublicKey(uint256[4] memory pubKey) public {
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setPublicKey(pubKey);
+        // assertEq(_kintoWallet.signerPolicy(), policy); TODO: assert
     }
 
     function useHarness() public {

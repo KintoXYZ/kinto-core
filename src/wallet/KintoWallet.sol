@@ -13,6 +13,7 @@ import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
+// TODO: add inhertiance of IBLSAccount?
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
@@ -44,6 +45,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
     IKintoAppRegistry public immutable override appRegistry;
+    uint256[4] public blsPublicKey;
 
     /* ============ Events ============ */
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
@@ -79,12 +81,18 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner, address _recoverer) external virtual initializer onlyFactory {
+    function initialize(address anOwner, address _recoverer, uint256[4] calldata _pubKey)
+        external
+        virtual
+        initializer
+        onlyFactory
+    {
         // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
-        emit KintoWalletInitialized(_entryPoint, anOwner);
+        blsPublicKey = _pubKey;
+        emit KintoWalletInitialized(_entryPoint, anOwner); // TODO: add public key
     }
 
     /* ============ Execution methods ============ */
@@ -135,6 +143,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
         require(newSigners[0] == owners[0], "KW-rs: first signer must be the same unless recovery");
         _resetSigners(newSigners, policy);
+    }
+
+    /**
+     * Allows the owner to set or change the BLS key.
+     * @param newPublicKey public key from a BLS keypair that will have a full ownership and control of this account.
+     */
+    function setPublicKey(uint256[4] memory newPublicKey) public onlySelf {
+        // emit PublicKeyChanged(blsPublicKey, newPublicKey);
+        blsPublicKey = newPublicKey;
+    }
+
+    function getBlsPublicKey() external view returns (uint256[4] memory _blsPublicKey) {
+        return blsPublicKey;
     }
 
     /* ============ Whitelist Management ============ */

@@ -88,14 +88,22 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return ret address of the account
      */
-    function createAccount(address owner, address recoverer, bytes32 salt)
+    function createAccount(address owner, address recoverer, bytes32 salt, uint256[4] calldata blsPublicKey)
         external
         override
         returns (IKintoWallet ret)
     {
         require(owner != address(0) && recoverer != address(0), "invalid addresses");
         require(kintoID.isKYC(owner) && owner == msg.sender, "KYC required");
-        address addr = getAddress(owner, recoverer, salt);
+
+        // the BLSSignatureAggregator depends on the public-key being the last 4 uint256 of msg.data.
+        // uint256 slot;
+        // assembly {
+        //     slot := blsPublicKey
+        // }
+        // require(slot == msg.data.length - 128, "wrong pubkey offset");
+
+        address addr = getAddress(owner, recoverer, salt, blsPublicKey);
         uint256 codeSize = addr.code.length;
 
         if (codeSize > 0) {
@@ -105,7 +113,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         ret = IKintoWallet(
             payable(
                 new SafeBeaconProxy{salt: salt}(
-                    address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer))
+                    address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer, blsPublicKey))
                 )
             )
         );
@@ -231,13 +239,34 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param salt The salt to use for the calculation
      * @return The address of the account
      */
-    function getAddress(address owner, address recoverer, bytes32 salt) public view override returns (address) {
+    // function getAddress(address owner, address recoverer, bytes32 salt) public view override returns (address) {
+    //     return Create2.computeAddress(
+    //         bytes32(salt),
+    //         keccak256(
+    //             abi.encodePacked(
+    //                 type(SafeBeaconProxy).creationCode,
+    //                 abi.encode(address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer)))
+    //             )
+    //         )
+    //     );
+    // }
+    /**
+     * calculate the counterfactual address of this account as it would be returned by createAccount()
+     */
+    // TODO: do we really need to calculate the address using the public key??
+    function getAddress(address owner, address recoverer, bytes32 salt, uint256[4] calldata blsPublicKey)
+        public
+        view
+        returns (address)
+    {
         return Create2.computeAddress(
-            bytes32(salt),
+            salt,
             keccak256(
                 abi.encodePacked(
                     type(SafeBeaconProxy).creationCode,
-                    abi.encode(address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer)))
+                    abi.encode(
+                        address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer, blsPublicKey))
+                    )
                 )
             )
         );

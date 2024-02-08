@@ -38,7 +38,7 @@ contract PolicyTest is SharedSetup {
         // create a wallet for _user
         approveKYC(_kycProvider, _user, _userPk);
         vm.broadcast(_user);
-        IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
+        IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0, _blsPublicKey);
 
         // deploy a new implementation
         KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry);

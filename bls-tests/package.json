@@ -1,0 +1,6 @@
+{
+  "name": "bls-tests",
+  "dependencies": {
+    "@noble/curves": "^1.3.0"
+  }
+}

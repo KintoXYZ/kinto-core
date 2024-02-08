@@ -19,8 +19,8 @@ import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import "../script/deploy.s.sol";
 
 contract SharedSetup is UserOp, AATestScaffolding {
+    DeployerScript.DeployedContracts contracts;
     Counter counter;
-
     uint256[] privateKeys;
 
     // events
@@ -47,6 +47,7 @@ contract SharedSetup is UserOp, AATestScaffolding {
         _paymaster = SponsorPaymaster(contracts.paymaster);
         _kycViewer = KYCViewer(contracts.viewer);
         _faucet = Faucet(contracts.faucet);
+        _aggregator = BLSSignatureAggregator(contracts.aggregator);
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
@@ -65,7 +66,7 @@ contract SharedSetup is UserOp, AATestScaffolding {
 
         // deploy latest KintoWallet version through wallet factory
         vm.prank(_owner);
-        _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0, _blsPublicKey);
         fundSponsorForApp(_owner, address(_kintoWallet));
 
         // deploy Counter contract
@@ -79,6 +80,10 @@ contract SharedSetup is UserOp, AATestScaffolding {
 
     function testUp() public virtual {
         assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_kintoWallet.blsPublicKey(0), _blsPublicKey[0]);
+        assertEq(_kintoWallet.blsPublicKey(1), _blsPublicKey[1]);
+        assertEq(_kintoWallet.blsPublicKey(2), _blsPublicKey[2]);
+        assertEq(_kintoWallet.blsPublicKey(3), _blsPublicKey[3]);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
         assertEq(_kintoWallet.getOwnersCount(), 1);
     }

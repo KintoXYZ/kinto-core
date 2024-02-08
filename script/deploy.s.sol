@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "@aa/core/EntryPoint.sol";
+import "@aa/samples/bls/BLSSignatureAggregator.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
@@ -54,11 +55,16 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     Faucet public faucet;
     Faucet public faucetImpl;
 
+    // BLS Aggregator
+    BLSSignatureAggregator public aggregator;
+    BLSSignatureAggregator public aggregatorImpl;
+
     // whether to write addresses to a file or not (and console.log them)
     bool write;
 
     // if set, will broadcast transactions with this private key
     uint256 privateKey;
+    uint256[4] blsPublicKey;
 
     function setUp() public {}
 
@@ -72,13 +78,15 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         EngenCredits engenCredits;
         Faucet faucet;
+        BLSSignatureAggregator aggregator;
     }
 
     function runAndReturnResults(uint256 _privateKey) public returns (DeployedContracts memory contracts) {
         privateKey = _privateKey;
+
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet
+            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, aggregator
         );
     }
 
@@ -121,6 +129,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
+
+        // deploy BLSAggregator
+        (aggregator, aggregatorImpl) = deployAggregator();
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
@@ -242,6 +253,20 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _faucet.initialize();
+    }
+
+    function deployAggregator()
+        public
+        returns (BLSSignatureAggregator _aggregator, BLSSignatureAggregator _aggregatorImpl)
+    {
+        bytes memory creationCode = type(BLSSignatureAggregator).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        (address proxy, address implementation) = _deploy("BLSSignatureAggregator", creationCode, bytecode);
+        _aggregator = BLSSignatureAggregator(proxy);
+        _aggregatorImpl = BLSSignatureAggregator(implementation);
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _aggregator.initialize();
     }
 
     /// @dev deploys proxy contract from deployer

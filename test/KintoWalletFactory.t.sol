@@ -51,39 +51,39 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testCreateAccount() public {
         vm.prank(address(_owner));
-        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0, _blsPublicKey);
         assertEq(_kintoWallet.owners(0), _owner);
     }
 
     function testCreateAccount_WhenAlreadyExists() public {
         vm.prank(address(_owner));
-        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0, _blsPublicKey);
 
         vm.prank(address(_owner));
-        IKintoWallet _kintoWalletAfter = _walletFactory.createAccount(_owner, _owner, 0);
+        IKintoWallet _kintoWalletAfter = _walletFactory.createAccount(_owner, _owner, 0, _blsPublicKey);
         assertEq(address(_kintoWallet), address(_kintoWalletAfter));
     }
 
     function testCreateAccount_RevertWhen_ZeroAddress() public {
         vm.prank(address(_owner));
         vm.expectRevert("invalid addresses");
-        _kintoWallet = _walletFactory.createAccount(address(0), _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(address(0), _owner, 0, _blsPublicKey);
 
         vm.prank(address(_owner));
         vm.expectRevert("invalid addresses");
-        _kintoWallet = _walletFactory.createAccount(_owner, address(0), 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, address(0), 0, _blsPublicKey);
     }
 
     function testCreateAccount_RevertWhen_OwnerNotKYCd() public {
         vm.prank(address(_user2));
         vm.expectRevert("KYC required");
-        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0, _blsPublicKey);
     }
 
     function testCreateAccount_RevertWhen_OwnerAndSenderMismatch() public {
         vm.prank(address(_owner));
         vm.expectRevert("KYC required");
-        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0, _blsPublicKey);
     }
 
     /* ============ Upgrade tests ============ */
@@ -112,7 +112,7 @@ contract KintoWalletFactoryTest is SharedSetup {
             KintoWallet(payable(address(new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry))));
 
         // deploy walletv1 through wallet factory and initializes it
-        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0, _blsPublicKey);
 
         // Upgrade all implementations
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
@@ -128,7 +128,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         // deploy walletv1 through wallet factory and initializes it
         vm.broadcast(_owner);
-        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0, _blsPublicKey);
 
         // upgrade all implementations
         vm.expectRevert("Ownable: caller is not the owner");

@@ -11,7 +11,7 @@ interface IKintoWallet {
 
     /* ============ State Change ============ */
 
-    function initialize(address anOwner, address _recoverer) external;
+    function initialize(address anOwner, address _recoverer, uint256[4] calldata _blsPublicKey) external;
 
     function execute(address dest, uint256 value, bytes calldata func) external;
 
@@ -20,6 +20,8 @@ interface IKintoWallet {
     function setSignerPolicy(uint8 policy) external;
 
     function resetSigners(address[] calldata newSigners, uint8 policy) external;
+
+    function setPublicKey(uint256[4] calldata _blsPublicKey) external;
 
     function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external;
 
@@ -40,6 +42,8 @@ interface IKintoWallet {
     function getOwnersCount() external view returns (uint256);
 
     function getNonce() external view returns (uint256);
+
+    function blsPublicKey(uint256 _idx) external view returns (uint256 blsKeyPart);
 
     /* ============ Constants and attrs ============ */
 

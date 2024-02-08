@@ -14,6 +14,22 @@ import "../../src/wallet/KintoWalletFactory.sol";
 abstract contract UserOp is Test {
     using ECDSAUpgradeable for bytes32;
 
+    // BLS private keys (generated with generateBLSKeys.js)
+    // Private Key: 037d00d16f91fd0e3dc1c1c177a7ed79481a40cbebfb016fbb20c1b7583f041c
+    // Public Key: 0228e4853fe81501f0aea66f7514da24f41c3f8641a00a5ee093d8c0277066d43c
+    // x1, x2, y1, y2: 2, 40, 228, 133
+    uint256 _user1BlsPrivateKey = 0x07851f4ea32a518c86cdf71fddcf961a9e6e1f8a8cb4b4a163591b8426c31c49;
+
+    // If we would have more than 1 private key, we would need to aggregate the public keys using aggregatePublicKeys.js
+    // Aggregated Public Key: b27c8fae0351bf33c353229909259b776e68da75424eacd6898e56a739ff86b95c269948150c824d5aa3ad757912ed77
+
+    uint256[4] _blsPublicKey = [
+        0x15ff678bfd651391ff3592e5c61298299288a7da19e0c97cfb9d0805dbd7e968,
+        0x0,
+        0x2f3e9f70a1b5f98f75dcf23e348cc5f29260446f9cb5f156106f507aaa7c995e,
+        0x0
+    ];
+
     // private keys
     uint256 _ownerPk = 1;
     uint256 _secondownerPk = 2;
@@ -23,6 +39,7 @@ abstract contract UserOp is Test {
     uint256 _kycProviderPk = 6;
     uint256 _recovererPk = 7;
     uint256 _funderPk = 8;
+    uint256 _bundlerPk = 9;
 
     // users
     address payable _owner = payable(vm.addr(_ownerPk));
@@ -33,6 +50,7 @@ abstract contract UserOp is Test {
     address payable _kycProvider = payable(vm.addr(_kycProviderPk));
     address payable _recoverer = payable(vm.addr(_recovererPk));
     address payable _funder = payable(vm.addr(_funderPk));
+    address payable _bundler = payable(vm.addr(_bundlerPk));
 
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;

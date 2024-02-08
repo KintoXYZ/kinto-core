@@ -13,7 +13,9 @@ interface IKintoWalletFactory {
 
     function upgradeAllWalletImplementations(IKintoWallet newImplementationWallet) external;
 
-    function createAccount(address owner, address recoverer, bytes32 salt) external returns (IKintoWallet ret);
+    function createAccount(address owner, address recoverer, bytes32 salt, uint256[4] calldata blsPublicKey)
+        external
+        returns (IKintoWallet ret);
 
     function deployContract(address contractOwner, uint256 amount, bytes memory bytecode, bytes32 salt)
         external
@@ -34,7 +36,10 @@ interface IKintoWalletFactory {
 
     /* ============ Basic Viewers ============ */
 
-    function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
+    function getAddress(address owner, address recoverer, bytes32 salt, uint256[4] calldata blsPublicKey)
+        external
+        view
+        returns (address);
 
     function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);
 
