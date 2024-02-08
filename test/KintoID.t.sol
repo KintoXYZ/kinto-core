@@ -454,7 +454,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
         vm.prank(_user);
-        vm.expectRevert("Only mint or burn transfers are allowed");
+        vm.expectRevert("Only recovery, mint or burn transfers are allowed");
         _kintoID.safeTransferFrom(_user, _user2, tokenIdx);
     }
 

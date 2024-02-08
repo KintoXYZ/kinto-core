@@ -186,6 +186,7 @@ contract KintoID is
      * @param _to New address
      */
     function transferOnRecovery(address _from, address _to) external override {
+        require(balanceOf(_from) > 0 && balanceOf(_to) == 0, "Invalid transfer");
         require(
             msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "Only the wallet factory or owner can trigger this"
