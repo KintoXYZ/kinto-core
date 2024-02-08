@@ -34,6 +34,10 @@ contract KintoWalletV4 is KintoWallet {
     {}
 }
 
+contract KintoAppRegistryV3 is KintoAppRegistry {
+    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
+}
+
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 

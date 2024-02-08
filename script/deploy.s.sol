@@ -263,7 +263,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             implementation = Create2.deploy(0, 0, bytecode);
 
             require(implementation != address(0), "Failed to deploy implementation");
-            if (write) console.log(contractName, "implementation deployed at:", proxy);
+            if (write) console.log(contractName, "implementation deployed at:", implementation);
 
             // write address to a file
             if (write) {

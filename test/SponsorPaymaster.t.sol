@@ -98,37 +98,63 @@ contract SponsorPaymasterTest is SharedSetup {
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
 
-    function testWithdrawTokensTo() public {
-        uint256 balance = address(_user).balance;
-        approveKYC(_kycProvider, _user, _userPk);
+    function testWithdrawTokensTo(uint256 someonePk) public {
+        // ensure the private key is within the valid range for Ethereum
+        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+        address someone = vm.addr(someonePk);
+        vm.assume(someone.code.length == 0); // assume someone is an EOA
+        vm.assume(someone != address(0)); // assume someone is not the zero address
 
-        vm.startPrank(_user);
+        // add some balance
+        vm.deal(someone, 10 ether);
 
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
-        assertEq(address(_user).balance, balance - 5e18);
+        // user must be KYC'd (skip owner since it's already KYC'd)
+        if (someone != _owner) approveKYC(_kycProvider, someone, someonePk);
+
+        uint256 balance = address(someone).balance;
+
+        vm.startPrank(someone);
+
+        _paymaster.addDepositFor{value: 5 ether}(address(someone));
+        assertEq(address(someone).balance, balance - 5 ether);
 
         _paymaster.unlockTokenDeposit();
         vm.roll(block.number + 1); // advance block to allow withdraw
-        _paymaster.withdrawTokensTo(address(_user), 5e18);
 
-        assertEq(address(_user).balance, balance);
+        _paymaster.withdrawTokensTo(address(someone), 5 ether);
+        assertEq(address(someone).balance, balance);
 
         vm.stopPrank();
     }
 
-    function testWithdrawTokensTo_OwnerCanDepositStakeAndWithdraw() public {
-        uint256 balance = address(_owner).balance;
+    function testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256 someonePk) public {
+        // ensure the private key is within the valid range for Ethereum
+        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+        address someone = vm.addr(someonePk);
+        vm.assume(someone.code.length == 0); // assume someone is an EOA
+        vm.assume(someone != address(0) && someone != _user); // assume someone is not the zero address and not the _user
 
-        vm.startPrank(_owner);
+        // add some balance
+        vm.deal(someone, 10 ether);
 
-        _paymaster.addDepositFor{value: 5e18}(address(_owner));
-        assertEq(address(_owner).balance, balance - 5e18);
+        // user must be KYC'd (skip owner since it's already KYC'd)
+        if (someone != _owner) approveKYC(_kycProvider, someone, someonePk);
+
+        uint256 someoneBalance = address(someone).balance;
+        uint256 userBalance = address(_user).balance;
+
+        vm.startPrank(someone);
+
+        _paymaster.addDepositFor{value: 5 ether}(address(someone));
+        assertEq(address(someone).balance, someoneBalance - 5 ether);
 
         _paymaster.unlockTokenDeposit();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + 1); // advance block to allow withdraw
 
-        _paymaster.withdrawTokensTo(address(_owner), 5e18);
-        assertEq(address(_owner).balance, balance);
+        // withdraw tokens to _user
+        _paymaster.withdrawTokensTo(address(_user), 5 ether);
+        assertEq(address(someone).balance, someoneBalance - 5 ether);
+        assertEq(address(_user).balance, userBalance + 5 ether);
 
         vm.stopPrank();
     }
@@ -141,14 +167,44 @@ contract SponsorPaymasterTest is SharedSetup {
         _paymaster.addDepositFor{value: 5e18}(_user);
         assertEq(_user.balance, balance - 5e18);
 
-        // user unlocks token deposit
-        _paymaster.unlockTokenDeposit();
-
         // user withdraws 5 eth
         vm.expectRevert("SP: must unlockTokenDeposit");
+        vm.prank(_user);
         _paymaster.withdrawTokensTo(_user, 5e18);
 
         assertEq(_user.balance, balance - 5e18);
+    }
+
+    function testWithdrawTokensTo_RevertWhen_TargetIsZeroAddress() public {
+        uint256 balance = _user.balance;
+
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(_owner);
+
+        vm.prank(_owner);
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        // _owner withdraws 5 eth
+        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.prank(_owner);
+        _paymaster.withdrawTokensTo(address(0), 5e18);
+    }
+
+    function testWithdrawTokensTo_RevertWhen_TargetIsContract() public {
+        uint256 balance = _user.balance;
+
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(_owner);
+
+        vm.prank(_owner);
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        // _owner withdraws 5 eth
+        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.prank(_owner);
+        _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
     }
 
     function testWithrawTo_WhenCallerIsOwner() public {
