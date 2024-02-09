@@ -82,7 +82,7 @@ interface IKintoID {
 
     function nonces(address _account) external view returns (uint256);
 
-    function enabledRecoveryTransfer(address _from) external view returns (address);
+    function recoveryTargets(address _from) external view returns (address);
 
     function domainSeparator() external view returns (bytes32);
 

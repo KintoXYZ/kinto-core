@@ -59,8 +59,8 @@ contract KintoID is
 
     bytes32 public override domainSeparator;
 
-    // This mapping is used to enable recovery transfer
-    mapping(address => address) public override enabledRecoveryTransfer;
+    // Indicates which accounts are allowed to transfer their Kinto ID to another account
+    mapping(address => address) public override recoveryTargets;
 
     address public immutable override walletFactory;
 
@@ -191,9 +191,9 @@ contract KintoID is
             msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "Only the wallet factory or admins can trigger this"
         );
-        enabledRecoveryTransfer[_from] = _to;
+        recoveryTargets[_from] = _to;
         _transfer(_from, _to, tokenOfOwnerByIndex(_from, 0));
-        enabledRecoveryTransfer[_from] = address(0);
+        recoveryTargets[_from] = address(0);
     }
 
     /**
@@ -496,7 +496,7 @@ contract KintoID is
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
         require(
-            enabledRecoveryTransfer[from] == to || (from == address(0) && to != address(0))
+            recoveryTargets[from] == to || (from == address(0) && to != address(0))
                 || (from != address(0) && to == address(0)),
             "Only recovery, mint or burn transfers are allowed"
         );
