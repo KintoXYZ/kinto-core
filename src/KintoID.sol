@@ -494,8 +494,8 @@ contract KintoID is
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
         require(
-            isSanctionsSafe(from) && recoveryTargets[from] == to || (from == address(0) && to != address(0))
-                || (from != address(0) && to == address(0)),
+            (from != address(0) && recoveryTargets[from] == to && isSanctionsSafe(from))
+                || (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
             "Only recovery, mint or burn transfers are allowed"
         );
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
