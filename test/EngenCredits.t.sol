@@ -68,7 +68,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
 
-        vm.expectRevert("EC: Transfers Already enabled");
+        vm.expectRevert(EngenCredits.TransfersAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
     }
@@ -107,7 +107,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
 
-        vm.expectRevert("EC: Burns Already enabled");
+        vm.expectRevert(EngenCredits.BurnsAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
     }
@@ -146,7 +146,7 @@ contract EngenCreditsTest is SharedSetup {
     function testTransfer_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert("EC: Transfers not enabled");
+        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -154,7 +154,7 @@ contract EngenCreditsTest is SharedSetup {
     function testBurn_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_user, 100);
-        vm.expectRevert("EC: Transfers not enabled");
+        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -209,7 +209,7 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        vm.expectRevert("EC: Invalid input");
+        vm.expectRevert(EngenCredits.LengthMismatch.selector);
         _engenCredits.setPhase1Override(addresses, points);
     }
 
@@ -300,7 +300,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: No tokens to mint");
+        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.NoTokensToMint.selector));
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
     }
@@ -328,7 +328,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: Mint not allowed after completion");
+        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.MintNotAllowed.selector));
     }
 
     function testMintCredits_RevertWhen_BurnsEnabled() public {
@@ -354,6 +354,6 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: Mint not allowed after completion");
+        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.MintNotAllowed.selector));
     }
 }

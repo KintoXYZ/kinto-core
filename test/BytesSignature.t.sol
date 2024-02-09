@@ -49,7 +49,7 @@ contract ByteSignatureTest is UserOp {
 
     function testExtract_RevertWhen_InvalidLength() public {
         bytes memory invalidSignature = hex"abcd";
-        vm.expectRevert(abi.encodeWithSelector(ByteSignature.InvalidSignatureLength.selector));
+        vm.expectRevert(ByteSignature.InvalidSignatureLength.selector);
         ByteSignature.extractSignatures(invalidSignature, 1);
     }
 }

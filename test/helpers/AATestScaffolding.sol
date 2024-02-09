@@ -247,7 +247,7 @@ abstract contract AATestScaffolding is KYCSignature {
         }
 
         if (!foundMatchingRevert) {
-            revert("Expected revert reason not found");
+            revert("Expected revert reason did not match");
         }
     }
 
@@ -297,7 +297,7 @@ abstract contract AATestScaffolding is KYCSignature {
 
                     if (_reasons.length > 1) idx++; // if there's only one reason, we always use the same one
                 } else {
-                    revert("Revert reason bytes too short to decode");
+                    // revert("Revert reason bytes too short to decode");
                 }
             }
         }

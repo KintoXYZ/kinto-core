@@ -56,7 +56,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.OnlyOwner.selector));
+        vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
         _paymaster.upgradeTo(address(_newImplementation));
     }
 
@@ -79,21 +79,21 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testAddDepositFor_RevertWhen_ZeroValue() public {
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.InvalidAmount.selector));
+        vm.expectRevert(ISponsorPaymaster.InvalidAmount.selector);
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 0}(address(_owner));
     }
 
     function testAddDepositFor_RevertWhen_SenderIsNotKYCd() public {
         assertEq(_kintoID.isKYC(address(_user)), false);
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.SenderKYCRequired.selector));
+        vm.expectRevert(ISponsorPaymaster.SenderKYCRequired.selector);
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
 
     function testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() public {
         assertEq(_kintoID.isKYC(address(_user)), false);
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.AccountKYCRequired.selector));
+        vm.expectRevert(ISponsorPaymaster.AccountKYCRequired.selector);
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
@@ -168,7 +168,7 @@ contract SponsorPaymasterTest is SharedSetup {
         assertEq(_user.balance, balance - 5e18);
 
         // user withdraws 5 eth
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.TokenDepositLocked.selector));
+        vm.expectRevert(ISponsorPaymaster.TokenDepositLocked.selector);
         vm.prank(_user);
         _paymaster.withdrawTokensTo(_user, 5e18);
 
@@ -186,7 +186,7 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.roll(block.number + 1); // advance block to allow withdraw
 
         // _owner withdraws 5 eth
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.InvalidTarget.selector));
+        vm.expectRevert(ISponsorPaymaster.InvalidTarget.selector);
         vm.prank(_owner);
         _paymaster.withdrawTokensTo(address(0), 5e18);
     }
@@ -202,7 +202,7 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.roll(block.number + 1); // advance block to allow withdraw
 
         // _owner withdraws 5 eth
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.InvalidTarget.selector));
+        vm.expectRevert(ISponsorPaymaster.InvalidTarget.selector);
         vm.prank(_owner);
         _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
     }
@@ -282,7 +282,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.verificationGasLimit = _paymaster.COST_OF_POST() - 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.GasOutsideRangeForPostOp.selector));
+        vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -300,7 +300,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.verificationGasLimit = _paymaster.MAX_COST_OF_VERIFICATION() + 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.GasOutsideRangeForPostOp.selector));
+        vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -318,7 +318,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.preVerificationGas = _paymaster.MAX_COST_OF_PREVERIFICATION() + 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.GasTooHighForVerification.selector));
+        vm.expectRevert(ISponsorPaymaster.GasTooHighForVerification.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -336,7 +336,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.paymasterAndData = new bytes(21);
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.PaymasterAndDataLengthInvalid.selector));
+        vm.expectRevert(ISponsorPaymaster.PaymasterAndDataLengthInvalid.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -355,7 +355,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.maxPriorityFeePerGas = 100 ether;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.GasTooHighForUserOp.selector));
+        vm.expectRevert(ISponsorPaymaster.GasTooHighForUserOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -613,13 +613,13 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_AddressIsZero() public {
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.InvalidRegistry.selector));
+        vm.expectRevert(ISponsorPaymaster.InvalidRegistry.selector);
         vm.prank(_owner);
         _paymaster.setAppRegistry(address(0));
     }
 
     function testSetAppRegistry_RevertWhen_SameAddress() public {
-        vm.expectRevert(abi.encodeWithSelector(ISponsorPaymaster.InvalidRegistry.selector));
+        vm.expectRevert(ISponsorPaymaster.InvalidRegistry.selector);
         vm.prank(_owner);
         _paymaster.setAppRegistry(address(_kintoAppRegistry));
     }
