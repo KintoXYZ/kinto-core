@@ -59,7 +59,7 @@ contract KintoID is
 
     bytes32 public override domainSeparator;
 
-    // This mapping is used to enable recovery transfer
+    // Indicates which accounts are allowed to transfer their Kinto ID to another account
     mapping(address => address) public override recoveryTargets;
 
     address public immutable override walletFactory;
