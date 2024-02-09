@@ -40,7 +40,7 @@ contract KYCViewerTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
-        vm.expectRevert("only owner");
+        vm.expectRevert(IKYCViewer.OnlyOwner.selector);
         vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));
     }
