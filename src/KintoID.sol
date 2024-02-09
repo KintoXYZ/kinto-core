@@ -64,8 +64,6 @@ contract KintoID is
 
     address public immutable override walletFactory;
 
-    /* ============ Modifiers ============ */
-
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
