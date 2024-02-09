@@ -189,7 +189,7 @@ contract KintoID is
         require(balanceOf(_from) > 0 && balanceOf(_to) == 0, "Invalid transfer");
         require(
             msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
-            "Only the wallet factory or owner can trigger this"
+            "Only the wallet factory or admins can trigger this"
         );
         enabledRecoveryTransfer[_from] = _to;
         _transfer(_from, _to, tokenOfOwnerByIndex(_from, 0));
