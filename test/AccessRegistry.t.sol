@@ -35,16 +35,10 @@ contract AccessRegistryTest is UserOp {
     function setUp() public {
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
         IAccessRegistry accessRegistryImpl = new AccessRegistry();
-        UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(
-            address(accessRegistryImpl),
-            ""
-        );
+        UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
-        IAccessPoint accessPointImpl = new AccessPoint(
-            entryPoint,
-            accessRegistry
-        );
+        IAccessPoint accessPointImpl = new AccessPoint(entryPoint, accessRegistry);
 
         vm.prank(_owner);
         accessRegistry.initialize(accessPointImpl);
@@ -63,12 +57,7 @@ contract AccessRegistryTest is UserOp {
         vm.prank(_owner);
         accessRegistry.allowWorkflow(workflow);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessRegistry.WorkflowAlreadyAllowed.selector,
-                workflow
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessRegistry.WorkflowAlreadyAllowed.selector, workflow));
         vm.prank(_owner);
         accessRegistry.allowWorkflow(workflow);
     }
@@ -86,14 +75,8 @@ contract AccessRegistryTest is UserOp {
     }
 
     function testDisallowWorkflow_RevertWhen_AlreadyDisallowed() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessRegistry.WorkflowAlreadyDisallowed.selector,
-                workflow
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessRegistry.WorkflowAlreadyDisallowed.selector, workflow));
         vm.prank(_owner);
         accessRegistry.disallowWorkflow(workflow);
     }
-
 }
