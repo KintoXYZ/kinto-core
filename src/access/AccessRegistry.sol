@@ -119,12 +119,18 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /// @inheritdoc IAccessRegistry
     function disallowWorkflow(address workflow) external onlyOwner {
+        if(_workflows[workflow] == false) {
+            revert WorkflowAlreadyDisallowed(workflow);
+        }
         _workflows[workflow] = false;
         emit WorkflowStatusChanged(workflow, false);
     }
 
     /// @inheritdoc IAccessRegistry
     function allowWorkflow(address workflow) external onlyOwner {
+        if(_workflows[workflow] == true) {
+            revert WorkflowAlreadyAllowed(workflow);
+        }
         _workflows[workflow] = true;
         emit WorkflowStatusChanged(workflow, true);
     }

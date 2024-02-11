@@ -13,6 +13,12 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 interface IAccessRegistry {
     /* ============ Errors ============ */
 
+    /// @notice Thrown when a target workflow is already disallowed.
+    error WorkflowAlreadyDisallowed(address workflow);
+
+    /// @notice Thrown when a target workflow is already allowed.
+    error WorkflowAlreadyAllowed(address workflow);
+
     /// @notice Thrown when a function requires the user to have a accessPoint.
     error UserDoesNotHaveAccessPoint(address user);
 
