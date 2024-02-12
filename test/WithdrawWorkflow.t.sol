@@ -170,7 +170,7 @@ contract WithdrawWorkflowTest is UserOp {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         return createUserOperation(
-            1,
+            block.chainid,
             address(accessPoint),
             address(withdrawWorkflow),
             accessPoint.getNonce(),
