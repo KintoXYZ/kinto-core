@@ -79,8 +79,8 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
      * Return the hash we're going to sign off-chain (and validate on-chain)
      * this method is called by the off-chain service, to sign the request.
      * it is called on-chain from the validatePaymasterUserOp, to validate the signature.
-     * note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
-     * which will carry the signature itself.
+     * note that this signature covers all fields of the UserOperation, except
+     * the "paymasterAndData" and "signature" fields, which will carry the signature itself.
      */
     function getHash(UserOperation calldata userOp, uint48 validUntil, uint48 validAfter)
         public
