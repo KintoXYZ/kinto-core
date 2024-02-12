@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
+import {IKintoID} from "./IKintoID.sol";
 
 interface IKintoAppRegistry {
     /* ============ Structs ============ */
@@ -55,6 +56,8 @@ interface IKintoAppRegistry {
     function isSponsored(address _app, address _contract) external view returns (bool);
 
     function walletFactory() external view returns (IKintoWalletFactory);
+
+    function kintoID() external view returns (IKintoID);
 
     function tokenIdToApp(uint256 _tokenId) external view returns (address);
 

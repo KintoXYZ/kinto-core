@@ -111,7 +111,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i]);
         }
-        // If can transact, cancel recovery
+        // if can transact, cancel recovery
         inRecovery = 0;
     }
 
@@ -335,6 +335,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
     }
 
+    // @notice ensures signer has signed the hash
     function _verifySingleSignature(address signer, bytes32 hashData, bytes memory signature)
         private
         pure
@@ -346,6 +347,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return _packValidationData(false, 0, 0);
     }
 
+    // @notice ensures required signers have signed the hash
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
         // calculate required signers
         uint256 requiredSigners =
@@ -371,27 +373,31 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return _packValidationData(requiredSigners != 0, 0, 0);
     }
 
+    // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
+    // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: invalid array");
+        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: signers exceed max limit");
         require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), "KW-rs: KYC Required");
-        require(
-            newSigners.length == 1 || (newSigners.length == 2 && newSigners[0] != newSigners[1])
-                || (
-                    newSigners.length == 3 && (newSigners[0] != newSigners[1]) && (newSigners[1] != newSigners[2])
-                        && newSigners[0] != newSigners[2]
-                ),
-            "duplicate owners"
-        );
+
+        // ensure no duplicate signers
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            for (uint256 j = i + 1; j < newSigners.length; j++) {
+                require(newSigners[i] != newSigners[j], "KW-rs: duplicate signers");
+            }
+        }
+
+        // ensure all signers are valid
         for (uint256 i = 0; i < newSigners.length; i++) {
             require(newSigners[i] != address(0), "KW-rs: invalid signer address");
         }
+
+        emit SignersChanged(owners, newSigners);
         owners = newSigners;
-        emit SignersChanged(newSigners, owners);
-        // Change policy if needed.
+
+        // change policy if needed
+        require(_policy == 1 || newSigners.length > 1, "KW-rs: invalid policy for single signer");
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
-        } else {
-            require(_policy == 1 || newSigners.length > 1, "KW-rs: invalid policy");
         }
     }
 
@@ -433,7 +439,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV4 is KintoWallet {
+contract KintoWalletV5 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

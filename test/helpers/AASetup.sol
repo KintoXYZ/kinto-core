@@ -16,7 +16,7 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
     function _checkAccountAbstraction()
         internal
         returns (
-            KintoID _kintoIDv1,
+            KintoID _kintoID,
             EntryPoint _entryPoint,
             KintoWalletFactory _walletFactory,
             SponsorPaymaster _sponsorPaymaster
@@ -28,9 +28,10 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
             console.log("Kinto ID proxy not deployed at", address(kintoProxyAddr));
             revert("Kinto ID not deployed");
         }
-        _kintoIDv1 = KintoID(address(kintoProxyAddr));
+        _kintoID = KintoID(address(kintoProxyAddr));
+
         // Entry Point
-        address entryPointAddr = _getChainDeployment("EntryPoint");
+        address entryPointAddr = _getChainDeployment("EntryPoint-impl");
         if (!isContract(entryPointAddr)) {
             console.log("Entry Point not deployed at", address(entryPointAddr));
             revert("Entry Point not deployed");
@@ -44,6 +45,7 @@ abstract contract AASetup is Create2Helper, ArtifactsReader {
             revert("Wallet Factory Proxy not deployed");
         }
         _walletFactory = KintoWalletFactory(payable(walletFactoryAddr));
+
         // Sponsor Paymaster
         address sponsorProxyAddr = _getChainDeployment("SponsorPaymaster");
         if (!isContract(sponsorProxyAddr)) {

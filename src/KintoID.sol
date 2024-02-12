@@ -38,7 +38,8 @@ contract KintoID is
     event SanctionRemoved(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
     event AccountsMonitoredAt(address indexed _signer, uint256 _accountsCount, uint256 _timestamp);
 
-    /* ============ Constants ============ */
+    /* ============ Constants & Immutables ============ */
+
     bytes32 public constant override KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
@@ -56,6 +57,8 @@ contract KintoID is
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
+    bytes32 public domainSeparator;
+
     /* ============ Modifiers ============ */
 
     /* ============ Constructor & Initializers ============ */
@@ -71,10 +74,19 @@ contract KintoID is
         __ERC721Burnable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(KYC_PROVIDER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
+
         lastMonitoredAt = block.timestamp;
+        domainSeparator = _domainSeparator();
+    }
+
+    function initializeV6() external {
+        if (domainSeparator == 0) {
+            domainSeparator = _domainSeparator();
+        }
     }
 
     /**
@@ -412,15 +424,10 @@ contract KintoID is
         }
         require(size == 0, "Signer must be an EOA");
 
-        bytes32 eip712MessageHash = _getEIP712Message(_signature);
+        bytes32 eip712MessageHash =
+            keccak256(abi.encodePacked("\x19\x01", domainSeparator, _hashSignatureData(_signature)));
         require(_signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature), "Invalid Signer");
         _;
-    }
-
-    function _getEIP712Message(SignatureData memory signatureData) internal view returns (bytes32) {
-        bytes32 domainSeparator = _domainSeparator();
-        bytes32 structHash = _hashSignatureData(signatureData);
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
 
     /* ============ EIP-712 Helpers ============ */
@@ -493,6 +500,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV4 is KintoID {
+contract KintoIDV6 is KintoID {
     constructor() KintoID() {}
 }

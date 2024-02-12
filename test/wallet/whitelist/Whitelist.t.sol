@@ -2,9 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract WhitelistTest is KintoWalletTest {
+contract WhitelistTest is SharedSetup {
     /* ============ Whitelist ============ */
 
     function testWhitelistApp() public {
@@ -18,7 +18,6 @@ contract WhitelistTest is KintoWalletTest {
             privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
         );
 
-        // execute the transaction via the entry point
         _entryPoint.handleOps(userOps, payable(_owner));
 
         assertTrue(_kintoWallet.appWhitelist(address(counter)));
@@ -35,7 +34,7 @@ contract WhitelistTest is KintoWalletTest {
     //     assertEq(counter.count(), 0);
 
     //     // (2). fund paymaster for Counter contract
-    //     fundSponsorForApp(address(counter));
+    //     fundSponsorForApp(_owner, address(counter));
 
     //     // (3). Create whitelist app user op
     //     UserOperation[] memory userOps = new UserOperation[](1);

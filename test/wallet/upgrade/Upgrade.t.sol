@@ -2,16 +2,16 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
-import "../../KintoWallet.t.sol";
+import "../../SharedSetup.t.sol";
 
-contract PolicyTest is KintoWalletTest {
-    /* ============ Upgrade Tests ============ */
+contract PolicyTest is SharedSetup {
+    /* ============ Upgrade tests ============ */
 
     // FIXME: I think these upgrade tests are wrong because, basically, the KintoWallet.sol does not have
     // an upgrade function. The upgrade function is in the UUPSUpgradeable.sol contract and the wallet uses the Beacon proxy.
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry);
 
         // try calling upgradeTo from _owner wallet to upgrade _owner wallet
         UserOperation memory userOp = _createUserOperation(
@@ -34,14 +34,14 @@ contract PolicyTest is KintoWalletTest {
         assertRevertReasonEq("Address: low-level call with value failed");
     }
 
-    function test_RevertWhen_OthersCannotUpgrade() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         // create a wallet for _user
         approveKYC(_kycProvider, _user, _userPk);
         vm.broadcast(_user);
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoIDv1, _kintoAppRegistry);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry);
 
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         uint256 nonce = userWallet.getNonce();
@@ -59,7 +59,6 @@ contract PolicyTest is KintoWalletTest {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // execute the transaction via the entry point
         // @dev handleOps seems to fail silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(_entryPoint.getUserOpHash(userOp), userOp.sender, userOp.nonce, bytes(""));

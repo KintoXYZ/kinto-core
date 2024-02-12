@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IFaucet} from "./interfaces/IFaucet.sol";
 import {IKintoWalletFactory} from "./interfaces/IKintoWalletFactory.sol";
+import {IKintoID} from "./interfaces/IKintoID.sol";
 
 /**
  * @title Faucet
@@ -19,9 +20,11 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+
     event Claim(address indexed _to, uint256 _timestamp);
 
     /* ============ Constants ============ */
+
     uint256 public constant CLAIM_AMOUNT = 1 ether / 2500;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 
@@ -35,10 +38,13 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
+    IKintoID public immutable kintoID;
+
     /* ============ Constructor & Upgrades ============ */
     constructor(address _kintoWalletFactory) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
+        kintoID = IKintoID(walletFactory.kintoID());
     }
 
     /**
@@ -75,6 +81,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      */
     function claimKintoETH(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
         require(msg.sender == address(walletFactory), "Only wallet factory can call this");
+        kintoID.isKYC(_signatureData.signer);
         _privateClaim(_signatureData.signer);
         nonces[_signatureData.signer]++;
     }
@@ -132,6 +139,6 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 }
 
-contract FaucetV3 is Faucet {
+contract FaucetV4 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }

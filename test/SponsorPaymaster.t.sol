@@ -12,7 +12,7 @@ import "../src/paymasters/SponsorPaymaster.sol";
 import "../src/sample/Counter.sol";
 import "../src/interfaces/IKintoWallet.sol";
 
-import "./KintoWallet.t.sol";
+import "./SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
@@ -25,7 +25,7 @@ contract SponsorPaymasterUpgrade is SponsorPaymaster {
     }
 }
 
-contract SponsorPaymasterTest is KintoWalletTest {
+contract SponsorPaymasterTest is SharedSetup {
     function setUp() public override {
         super.setUp();
         vm.deal(_user, 1e20);
@@ -34,22 +34,27 @@ contract SponsorPaymasterTest is KintoWalletTest {
     function testUp() public override {
         super.testUp();
         assertEq(_paymaster.COST_OF_POST(), 200_000);
+        assertEq(_paymaster.userOpMaxCost(), 0.03 ether);
     }
+
+    /* ============ Events ============ */
+
+    event AppRegistrySet(address oldRegistry, address newRegistry);
+    event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
     /* ============ Upgrade ============ */
 
-    function testOwnerCanUpgrade() public {
+    function testUpgradeTo() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
         _paymaster.upgradeTo(address(_newImplementation));
 
-        // re-wrap the _proxy
-        _newImplementation = SponsorPaymasterUpgrade(address(_proxyPaymaster));
+        _newImplementation = SponsorPaymasterUpgrade(address(_paymaster));
         assertEq(_newImplementation.newFunction(), 1);
     }
 
-    function testUpgrade_RevertWhen_CallerIsNotOwner() public {
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert("SP: not owner");
         _paymaster.upgradeTo(address(_newImplementation));
@@ -57,51 +62,156 @@ contract SponsorPaymasterTest is KintoWalletTest {
 
     /* ============ Deposit & Stake ============ */
 
-    function testOwnerCanDepositStakeAndWithdraw() public {
-        vm.startPrank(_owner);
+    function testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() public {
         uint256 balance = address(_owner).balance;
+        vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_owner));
         assertEq(address(_owner).balance, balance - 5e18);
-        _paymaster.unlockTokenDeposit();
-        vm.roll(block.number + 1);
-        _paymaster.withdrawTokensTo(address(_owner), 5e18);
-        assertEq(address(_owner).balance, balance);
-        vm.stopPrank();
+        assertEq(_paymaster.balances(_owner), 5e18);
     }
 
-    function testUserCanDepositStakeAndWithdraw() public {
-        vm.startPrank(_user);
-        uint256 balance = address(_user).balance;
+    function testAddDepositFor_WhenAccountIsContract() public {
+        uint256 balance = address(_owner).balance;
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        assertEq(address(_owner).balance, balance - 5e18);
+        assertEq(_paymaster.balances(_owner), 5e18);
+    }
+
+    function testAddDepositFor_RevertWhen_ZeroValue() public {
+        vm.expectRevert("SP: requires a deposit");
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 0}(address(_owner));
+    }
+
+    function testAddDepositFor_RevertWhen_SenderIsNotKYCd() public {
+        assertEq(_kintoID.isKYC(address(_user)), false);
+        vm.expectRevert("SP: sender KYC required");
+        vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
-        assertEq(address(_user).balance, balance - 5e18);
+    }
+
+    function testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() public {
+        assertEq(_kintoID.isKYC(address(_user)), false);
+        vm.expectRevert("SP: account KYC required");
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+    }
+
+    function testWithdrawTokensTo(uint256 someonePk) public {
+        // ensure the private key is within the valid range for Ethereum
+        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+        address someone = vm.addr(someonePk);
+        vm.assume(someone.code.length == 0); // assume someone is an EOA
+        vm.assume(someone != address(0)); // assume someone is not the zero address
+
+        // add some balance
+        vm.deal(someone, 10 ether);
+
+        // user must be KYC'd (skip owner since it's already KYC'd)
+        if (someone != _owner) approveKYC(_kycProvider, someone, someonePk);
+
+        uint256 balance = address(someone).balance;
+
+        vm.startPrank(someone);
+
+        _paymaster.addDepositFor{value: 5 ether}(address(someone));
+        assertEq(address(someone).balance, balance - 5 ether);
+
         _paymaster.unlockTokenDeposit();
-        // advance block to allow withdraw
-        vm.roll(block.number + 1);
-        _paymaster.withdrawTokensTo(address(_user), 5e18);
-        assertEq(address(_user).balance, balance);
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        _paymaster.withdrawTokensTo(address(someone), 5 ether);
+        assertEq(address(someone).balance, balance);
+
         vm.stopPrank();
     }
 
-    function test_RevertWhen_UserCanDepositStakeAndWithdrawWithoutRoll() public {
-        // user deposits 5 eth
-        uint256 balance = address(this).balance;
-        _paymaster.addDepositFor{value: 5e18}(address(this));
-        assertEq(address(this).balance, balance - 5e18);
+    function testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256 someonePk) public {
+        // ensure the private key is within the valid range for Ethereum
+        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+        address someone = vm.addr(someonePk);
+        vm.assume(someone.code.length == 0); // assume someone is an EOA
+        vm.assume(someone != address(0) && someone != _user); // assume someone is not the zero address and not the _user
 
-        // user unlocks token deposit
+        // add some balance
+        vm.deal(someone, 10 ether);
+
+        // user must be KYC'd (skip owner since it's already KYC'd)
+        if (someone != _owner) approveKYC(_kycProvider, someone, someonePk);
+
+        uint256 someoneBalance = address(someone).balance;
+        uint256 userBalance = address(_user).balance;
+
+        vm.startPrank(someone);
+
+        _paymaster.addDepositFor{value: 5 ether}(address(someone));
+        assertEq(address(someone).balance, someoneBalance - 5 ether);
+
         _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        // withdraw tokens to _user
+        _paymaster.withdrawTokensTo(address(_user), 5 ether);
+        assertEq(address(someone).balance, someoneBalance - 5 ether);
+        assertEq(address(_user).balance, userBalance + 5 ether);
+
+        vm.stopPrank();
+    }
+
+    function testWithdrawTokensTo_RevertWhen_DepositLocked() public {
+        uint256 balance = _user.balance;
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_user);
+        _paymaster.addDepositFor{value: 5e18}(_user);
+        assertEq(_user.balance, balance - 5e18);
 
         // user withdraws 5 eth
         vm.expectRevert("SP: must unlockTokenDeposit");
-        _paymaster.withdrawTokensTo(address(this), 5e18);
+        vm.prank(_user);
+        _paymaster.withdrawTokensTo(_user, 5e18);
 
-        assertEq(address(this).balance, balance - 5e18);
+        assertEq(_user.balance, balance - 5e18);
     }
 
-    function testOwnerCanWithdrawAllInEmergency() public {
-        uint256 deposited = _paymaster.getDeposit();
+    function testWithdrawTokensTo_RevertWhen_TargetIsZeroAddress() public {
+        uint256 balance = _user.balance;
 
-        vm.prank(_user);
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(_owner);
+
+        vm.prank(_owner);
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        // _owner withdraws 5 eth
+        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.prank(_owner);
+        _paymaster.withdrawTokensTo(address(0), 5e18);
+    }
+
+    function testWithdrawTokensTo_RevertWhen_TargetIsContract() public {
+        uint256 balance = _user.balance;
+
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(_owner);
+
+        vm.prank(_owner);
+        _paymaster.unlockTokenDeposit();
+        vm.roll(block.number + 1); // advance block to allow withdraw
+
+        // _owner withdraws 5 eth
+        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.prank(_owner);
+        _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
+    }
+
+    function testWithrawTo_WhenCallerIsOwner() public {
+        uint256 deposited = _paymaster.getDeposit();
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
 
         vm.prank(_owner);
@@ -119,16 +229,27 @@ contract SponsorPaymasterTest is KintoWalletTest {
         assertEq(address(_owner).balance, balBefore + deposited);
     }
 
-    function test_RevertWhen_UserCanWithdrawAllInEmergency() public {
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_owner));
-
-        // user deposits 5 eth and then tries to withdraw all
-        vm.startPrank(_user);
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
+    function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
-        vm.stopPrank();
+    }
+
+    function testDepositInfo_WhenCallerDepositsToHimself() public {
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_owner));
+        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(_owner));
+        assertEq(amount, 5e18);
+        assertEq(_unlockBlock, 0);
+    }
+
+    function testDepositInfo_WhenCallerDepositsToSomeoneElse() public {
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.prank(_owner);
+        _paymaster.addDepositFor{value: 5e18}(address(_user));
+
+        (uint256 amount, uint256 _unlockBlock) = _paymaster.depositInfo(address(_user));
+        assertEq(amount, 5e18);
+        assertEq(_unlockBlock, 0);
     }
 
     /* ============ Per-Op: Global Rate limits ============ */
@@ -239,6 +360,39 @@ contract SponsorPaymasterTest is KintoWalletTest {
     }
 
     /* ============ Global Rate limits (tx & batched ops rates) ============ */
+
+    function testAppLimits() public {
+        (uint256 operationCount, uint256 lastOperationTime, uint256 ethCostCount, uint256 costLimitLastOperationTime) =
+            _paymaster.appUserLimit(address(_kintoWallet), address(counter));
+        assertTrue(operationCount == 0);
+        assertTrue(lastOperationTime == 0);
+        assertTrue(ethCostCount == 0);
+        assertTrue(costLimitLastOperationTime == 0);
+
+        uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
+        _incrementCounterTxs(appLimits[1] - 1, address(counter));
+
+        // move time to GAS_LIMIT_PERIOD + 1 and call monitor so we keep the isKYC active
+        vm.warp(block.timestamp + appLimits[2] + 1);
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // increment one more time
+        _incrementCounterTxs(1, address(counter));
+
+        // check limits
+        (operationCount, lastOperationTime, ethCostCount, costLimitLastOperationTime) =
+            _paymaster.appUserLimit(address(_kintoWallet), address(counter));
+        assertTrue(operationCount > 0);
+        assertEq(lastOperationTime, block.timestamp);
+        assertTrue(ethCostCount > 0);
+        assertEq(costLimitLastOperationTime, block.timestamp);
+    }
 
     function testValidatePaymasterUserOp_WithinTxRateLimit() public {
         // fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
@@ -441,6 +595,52 @@ contract SponsorPaymasterTest is KintoWalletTest {
         assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
     }
 
+    function testSetAppRegistry() public {
+        address oldAppRegistry = address(_kintoAppRegistry);
+        address newAppRegistry = address(123);
+
+        vm.expectEmit(true, true, true, true);
+        emit AppRegistrySet(oldAppRegistry, newAppRegistry);
+
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(newAppRegistry);
+        assertEq(address(_paymaster.appRegistry()), newAppRegistry);
+    }
+
+    function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setAppRegistry(address(123));
+    }
+
+    function testSetAppRegistry_RevertWhen_AddressIsZero() public {
+        vm.expectRevert("SP: new registry cannot be 0");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(0));
+    }
+
+    function testSetAppRegistry_RevertWhen_SameAddress() public {
+        vm.expectRevert("SP: new registry cannot be the same");
+        vm.prank(_owner);
+        _paymaster.setAppRegistry(address(_kintoAppRegistry));
+    }
+
+    function testUserOpMaxCost() public {
+        uint256 oldUserOpMaxCost = _paymaster.userOpMaxCost();
+        uint256 newUserOpMaxCost = 123;
+
+        vm.expectEmit(true, true, true, true);
+        emit UserOpMaxCostSet(oldUserOpMaxCost, newUserOpMaxCost);
+
+        vm.prank(_owner);
+        _paymaster.setUserOpMaxCost(newUserOpMaxCost);
+        assertEq(_paymaster.userOpMaxCost(), newUserOpMaxCost);
+    }
+
+    function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _paymaster.setUserOpMaxCost(123);
+    }
+
     // TODO:
     // reset gas limits after periods
     // test doing txs in different days
@@ -512,19 +712,18 @@ contract SponsorPaymasterTest is KintoWalletTest {
         uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
         uint256 estimatedGasPerTx = 0;
         uint256 cumulativeGasUsed = 0;
+
         UserOperation[] memory userOps = new UserOperation[](1);
         while (cumulativeGasUsed < appLimits[3]) {
             if (cumulativeGasUsed + estimatedGasPerTx >= appLimits[3]) return amt;
             userOps[0] = _incrementCounterOps(1, app)[0]; // generate 1 user op
+
             uint256 beforeGas = gasleft();
             _entryPoint.handleOps(userOps, payable(_owner)); // execute the op
-            uint256 afterGas = gasleft();
-            if (amt == 0) estimatedGasPerTx = (beforeGas - afterGas);
+
+            if (amt == 0) estimatedGasPerTx = (beforeGas - gasleft());
             cumulativeGasUsed += estimatedGasPerTx;
             amt++;
         }
     }
-
-    //// events
-    event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
 }

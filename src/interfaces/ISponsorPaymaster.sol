@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
+import {IKintoID} from "./IKintoID.sol";
 
 interface ISponsorPaymaster {
     /* ============ Structs ============ */
@@ -14,7 +15,7 @@ interface ISponsorPaymaster {
 
     /* ============ State Change ============ */
 
-    function initialize(address owner) external;
+    function initialize(address owner, IKintoAppRegistry _appRegistry, IKintoID _kintoID) external;
 
     function setAppRegistry(address _appRegistry) external;
 

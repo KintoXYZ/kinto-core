@@ -39,8 +39,8 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
 }
 
 contract KintoWalletVTest is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoIDv1, IKintoAppRegistry _kintoApp)
-        KintoWallet(_entryPoint, _kintoIDv1, _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
+        KintoWallet(_entryPoint, _kintoID, _kintoApp)
     {}
 }
 
