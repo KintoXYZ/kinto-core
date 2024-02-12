@@ -41,7 +41,7 @@ contract FaucetTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
 
-        vm.expectRevert("only owner");
+        vm.expectRevert(IFaucet.OnlyOwner.selector);
         _faucet.upgradeTo(address(_newImpl));
     }
 
@@ -56,7 +56,7 @@ contract FaucetTest is SharedSetup {
     function testStartFaucet_RevertWhen_AmountIsLess(uint256 amt) public {
         vm.assume(amt < _faucet.FAUCET_AMOUNT());
         vm.prank(_owner);
-        vm.expectRevert("Not enough ETH to start faucet");
+        vm.expectRevert(IFaucet.NotEnoughETH.selector);
         _faucet.startFaucet{value: amt}();
     }
 
@@ -106,7 +106,7 @@ contract FaucetTest is SharedSetup {
         vm.startPrank(_user);
         _faucet.claimKintoETH();
 
-        vm.expectRevert("You have already claimed your KintoETH");
+        vm.expectRevert(IFaucet.AlreadyClaimed.selector);
         _faucet.claimKintoETH();
         vm.stopPrank();
     }
@@ -116,13 +116,13 @@ contract FaucetTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
 
         IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Only wallet factory can call this");
+        vm.expectRevert(IFaucet.OnlyFactory.selector);
         _faucet.claimKintoETH(sigdata);
     }
 
     function testClaim_RevertWhen_FaucerIsNotActive() public {
         vm.prank(_owner);
-        vm.expectRevert("Faucet is not active");
+        vm.expectRevert(IFaucet.FaucetNotActive.selector);
         _faucet.claimKintoETH();
     }
 
