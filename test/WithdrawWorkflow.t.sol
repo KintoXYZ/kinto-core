@@ -31,8 +31,8 @@ contract WithdrawWorkflowTest is UserOp {
     WithdrawWorkflow internal withdrawWorkflow;
     ERC20Mock internal token;
 
-    uint48 internal validUntil = 0xdeadbeef;
-    uint48 internal validAfter = 1234;
+    uint48 internal validUntil = 2;
+    uint48 internal validAfter = 0;
 
     uint256 internal defaultAmount = 1e3 * 1e18;
 
@@ -68,7 +68,7 @@ contract WithdrawWorkflowTest is UserOp {
 
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = createUserOperationWithPaymaster(
-            1,
+            block.chainid,
             address(accessPoint),
             address(withdrawWorkflow),
             accessPoint.getNonce(),
@@ -100,7 +100,7 @@ contract WithdrawWorkflowTest is UserOp {
 
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = createUserOperationWithPaymaster(
-            1,
+            block.chainid,
             address(accessPoint),
             address(withdrawWorkflow),
             accessPoint.getNonce(),
