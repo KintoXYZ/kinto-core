@@ -265,6 +265,7 @@ abstract contract AATestScaffolding is KYCSignature {
     }
 
     function _assertRevertReasonEq(bytes[] memory _reasons) internal {
+        uint256 matchingReverts = 0;
         uint256 idx = 0;
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -291,15 +292,18 @@ abstract contract AATestScaffolding is KYCSignature {
 
                     // clean revert reason & assert
                     string memory cleanRevertReason = _trimToPrefixAndRemoveTrailingNulls(decodedRevertReason, prefixes);
-                    console.log("left: %s", cleanRevertReason);
-                    console.log("right: %s", string(_reasons[idx]));
-                    assertEq(cleanRevertReason, string(_reasons[idx]), "Revert reason does not match");
-
-                    if (_reasons.length > 1) idx++; // if there's only one reason, we always use the same one
-                } else {
-                    // revert("Revert reason bytes too short to decode");
+                    if (keccak256(abi.encodePacked(cleanRevertReason)) == keccak256(abi.encodePacked(_reasons[idx]))) {
+                        matchingReverts++;
+                        if (_reasons.length > 1) {
+                            idx++; // if there's only one reason, we always use the same one
+                        }
+                    }
                 }
             }
+        }
+
+        if (matchingReverts < _reasons.length) {
+            revert("Expected revert reason did not match");
         }
     }
 

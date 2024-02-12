@@ -300,7 +300,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.NoTokensToMint.selector));
+        assertRevertReasonEq(EngenCredits.NoTokensToMint.selector);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
     }
@@ -328,7 +328,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.MintNotAllowed.selector));
+        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
     }
 
     function testMintCredits_RevertWhen_BurnsEnabled() public {
@@ -354,6 +354,6 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(EngenCredits.MintNotAllowed.selector));
+        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
     }
 }

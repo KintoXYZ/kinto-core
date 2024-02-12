@@ -102,7 +102,7 @@ contract ExecuteTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
+        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
         assertEq(counter.count(), 0);
     }
 }
