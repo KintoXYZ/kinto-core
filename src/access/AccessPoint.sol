@@ -27,6 +27,7 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
 
     IAccessRegistry public immutable override registry;
     IEntryPoint private immutable _entryPoint;
+    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
     /* ============ Modifiers ============ */
 
@@ -144,6 +145,6 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
         if (owner != ECDSA.recover(hash, userOp.signature)) {
             return SIG_VALIDATION_FAILED;
         }
-        return 0;
+        return SIG_VALIDATION_SUCCESS;
     }
 }
