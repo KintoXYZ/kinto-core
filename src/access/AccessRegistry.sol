@@ -111,11 +111,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
         );
     }
 
-    /// @dev TODO:Should be removed. Added because Kinto EntryPoint needs this function.
-    function getWalletTimestamp(address) external pure returns (uint256) {
-        return 1;
-    }
-
     /* ============ State Change ============ */
 
     /// @inheritdoc IAccessRegistry

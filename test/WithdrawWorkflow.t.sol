@@ -15,6 +15,8 @@ import "../src/interfaces/IAccessPoint.sol";
 import "../src/interfaces/IKintoEntryPoint.sol";
 import "../src/paymasters/SignaturePaymaster.sol";
 
+import "./harness/AccessRegistryHarness.sol";
+
 import "./helpers/UserOp.sol";
 import "./helpers/ERC20Mock.sol";
 import "./helpers/UUPSProxy.sol";
@@ -42,7 +44,7 @@ contract WithdrawWorkflowTest is UserOp {
 
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this));
-        IAccessRegistry accessRegistryImpl = new AccessRegistry(beacon);
+        IAccessRegistry accessRegistryImpl = new AccessRegistryHarness(beacon);
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
