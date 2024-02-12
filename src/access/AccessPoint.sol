@@ -51,6 +51,7 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
     constructor(IEntryPoint entryPoint_, IAccessRegistry registry_) {
         registry = registry_;
         _entryPoint = entryPoint_;
+
         _disableInitializers();
     }
 

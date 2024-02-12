@@ -40,13 +40,17 @@ contract WithdrawWorkflowTest is UserOp {
 
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 
-        IAccessRegistry accessRegistryImpl = new AccessRegistry();
+        // use random address for access point implementation to avoid circular dependency
+        UpgradeableBeacon beacon = new UpgradeableBeacon(address(this));
+        IAccessRegistry accessRegistryImpl = new AccessRegistry(beacon);
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
+        beacon.transferOwnership(address(accessRegistry));
         IAccessPoint accessPointImpl = new AccessPoint(entryPoint, accessRegistry);
 
-        accessRegistry.initialize(accessPointImpl);
+        accessRegistry.initialize();
+        accessRegistry.upgradeAll(accessPointImpl);
         accessPoint = accessRegistry.deployFor(address(_user));
 
         withdrawWorkflow = new WithdrawWorkflow();

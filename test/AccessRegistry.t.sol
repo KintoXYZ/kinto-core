@@ -34,14 +34,19 @@ contract AccessRegistryTest is UserOp {
 
     function setUp() public {
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
-        IAccessRegistry accessRegistryImpl = new AccessRegistry();
+        // use random address for access point implementation to avoid circular dependency
+        UpgradeableBeacon beacon = new UpgradeableBeacon(address(this));
+        IAccessRegistry accessRegistryImpl = new AccessRegistry(beacon);
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
+        beacon.transferOwnership(address(accessRegistry));
         IAccessPoint accessPointImpl = new AccessPoint(entryPoint, accessRegistry);
 
         vm.prank(_owner);
-        accessRegistry.initialize(accessPointImpl);
+        accessRegistry.initialize();
+        vm.prank(_owner);
+        accessRegistry.upgradeAll(accessPointImpl);
     }
 
     function testAllowWorkflow() public {

@@ -24,7 +24,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /* ============ State Variables ============ */
     uint256 public override factoryVersion;
-    UpgradeableBeacon public beacon;
+    UpgradeableBeacon public immutable beacon;
 
     /* ============ Internal storage ============ */
 
@@ -51,17 +51,18 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     }
 
     /* ============ Constructor & Upgrades ============ */
-    constructor() {
+    constructor(UpgradeableBeacon beacon_) {
+        beacon = beacon_;
+
         _disableInitializers();
     }
 
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize(IAccessPoint impl) external virtual initializer {
+    function initialize() external virtual initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
-        beacon = new UpgradeableBeacon(address(impl));
         factoryVersion = 1;
     }
 
