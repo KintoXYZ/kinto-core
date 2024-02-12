@@ -66,23 +66,23 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testCreateAccount_RevertWhen_ZeroAddress() public {
         vm.prank(address(_owner));
-        vm.expectRevert("invalid addresses");
+        vm.expectRevert(IKintoWalletFactory.InvalidInput.selector);
         _kintoWallet = _walletFactory.createAccount(address(0), _owner, 0);
 
         vm.prank(address(_owner));
-        vm.expectRevert("invalid addresses");
+        vm.expectRevert(IKintoWalletFactory.InvalidInput.selector);
         _kintoWallet = _walletFactory.createAccount(_owner, address(0), 0);
     }
 
     function testCreateAccount_RevertWhen_OwnerNotKYCd() public {
         vm.prank(address(_user2));
-        vm.expectRevert("KYC required");
+        vm.expectRevert(IKintoWalletFactory.KYCRequired.selector);
         _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
     }
 
     function testCreateAccount_RevertWhen_OwnerAndSenderMismatch() public {
         vm.prank(address(_owner));
-        vm.expectRevert("KYC required");
+        vm.expectRevert(IKintoWalletFactory.KYCRequired.selector);
         _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
     }
 
@@ -137,14 +137,14 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUpgradeAllWalletImplementations_RevertWhen_ZeroAddress() public {
         vm.prank(_owner);
-        vm.expectRevert("invalid address");
+        vm.expectRevert(IKintoWalletFactory.InvalidImplementation.selector);
         _walletFactory.upgradeAllWalletImplementations(IKintoWallet(address(0)));
     }
 
     function testUpgradeAllWalletImplementations_RevertWhen_BeaconAddress() public {
         IKintoWallet _newImpl = IKintoWallet(UpgradeableBeacon(_walletFactory.beacon()).implementation());
         vm.prank(_owner);
-        vm.expectRevert("invalid address");
+        vm.expectRevert(IKintoWalletFactory.InvalidImplementation.selector);
         _walletFactory.upgradeAllWalletImplementations(_newImpl);
     }
 
@@ -167,19 +167,19 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testDeployContract_RevertWhen_SenderNotKYCd() public {
         vm.prank(_user2);
-        vm.expectRevert("KYC required");
+        vm.expectRevert(IKintoWalletFactory.KYCRequired.selector);
         _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
     }
 
     function testDeployContract_RevertWhen_AmountMismatch() public {
         vm.deal(_owner, 1 ether);
         vm.prank(_owner);
-        vm.expectRevert("Amount mismatch");
+        vm.expectRevert(IKintoWalletFactory.AmountMismatch.selector);
         _walletFactory.deployContract(_owner, 1 ether + 1, abi.encodePacked(type(Counter).creationCode), bytes32(0));
     }
 
     function testDeployContract_RevertWhen_ZeroBytecode() public {
-        vm.expectRevert("Bytecode is empty");
+        vm.expectRevert(IKintoWalletFactory.EmptyBytecode.selector);
         vm.prank(_owner);
         _walletFactory.deployContract(_owner, 0, bytes(""), bytes32(0));
     }
@@ -189,7 +189,11 @@ contract KintoWalletFactoryTest is SharedSetup {
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );
-        vm.expectRevert("Direct KintoWallet deployment not allowed");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IKintoWalletFactory.DeploymentNotAllowed.selector, "Direct KintoWallet deployment not allowed"
+            )
+        );
         vm.prank(_owner);
         _walletFactory.deployContract(_owner, 0, bytecode, bytes32(0));
     }
@@ -225,20 +229,20 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testFundWallet_RevertWhen_InvalidWallet() public {
-        vm.expectRevert("Invalid wallet or funder");
+        vm.expectRevert(IKintoWalletFactory.InvalidWalletOrFunder.selector);
         vm.prank(_owner);
         _walletFactory.fundWallet{value: 1e18}(payable(address(0)));
     }
 
     function testFundWallet_RevertWhen_CallerIsInvalid() public {
         vm.deal(_user, 1 ether);
-        vm.expectRevert("Invalid wallet or funder");
+        vm.expectRevert(IKintoWalletFactory.InvalidWalletOrFunder.selector);
         vm.prank(_user);
         _walletFactory.fundWallet{value: 1 ether}(payable(address(_kintoWallet)));
     }
 
     function testFundWallet_RevertWhen_NotEnoughETH() public {
-        vm.expectRevert("Invalid wallet or funder");
+        vm.expectRevert(IKintoWalletFactory.InvalidWalletOrFunder.selector);
         vm.prank(_owner);
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
     }
@@ -252,14 +256,14 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testStartWalletRecovery_WhenCallerIsRecoverer_RevertWhen_WalletNotExists() public {
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert("invalid wallet");
+        vm.expectRevert(IKintoWalletFactory.InvalidWallet.selector);
         _walletFactory.startWalletRecovery(payable(address(123)));
     }
 
     function testStartWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
         vm.assume(someone != address(_kintoWallet.recoverer()));
         vm.prank(someone);
-        vm.expectRevert("only recoverer");
+        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
     }
 
@@ -328,14 +332,14 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testCompleteWalletRecovery_RevertWhen_WhenCallerIsRecoverer_WalletNotExists() public {
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert("invalid wallet");
+        vm.expectRevert(IKintoWalletFactory.InvalidWallet.selector);
         _walletFactory.completeWalletRecovery(payable(address(123)), new address[](0));
     }
 
     function testCompleteWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
         vm.assume(someone != address(_kintoWallet.recoverer()));
         vm.prank(someone);
-        vm.expectRevert("only recoverer");
+        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), new address[](0));
     }
 
@@ -346,14 +350,14 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testChangeWalletRecoverer_RevertWhen_CallerIsRecoverer_WhenWalletNotExists() public {
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert("invalid wallet");
+        vm.expectRevert(IKintoWalletFactory.InvalidWallet.selector);
         _walletFactory.changeWalletRecoverer(payable(address(123)), payable(address(123)));
     }
 
     function testChangeWalletRecoverer_RevertWhen_CallerIsNotRecoverer(address someone) public {
         vm.assume(someone != address(_kintoWallet.recoverer()));
         vm.prank(someone);
-        vm.expectRevert("only recoverer");
+        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
         _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
     }
 
@@ -422,7 +426,7 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testSendMoneyToAccount_RevertWhen_CallerIsNotAllowed() public {
         vm.deal(address(123), 1 ether);
         vm.prank(address(123));
-        vm.expectRevert("KYC or Provider role required");
+        vm.expectRevert(IKintoWalletFactory.OnlyPrivileged.selector);
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
@@ -430,7 +434,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
         vm.deal(_user, 1 ether);
         vm.prank(_user);
-        vm.expectRevert("Target is not valid");
+        vm.expectRevert(IKintoWalletFactory.InvalidTarget.selector);
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
@@ -451,7 +455,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
 
         IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Invalid sender");
+        vm.expectRevert(IKintoWalletFactory.InvalidSender.selector);
         _walletFactory.claimFromFaucet(address(_faucet), sigdata);
     }
 
@@ -460,7 +464,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
 
         IFaucet.SignatureData memory sigdata = _auxCreateSignature(_faucet, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Invalid faucet address");
+        vm.expectRevert(IKintoWalletFactory.InvalidFaucet.selector);
         vm.prank(_kycProvider);
         _walletFactory.claimFromFaucet(address(0), sigdata);
     }
