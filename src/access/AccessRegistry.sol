@@ -33,14 +33,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /* ============ Modifiers ============ */
 
-    /// @notice Checks that the caller has a accessPoint.
-    modifier onlyCallerWithAccessPoint() {
-        if (address(_accessPoints[msg.sender]) == address(0)) {
-            revert UserDoesNotHaveAccessPoint(msg.sender);
-        }
-        _;
-    }
-
     /// @notice Check that the user does not have a accessPoint.
     modifier onlyNonAccessPointOwner(address user) {
         IAccessPoint accessPoint = _accessPoints[user];
