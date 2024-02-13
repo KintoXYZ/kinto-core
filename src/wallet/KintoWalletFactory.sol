@@ -134,9 +134,18 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
         require(walletTs[wallet] > 0, "invalid wallet");
         require(msg.sender == IKintoWallet(wallet).recoverer(), "only recoverer");
+        require(!kintoID.isKYC(newSigners[0]), "KW-fr: New signer must not be KYC already");
+        // Transfer kinto id from old to new signer
+        kintoID.transferOnRecovery(IKintoWallet(wallet).owners(0), newSigners[0]);
+        // Set new signers and policy
         IKintoWallet(wallet).completeRecovery(newSigners);
     }
 
+    /**
+     * @dev Change wallet recoverer. Only the wallet recoverer can do it.
+     * @param wallet The wallet address
+     * @param _newRecoverer The new recoverer address
+     */
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
         require(walletTs[wallet] > 0, "invalid wallet");
         require(msg.sender == IKintoWallet(wallet).recoverer(), "only recoverer");

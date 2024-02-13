@@ -31,6 +31,7 @@ contract SharedSetup is UserOp, AATestScaffolding {
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
+    event AppKeyCreated(address indexed appKey, address indexed signer);
 
     function setUp() public virtual {
         // deploy contracts using deploy script

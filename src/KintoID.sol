@@ -57,15 +57,19 @@ contract KintoID is
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
-    bytes32 public domainSeparator;
+    bytes32 public override domainSeparator;
 
-    /* ============ Modifiers ============ */
+    // Indicates which accounts are allowed to transfer their Kinto ID to another account
+    mapping(address => address) public override recoveryTargets;
+
+    address public immutable override walletFactory;
 
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address _walletFactory) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     function initialize() external initializer {
@@ -81,12 +85,6 @@ contract KintoID is
 
         lastMonitoredAt = block.timestamp;
         domainSeparator = _domainSeparator();
-    }
-
-    function initializeV6() external {
-        if (domainSeparator == 0) {
-            domainSeparator = _domainSeparator();
-        }
     }
 
     /**
@@ -180,6 +178,25 @@ contract KintoID is
 
     /* ============ Burn ============ */
 
+    /**
+     * @dev Transfers the NFT from the old account to the new account
+     * @param _from Old address
+     * @param _to New address
+     */
+    function transferOnRecovery(address _from, address _to) external override {
+        require(balanceOf(_from) > 0 && balanceOf(_to) == 0, "Invalid transfer");
+        require(
+            msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "Only the wallet factory or admins can trigger this"
+        );
+        recoveryTargets[_from] = _to;
+        _transfer(_from, _to, tokenOfOwnerByIndex(_from, 0));
+        recoveryTargets[_from] = address(0);
+    }
+
+    /**
+     * @dev Burns a KYC token base ERC721 burn method. Override to disable.
+     */
     function burn(uint256 /* tokenId */ ) public pure override {
         require(false, "Use burnKYC instead");
     }
@@ -477,8 +494,9 @@ contract KintoID is
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
         require(
-            (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
-            "Only mint or burn transfers are allowed"
+            (from != address(0) && recoveryTargets[from] == to && isSanctionsSafe(from))
+                || (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
+            "Only recovery, mint or burn transfers are allowed"
         );
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
@@ -501,5 +519,5 @@ contract KintoID is
 }
 
 contract KintoIDV6 is KintoID {
-    constructor() KintoID() {}
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 }

@@ -18,6 +18,8 @@ contract AppKeyTest is SharedSetup {
             address(_paymaster)
         );
 
+        vm.expectEmit(true, true, true, false);
+        emit AppKeyCreated(address(counter), _user);
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.appSigner(address(counter)), _user);
     }

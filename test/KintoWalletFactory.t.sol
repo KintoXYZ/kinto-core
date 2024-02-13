@@ -263,19 +263,59 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
     }
 
+    function testCompleteWalletRecovery_RevertWhen_CallerIsRecovererAndAlreadyKYC() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        // run monitor
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert("KW-fr: New signer must not be KYC already");
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
+    }
+
+    function testCompleteWalletRecovery_RevertWhenCallerIsRecovererButOwnerBurnedID() public {
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        revokeKYC(_kycProvider, _owner, _ownerPk);
+
+        // run monitor
+        address[] memory users = new address[](1);
+        users[0] = _noKyc;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert("Invalid transfer");
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
+    }
+
     function testCompleteWalletRecovery_WhenCallerIsRecoverer() public {
         vm.prank(address(_kintoWallet.recoverer()));
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
 
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
 
-        // approve KYC for _user burn KYC for _owner
-        revokeKYC(_kycProvider, _owner, _ownerPk);
-        approveKYC(_kycProvider, _user, _userPk);
-
         // run monitor
         address[] memory users = new address[](1);
-        users[0] = _user;
+        users[0] = _noKyc;
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
         updates[0] = new IKintoID.MonitorUpdateData[](1);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);

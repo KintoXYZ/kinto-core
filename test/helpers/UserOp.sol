@@ -25,6 +25,7 @@ abstract contract UserOp is Test {
     uint256 _kycProviderPk = 6;
     uint256 _recovererPk = 7;
     uint256 _funderPk = 8;
+    uint256 _noKycPk = 9;
 
     // users
     address payable _owner = payable(vm.addr(_ownerPk));
@@ -35,6 +36,7 @@ abstract contract UserOp is Test {
     address payable _kycProvider = payable(vm.addr(_kycProviderPk));
     address payable _recoverer = payable(vm.addr(_recovererPk));
     address payable _funder = payable(vm.addr(_funderPk));
+    address payable _noKyc = payable(vm.addr(_noKycPk));
 
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;

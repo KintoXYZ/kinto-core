@@ -50,6 +50,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
+    event AppKeyCreated(address indexed appKey, address indexed signer);
 
     /* ============ Modifiers ============ */
 
@@ -192,7 +193,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         require(appWhitelist[app], "KW-apk: contract not whitelisted"); // todo: i don't think we need to check this here
         require(appSigner[app] != signer, "KW-apk: same key");
         appSigner[app] = signer;
-        // todo: emit event
+        emit AppKeyCreated(app, signer);
     }
 
     /* ============ Recovery Process ============ */
@@ -212,7 +213,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function completeRecovery(address[] calldata newSigners) external override onlyFactory {
         require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), "KW-fr: too early");
-        require(!kintoID.isKYC(owners[0]), "KW-fr: Old KYC must be burned");
+        require(!kintoID.isKYC(owners[0]) && kintoID.isKYC(newSigners[0]), "KW-fr: Old KYC must have been transferred");
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }

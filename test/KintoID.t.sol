@@ -15,7 +15,7 @@ import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 
 contract KintoIDv2 is KintoID {
-    constructor() KintoID() {}
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -28,7 +28,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function setUp() public {
         vm.chainId(1);
         vm.startPrank(_owner);
-        _implementation = new KintoID();
+        _implementation = new KintoID(address(_walletFactory));
 
         // deploy _proxy contract and point it to _implementation
         _kintoID = KintoID(address(new UUPSProxy(address(_implementation), "")));
@@ -48,7 +48,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
-        KintoIDv2 _implementationV2 = new KintoIDv2();
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
         _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
@@ -58,7 +58,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        KintoIDv2 _implementationV2 = new KintoIDv2();
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
 
         bytes memory err = abi.encodePacked(
             "AccessControl: account ",
@@ -80,7 +80,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         // upgrade from the _upgrader account
         assertEq(true, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
 
-        KintoIDv2 _implementationV2 = new KintoIDv2();
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
         vm.prank(_upgrader);
         _kintoID.upgradeTo(address(_implementationV2));
 
@@ -454,7 +454,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
         vm.prank(_user);
-        vm.expectRevert("Only mint or burn transfers are allowed");
+        vm.expectRevert("Only recovery, mint or burn transfers are allowed");
         _kintoID.safeTransferFrom(_user, _user2, tokenIdx);
     }
 

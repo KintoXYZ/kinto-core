@@ -87,7 +87,7 @@ contract RecoveryTest is SharedSetup {
 
         // complete recovery
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-fr: Old KYC must be burned");
+        vm.expectRevert("KW-fr: Old KYC must have been transferred");
         _kintoWallet.completeRecovery(users);
     }
 
@@ -111,7 +111,7 @@ contract RecoveryTest is SharedSetup {
         address[] memory users = new address[](1);
         users[0] = _user;
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-rs: KYC Required");
+        vm.expectRevert("KW-fr: Old KYC must have been transferred");
         _kintoWallet.completeRecovery(users);
     }
 
