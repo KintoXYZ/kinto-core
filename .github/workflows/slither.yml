@@ -13,12 +13,30 @@ jobs:
       - name: Run Slither
         uses: crytic/slither-action@v0.3.0
         id: slither
+        continue-on-error: true
         with:
           node-version: 16
           fail-on: none
           slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
-          
+
+      - name: Comment on failure
+        if: steps.slither.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const comment = `❌ Slither analysis failed. Please check the workflow logs for more details.`;
+            const repo = context.repo;
+            if (issue_number) {
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number,
+                body: comment
+              });
+            }
+
       - name: Create/update checklist as PR comment
+        if: steps.slither.outcome != 'failure'
         uses: actions/github-script@v6
         env:
           REPORT: ${{ steps.slither.outputs.stdout }}
