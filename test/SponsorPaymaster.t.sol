@@ -176,8 +176,6 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_TargetIsZeroAddress() public {
-        uint256 balance = _user.balance;
-
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(_owner);
 
@@ -192,8 +190,6 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_TargetIsContract() public {
-        uint256 balance = _user.balance;
-
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(_owner);
 
