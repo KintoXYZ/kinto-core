@@ -16,11 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Reset submodules
-        run: |
-          git submodule sync --recursive
-          git submodule update --init --recursive
-          
+
       - uses: actions/checkout@v3
         with: 
           submodules: recursive
