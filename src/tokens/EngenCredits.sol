@@ -134,3 +134,7 @@ contract EngenCredits is
         ) revert TransfersNotEnabled();
     }
 }
+
+contract EngenCreditsV2 is EngenCredits {
+    constructor() EngenCredits() {}
+}

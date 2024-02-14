@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import "../src/tokens/EngenCredits.sol";
 import "./SharedSetup.t.sol";
 
-contract EngenCreditsV2 is EngenCredits {
+contract EngenCreditsUpgrade is EngenCredits {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
@@ -34,20 +34,20 @@ contract EngenCreditsTest is SharedSetup {
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
-        EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
-        _engenCredits.upgradeTo(address(_implementationV2));
+        EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
+        _engenCredits.upgradeTo(address(_implementation));
 
         // ensure that the implementation has been upgraded
-        EngenCreditsV2 _engenCreditsV2 = EngenCreditsV2(address(_engenCredits));
-        assertEq(_engenCreditsV2.newFunction(), 1);
+        EngenCreditsUpgrade _EngenCreditsUpgrade = EngenCreditsUpgrade(address(_engenCredits));
+        assertEq(_EngenCreditsUpgrade.newFunction(), 1);
         vm.stopPrank();
     }
 
     function testUpgradeTo_RevertWhen_WhenCallerIsNotOwner() public {
-        EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
+        EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
 
         vm.expectRevert("Ownable: caller is not the owner");
-        _engenCredits.upgradeTo(address(_implementationV2));
+        _engenCredits.upgradeTo(address(_implementation));
     }
 
     /* ============ Set Transfer Enabled tests ============ */
