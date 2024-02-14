@@ -133,7 +133,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
         if (walletTs[wallet] == 0) revert InvalidWallet();
         if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
-        if (kintoID.isKYC(newSigners[0])) revert KYCRequired();
+        if (kintoID.isKYC(newSigners[0])) revert KYCMustNotExist();
         // Transfer kinto id from old to new signer
         kintoID.transferOnRecovery(IKintoWallet(wallet).owners(0), newSigners[0]);
         // Set new signers and policy
