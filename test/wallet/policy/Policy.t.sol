@@ -204,7 +204,7 @@ contract ResetSignerTest is SharedSetup {
 
     function testResetSigners_RevertWhen_InvalidPolicy(uint256 policy) public {
         vm.assume(policy == 0 || policy > 3);
-        
+
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
