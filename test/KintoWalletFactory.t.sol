@@ -285,7 +285,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoID.monitor(users, updates);
 
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert("KW-fr: New signer must not be KYC already");
+        vm.expectRevert(IKintoWalletFactory.KYCMustNotExist.selector);
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 
