@@ -18,6 +18,7 @@ contract KintoMigration29DeployScript is MigrationHelper {
     function run() public override {
         super.run();
         bytes memory bytecode;
+        address implementation;
 
         bytecode =
             abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
@@ -26,8 +27,17 @@ contract KintoMigration29DeployScript is MigrationHelper {
         bytecode = abi.encodePacked(type(SponsorPaymaster).creationCode, abi.encode(_getChainDeployment("EntryPoint")));
         _deployImplementationAndUpgrade("SponsorPaymaster", "V8", bytecode);
 
+        /// @dev since EngenCredits is owned by the ledger, we can't upgrade so we are both the implementation and the proxy
         bytecode = abi.encodePacked(type(EngenCredits).creationCode);
-        _deployImplementationAndUpgrade("EngenCredits", "V2", bytecode);
+        implementation = _deployImplementation("EngenCredits", "V2", bytecode);
+        address proxy = _deployProxy("EngenCredits", implementation);
+
+        // remove the old EngenCredits from the whitelist
+        _whitelistApp(_getChainDeployment("EngenCredits"), deployerPrivateKey, false);
+
+        // whitelist the new EngenCredits & initialize
+        _whitelistApp(proxy, deployerPrivateKey);
+        _initialize(proxy, deployerPrivateKey);
 
         bytecode = abi.encodePacked(
             type(KYCViewer).creationCode,
@@ -43,12 +53,12 @@ contract KintoMigration29DeployScript is MigrationHelper {
                 _getChainDeployment("KintoAppRegistry")
             )
         );
-        address implementation = _deployImplementationAndUpgrade("KintoWallet", "V6", bytecode);
+        implementation = _deployImplementationAndUpgrade("KintoWallet", "V6", bytecode);
 
         bytecode = abi.encodePacked(type(Faucet).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         _deployImplementationAndUpgrade("Faucet", "V4", bytecode);
 
-        bytecode = abi.encodePacked(type(KintoID).creationCode);
+        bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         _deployImplementationAndUpgrade("KintoID", "V7", bytecode);
 
         bytecode = abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(implementation));

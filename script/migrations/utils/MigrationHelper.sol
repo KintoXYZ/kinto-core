@@ -90,6 +90,17 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                 vm.broadcast(); // may require LEDGER_ADMIN
                 UUPSUpgradeable(proxy).upgradeTo(_impl);
             } else {
+                try Ownable(proxy).owner() returns (address owner) {
+                    if (owner != _getChainDeployment("KintoWallet-admin")) {
+                        console.log(
+                            "%s contract is not owned by the KintoWallet-admin, its owner is %s",
+                            contractName,
+                            vm.toString(owner)
+                        );
+                        revert("Contract is not owned by KintoWallet-admin");
+                    }
+                    _upgradeTo(proxy, _impl, deployerPrivateKey);
+                } catch {}
                 _upgradeTo(proxy, _impl, deployerPrivateKey);
             }
         }
@@ -115,7 +126,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             _getChainDeployment("SponsorPaymaster")
         );
 
-        vm.broadcast(deployerPrivateKey);
+        vm.broadcast(_signerPk);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
@@ -149,15 +160,19 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     }
 
     /// @notice whitelists an app in the KintoWallet
-    function _whitelistApp(address _app, uint256 _signerPk) internal {
+    function _whitelistApp(address _app, uint256 _signerPk, bool _whitelist) internal {
         address payable _to = payable(_getChainDeployment("KintoWallet-admin"));
         address[] memory apps = new address[](1);
         apps[0] = _app;
 
         bool[] memory flags = new bool[](1);
-        flags[0] = true;
+        flags[0] = _whitelist;
 
         _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _to, _signerPk);
+    }
+
+    function _whitelistApp(address _app, uint256 _signerPk) internal {
+        _whitelistApp(_app, _signerPk, true);
     }
 
     function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
