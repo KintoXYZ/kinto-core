@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
@@ -18,7 +18,7 @@ contract KintoIDV3 is KintoID {
 }
 
 contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _paymaster;
@@ -67,14 +67,14 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         vm.stopBroadcast();
         vm.startBroadcast();
         // (3). upgrade paymaster to new implementation
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
 
         // sanity check: paymaster's cost of op should be 200_000
         require(_paymaster.COST_OF_POST() == 200_000, "COST_OF_POST should be 200_000");
 
         // (4). upgrade kinto id to new implementation
         // vm.prank(_paymaster.owner());
-        _kintoID.upgradeTo(address(_kintoIDImpl));
+        _kintoID.upgradeToAndCall(address(_kintoIDImpl), bytes(""));
 
         // sanity check: paymaster's cost of op should be 200_000
         try _kintoID.burn(10) {

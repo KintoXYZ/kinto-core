@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelins/contracts/utils/cryptography/ECDSA.sol";
 
 import "../src/interfaces/IFaucet.sol";
 import "../src/Faucet.sol";
@@ -33,7 +33,7 @@ contract FaucetTest is SharedSetup {
     function testUpgradeTo() public {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
         vm.prank(_owner);
-        _faucet.upgradeTo(address(_newImpl));
+        _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
 
         assertEq(FaucetNewUpgrade(payable(address(_faucet))).newFunction(), 1);
     }
@@ -42,7 +42,7 @@ contract FaucetTest is SharedSetup {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
 
         vm.expectRevert(IFaucet.OnlyOwner.selector);
-        _faucet.upgradeTo(address(_newImpl));
+        _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
     /* ============ Start Faucet tests ============ */
@@ -64,7 +64,7 @@ contract FaucetTest is SharedSetup {
         vm.assume(someone != _faucet.owner());
         vm.deal(someone, 1 ether);
         vm.prank(someone);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
         _faucet.startFaucet{value: 1 ether}();
     }
 
@@ -160,7 +160,7 @@ contract FaucetTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
         assertEq(address(_faucet).balance, 1 ether);
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _faucet.withdrawAll();
     }
 

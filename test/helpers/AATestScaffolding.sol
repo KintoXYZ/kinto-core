@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -210,11 +210,11 @@ abstract contract AATestScaffolding is KYCSignature {
 
         SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
         vm.prank(_paymaster.owner());
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
 
         KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
         vm.prank(_kintoAppRegistry.owner());
-        _kintoAppRegistry.upgradeTo(address(_registryImpl));
+        _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
     }
 
     /* ============ assertion helper methods ============ */

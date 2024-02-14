@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import "../../src/interfaces/IKintoWallet.sol";
@@ -16,7 +16,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     Faucet _implementation;
     UUPSProxy _proxy;

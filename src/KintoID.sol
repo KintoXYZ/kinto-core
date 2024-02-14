@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 /* External Imports */
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelins/contracts/utils/structs/BitMaps.sol";
 
 import {IKintoID} from "./interfaces/IKintoID.sol";
 
@@ -27,8 +27,8 @@ contract KintoID is
     UUPSUpgradeable,
     IKintoID
 {
-    using BitMapsUpgradeable for BitMapsUpgradeable.BitMap;
-    using ECDSAUpgradeable for bytes32;
+    using BitMaps for BitMaps.BitMap;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     /* ============ Events ============ */
@@ -93,6 +93,13 @@ contract KintoID is
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+    {
+        super._increaseBalance(account, value);
+    }
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -414,7 +421,7 @@ contract KintoID is
      * @return array of 256 booleans representing the traits of the account.
      */
     function traits(address _account) external view override returns (bool[] memory) {
-        BitMapsUpgradeable.BitMap storage tokenTraits = _kycmetas[_account].traits;
+        BitMaps.BitMap storage tokenTraits = _kycmetas[_account].traits;
         bool[] memory result = new bool[](256);
         for (uint256 i = 0; i < 256; i++) {
             result[i] = tokenTraits.get(i);
@@ -484,20 +491,21 @@ contract KintoID is
 
     /**
      * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
-     * @param from source address
      * @param to target address
-     * @param batchSize The first id
+     * @param firstTokenId The first id
      */
-    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize)
+    function _update(address to, uint256 firstTokenId, address auth)
         internal
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        returns (address)
     {
+        address from = _ownerOf(firstTokenId);
         if (
             (from == address(0) || recoveryTargets[from] != to || !isSanctionsSafe(from))
                 && (from != address(0) || to == address(0)) && (from == address(0) || to != address(0))
         ) revert OnlyMintBurnOrTransfer();
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        return super._update(to, firstTokenId, auth);
     }
 
     /* ============ Interface ============ */

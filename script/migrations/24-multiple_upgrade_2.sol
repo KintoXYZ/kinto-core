@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/viewers/KYCViewer.sol";
 import "./utils/MigrationHelper.sol";
 
 contract KintoMigration24DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     function run() public override {
         super.run();

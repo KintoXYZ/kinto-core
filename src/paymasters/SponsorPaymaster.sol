@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelins/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelins/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 
 import "../interfaces/ISponsorPaymaster.sol";
@@ -55,7 +55,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) Ownable(msg.sender) {
         _disableInitializers();
     }
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration20DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactoryV6 _factoryImpl;
 
@@ -64,7 +64,7 @@ contract KintoMigration20DeployScript is Create2Helper, ArtifactsReader {
         // Start admin
         vm.startBroadcast();
         // 3) Upgrade wallet factory
-        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(address(_walletFactory)).upgradeToAndCall(address(_factoryImpl), bytes(""));
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
         console.log(string.concat('"KintoWalletFactoryV6-impl": "', vm.toString(address(_factoryImpl)), '"'));

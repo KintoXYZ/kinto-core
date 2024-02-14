@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
 
 import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IFaucet.sol";
 
 abstract contract KYCSignature is Test {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     // Create a test for minting a KYC token

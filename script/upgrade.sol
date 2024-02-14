@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "@aa/core/EntryPoint.sol";
 
@@ -18,7 +18,7 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 }
 
 contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactory _implementation;
@@ -32,7 +32,7 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         _oldKintoWalletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
         KintoWalletFactoryUpgrade _newImplementation =
             new KintoWalletFactoryUpgrade(KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))));
-        _oldKintoWalletFactory.upgradeTo(address(_newImplementation));
+        _oldKintoWalletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
         console.log("KintoWalletFactory Upgraded to implementation", address(_newImplementation));
         vm.stopBroadcast();
     }
@@ -45,7 +45,7 @@ contract KintoWalletVTest is KintoWallet {
 }
 
 contract KintoWalletsUpgradeScript is ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactory _walletFactory;
@@ -75,7 +75,7 @@ contract KintoIDV2 is KintoID {
 }
 
 contract KintoIDUpgradeScript is ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     KintoID _implementation;
@@ -89,7 +89,7 @@ contract KintoIDUpgradeScript is ArtifactsReader {
         _oldKinto = KintoID(payable(_getChainDeployment("KintoID")));
         // Replace this with the contract name of the new implementation
         KintoIDV2 implementationV2 = new KintoIDV2(_getChainDeployment("KintoWalletFactory"));
-        _oldKinto.upgradeTo(address(implementationV2));
+        _oldKinto.upgradeToAndCall(address(implementationV2), bytes(""));
         console.log("KintoID upgraded to implementation", address(implementationV2));
         vm.stopBroadcast();
     }

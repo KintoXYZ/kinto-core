@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";
@@ -66,9 +66,8 @@ contract KintoAppRegistry is
     function initialize() external initializer {
         __ERC721_init("Kinto APP", "KINTOAPP");
         __ERC721Enumerable_init();
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**
@@ -77,6 +76,13 @@ contract KintoAppRegistry is
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+    {
+        super._increaseBalance(account, value);
+    }
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -273,17 +279,18 @@ contract KintoAppRegistry is
 
     /**
      * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
-     * @param from source address
      * @param to target address
-     * @param batchSize The first id
+     * @param firstTokenId The first id
      */
-    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize)
+    function _update(address to, uint256 firstTokenId, address auth)
         internal
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        returns (address)
     {
+        address from = _ownerOf(firstTokenId);
         if (from != address(0) || to == address(0)) revert OnlyMintingAllowed();
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        return super._update(to, firstTokenId, auth);
     }
 }
 

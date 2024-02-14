@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/access/IAccessControl.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelins/contracts/utils/Create2.sol";
+import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts/access/IAccessControl.sol";
+import {UpgradeableBeacon} from "@openzeppelins/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
@@ -53,9 +53,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize(IKintoID _kintoID) external virtual initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        beacon = new UpgradeableBeacon(address(_implAddress));
+        beacon = new UpgradeableBeacon(address(_implAddress), address(this));
         factoryWalletVersion = 1;
         kintoID = _kintoID;
     }

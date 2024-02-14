@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -33,7 +33,7 @@ contract KYCViewerTest is SharedSetup {
     function testUpgradeTo() public {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.prank(_owner);
-        _kycViewer.upgradeTo(address(_implementationV2));
+        _kycViewer.upgradeToAndCall(address(_implementationV2), bytes(""));
         assertEq(KYCViewerUpgraded(address(_kycViewer)).newFunction(), 1);
     }
 
@@ -42,7 +42,7 @@ contract KYCViewerTest is SharedSetup {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.expectRevert(IKYCViewer.OnlyOwner.selector);
         vm.prank(someone);
-        _kycViewer.upgradeTo(address(_implementationV2));
+        _kycViewer.upgradeToAndCall(address(_implementationV2), bytes(""));
     }
 
     /* ============ Viewer tests ============ */

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts/interfaces/IERC721.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
@@ -36,9 +36,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**

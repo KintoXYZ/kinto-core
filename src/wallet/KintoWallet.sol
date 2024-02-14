@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts/utils/Address.sol";
+import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelins/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
@@ -21,6 +22,7 @@ import "../libraries/ByteSignature.sol";
  */
 contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKintoWallet {
     using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
     using Address for address;
 
     /* ============ State Variables ============ */

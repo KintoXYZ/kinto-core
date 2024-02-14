@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
@@ -12,7 +12,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     SponsorPaymaster _paymaster;
     KintoWalletFactory _walletFactory;
@@ -44,7 +44,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         // Switch to admin to upgrade
         vm.stopBroadcast();
         vm.startBroadcast();
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
         // Set the app registry
         _paymaster.setAppRegistry(_getChainDeployment("KintoAppRegistry"));
         vm.stopBroadcast();

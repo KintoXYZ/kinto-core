@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import {IKintoWallet} from "./IKintoWallet.sol";
 import {IKintoID} from "./IKintoID.sol";
 import {IFaucet} from "./IFaucet.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UpgradeableBeacon} from "@openzeppelins/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 interface IKintoWalletFactory {
     /* ============ Errors ============ */

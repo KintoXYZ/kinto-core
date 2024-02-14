@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {SignatureChecker} from "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
 import {IFaucet} from "./interfaces/IFaucet.sol";
 import {IKintoWalletFactory} from "./interfaces/IKintoWalletFactory.sol";
 import {IKintoID} from "./interfaces/IKintoID.sol";
@@ -16,7 +16,7 @@ import {IKintoID} from "./interfaces/IKintoID.sol";
  * @dev The Kinto Faucet gives a bit of ETH to users to pay for gas fees
  */
 contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
-    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     /* ============ Events ============ */
@@ -51,9 +51,8 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**

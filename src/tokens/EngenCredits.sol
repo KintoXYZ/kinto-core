@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
 
@@ -45,7 +45,7 @@ contract EngenCredits is
     function initialize() external initializer {
         __ERC20_init(_NAME, _SYMBOL);
         __ERC20Burnable_init();
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __ERC20Permit_init(_NAME);
         __UUPSUpgradeable_init();
         transfersEnabled = false;
@@ -125,8 +125,8 @@ contract EngenCredits is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
-        super._beforeTokenTransfer(from, to, amount);
+    function _update(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
+        super._update(from, to, amount);
         if (
             from != address(0) // mint
                 && (to != address(0) || !burnsEnabled) // burn

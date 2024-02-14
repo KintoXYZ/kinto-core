@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.20;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
@@ -39,7 +39,7 @@ contract KintoAppRegistryV3 is KintoAppRegistry {
 }
 
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactory _walletFactory;
     uint256 deployerPrivateKey;
@@ -87,7 +87,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (3). upgrade paymaster to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        SponsorPaymaster(payable(paymasterProxy)).upgradeTo(address(_paymasterImpl));
+        SponsorPaymaster(payable(paymasterProxy)).upgradeToAndCall(address(_paymasterImpl), bytes(""));
     }
 
     function upgradeRegistry() public returns (address _registryImpl) {
@@ -146,7 +146,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (2). upgrade factory to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        KintoWalletFactory(payable(factoryProxy)).upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(payable(factoryProxy)).upgradeToAndCall(address(_factoryImpl), bytes(""));
     }
 
     function upgradeKYCViewer() public returns (address _kycViewerImpl, address _proxy) {
@@ -185,7 +185,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
             0,
             nonce,
             privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl)),
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes("")),
             _getChainDeployment("SponsorPaymaster")
         );
 
