@@ -49,7 +49,7 @@ contract AppKeyTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-apk: contract not whitelisted");
+        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
         assertEq(_kintoWallet.appSigner(address(_engenCredits)), appSignerBefore);
     }
 }
