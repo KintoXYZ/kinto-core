@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";

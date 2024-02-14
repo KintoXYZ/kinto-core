@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./Counter.sol";
-import "@openzeppelins/contracts/access/Ownable.sol";
+import "@oz/contracts/access/Ownable.sol";
 
 contract OwnableCounter is Counter, Ownable {
     constructor() Ownable(msg.sender) {}

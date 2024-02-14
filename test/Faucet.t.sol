@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelins/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
 
 import "../src/interfaces/IFaucet.sol";
 import "../src/Faucet.sol";

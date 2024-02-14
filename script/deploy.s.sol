@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@aa/core/EntryPoint.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
 import "../src/viewers/KYCViewer.sol";

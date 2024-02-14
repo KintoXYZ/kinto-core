@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {UpgradeableBeacon} from "@openzeppelins/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {BeaconProxy} from "@openzeppelins/contracts/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BeaconProxy} from "@oz/contracts/proxy/beacon/BeaconProxy.sol";
 
 /**
  * @title GardenFactory

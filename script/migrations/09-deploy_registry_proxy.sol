@@ -8,8 +8,8 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@openzeppelins/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {

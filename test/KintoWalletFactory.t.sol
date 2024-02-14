@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import {UpgradeableBeacon} from "@openzeppelins/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";

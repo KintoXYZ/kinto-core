@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import "../../src/interfaces/IKintoWallet.sol";

@@ -4,8 +4,8 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts/utils/cryptography/SignatureChecker.sol";
 
 import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";

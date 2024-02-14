@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelins/contracts/utils/Strings.sol";
+import "@oz/contracts/utils/Strings.sol";
 
 import "../src/KintoID.sol";
 import "../src/interfaces/IKintoID.sol";

@@ -2,15 +2,15 @@
 pragma solidity ^0.8.20;
 
 /* External Imports */
-import "@openzeppelins/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
-import "@openzeppelins/contracts/utils/structs/BitMaps.sol";
+import "@oz/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
+import "@oz/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
+import "@oz/contracts/utils/structs/BitMaps.sol";
 
 import {IKintoID} from "./interfaces/IKintoID.sol";
 

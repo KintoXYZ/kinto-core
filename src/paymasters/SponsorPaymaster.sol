@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelins/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelins/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/token/ERC20/IERC20.sol";
+import "@oz/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@oz/contracts/utils/ReentrancyGuard.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 
 import "../interfaces/ISponsorPaymaster.sol";

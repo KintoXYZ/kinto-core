@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts/utils/structs/BitMaps.sol";
+import "@oz/contracts/utils/structs/BitMaps.sol";
 
 interface IKintoID {
     /* ============ Errors ============ */

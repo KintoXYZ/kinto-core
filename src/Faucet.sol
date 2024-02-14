@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {SignatureChecker} from "@openzeppelins/contracts/utils/cryptography/SignatureChecker.sol";
+import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
 import {IFaucet} from "./interfaces/IFaucet.sol";
 import {IKintoWalletFactory} from "./interfaces/IKintoWalletFactory.sol";
 import {IKintoID} from "./interfaces/IKintoID.sol";

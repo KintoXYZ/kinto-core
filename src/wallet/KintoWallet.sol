@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelins/contracts/utils/Address.sol";
-import "@openzeppelins/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@openzeppelins/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelins/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts/utils/Address.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 

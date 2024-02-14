@@ -1,7 +1,7 @@
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
-@openzeppelins/contracts/=lib/openzeppelin-contracts/contracts/
-@openzeppelins/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+@oz/contracts/=lib/openzeppelin-contracts/contracts/
+@oz/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 
 lib/account-abstraction:@openzeppelin/contracts/security/=lib/openzeppelin-contracts/contracts/utils/
 lib/account-abstraction:@openzeppelin/contracts/token/ERC777/=lib/openzeppelin-contracts/contracts/interfaces/
