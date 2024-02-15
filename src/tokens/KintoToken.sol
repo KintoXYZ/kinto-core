@@ -7,14 +7,18 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+/**
+ * @title KintoToken
+ * @dev KintoToken is an ERC20 token with governance features and a time bomb.
+ * It is meant to be used as the main governance token for the Kinto platform.
+ */
 contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
-
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Kinto Token";
     /// @dev EIP-20 token symbol for this token
     string private constant _SYMBOL = "KINTO";
     /// @dev Initial supply minted at contract deployment
-    uint256 public constant INITIAL_SUPPLY = 10_000_000e18;
+    uint256 public constant INITIAL_SUPPLY = 3_567_000e18;
     /// @dev EIP-20 Max token supply ever
     uint256 public constant MAX_SUPPLY = 15_000_000e18;
     /// @dev Governance time bomb

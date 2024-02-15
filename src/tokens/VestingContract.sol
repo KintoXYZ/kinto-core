@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 /**
+ * @title VestingContract - To be deployed on ETH mainnet
  * Created following OpenZeppelin Contracts (last updated v5.0.0) (finance/VestingWallet.sol)
  *
  * @dev A vesting wallet is an ownable contract that can receive  ERC-20 tokens, and release these
