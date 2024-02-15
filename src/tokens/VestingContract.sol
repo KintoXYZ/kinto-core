@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "../interfaces/IVestingContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -21,19 +22,19 @@ import "@openzeppelin/contracts/utils/Address.sol";
  * a beneficiary until a specified time + lock time.
  *
  */
-contract VestingContract is Ownable {
+contract VestingContract is Ownable, IVestingContract {
     event ERC20Released(address indexed beneficiary, uint256 amount);
 
-    address public immutable kintoToken;
-    uint256 public constant LOCK_PERIOD = 365 days;
+    address public immutable override kintoToken;
+    uint256 public constant override LOCK_PERIOD = 365 days;
 
     mapping(address => uint256) private _erc20Released;
     mapping(address => uint256) private _grant;
     mapping(address => uint256) private _start;
     mapping(address => uint256) private _duration;
 
-    uint256 public totalAllocated;
-    uint256 public totalReleased;
+    uint256 public override totalAllocated;
+    uint256 public override totalReleased;
 
     /**
      * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
@@ -54,7 +55,8 @@ contract VestingContract is Ownable {
      * @param durationSeconds Duration in seconds of the vesting schedule
      */
     function addBeneficiary(address beneficiary, uint256 grantAmount, uint256 startTimestamp, uint256 durationSeconds)
-        public
+        external
+        override
         onlyOwner
     {
         require(durationSeconds >= LOCK_PERIOD, "Vesting needs to at least be 1 year");
@@ -75,7 +77,7 @@ contract VestingContract is Ownable {
      * that have not been released yet.
      * @param beneficiary Address of the beneficiary to be finished
      */
-    function earlyLeave(address beneficiary) public onlyOwner {
+    function earlyLeave(address beneficiary) external override onlyOwner {
         require(
             block.timestamp < _start[beneficiary] + _duration[beneficiary],
             "Cannot early leave after the period has ended"
@@ -93,7 +95,7 @@ contract VestingContract is Ownable {
      * that have not been released yet.
      * @param beneficiary Address of the beneficiary to be removed
      */
-    function removeBeneficiary(address beneficiary) public onlyOwner {
+    function removeBeneficiary(address beneficiary) external override onlyOwner {
         require(_erc20Released[beneficiary] == 0, "Cannot remove beneficiary with released tokens");
         totalAllocated -= _grant[beneficiary];
         _grant[beneficiary] = 0;
@@ -106,7 +108,7 @@ contract VestingContract is Ownable {
      *
      * Emits a {ERC20Released} event.
      */
-    function release() public {
+    function release() external override {
         _release(msg.sender, msg.sender);
     }
 
@@ -116,7 +118,7 @@ contract VestingContract is Ownable {
      *
      * Emits a {ERC20Released} event.
      */
-    function emergencyDistribution(address _beneficiary, address _receiver) public onlyOwner {
+    function emergencyDistribution(address _beneficiary, address _receiver) external override onlyOwner {
         _release(_beneficiary, _receiver);
     }
 
@@ -140,42 +142,42 @@ contract VestingContract is Ownable {
     /**
      * @dev Getter for the start timestamp.
      */
-    function start(address beneficiary) public view virtual returns (uint256) {
+    function start(address beneficiary) public view override returns (uint256) {
         return _start[beneficiary];
     }
 
     /**
      * @dev Getter for the unlock timestamp.
      */
-    function unlock(address beneficiary) public view virtual returns (uint256) {
+    function unlock(address beneficiary) public view override returns (uint256) {
         return _start[beneficiary] + LOCK_PERIOD;
     }
 
     /**
      * @dev Getter for the vesting duration.
      */
-    function duration(address beneficiary) public view virtual returns (uint256) {
+    function duration(address beneficiary) public view override returns (uint256) {
         return _duration[beneficiary];
     }
 
     /**
      * @dev Getter for the end timestamp.
      */
-    function end(address beneficiary) public view virtual returns (uint256) {
+    function end(address beneficiary) public view override returns (uint256) {
         return start(beneficiary) + duration(beneficiary);
     }
 
     /**
      * @dev Amount of token already released
      */
-    function released(address beneficiary) public view virtual returns (uint256) {
+    function released(address beneficiary) public view override returns (uint256) {
         return _erc20Released[beneficiary];
     }
 
     /**
      * @dev Amount of token granted
      */
-    function grant(address beneficiary) public view virtual returns (uint256) {
+    function grant(address beneficiary) external view override returns (uint256) {
         return _grant[beneficiary];
     }
 
@@ -183,14 +185,14 @@ contract VestingContract is Ownable {
      * @dev Getter for the amount of releasable Kinto tokens. `token` should be the address of an
      * {IERC20} contract.
      */
-    function releasable(address beneficiary) public view virtual returns (uint256) {
+    function releasable(address beneficiary) public view override returns (uint256) {
         return vestedAmount(beneficiary, uint64(block.timestamp)) - released(beneficiary);
     }
 
     /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
-    function vestedAmount(address beneficiary, uint256 timestamp) public view virtual returns (uint256) {
+    function vestedAmount(address beneficiary, uint256 timestamp) public view override returns (uint256) {
         return _vestingSchedule(beneficiary, _grant[beneficiary], timestamp);
     }
 
@@ -201,7 +203,6 @@ contract VestingContract is Ownable {
     function _vestingSchedule(address beneficiary, uint256 totalAllocation, uint256 timestamp)
         internal
         view
-        virtual
         returns (uint256)
     {
         if (timestamp < unlock(beneficiary)) {
