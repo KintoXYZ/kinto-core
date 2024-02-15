@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 /**
- * @title KintoToken
+ * @title KintoToken - To be deployed on ETH mainnet
  * @dev KintoToken is an ERC20 token with governance features and a time bomb.
+ * To be deployed on ETH Mainnet.
  * It is meant to be used as the main governance token for the Kinto platform.
  * It is created with an initial supply and a max supply cap.
  * The max supply cap is reached after 10 years with a 5% inflation rate.
