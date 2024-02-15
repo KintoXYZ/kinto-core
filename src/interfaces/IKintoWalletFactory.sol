@@ -7,7 +7,22 @@ import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 interface IKintoWalletFactory {
-    /* ============ Structs ============ */
+    /* ============ Errors ============ */
+    error InvalidImplementation();
+    error InvalidInput();
+    error KYCRequired();
+    error KYCMustNotExist();
+    error InvalidWallet();
+    error OnlyRecoverer();
+    error InvalidWalletOrFunder();
+    error InvalidSender();
+    error SendFailed();
+    error InvalidFaucet();
+    error InvalidTarget();
+    error OnlyPrivileged();
+    error DeploymentNotAllowed(string reason);
+    error AmountMismatch();
+    error EmptyBytecode();
 
     /* ============ State Change ============ */
 

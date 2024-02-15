@@ -7,7 +7,24 @@ import {IKintoID} from "./IKintoID.sol";
 import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 
 interface IKintoWallet {
-    /* ============ Structs ============ */
+    /* ============ Errors ============ */
+
+    error LengthMismatch();
+    error InvalidPolicy();
+    error InvalidSigner();
+    error InvalidApp();
+    error AppNotWhitelisted();
+    error RecoveryNotStarted();
+    error RecoveryTimeNotElapsed();
+    error OwnerKYCMustBeBurned();
+    error InvalidRecoverer();
+    error MaxSignersExceeded();
+    error KYCRequired();
+    error DuplicateSigner();
+    error InvalidSingleSignerPolicy();
+    error OnlySelf();
+    error OnlyFactory();
+    error EmptySigners();
 
     /* ============ State Change ============ */
 

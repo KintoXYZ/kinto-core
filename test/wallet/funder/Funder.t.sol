@@ -60,6 +60,6 @@ contract FunderTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-sfw: invalid array");
+        assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
     }
 }

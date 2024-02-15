@@ -6,6 +6,9 @@ import "./IKintoWalletFactory.sol";
 import "./IFaucet.sol";
 
 interface IKYCViewer {
+    /* ============ Errors ============ */
+    error OnlyOwner();
+
     /* ============ Structs ============ */
 
     struct UserInfo {

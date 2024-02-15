@@ -4,6 +4,20 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IKintoID {
+    /* ============ Errors ============ */
+    error BalanceNotZero();
+    error MethodNotAllowed(string reason);
+    error NothingToBurn();
+    error LengthMismatch();
+    error AccountsAmountExceeded();
+    error KYCRequired();
+    error SignatureExpired();
+    error InvalidNonce();
+    error InvalidProvider();
+    error SignerNotEOA();
+    error OnlyMintBurnOrTransfer();
+    error InvalidSigner();
+
     /* ============ Structs ============ */
 
     struct Metadata {

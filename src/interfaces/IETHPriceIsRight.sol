@@ -2,6 +2,11 @@
 pragma solidity ^0.8.18;
 
 interface IETHPriceIsRight {
+    /* ============ Errors ============ */
+
+    error EnteringClosed();
+    error InvalidGuess();
+
     /* ============ State Change ============ */
 
     function enterGuess(uint256 _price) external;

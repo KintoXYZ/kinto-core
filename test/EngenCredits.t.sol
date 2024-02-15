@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import "../src/tokens/EngenCredits.sol";
 import "./SharedSetup.t.sol";
 
-contract EngenCreditsV2 is EngenCredits {
+contract EngenCreditsUpgrade is EngenCredits {
     function newFunction() external pure returns (uint256) {
         return 1;
     }
@@ -34,20 +34,20 @@ contract EngenCreditsTest is SharedSetup {
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
-        EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
-        _engenCredits.upgradeTo(address(_implementationV2));
+        EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
+        _engenCredits.upgradeTo(address(_implementation));
 
         // ensure that the implementation has been upgraded
-        EngenCreditsV2 _engenCreditsV2 = EngenCreditsV2(address(_engenCredits));
-        assertEq(_engenCreditsV2.newFunction(), 1);
+        EngenCreditsUpgrade _EngenCreditsUpgrade = EngenCreditsUpgrade(address(_engenCredits));
+        assertEq(_EngenCreditsUpgrade.newFunction(), 1);
         vm.stopPrank();
     }
 
     function testUpgradeTo_RevertWhen_WhenCallerIsNotOwner() public {
-        EngenCreditsV2 _implementationV2 = new EngenCreditsV2();
+        EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
 
         vm.expectRevert("Ownable: caller is not the owner");
-        _engenCredits.upgradeTo(address(_implementationV2));
+        _engenCredits.upgradeTo(address(_implementation));
     }
 
     /* ============ Set Transfer Enabled tests ============ */
@@ -68,7 +68,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
 
-        vm.expectRevert("EC: Transfers Already enabled");
+        vm.expectRevert(EngenCredits.TransfersAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
     }
@@ -107,7 +107,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
 
-        vm.expectRevert("EC: Burns Already enabled");
+        vm.expectRevert(EngenCredits.BurnsAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
     }
@@ -146,7 +146,7 @@ contract EngenCreditsTest is SharedSetup {
     function testTransfer_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert("EC: Transfers not enabled");
+        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -154,7 +154,7 @@ contract EngenCreditsTest is SharedSetup {
     function testBurn_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_user, 100);
-        vm.expectRevert("EC: Transfers not enabled");
+        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -209,7 +209,7 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        vm.expectRevert("EC: Invalid input");
+        vm.expectRevert(EngenCredits.LengthMismatch.selector);
         _engenCredits.setPhase1Override(addresses, points);
     }
 
@@ -300,7 +300,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: No tokens to mint");
+        assertRevertReasonEq(EngenCredits.NoTokensToMint.selector);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
     }
@@ -328,7 +328,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: Mint not allowed after completion");
+        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
     }
 
     function testMintCredits_RevertWhen_BurnsEnabled() public {
@@ -354,6 +354,6 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("EC: Mint not allowed after completion");
+        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
     }
 }

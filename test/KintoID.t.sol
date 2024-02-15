@@ -126,7 +126,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_user);
-        vm.expectRevert("Invalid Provider");
+        vm.expectRevert(IKintoID.InvalidProvider.selector);
         _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
@@ -135,7 +135,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         uint16[] memory traits = new uint16[](1);
         traits[0] = 1;
         vm.startPrank(_kycProvider);
-        vm.expectRevert("Invalid Signer");
+        vm.expectRevert(IKintoID.InvalidSigner.selector);
         _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
@@ -145,7 +145,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         traits[0] = 1;
         vm.startPrank(_kycProvider);
         _kintoID.mintIndividualKyc(sigdata, traits);
-        vm.expectRevert("Invalid Nonce");
+        vm.expectRevert(IKintoID.InvalidNonce.selector);
         _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
@@ -157,7 +157,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         traits[0] = 1;
 
         vm.prank(_kycProvider);
-        vm.expectRevert("Signature has expired");
+        vm.expectRevert(IKintoID.SignatureExpired.selector);
         _kintoID.mintIndividualKyc(sigdata, traits);
     }
 
@@ -170,7 +170,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
         // try minting again should revert
         sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Balance before mint must be 0");
+        vm.expectRevert(IKintoID.BalanceNotZero.selector);
         vm.prank(_kycProvider);
         _kintoID.mintIndividualKyc(sigdata, traits);
     }
@@ -178,7 +178,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     /* ============ Burn tests ============ */
 
     function testBurn_RevertWhen_UsingBurn() public {
-        vm.expectRevert("Use burnKYC instead");
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.MethodNotAllowed.selector, "Use burnKYC instead"));
         _kintoID.burn(1);
     }
 
@@ -186,7 +186,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
         vm.prank(_user);
-        vm.expectRevert("Use burnKYC instead");
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.MethodNotAllowed.selector, "Use burnKYC instead"));
         _kintoID.burn(tokenIdx);
     }
 
@@ -203,14 +203,14 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
 
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Invalid Provider");
+        vm.expectRevert(IKintoID.InvalidProvider.selector);
         vm.startPrank(_user);
         _kintoID.burnKYC(sigdata);
     }
 
     function testBurnKYC_WhenUserIsNotKYCd() public {
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Nothing to burn");
+        vm.expectRevert(IKintoID.NothingToBurn.selector);
         vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
     }
@@ -223,7 +223,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         _kintoID.burnKYC(sigdata);
 
         sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        vm.expectRevert("Nothing to burn");
+        vm.expectRevert(IKintoID.NothingToBurn.selector);
         vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
     }
@@ -237,13 +237,13 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function test_RevertWhen_LenghtMismatch() public {
-        vm.expectRevert("Length mismatch");
+        vm.expectRevert(IKintoID.LengthMismatch.selector);
         vm.prank(_kycProvider);
         _kintoID.monitor(new address[](2), new IKintoID.MonitorUpdateData[][](1));
     }
 
     function test_RevertWhen_TooManyAccounts() public {
-        vm.expectRevert("Too many accounts to monitor at once");
+        vm.expectRevert(IKintoID.AccountsAmountExceeded.selector);
         vm.prank(_kycProvider);
         _kintoID.monitor(new address[](201), new IKintoID.MonitorUpdateData[][](201));
     }
@@ -320,7 +320,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
     function testAddTrait_RevertWhen_UserIsNotKYCd() public {
         assertEq(_kintoID.isKYC(_user), false);
-        vm.expectRevert("Account must have a KYC token");
+        vm.expectRevert(IKintoID.KYCRequired.selector);
         vm.prank(_kycProvider);
         _kintoID.addTrait(_user, 1);
     }
@@ -353,7 +353,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function testRemoveTrait_RevertWhen_AccountIsNotKYCd() public {
-        vm.expectRevert("Account must have a KYC token");
+        vm.expectRevert(IKintoID.KYCRequired.selector);
         vm.prank(_kycProvider);
         _kintoID.removeTrait(_user, 1);
     }
@@ -437,13 +437,13 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     }
 
     function testAddSanction_RevertWhen_AccountIsNotKYCd() public {
-        vm.expectRevert("Account must have a KYC token");
+        vm.expectRevert(IKintoID.KYCRequired.selector);
         vm.prank(_kycProvider);
         _kintoID.addSanction(_user, 1);
     }
 
     function testRemoveSanction_RevertWhen_AccountIsNotKYCd() public {
-        vm.expectRevert("Account must have a KYC token");
+        vm.expectRevert(IKintoID.KYCRequired.selector);
         vm.prank(_kycProvider);
         _kintoID.removeSanction(_user, 1);
     }
@@ -454,7 +454,7 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenIdx = _kintoID.tokenOfOwnerByIndex(_user, 0);
         vm.prank(_user);
-        vm.expectRevert("Only recovery, mint or burn transfers are allowed");
+        vm.expectRevert(IKintoID.OnlyMintBurnOrTransfer.selector);
         _kintoID.safeTransferFrom(_user, _user2, tokenIdx);
     }
 

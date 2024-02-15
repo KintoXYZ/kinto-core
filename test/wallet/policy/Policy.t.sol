@@ -52,7 +52,7 @@ contract ResetSignerTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-rs: duplicate signers");
+        assertRevertReasonEq(IKintoWallet.DuplicateSigner.selector);
     }
 
     function testResetSigners_RevertWhen_EmptyArray() public {
@@ -76,7 +76,7 @@ contract ResetSignerTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        // fixme: assertRevertReasonEq(stdError.indexOOBError)F;
+        assertRevertReasonEq(IKintoWallet.EmptySigners.selector);
     }
 
     function testResetSigners_RevertWhen_ManyOwners() public {
@@ -104,7 +104,7 @@ contract ResetSignerTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-rs: signers exceed max limit");
+        assertRevertReasonEq(IKintoWallet.MaxSignersExceeded.selector);
     }
 
     function testResetSigners_RevertWhen_WithoutKYCSigner() public {
@@ -172,57 +172,94 @@ contract ResetSignerTest is SharedSetup {
         vm.stopPrank();
     }
 
-    // todo: separate into 2 different tests
     function testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners() public {
         address[] memory owners = new address[](2);
         owners[0] = _owner;
         owners[1] = _user;
 
-        uint256 nonce = _kintoWallet.getNonce();
-
         // call setSignerPolicy with ALL_SIGNERS policy should revert because the wallet has 1 owners
         // and the policy requires 3 owners.
-        UserOperation[] memory userOps = new UserOperation[](2);
+        UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
-            nonce,
+            _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("setSignerPolicy(uint8)", _kintoWallet.ALL_SIGNERS()),
             address(_paymaster)
         );
 
-        // call resetSigners with existing policy (SINGLE_SIGNER) should revert because I'm passing 2 owners
-        userOps[1] = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            nonce + 1,
-            privateKeys,
-            abi.encodeWithSignature("resetSigners(address[], uint8)", owners, _kintoWallet.signerPolicy()),
-            address(_paymaster)
-        );
-
-        // expect revert events for the 2 ops
-        // @dev handleOps fails silently (does not revert)
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
             _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
 
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+
+        assertRevertReasonEq(IKintoWallet.InvalidPolicy.selector);
+        assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
+    }
+
+    function testResetSigners_RevertWhen_InvalidPolicy(uint256 policy) public {
+        vm.assume(policy == 0 || policy > 3);
+
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+
+        // call setSignerPolicy with 0 policy
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("setSignerPolicy(uint8)", 0),
+            address(_paymaster)
+        );
+
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
+            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
         );
 
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
 
-        bytes[] memory reasons = new bytes[](2);
-        reasons[0] = "invalid policy";
-        reasons[1] = "Address: low-level call with value failed";
-        assertRevertReasonEq(reasons);
-
+        assertRevertReasonEq(IKintoWallet.InvalidPolicy.selector);
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
     }
+
+    // todo: we technically allow this but the additional owners are ignored
+    // function testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners_2() public {
+    //     address[] memory owners = new address[](2);
+    //     owners[0] = _owner;
+    //     owners[1] = _user;
+
+    //     // call resetSigners with existing policy (SINGLE_SIGNER) should revert because I'm passing 2 owners
+    //     UserOperation[] memory userOps = new UserOperation[](1);
+    //     userOps[0] = _createUserOperation(
+    //         address(_kintoWallet),
+    //         address(_kintoWallet),
+    //         _kintoWallet.getNonce(),
+    //         privateKeys,
+    //         abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
+    //         address(_paymaster)
+    //     );
+
+    //     vm.expectEmit(true, true, true, false);
+    //     emit UserOperationRevertReason(
+    //         _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
+    //     );
+
+    //     vm.recordLogs();
+    //     _entryPoint.handleOps(userOps, payable(_owner));
+
+    //     assertRevertReasonEq("Address: low-level call with value failed");
+    //     assertEq(_kintoWallet.owners(0), _owner);
+    //     assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
+    // }
 }

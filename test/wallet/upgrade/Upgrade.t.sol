@@ -65,7 +65,7 @@ contract PolicyTest is SharedSetup {
 
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
+        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
 
         vm.stopPrank();
     }
