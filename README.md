@@ -122,7 +122,7 @@ source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url
 To deploy with ledger:
 
 ```
-source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast --slow --ledger --sender <ADDR> --gas-estimate-multiplier 100 --legacy --skip-simulation --block-gas-limit 8000000000000000000
+source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast --slow --ledger --sender <ADDR> --gas-estimate-multiplier 100 --legacy --skip-simulation --block-gas-limit 8000000000000000000 --verifier blockscout --verifier-url https://kinto-mainnet.calderaexplorer.xyz/api
 ```
 
 ### Create Kinto Smart Account
