@@ -31,6 +31,15 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     /// @dev Timestamp of the contract deployment
     uint256 public immutable deployedAt;
 
+    /// @dev Address of the mining contract
+    address public miningContract;
+
+    /// @dev Address of the vesting contract
+    address public vestingContract;
+
+    /// @dev Whether token transfers are enabled
+    bool public tokenTransfersEnabled;
+
     constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {
         deployedAt = block.timestamp;
         _mint(msg.sender, SEED_TOKENS);
@@ -47,6 +56,32 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
         _mint(to, amount);
     }
 
+    /**
+     * @dev Enable token transfers
+     */
+    function enableTokenTransfers() public onlyOwner {
+        require(block.timestamp >= deployedAt + 365 days && !tokenTransfersEnabled, "Cannot enable transfers yet");
+        tokenTransfersEnabled = true;
+    }
+
+    /**
+     * @dev Set the vesting contract address
+     * @param _vestingContract The address of the vesting contract
+     */
+    function setVestingContract(address _vestingContract) public onlyOwner {
+        require(_vestingContract != address(0), "Invalid address");
+        vestingContract = _vestingContract;
+    }
+
+    /**
+     * @dev Set the mining contract address
+     * @param _miningContract The address of the mining contract
+     */
+    function setMiningContract(address _miningContract) public onlyOwner {
+        require(_miningContract != address(0), "Invalid address");
+        miningContract = _miningContract;
+    }
+
     // Need to override this internal function to call super._mint
     function _mint(address to, uint256 amount) internal override(ERC20, ERC20Votes) {
         super._mint(to, amount);
@@ -60,6 +95,15 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     // Need to override this because of the imports
     function _afterTokenTransfer(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
         super._afterTokenTransfer(from, to, amount);
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+        super._beforeTokenTransfer(from, to, amount);
+        require(
+            from == address(0) || from == address(miningContract) || to == address(miningContract)
+                || from == address(vestingContract) || to == address(vestingContract) || tokenTransfersEnabled,
+            "Kinto Tokens Transfers are disabled"
+        );
     }
 
     /**

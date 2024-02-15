@@ -17,6 +17,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.startPrank(_owner);
         _token = new KintoToken();
         _vestingContract = new VestingContract(address(_token));
+        _token.setVestingContract(address(_vestingContract));
         _token.transfer(address(_vestingContract), _token.SEED_TOKENS());
         vm.stopPrank();
     }
