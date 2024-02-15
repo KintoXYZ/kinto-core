@@ -39,7 +39,7 @@ jobs:
   test:
     needs: build
 
-    name: Test (${{ inputs.network }})
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
@@ -82,7 +82,7 @@ jobs:
       #- test-invariant
       # if: inputs.coverageThreshold != ''
 
-    name: Coverage (${{ inputs.network }})
+    name: Coverage
     runs-on: ubuntu-latest
 
     steps:

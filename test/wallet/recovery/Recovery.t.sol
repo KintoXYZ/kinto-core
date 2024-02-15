@@ -28,21 +28,24 @@ contract RecoveryTest is SharedSetup {
         _kintoWallet.startRecovery();
         assertEq(_kintoWallet.inRecovery(), block.timestamp);
 
-        // mint NFT to new owner and burn old
+        // mint NFT to new owner
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
         uint16[] memory traits = new uint16[](0);
-
-        vm.startPrank(_kycProvider);
+        vm.prank(_kycProvider);
         _kintoID.mintIndividualKyc(sigdata, traits);
-        sigdata = _auxCreateSignature(_kintoID, _owner, 1, block.timestamp + 1000);
+
+        // burn old NFT
+        sigdata = _auxCreateSignature(_kintoID, _owner, _ownerPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
-        vm.stopPrank();
 
         assertEq(_kintoID.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_owner), false);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
 
+        // trigger monitor
         address[] memory users = new address[](1);
         users[0] = _user;
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
@@ -52,6 +55,7 @@ contract RecoveryTest is SharedSetup {
         vm.prank(_kycProvider);
         _kintoID.monitor(users, updates);
 
+        // complete recovery
         vm.prank(address(_walletFactory));
         _kintoWallet.completeRecovery(users);
 
