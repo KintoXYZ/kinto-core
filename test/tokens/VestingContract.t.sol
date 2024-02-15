@@ -17,13 +17,13 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.startPrank(_owner);
         _token = new KintoToken();
         _vestingContract = new VestingContract(address(_token));
-        _token.transfer(address(_vestingContract), _token.INITIAL_SUPPLY());
+        _token.transfer(address(_vestingContract), _token.SEED_TOKENS());
         vm.stopPrank();
     }
 
     function testUp() public override {
         super.testUp();
-        assertEq(_token.balanceOf(address(_vestingContract)), _token.INITIAL_SUPPLY());
+        assertEq(_token.balanceOf(address(_vestingContract)), _token.SEED_TOKENS());
         assertEq(_vestingContract.owner(), _owner);
         assertEq(_vestingContract.totalAllocated(), 0);
         assertEq(_vestingContract.totalReleased(), 0);
@@ -97,6 +97,29 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.stopPrank();
         vm.expectRevert("Ownable: caller is not the owner");
         _vestingContract.removeBeneficiary(_user);
+    }
+
+    // test earlyLeave
+    function testEarlyLeave() public {
+        vm.startPrank(_owner);
+        _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days * 2);
+        vm.stopPrank();
+        vm.warp(block.timestamp + 365 days);
+        vm.startPrank(_owner);
+        _vestingContract.earlyLeave(_user);
+        vm.stopPrank();
+        vm.startPrank(_user);
+        _vestingContract.release();
+        assertEq(_token.balanceOf(_user), 50);
+        // check getters
+        assertEq(_vestingContract.grant(_user), 50);
+        assertEq(_vestingContract.start(_user), block.timestamp - 365 days);
+        assertEq(_vestingContract.duration(_user), 365 days);
+        assertEq(_vestingContract.released(_user), 50);
+        assertEq(_vestingContract.releasable(_user), 0);
+        assertEq(_vestingContract.vestedAmount(_user, block.timestamp + 365 days), 50);
+        assertEq(_vestingContract.totalReleased(), 50);
+        vm.stopPrank();
     }
 
     /* ============ Getter tests ============ */

@@ -83,6 +83,7 @@ contract VestingContract is Ownable {
         uint256 vested = vestedAmount(beneficiary, uint64(block.timestamp));
         uint256 difference = _grant[beneficiary] - vested;
         _grant[beneficiary] = vested;
+        _duration[beneficiary] = block.timestamp - _start[beneficiary];
         totalAllocated -= difference;
     }
 
