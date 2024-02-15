@@ -70,6 +70,23 @@ contract VestingContract is Ownable {
     }
 
     /**
+     * @dev Updates tokens when a team member of advisor leaves early.
+     * The beneficiary will no longer be able to claim the tokens
+     * that have not been released yet.
+     * @param beneficiary Address of the beneficiary to be finished
+     */
+    function earlyLeave(address beneficiary) public onlyOwner {
+        require(
+            block.timestamp < _start[beneficiary] + _duration[beneficiary],
+            "Cannot early leave after the period has ended"
+        );
+        uint256 vested = vestedAmount(beneficiary, uint64(block.timestamp));
+        uint256 difference = _grant[beneficiary] - vested;
+        _grant[beneficiary] = vested;
+        totalAllocated -= difference;
+    }
+
+    /**
      * @dev Remove a beneficiary from the vesting wallet.
      * The beneficiary will no longer be able to claim the tokens
      * that have not been released yet.
