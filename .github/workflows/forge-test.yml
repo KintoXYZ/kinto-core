@@ -27,6 +27,8 @@ jobs:
 
       - name: Check gas snapshots
         run: forge snapshot --diff
+        env:
+          FORK: false
 
       - name: Save forge compilation cache
         uses: actions/cache/save@v3
@@ -55,6 +57,7 @@ jobs:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FORK: false
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.16
@@ -94,6 +97,8 @@ jobs:
 
       - name: Generate LCOV report
         run: forge coverage --report lcov
+        env:
+          FORK: false
 
       - name: Upload report to Codecov
         uses: codecov/codecov-action@v3
