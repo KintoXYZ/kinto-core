@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.18;
 
 /* External Imports */
 import "@oz/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
