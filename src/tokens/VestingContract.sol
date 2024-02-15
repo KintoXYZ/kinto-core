@@ -10,19 +10,14 @@ import "@openzeppelin/contracts/utils/Address.sol";
  * Created following OpenZeppelin Contracts (last updated v5.0.0) (finance/VestingWallet.sol)
  *
  * @dev A vesting wallet is an ownable contract that can receive  ERC-20 tokens, and release these
- * assets to the wallet owner, also referred to as "beneficiary", according to a vesting schedule.
+ * assets to "beneficiary", according to a vesting schedule and a mandatory one-year lock.
  *
  * Any assets transferred to this contract will follow the vesting schedule as if they were locked from the beginning.
  * Consequently, if the vesting has already started, any amount of tokens sent to this contract will (at least partly)
  * be immediately releasable.
  *
  * By setting the duration to 0, one can configure this contract to behave like an asset timelock that hold tokens for
- * a beneficiary until a specified time.
- *
- * NOTE: Since the wallet is {Ownable}, and ownership can be transferred, it is possible to sell unvested tokens.
- * Preventing this in a smart contract is difficult, considering that: 1) a beneficiary address could be a
- * counterfactually deployed contract, 2) there is likely to be a migration path for EOAs to become contracts in the
- * near future.
+ * a beneficiary until a specified time + lock time.
  *
  */
 contract VestingContract is Ownable {
@@ -49,6 +44,14 @@ contract VestingContract is Ownable {
 
     /* ============ Beneficiary Methods ============ */
 
+    /**
+     * @dev Add a new beneficiary to the vesting wallet. The beneficiary will receive the tokens according to the
+     * vesting schedule.
+     * @param beneficiary Address of the beneficiary to whom vested tokens are transferred
+     * @param grantAmount Amount of tokens to be vested
+     * @param startTimestamp Timestamp at which the vesting schedule begins
+     * @param durationSeconds Duration in seconds of the vesting schedule
+     */
     function addBeneficiary(address beneficiary, uint256 grantAmount, uint256 startTimestamp, uint256 durationSeconds)
         public
         onlyOwner
@@ -65,6 +68,12 @@ contract VestingContract is Ownable {
         totalAllocated += grantAmount;
     }
 
+    /**
+     * @dev Remove a beneficiary from the vesting wallet.
+     * The beneficiary will no longer be able to claim the tokens
+     * that have not been released yet.
+     * @param beneficiary Address of the beneficiary to be removed
+     */
     function removeBeneficiary(address beneficiary) public onlyOwner {
         require(_erc20Released[beneficiary] == 0, "Cannot remove beneficiary with released tokens");
         totalAllocated -= _grant[beneficiary];
@@ -92,6 +101,12 @@ contract VestingContract is Ownable {
         _release(_beneficiary, _receiver);
     }
 
+    /**
+     * @dev Release the tokens that have already vested.
+     * @param _beneficiary Address to claim
+     *
+     * Emits a {ERC20Released} event.
+     */
     function _release(address _beneficiary, address _receiver) private {
         uint256 amount = releasable(_beneficiary);
         require(amount > 0, "Nothing to release");
