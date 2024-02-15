@@ -14,6 +14,7 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     string private constant _SYMBOL = "KINTO";
     /// @dev
     uint256 public constant INITIAL_SUPPLY = 10_000_000e18;
+    uint256 public constant MAX_SUPPLY = 15_000_000e18;
     uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1714489; // May 1st UTC
 
     uint256 public immutable deployedAt;
@@ -24,7 +25,8 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     }
 
     function mint(address to, uint256 amount) public onlyOwner {
-        require(block.timestamp > GOVERNANCE_RELEASE_DEADLINE, "Not transferred to governance");
+        require(block.timestamp >= GOVERNANCE_RELEASE_DEADLINE, "Not transferred to governance yet");
+        require(totalSupply() + amount <= MAX_SUPPLY, "Cannot exceed max supply");
         _mint(to, amount);
     }
 
@@ -32,8 +34,8 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
         super._mint(to, amount);
     }
 
-    function _burn(address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        super._burn(to, amount);
+    function _burn(address, /* to */ uint256 /* amount */ ) internal pure override(ERC20, ERC20Votes) {
+        revert("Burn is not allowed");
     }
 
     function _afterTokenTransfer(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {

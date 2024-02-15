@@ -29,25 +29,92 @@ contract VestingContract is Ownable {
     event ERC20Released(address indexed beneficiary, uint256 amount);
 
     address public immutable kintoToken;
+    uint256 public constant LOCK_PERIOD = 365 days;
+
     mapping(address => uint256) private _erc20Released;
-    mapping(address => uint64) private _start;
-    mapping(address => uint64) private _duration;
+    mapping(address => uint256) private _grant;
+    mapping(address => uint256) private _start;
+    mapping(address => uint256) private _duration;
+
+    uint256 public totalAllocated;
+    uint256 public totalReleased;
 
     /**
      * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
      * vesting duration of the vesting wallet.
      */
-    constructor(address token, address beneficiary, uint64 startTimestamp, uint64 durationSeconds) Ownable() {
-        _start[beneficiary] = startTimestamp;
-        _duration[beneficiary] = durationSeconds;
+    constructor(address token) Ownable() {
         kintoToken = token;
     }
+
+    /* ============ Beneficiary Methods ============ */
+
+    function addBeneficiary(address beneficiary, uint256 grantAmount, uint256 startTimestamp, uint256 durationSeconds)
+        public
+        onlyOwner
+    {
+        require(durationSeconds >= LOCK_PERIOD, "Vesting needs to at least be 1 year");
+        require(
+            (totalAllocated + grantAmount - totalReleased) <= IERC20(kintoToken).balanceOf(address(this)),
+            "Not enough tokens"
+        );
+        require(_grant[beneficiary] == 0, "Beneficiary already exists");
+        _start[beneficiary] = startTimestamp;
+        _duration[beneficiary] = durationSeconds;
+        _grant[beneficiary] = grantAmount;
+        totalAllocated += grantAmount;
+    }
+
+    function removeBeneficiary(address beneficiary) public onlyOwner {
+        require(_erc20Released[beneficiary] == 0, "Cannot remove beneficiary with released tokens");
+        totalAllocated -= _grant[beneficiary];
+        _grant[beneficiary] = 0;
+    }
+
+    /* ============ Claim methods ============ */
+
+    /**
+     * @dev Release the tokens that have already vested.
+     *
+     * Emits a {ERC20Released} event.
+     */
+    function release() public {
+        _release(msg.sender, msg.sender);
+    }
+
+    /**
+     * @dev Release the tokens that have already vested.
+     * @param _beneficiary Address to claim
+     *
+     * Emits a {ERC20Released} event.
+     */
+    function emergencyDistribution(address _beneficiary, address _receiver) public onlyOwner {
+        _release(_beneficiary, _receiver);
+    }
+
+    function _release(address _beneficiary, address _receiver) private {
+        uint256 amount = releasable(_beneficiary);
+        require(amount > 0, "Nothing to release");
+        _erc20Released[_beneficiary] += amount;
+        emit ERC20Released(_beneficiary, amount);
+        totalReleased += amount;
+        SafeERC20.safeTransfer(IERC20(kintoToken), _receiver, amount);
+    }
+
+    /* ============ Getters ============ */
 
     /**
      * @dev Getter for the start timestamp.
      */
     function start(address beneficiary) public view virtual returns (uint256) {
         return _start[beneficiary];
+    }
+
+    /**
+     * @dev Getter for the unlock timestamp.
+     */
+    function unlock(address beneficiary) public view virtual returns (uint256) {
+        return _start[beneficiary] + LOCK_PERIOD;
     }
 
     /**
@@ -72,6 +139,13 @@ contract VestingContract is Ownable {
     }
 
     /**
+     * @dev Amount of token granted
+     */
+    function grant(address beneficiary) public view virtual returns (uint256) {
+        return _grant[beneficiary];
+    }
+
+    /**
      * @dev Getter for the amount of releasable Kinto tokens. `token` should be the address of an
      * {IERC20} contract.
      */
@@ -80,37 +154,23 @@ contract VestingContract is Ownable {
     }
 
     /**
-     * @dev Release the tokens that have already vested.
-     *
-     * Emits a {ERC20Released} event.
-     */
-    function release(address beneficiary) public virtual {
-        uint256 amount = releasable(beneficiary);
-        _erc20Released[beneficiary] += amount;
-        emit ERC20Released(beneficiary, amount);
-        SafeERC20.safeTransfer(IERC20(kintoToken), owner(), amount);
-    }
-
-    /**
      * @dev Calculates the amount of tokens that has already vested. Default implementation is a linear vesting curve.
      */
-    function vestedAmount(address beneficiary, uint64 timestamp) public view virtual returns (uint256) {
-        return _vestingSchedule(
-            beneficiary, IERC20(beneficiary).balanceOf(address(this)) + released(kintoToken), timestamp
-        );
+    function vestedAmount(address beneficiary, uint256 timestamp) public view virtual returns (uint256) {
+        return _vestingSchedule(beneficiary, _grant[beneficiary], timestamp);
     }
 
     /**
      * @dev Virtual implementation of the vesting formula. This returns the amount vested, as a function of time, for
      * an asset given its total historical allocation.
      */
-    function _vestingSchedule(address beneficiary, uint256 totalAllocation, uint64 timestamp)
+    function _vestingSchedule(address beneficiary, uint256 totalAllocation, uint256 timestamp)
         internal
         view
         virtual
         returns (uint256)
     {
-        if (timestamp < start(beneficiary)) {
+        if (timestamp < unlock(beneficiary)) {
             return 0;
         } else if (timestamp >= end(beneficiary)) {
             return totalAllocation;
