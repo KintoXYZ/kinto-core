@@ -139,6 +139,6 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 }
 
-contract FaucetV4 is Faucet {
+contract FaucetV5 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }
