@@ -122,9 +122,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
 
-        // Replace KintoID with the factory
+        // set factory on KintoID
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
-        (, address implementation) = _deploy("KintoID", type(KintoID).creationCode, bytecode);
+        (address implementation) = _deployImplementation("KintoID", type(KintoID).creationCode, bytecode);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoID.upgradeTo(implementation);
 
@@ -135,6 +135,8 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         bytes memory creationCode = type(KintoID).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(0)));
         (address proxy, address implementation) = _deploy("KintoID", creationCode, bytecode);
+        if (write) console.log("* Disregard KintoID implementation at:", implementation);
+
         _kintoID = KintoID(payable(proxy));
         _kintoIDImpl = KintoID(payable(implementation));
 
@@ -255,32 +257,21 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         internal
         returns (address proxy, address implementation)
     {
+        implementation = _deployImplementation(contractName, creationCode, bytecode);
+        proxy = _deployProxy(contractName, creationCode, implementation);
+    }
+
+    function _deployProxy(string memory contractName, bytes memory creationCode, address implementation)
+        internal
+        returns (address proxy)
+    {
         bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         proxy = _getChainDeployment(contractName);
 
         if (!isWallet && proxy != address(0)) revert("Proxy contract already deployed");
 
-        // (1). deploy implementation
-        implementation = computeAddress(0, abi.encodePacked(creationCode));
-        if (!isContract(implementation)) {
-            // deploy implementation
-            privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-            implementation = Create2.deploy(0, 0, bytecode);
-
-            require(implementation != address(0), "Failed to deploy implementation");
-            if (write) console.log(contractName, "implementation deployed at:", implementation);
-
-            // write address to a file
-            if (write) {
-                vm.writeLine(
-                    _getAddressesFile(),
-                    string.concat('"', contractName, '-impl": "', vm.toString(address(implementation)), '",')
-                );
-            }
-        }
-
-        // (2). deploy Proxy contract
+        // deploy Proxy contract
         if (!isEntryPoint && !isWallet) {
             proxy = computeAddress(
                 0, abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(implementation), ""))
@@ -298,6 +289,37 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             if (write) {
                 vm.writeLine(
                     _getAddressesFile(), string.concat('"', contractName, '": "', vm.toString(address(proxy)), '",')
+                );
+            }
+        }
+    }
+
+    function _deployImplementation(string memory contractName, bytes memory creationCode, bytes memory bytecode)
+        internal
+        returns (address implementation)
+    {
+        bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
+
+        // deploy implementation
+        implementation = computeAddress(0, abi.encodePacked(creationCode));
+        if (!isContract(implementation)) {
+            privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+            implementation = Create2.deploy(0, 0, bytecode);
+
+            require(implementation != address(0), "Failed to deploy implementation");
+            if (write) console.log(contractName, "implementation deployed at:", implementation);
+
+            // write address to a file
+            if (write) {
+                vm.writeLine(
+                    _getAddressesFile(),
+                    string.concat(
+                        '"',
+                        contractName,
+                        isEntryPoint ? '": "' : '-impl": "',
+                        vm.toString(address(implementation)),
+                        '",'
+                    )
                 );
             }
         }
