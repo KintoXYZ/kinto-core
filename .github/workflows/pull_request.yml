@@ -19,6 +19,12 @@ jobs:
     uses: ./.github/workflows/forge-test.yml
     secrets: inherit
 
+  forge-mainnet-test:
+    if: github.head_ref != 'main' # already triggered by push
+    name: Forge tests
+    uses: ./.github/workflows/forge-mainnet-test.yml
+    secrets: inherit
+
   analyse:
     name: Slither analysis
     uses: ./.github/workflows/slither.yml
