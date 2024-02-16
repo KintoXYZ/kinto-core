@@ -93,9 +93,7 @@ jobs:
       - name: Run mainnet tests
         run: forge test 
         env:
-          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
-          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FOUNDRY_FUZZ_RUNS: 100
           FORK: true
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
           LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
