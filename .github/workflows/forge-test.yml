@@ -1,4 +1,4 @@
-name: Test Suite
+name: Forge test
 
 on: 
   workflow_call:
@@ -61,6 +61,7 @@ jobs:
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.16
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         with:
           summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
           sortCriteria: avg,max # sort diff rows by criteria
@@ -75,7 +76,30 @@ jobs:
           # delete the comment in case changes no longer impact gas costs
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}
-          
+  
+  mainnet-test:
+    needs: build
+
+    name: Test (mainnet)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run mainnet tests
+        run: forge test 
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FORK: true
+          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
+          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+
   coverage:
     needs:
       - test
@@ -87,6 +111,7 @@ jobs:
 
     name: Coverage
     runs-on: ubuntu-latest
+    if: github.head_ref != 'main' # already triggered by pull request
 
     steps:
       - uses: actions/checkout@v3
