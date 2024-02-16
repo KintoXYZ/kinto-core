@@ -93,10 +93,11 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testTransfer_RevertWhen_CallerIsAnyone() public {
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
-        _engenCredits.mint(_owner, 100);
-        vm.expectRevert("EC: Transfers not enabled");
-        _engenCredits.transfer(_user2, 100);
+        _token.mint(_owner, 100);
+        vm.expectRevert("Kinto Tokens Transfers are disabled");
+        _token.transfer(_user2, 100);
         vm.stopPrank();
     }
 
