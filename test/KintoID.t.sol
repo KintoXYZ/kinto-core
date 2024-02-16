@@ -401,12 +401,6 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function testAddSanction_RevertWhen_CallerIsNotKYCProvider() public {
         approveKYC(_kycProvider, _user, _userPk, new uint16[](1));
 
-        bytes memory err = abi.encodePacked(
-            "AccessControl: account ",
-            Strings.toHexString(_user),
-            " is missing role ",
-            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
-        );
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, _user, _kintoID.KYC_PROVIDER_ROLE()

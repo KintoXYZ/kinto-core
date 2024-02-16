@@ -23,6 +23,10 @@ interface IInitialize {
     function initialize() external;
 }
 
+interface Upgradeable {
+    function upgradeTo(address newImplementation) external;
+}
+
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     using MessageHashUtils for bytes32;
 
@@ -88,7 +92,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         } else {
             if (_isGethAllowed(proxy)) {
                 vm.broadcast(); // may require LEDGER_ADMIN
-                UUPSUpgradeable(proxy).upgradeToAndCall(_impl, bytes(""));
+                Upgradeable(proxy).upgradeTo(_impl);
             } else {
                 try Ownable(proxy).owner() returns (address owner) {
                     if (owner != _getChainDeployment("KintoWallet-admin")) {
@@ -99,7 +103,6 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                         );
                         revert("Contract is not owned by KintoWallet-admin");
                     }
-                    _upgradeTo(proxy, _impl, deployerPrivateKey);
                 } catch {}
                 _upgradeTo(proxy, _impl, deployerPrivateKey);
             }
@@ -122,7 +125,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             0,
             IKintoWallet(_from).getNonce(),
             privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes("")),
+            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

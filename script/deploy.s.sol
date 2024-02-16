@@ -258,13 +258,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         returns (address proxy, address implementation)
     {
         implementation = _deployImplementation(contractName, creationCode, bytecode);
-        proxy = _deployProxy(contractName, creationCode, implementation);
+        proxy = _deployProxy(contractName, implementation);
     }
 
-    function _deployProxy(string memory contractName, bytes memory creationCode, address implementation)
-        internal
-        returns (address proxy)
-    {
+    function _deployProxy(string memory contractName, address implementation) internal returns (address proxy) {
         bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         proxy = _getChainDeployment(contractName);

@@ -525,6 +525,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV7 is KintoID {
+contract KintoIDV8 is KintoID {
     constructor(address _walletFactory) KintoID(_walletFactory) {}
 }
