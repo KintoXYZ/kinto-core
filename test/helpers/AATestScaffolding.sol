@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import "@aa/core/EntryPoint.sol";
@@ -217,6 +218,37 @@ abstract contract AATestScaffolding is KYCSignature {
         _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
     }
 
+    function changeWalletOwner(address _newOwner, address _kycProvider) public {
+        // start recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.startRecovery();
+
+        // change recoverer to _newOwner
+        vm.prank(_kintoWallet.recoverer());
+        _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), _newOwner);
+
+        // burn old NFT
+        deal(address(_kintoID), _kintoWallet.owners(0), 0);
+
+        // pass recovery time
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        // trigger monitor
+        address[] memory users = new address[](1);
+        users[0] = _newOwner;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // complete recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.completeRecovery(users);
+        assertEq(_kintoWallet.owners(0), _newOwner);
+    }
+
     /* ============ assertion helper methods ============ */
 
     // selector reasons
@@ -278,7 +310,7 @@ abstract contract AATestScaffolding is KYCSignature {
                 (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
 
                 // check that the revertReasonBytes is long enough (at least 4 bytes for the selector + additional data for the message)
-                if (revertReasonBytes.length > 4) {
+                if (revertReasonBytes.length >= 4) {
                     // remove the first 4 bytes (the function selector)
                     bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
                     for (uint256 j = 4; j < revertReasonBytes.length; j++) {

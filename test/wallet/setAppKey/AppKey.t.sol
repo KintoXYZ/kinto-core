@@ -27,6 +27,9 @@ contract AppKeyTest is SharedSetup {
     // todo: we may want to remove this requirement from the KintoWallet since anyways
     // we always check for the app to be whitelisted regardless if using app key or not
     function testSetAppKey_RevertWhen_AppIsNotWhitelisted() public {
+        // make sure app is not whitelisted
+        whitelistApp(address(_engenCredits), false);
+
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),

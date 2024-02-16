@@ -43,7 +43,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        assertEq(_walletFactory.factoryWalletVersion(), 2);
+        if (!vm.envBool("FORK")) assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
@@ -199,12 +199,15 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testFundWallet() public {
+        uint256 previousBalance = address(_kintoWallet).balance;
         vm.prank(_owner);
-        _walletFactory.fundWallet{value: 1e18}(payable(address(_kintoWallet)));
-        assertEq(address(_kintoWallet).balance, 1e18);
+        _walletFactory.fundWallet{value: 1 ether}(payable(address(_kintoWallet)));
+        assertEq(address(_kintoWallet).balance, previousBalance + 1 ether);
     }
 
     function testFundWallet_WhenCallerIsWhitelisted() public {
+        uint256 previousBalance = address(_kintoWallet).balance;
+
         address[] memory funders = new address[](1);
         funders[0] = _funder;
 
@@ -225,7 +228,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.deal(_funder, 1e17);
         vm.prank(_funder);
         _walletFactory.fundWallet{value: 1e17}(payable(address(_kintoWallet)));
-        assertEq(address(_kintoWallet).balance, 1e17);
+        assertEq(address(_kintoWallet).balance, previousBalance + 1e17);
     }
 
     function testFundWallet_RevertWhen_InvalidWallet() public {
@@ -374,11 +377,12 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() public {
+        uint256 previousBalance = address(_kintoWallet).balance;
         approveKYC(_kycProvider, _user, _userPk);
         vm.deal(_user, 1 ether);
         vm.prank(_user);
-        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kintoWallet));
-        assertEq(address(_kintoWallet).balance, 1e18);
+        _walletFactory.sendMoneyToAccount{value: 1 ether}(address(_kintoWallet));
+        assertEq(address(_kintoWallet).balance, previousBalance + 1 ether);
     }
 
     function testSendMoneyToAccount_WhenCallerIsOwner() public {
@@ -404,9 +408,10 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsWallet() public {
+        uint256 previousBalance = address(_kintoWallet).balance;
         vm.prank(_owner);
-        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kintoWallet));
-        assertEq(address(_kintoWallet).balance, 1e18);
+        _walletFactory.sendMoneyToAccount{value: 1 ether}(address(_kintoWallet));
+        assertEq(address(_kintoWallet).balance, previousBalance + 1 ether);
     }
 
     function testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsEOA() public {

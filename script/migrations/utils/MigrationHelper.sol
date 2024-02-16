@@ -30,6 +30,7 @@ interface Upgradeable {
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     using MessageHashUtils for bytes32;
 
+    bool testMode = vm.envBool("TEST_MODE");
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
@@ -86,25 +87,42 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         _impl = _deployImplementation(contractName, version, bytecode);
 
         // (2). call upgradeTo to set new implementation
-        if (isWallet) {
-            vm.broadcast(); // may require LEDGER_ADMIN
-            factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
-        } else {
-            if (_isGethAllowed(proxy)) {
+        if (!testMode) {
+            if (isWallet) {
                 vm.broadcast(); // may require LEDGER_ADMIN
-                Upgradeable(proxy).upgradeTo(_impl);
+                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
             } else {
-                try Ownable(proxy).owner() returns (address owner) {
-                    if (owner != _getChainDeployment("KintoWallet-admin")) {
-                        console.log(
-                            "%s contract is not owned by the KintoWallet-admin, its owner is %s",
-                            contractName,
-                            vm.toString(owner)
-                        );
-                        revert("Contract is not owned by KintoWallet-admin");
+                if (_isGethAllowed(proxy)) {
+                    vm.broadcast(); // may require LEDGER_ADMIN
+                    Upgradeable(proxy).upgradeTo(_impl);
+                } else {
+                    try Ownable(proxy).owner() returns (address owner) {
+                        if (owner != _getChainDeployment("KintoWallet-admin")) {
+                            console.log(
+                                "%s contract is not owned by the KintoWallet-admin, its owner is %s",
+                                contractName,
+                                vm.toString(owner)
+                            );
+                            revert("Contract is not owned by KintoWallet-admin");
+                        }
+                        _upgradeTo(proxy, _impl, deployerPrivateKey);
+                    } catch {
+                        _upgradeTo(proxy, _impl, deployerPrivateKey);
                     }
-                } catch {}
-                _upgradeTo(proxy, _impl, deployerPrivateKey);
+                }
+            }
+        } else {
+            if (isWallet) {
+                vm.prank(factory.owner());
+                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
+            } else {
+                // todo: ideally, on testMode, we should use the KintoWallet-admin and adjust tests so they use the handleOps
+                try Ownable(proxy).owner() returns (address owner) {
+                    vm.prank(owner);
+                    Upgradeable(proxy).upgradeTo(_impl);
+                } catch {
+                    Upgradeable(proxy).upgradeTo(_impl);
+                }
             }
         }
     }
@@ -223,5 +241,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                 break;
             }
         }
+    }
+
+    // @dev this is a workaround to get the address of the KintoWallet-admin in test mode
+    function _getChainDeployment(string memory _contractName) internal override returns (address _contract) {
+        if (testMode && keccak256(abi.encode(_contractName)) == keccak256(abi.encode("KintoWallet-admin"))) {
+            return vm.envAddress("KINTO_ADMIN_WALLET");
+        }
+        return super._getChainDeployment(_contractName);
     }
 }

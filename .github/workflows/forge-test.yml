@@ -1,4 +1,4 @@
-name: Test Suite
+name: Forge test
 
 on: 
   workflow_call:
@@ -27,6 +27,8 @@ jobs:
 
       - name: Check gas snapshots
         run: forge snapshot --diff
+        env:
+          FORK: false
 
       - name: Save forge compilation cache
         uses: actions/cache/save@v3
@@ -39,7 +41,7 @@ jobs:
   test:
     needs: build
 
-    name: Test (${{ inputs.network }})
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
@@ -55,6 +57,7 @@ jobs:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FORK: false
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.16
@@ -72,7 +75,28 @@ jobs:
           # delete the comment in case changes no longer impact gas costs
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}
-          
+  
+  mainnet-test:
+    needs: build
+
+    name: Test (mainnet)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run mainnet tests
+        run: forge test 
+        env:
+          FOUNDRY_FUZZ_RUNS: 100
+          FORK: true
+          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
+          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+
   coverage:
     needs:
       - test
@@ -82,8 +106,9 @@ jobs:
       #- test-invariant
       # if: inputs.coverageThreshold != ''
 
-    name: Coverage (${{ inputs.network }})
+    name: Coverage
     runs-on: ubuntu-latest
+    if: github.head_ref != 'main' # already triggered by pull request
 
     steps:
       - uses: actions/checkout@v3
@@ -94,6 +119,8 @@ jobs:
 
       - name: Generate LCOV report
         run: forge coverage --report lcov
+        env:
+          FORK: false
 
       - name: Upload report to Codecov
         uses: codecov/codecov-action@v3
