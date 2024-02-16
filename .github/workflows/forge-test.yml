@@ -61,7 +61,6 @@ jobs:
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.16
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         with:
           summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
           sortCriteria: avg,max # sort diff rows by criteria
