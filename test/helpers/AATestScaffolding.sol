@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import "@aa/core/EntryPoint.sol";
@@ -227,7 +228,7 @@ abstract contract AATestScaffolding is KYCSignature {
         _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), _newOwner);
 
         // burn old NFT
-        revokeKYC(_kycProvider, _kintoWallet.owners(0), vm.envUint("PRIVATE_KEY"));
+        deal(address(_kintoID), _kintoWallet.owners(0), 0);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
