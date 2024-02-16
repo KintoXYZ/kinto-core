@@ -115,7 +115,6 @@ contract KintoTokenTest is SharedSetup {
     function testTransferFrom_RevertWhen_CallerIsAnyoneAfterMint() public {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
-        _token.mint(_owner, 100);
         vm.expectRevert("Kinto Tokens Transfers are disabled");
         _token.transfer(_user, 100);
         vm.stopPrank();
@@ -152,7 +151,7 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testEnableTokenTransfers() public {
-        vm.warp(_token.deployedAt() + 365 days);
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
         _token.enableTokenTransfers();
         vm.stopPrank();

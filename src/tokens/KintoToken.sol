@@ -60,7 +60,7 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
      * @dev Enable token transfers
      */
     function enableTokenTransfers() public onlyOwner {
-        require(block.timestamp >= deployedAt + 365 days && !tokenTransfersEnabled, "Cannot enable transfers yet");
+        require(block.timestamp >= GOVERNANCE_RELEASE_DEADLINE && !tokenTransfersEnabled, "Cannot enable transfers yet");
         tokenTransfersEnabled = true;
     }
 
