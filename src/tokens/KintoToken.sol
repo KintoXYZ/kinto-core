@@ -100,8 +100,8 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         super._beforeTokenTransfer(from, to, amount);
         require(
-            from == address(0) || from == address(miningContract) || to == address(miningContract)
-                || from == address(vestingContract) || to == address(vestingContract) || tokenTransfersEnabled,
+            from == address(0) || from == address(miningContract) || from == address(vestingContract)
+                || to == address(vestingContract) || tokenTransfersEnabled,
             "Kinto Tokens Transfers are disabled"
         );
     }
