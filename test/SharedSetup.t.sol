@@ -151,6 +151,9 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         counter = new Counter();
         assertEq(counter.count(), 0);
 
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
         registerApp(_owner, "test", address(counter));
         whitelistApp(address(counter));
         fundSponsorForApp(_owner, address(counter));
