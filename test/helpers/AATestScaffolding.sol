@@ -238,6 +238,7 @@ abstract contract AATestScaffolding is KYCSignature {
             IInitialize(address(_kintoAppRegistry)).initialize();
             vm.stopPrank();
         } else {
+            vm.prank(_kintoAppRegistry.owner());
             _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
         }
     }

@@ -22,15 +22,6 @@ contract KintoAppRegistryTest is SharedSetup {
         super.testUp();
         useHarness();
 
-        console.log("OWNER", _kintoAppRegistry.owner());
-        console.log("NAME", _kintoAppRegistry.name());
-        console.log("SYMBOL", _kintoAppRegistry.symbol());
-        console.log("RATE_LIMIT_PERIOD", _kintoAppRegistry.RATE_LIMIT_PERIOD());
-        console.log("RATE_LIMIT_THRESHOLD", _kintoAppRegistry.RATE_LIMIT_THRESHOLD());
-        console.log("GAS_LIMIT_PERIOD", _kintoAppRegistry.GAS_LIMIT_PERIOD());
-        console.log("GAS_LIMIT_THRESHOLD", _kintoAppRegistry.GAS_LIMIT_THRESHOLD());
-        console.log("BASE_URI", KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI());
-
         assertEq(_kintoAppRegistry.owner(), _owner);
         assertEq(_kintoAppRegistry.name(), "Kinto APP");
         assertEq(_kintoAppRegistry.symbol(), "KINTOAPP");
