@@ -22,6 +22,15 @@ contract KintoAppRegistryTest is SharedSetup {
         super.testUp();
         useHarness();
 
+        console.log("OWNER", _kintoAppRegistry.owner());
+        console.log("NAME", _kintoAppRegistry.name());
+        console.log("SYMBOL", _kintoAppRegistry.symbol());
+        console.log("RATE_LIMIT_PERIOD", _kintoAppRegistry.RATE_LIMIT_PERIOD());
+        console.log("RATE_LIMIT_THRESHOLD", _kintoAppRegistry.RATE_LIMIT_THRESHOLD());
+        console.log("GAS_LIMIT_PERIOD", _kintoAppRegistry.GAS_LIMIT_PERIOD());
+        console.log("GAS_LIMIT_THRESHOLD", _kintoAppRegistry.GAS_LIMIT_THRESHOLD());
+        console.log("BASE_URI", KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI());
+
         assertEq(_kintoAppRegistry.owner(), _owner);
         assertEq(_kintoAppRegistry.name(), "Kinto APP");
         assertEq(_kintoAppRegistry.symbol(), "KINTOAPP");
@@ -41,7 +50,11 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.startPrank(_owner);
 
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
-        _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
         assertEq(KintoAppRegistryV2(address(_kintoAppRegistry)).newFunction(), 1);
 
         vm.stopPrank();
@@ -50,7 +63,11 @@ contract KintoAppRegistryTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
     }
 
     /* ============ App tests & Viewers ============ */

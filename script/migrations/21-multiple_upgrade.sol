@@ -12,6 +12,7 @@ import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
 import "../../test/helpers/UserOp.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -87,7 +88,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (3). upgrade paymaster to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        SponsorPaymaster(payable(paymasterProxy)).upgradeToAndCall(address(_paymasterImpl), bytes(""));
+        Upgradeable(address(payable(paymasterProxy))).upgradeTo(address(_paymasterImpl));
     }
 
     function upgradeRegistry() public returns (address _registryImpl) {
@@ -146,7 +147,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (2). upgrade factory to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        KintoWalletFactory(payable(factoryProxy)).upgradeToAndCall(address(_factoryImpl), bytes(""));
+        Upgradeable(address(payable(factoryProxy))).upgradeTo(address(_factoryImpl));
     }
 
     function upgradeKYCViewer() public returns (address _kycViewerImpl, address _proxy) {
@@ -185,7 +186,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
             0,
             nonce,
             privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes("")),
+            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

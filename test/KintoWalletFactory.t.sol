@@ -91,7 +91,11 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
         vm.prank(_owner);
-        _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        if (fork) {
+            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
+        } else {
+            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
     }
 
@@ -101,7 +105,11 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
         vm.prank(someone);
-        _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        if (fork) {
+            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
+        } else {
+            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
     }
 
     function testUpgradeAllWalletImplementations() public {

@@ -9,10 +9,8 @@ import "@oz/contracts/utils/Strings.sol";
 import "../src/KintoID.sol";
 import "../src/interfaces/IKintoID.sol";
 
-import "./helpers/KYCSignature.sol";
+import "./SharedSetup.t.sol";
 import "./helpers/UUPSProxy.sol";
-import {AATestScaffolding} from "./helpers/AATestScaffolding.sol";
-import {UserOp} from "./helpers/UserOp.sol";
 
 contract KintoIDv2 is KintoID {
     constructor(address _walletFactory) KintoID(_walletFactory) {}
@@ -22,25 +20,9 @@ contract KintoIDv2 is KintoID {
     }
 }
 
-contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
-    KintoIDv2 _kintoIDv2;
-
-    function setUp() public {
-        vm.chainId(1);
-        vm.startPrank(_owner);
-        _implementation = new KintoID(address(_walletFactory));
-
-        // deploy _proxy contract and point it to _implementation
-        _kintoID = KintoID(address(new UUPSProxy(address(_implementation), "")));
-
-        // Initialize _proxy
-        _kintoID.initialize();
-        _kintoID.grantRole(_kintoID.KYC_PROVIDER_ROLE(), _kycProvider);
-        vm.stopPrank();
-    }
-
-    function testUp() public {
-        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+contract KintoIDTest is SharedSetup {
+    function testUp() public override {
+        if (fork) assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");
     }
@@ -49,11 +31,14 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
     function testUpgradeTo() public {
         vm.startPrank(_owner);
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
-        _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        if (fork) {
+            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
 
         // ensure that the _proxy is now pointing to the new implementation
-        _kintoIDv2 = KintoIDv2(address(_kintoID));
-        assertEq(_kintoIDv2.newFunction(), 1);
+        assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);
         vm.stopPrank();
     }
 
@@ -67,13 +52,18 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
                 _implementationV2.UPGRADER_ROLE()
             )
         );
-        _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        if (fork) {
+            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
     }
 
     function testAuthorizedCanUpgrade() public {
         assertEq(false, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
 
-        vm.startPrank(_owner);
+        address owner = fork ? vm.envAddress("LEDGER_ADMIN") : _owner;
+        vm.startPrank(owner);
         _kintoID.grantRole(_kintoID.UPGRADER_ROLE(), _upgrader);
         vm.stopPrank();
 
@@ -82,11 +72,14 @@ contract KintoIDTest is KYCSignature, AATestScaffolding, UserOp {
 
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
         vm.prank(_upgrader);
-        _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        if (fork) {
+            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
 
         // re-wrap the _proxy
-        _kintoIDv2 = KintoIDv2(address(_kintoID));
-        assertEq(_kintoIDv2.newFunction(), 1);
+        assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);
     }
 
     /* ============ Mint tests ============ */

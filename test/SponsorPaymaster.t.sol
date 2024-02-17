@@ -48,7 +48,11 @@ contract SponsorPaymasterTest is SharedSetup {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
-        _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        if (fork) {
+            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
+        } else {
+            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
 
         _newImplementation = SponsorPaymasterUpgrade(address(_paymaster));
         assertEq(_newImplementation.newFunction(), 1);
@@ -57,7 +61,11 @@ contract SponsorPaymasterTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        if (fork) {
+            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
+        } else {
+            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
     }
 
     /* ============ Deposit & Stake ============ */

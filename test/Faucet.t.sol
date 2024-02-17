@@ -42,7 +42,11 @@ contract FaucetTest is SharedSetup {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
 
         vm.expectRevert(IFaucet.OnlyOwner.selector);
-        _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
+        if (fork) {
+            Upgradeable(address(_faucet)).upgradeTo(address(_newImpl));
+        } else {
+            _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
+        }
     }
 
     /* ============ Start Faucet tests ============ */

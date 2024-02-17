@@ -45,7 +45,7 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
         }
         console.log("kintoAppRegistryImpl", kintoAppRegistryImpl);
         bytes memory bytecode =
-            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(kintoAppRegistryImpl), bytes("")));
+            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(kintoAppRegistryImpl)));
         // deploy _proxy contract and point it to _implementation
         _kintoApp = KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32("10")));
         vm.stopBroadcast();

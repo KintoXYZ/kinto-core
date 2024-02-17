@@ -13,6 +13,7 @@ import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
 import "../../test/helpers/UserOp.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -74,7 +75,7 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
             0,
             nonce,
             privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newFaucetImpl), bytes("")),
+            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newFaucetImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

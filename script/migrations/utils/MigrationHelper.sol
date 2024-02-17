@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@oz/contracts/access/Ownable.sol";
 
 import "../../../src/wallet/KintoWalletFactory.sol";

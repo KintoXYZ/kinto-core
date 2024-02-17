@@ -9,6 +9,7 @@ import "../../src/KintoID.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -64,7 +65,7 @@ contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
         // Start admin
         vm.startBroadcast();
         // 2) Upgrade wallet factory
-        KintoWalletFactory(address(_walletFactory)).upgradeToAndCall(address(_factoryImpl), bytes(""));
+        Upgradeable(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         // 3) Send ETH to test signer
         KintoWalletFactory(address(_walletFactory)).sendMoneyToAccount{value: 0.05 ether}(
             0x0C1df30B4576A1A94D9528854516D4d425Cf9323
