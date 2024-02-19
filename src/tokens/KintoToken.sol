@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 /**
  * @title KintoToken - To be deployed on ETH mainnet
@@ -15,7 +14,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
  * It is created with an initial supply and a max supply cap.
  * The max supply cap is reached after 10 years with a 5% inflation rate.
  */
-contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
+contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
+    /// @dev errors
+    error GovernanceDeadlineNotReached();
+    error TransfersAlreadyEnabled();
+    error MaxSupplyExceeded();
+    error InvalidAddress();
+    error TransfersDisabled();
+
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Kinto Token";
     /// @dev EIP-20 token symbol for this token
@@ -40,7 +46,7 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     /// @dev Whether token transfers are enabled
     bool public tokenTransfersEnabled;
 
-    constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {
+    constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) Ownable(msg.sender) {
         deployedAt = block.timestamp;
         _mint(msg.sender, SEED_TOKENS);
     }
@@ -51,8 +57,8 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
      * @param amount The amount of tokens to mint
      */
     function mint(address to, uint256 amount) public onlyOwner {
-        require(block.timestamp >= GOVERNANCE_RELEASE_DEADLINE, "Not transferred to governance yet");
-        require(totalSupply() + amount <= getSupplyCap(), "Cannot exceed max supply");
+        if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
+        if (totalSupply() + amount > getSupplyCap()) revert MaxSupplyExceeded();
         _mint(to, amount);
     }
 
@@ -60,7 +66,8 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
      * @dev Enable token transfers
      */
     function enableTokenTransfers() public onlyOwner {
-        require(block.timestamp >= GOVERNANCE_RELEASE_DEADLINE && !tokenTransfersEnabled, "Cannot enable transfers yet");
+        if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
+        if (tokenTransfersEnabled) revert TransfersAlreadyEnabled();
         tokenTransfersEnabled = true;
     }
 
@@ -69,7 +76,7 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
      * @param _vestingContract The address of the vesting contract
      */
     function setVestingContract(address _vestingContract) public onlyOwner {
-        require(_vestingContract != address(0), "Invalid address");
+        if (_vestingContract == address(0)) revert InvalidAddress();
         vestingContract = _vestingContract;
     }
 
@@ -78,32 +85,21 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
      * @param _miningContract The address of the mining contract
      */
     function setMiningContract(address _miningContract) public onlyOwner {
-        require(_miningContract != address(0), "Invalid address");
+        if (_miningContract == address(0)) revert InvalidAddress();
         miningContract = _miningContract;
     }
 
-    // Need to override this internal function to call super._mint
-    function _mint(address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        super._mint(to, amount);
-    }
-
-    // Need to override this internal function to disable burning
-    function _burn(address, /* to */ uint256 /* amount */ ) internal pure override(ERC20, ERC20Votes) {
-        revert("Burn is not allowed");
+    function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
+        super._update(from, to, amount);
+        if (
+            from != address(0) && from != address(miningContract) && from != address(vestingContract)
+                && to != address(vestingContract) && !tokenTransfersEnabled
+        ) revert TransfersDisabled();
     }
 
     // Need to override this because of the imports
-    function _afterTokenTransfer(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        super._afterTokenTransfer(from, to, amount);
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
-        super._beforeTokenTransfer(from, to, amount);
-        require(
-            from == address(0) || from == address(miningContract) || from == address(vestingContract)
-                || to == address(vestingContract) || tokenTransfersEnabled,
-            "Kinto Tokens Transfers are disabled"
-        );
+    function nonces(address owner) public view override(ERC20Permit, Nonces) returns (uint256) {
+        return super.nonces(owner);
     }
 
     /**

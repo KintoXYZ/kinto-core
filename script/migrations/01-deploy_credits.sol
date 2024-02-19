@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration1DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     EngenCredits _implementation;
     EngenCredits _engenCredits;

@@ -41,7 +41,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
     }
 
     function testAddBeneficiary_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
     }
 
@@ -96,7 +96,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.startPrank(_owner);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
         vm.stopPrank();
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _vestingContract.removeBeneficiary(_user);
     }
 
@@ -216,7 +216,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
         vm.stopPrank();
         vm.warp(block.timestamp + 365 days + 1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _vestingContract.emergencyDistribution(_user, _user);
     }
 }

@@ -9,7 +9,7 @@ contract KYCViewerV3 is KYCViewer {
 }
 
 contract KintoMigration23DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     function run() public override {
         super.run();

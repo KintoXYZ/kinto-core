@@ -48,7 +48,11 @@ contract SponsorPaymasterTest is SharedSetup {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
-        _paymaster.upgradeTo(address(_newImplementation));
+        if (fork) {
+            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
+        } else {
+            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
 
         _newImplementation = SponsorPaymasterUpgrade(address(_paymaster));
         assertEq(_newImplementation.newFunction(), 1);
@@ -57,7 +61,11 @@ contract SponsorPaymasterTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        _paymaster.upgradeTo(address(_newImplementation));
+        if (fork) {
+            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
+        } else {
+            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
     }
 
     /* ============ Deposit & Stake ============ */
@@ -226,7 +234,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
 
@@ -604,7 +612,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _paymaster.setAppRegistry(address(123));
     }
 
@@ -633,7 +641,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _paymaster.setUserOpMaxCost(123);
     }
 

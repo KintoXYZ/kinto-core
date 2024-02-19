@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -35,7 +35,7 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 }
 
 contract KintoWalletFactoryTest is SharedSetup {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactoryUpgrade _walletFactoryv2;
@@ -43,7 +43,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        if (!vm.envBool("FORK")) assertEq(_walletFactory.factoryWalletVersion(), 2);
+        if (!fork) assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
@@ -91,7 +91,11 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
         vm.prank(_owner);
-        _walletFactory.upgradeTo(address(_newImplementation));
+        if (fork) {
+            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
+        } else {
+            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
     }
 
@@ -99,9 +103,13 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.assume(someone != _owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
         vm.prank(someone);
-        _walletFactory.upgradeTo(address(_newImplementation));
+        if (fork) {
+            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
+        } else {
+            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
+        }
     }
 
     function testUpgradeAllWalletImplementations() public {
@@ -131,7 +139,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
 
         // upgrade all implementations
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
     }
 

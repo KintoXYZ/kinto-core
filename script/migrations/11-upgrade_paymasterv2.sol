@@ -7,12 +7,13 @@ import "../../src/paymasters/SponsorPaymaster.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     SponsorPaymaster _paymaster;
     KintoWalletFactory _walletFactory;
@@ -44,7 +45,7 @@ contract KintoMigration11DeployScript is Create2Helper, ArtifactsReader {
         // Switch to admin to upgrade
         vm.stopBroadcast();
         vm.startBroadcast();
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
         // Set the app registry
         _paymaster.setAppRegistry(_getChainDeployment("KintoAppRegistry"));
         vm.stopBroadcast();

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
@@ -14,7 +14,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 abstract contract UserOp is Test {
     uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     // private keys
     uint256 _ownerPk = 1;

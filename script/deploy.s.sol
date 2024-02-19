@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
 import "../src/viewers/KYCViewer.sol";
@@ -133,7 +133,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
         (address implementation) = _deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        kintoID.upgradeTo(implementation);
+        kintoID.upgradeToAndCall(implementation, bytes(""));
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }

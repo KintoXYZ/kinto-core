@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/interfaces/IERC721.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
@@ -36,9 +36,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**
@@ -116,6 +115,6 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV5 is KYCViewer {
+contract KYCViewerV6 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }

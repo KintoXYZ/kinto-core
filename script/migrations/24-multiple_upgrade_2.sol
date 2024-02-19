@@ -5,7 +5,7 @@ import "../../src/viewers/KYCViewer.sol";
 import "./utils/MigrationHelper.sol";
 
 contract KintoMigration24DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     function run() public override {
         super.run();

@@ -9,6 +9,7 @@ import "../../src/KintoID.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -18,7 +19,7 @@ contract KintoIDV3 is KintoID {
 }
 
 contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _paymaster;
@@ -67,14 +68,14 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         vm.stopBroadcast();
         vm.startBroadcast();
         // (3). upgrade paymaster to new implementation
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
 
         // sanity check: paymaster's cost of op should be 200_000
         require(_paymaster.COST_OF_POST() == 200_000, "COST_OF_POST should be 200_000");
 
         // (4). upgrade kinto id to new implementation
         // vm.prank(_paymaster.owner());
-        _kintoID.upgradeTo(address(_kintoIDImpl));
+        Upgradeable(address(_kintoID)).upgradeTo(address(_kintoIDImpl));
 
         // sanity check: paymaster's cost of op should be 200_000
         try _kintoID.burn(10) {

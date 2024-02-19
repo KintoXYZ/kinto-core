@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration3DeployScript is Create2Helper, KYCSignature, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoID _kintoID;
 

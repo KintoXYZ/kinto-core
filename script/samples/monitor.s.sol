@@ -12,9 +12,6 @@ import "forge-std/Script.sol";
 /// @notice This script calls the monitor function of the KintoID
 /// @dev Needs to be called by an address with KYC_PROVIDER_ROLE
 contract KintoMonitorScript is AASetup {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;

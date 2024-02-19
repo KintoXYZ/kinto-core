@@ -5,7 +5,7 @@ import "../../src/paymasters/SponsorPaymaster.sol";
 import "./utils/MigrationHelper.sol";
 
 contract KintoMigration27DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     function run() public override {
         super.run();

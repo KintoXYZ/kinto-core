@@ -12,6 +12,11 @@ contract ValidateSignatureTest is SharedSetup {
     function setUp() public override {
         super.setUp();
         useHarness();
+
+        // make sure that app is registered since useHarness() might have reset the state
+        if (_kintoAppRegistry.getAppMetadata(address(counter)).tokenId == 0) {
+            registerApp(_owner, "test", address(counter));
+        }
     }
 
     function testValidateSignature_RevertWhen_OwnerIsNotKYCd() public {

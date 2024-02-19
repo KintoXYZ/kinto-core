@@ -41,7 +41,11 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.startPrank(_owner);
 
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
-        _kintoAppRegistry.upgradeTo(address(_implementationV2));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
         assertEq(KintoAppRegistryV2(address(_kintoAppRegistry)).newFunction(), 1);
 
         vm.stopPrank();
@@ -49,8 +53,12 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
-        vm.expectRevert("Ownable: caller is not the owner");
-        _kintoAppRegistry.upgradeTo(address(_implementationV2));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
     }
 
     /* ============ App tests & Viewers ============ */
@@ -230,7 +238,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testEnableDSA_RevertWhen_CallerIsNotOwner() public {
         registerApp(_owner, "app", address(_engenCredits));
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 

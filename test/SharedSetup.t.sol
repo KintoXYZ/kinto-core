@@ -37,13 +37,15 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
-    function setUp() public virtual {
+    function setUp() public virtual override {
+        super.setUp();
+
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
         // deploy contracts using deploy script
         DeployerScript deployer = new DeployerScript();
-        bool fork = vm.envBool("FORK");
+
         if (fork) {
             string memory rpc = vm.envString("KINTO_RPC_URL");
             require(bytes(rpc).length > 0, "KINTO_RPC_URL is not set");

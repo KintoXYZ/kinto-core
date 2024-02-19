@@ -15,9 +15,6 @@ import "forge-std/Script.sol";
 
 /// @notice This script deploys an `ETHPriceIsRight` contract (skips deployment if already exists) and executes a user operation that calls the `enterGuess()` function using your smart account.
 contract KintoGuesserScript is AASetup, UserOp {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
     EntryPoint _entryPoint;
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;

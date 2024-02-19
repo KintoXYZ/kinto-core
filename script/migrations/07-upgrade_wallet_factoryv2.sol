@@ -6,6 +6,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -19,7 +20,7 @@ contract KintoWalletFactoryV2 is KintoWalletFactory {
 }
 
 contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactory _factoryImpl;
     UUPSProxy _proxy;
@@ -55,7 +56,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         // Switch to admin
         vm.startBroadcast();
         // Upgrade
-        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        Upgradeable(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");

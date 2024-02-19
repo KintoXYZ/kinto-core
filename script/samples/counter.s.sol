@@ -16,9 +16,6 @@ import "forge-std/Script.sol";
 
 /// @notice This script deploys a `Counter` contract (skips deployment if already exists) and executes a user operation that calls the `increment()` function using your smart account.
 contract KintoCounterScript is AASetup, UserOp {
-    using ECDSAUpgradeable for bytes32;
-    using SignatureChecker for address;
-
     EntryPoint _entryPoint;
     IKintoWalletFactory _walletFactory;
     SponsorPaymaster _sponsorPaymaster;
