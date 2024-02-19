@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 /**
  * @title KintoToken - To be deployed on ETH mainnet
@@ -15,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
  * It is created with an initial supply and a max supply cap.
  * The max supply cap is reached after 10 years with a 5% inflation rate.
  */
-contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
+contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     /// @dev errors
     error GovernanceDeadlineNotReached();
     error TransfersAlreadyEnabled();
@@ -89,19 +88,6 @@ contract KintoToken is ERC20, Ownable, ERC20Burnable, ERC20Permit, ERC20Votes {
     function setMiningContract(address _miningContract) public onlyOwner {
         if (_miningContract == address(0)) revert InvalidAddress();
         miningContract = _miningContract;
-    }
-
-    // Need to override this internal function to disable burning
-    // function _burn(address, /* to */ uint256 /* amount */ ) internal pure override {
-    //     revert("Burn is not allowed");
-    // }
-
-    function burn(uint256) public pure override {
-        revert BurnNotAllowed();
-    }
-
-    function burnFrom(address, uint256) public pure override {
-        revert BurnNotAllowed();
     }
 
     function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {

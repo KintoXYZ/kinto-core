@@ -102,22 +102,6 @@ contract KintoTokenTest is SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Burn tests ============ */
-
-    function testBurn_RevertWhen_CallerIsAnyone() public {
-        vm.startPrank(_owner);
-        vm.expectRevert(KintoToken.BurnNotAllowed.selector);
-        _token.burn(100);
-        vm.stopPrank();
-    }
-
-    function testBurnFrom_RevertWhen_CallerIsAnyone() public {
-        vm.startPrank(_owner);
-        vm.expectRevert(KintoToken.BurnNotAllowed.selector);
-        _token.burnFrom(_owner, 100);
-        vm.stopPrank();
-    }
-
     /* ============ Transfer tests ============ */
 
     function testTransferFrom_RevertWhen_CallerIsAnyoneAfterMint() public {
