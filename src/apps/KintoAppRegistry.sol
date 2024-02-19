@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@oz/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";
@@ -66,9 +66,8 @@ contract KintoAppRegistry is
     function initialize() external initializer {
         __ERC721_init("Kinto APP", "KINTOAPP");
         __ERC721Enumerable_init();
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**
@@ -77,6 +76,13 @@ contract KintoAppRegistry is
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+    {
+        super._increaseBalance(account, value);
+    }
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -119,10 +125,10 @@ contract KintoAppRegistry is
         address[] calldata appContracts,
         uint256[4] calldata appLimits
     ) external override {
-        require(kintoID.isKYC(msg.sender), "KYC required");
-        require(_appMetadata[parentContract].tokenId == 0, "App already registered");
-        require(childToParentContract[parentContract] == address(0), "Parent contract already registered as a child");
-        require(walletFactory.walletTs(parentContract) == 0, "Wallets can not be registered");
+        if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
+        if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
+        if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild();
+        if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
 
         appCount++;
         _updateMetadata(appCount, _name, parentContract, appContracts, appLimits);
@@ -145,7 +151,7 @@ contract KintoAppRegistry is
         uint256[4] calldata appLimits
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
-        require(msg.sender == ownerOf(tokenId), "Only developer can update metadata");
+        if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
         _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
@@ -161,11 +167,10 @@ contract KintoAppRegistry is
         external
         override
     {
-        require(_contracts.length == _flags.length, "Invalid input");
-        require(
-            _appMetadata[_app].tokenId > 0 && msg.sender == ownerOf(_appMetadata[_app].tokenId),
-            "Only developer can set sponsored contracts"
-        );
+        if (_contracts.length != _flags.length) revert LengthMismatch();
+        if (_appMetadata[_app].tokenId == 0 || msg.sender != ownerOf(_appMetadata[_app].tokenId)) {
+            revert InvalidSponsorSetter();
+        }
         for (uint256 i = 0; i < _contracts.length; i++) {
             _sponsoredContracts[_app][_contracts[i]] = _flags[i];
         }
@@ -176,7 +181,7 @@ contract KintoAppRegistry is
      * @param app The name of the app
      */
     function enableDSA(address app) external override onlyOwner {
-        require(_appMetadata[app].dsaEnabled == false, "DSA already enabled");
+        if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled();
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
@@ -267,27 +272,28 @@ contract KintoAppRegistry is
         _appMetadata[parentContract] = metadata;
 
         for (uint256 i = 0; i < appContracts.length; i++) {
-            require(walletFactory.walletTs(appContracts[i]) == 0, "Wallets can not be registered");
+            if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
             childToParentContract[appContracts[i]] = parentContract;
         }
     }
 
     /**
      * @dev Hook that is called before any token transfer. Allow only mints and burns, no transfers.
-     * @param from source address
      * @param to target address
-     * @param batchSize The first id
+     * @param firstTokenId The first id
      */
-    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize)
+    function _update(address to, uint256 firstTokenId, address auth)
         internal
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        returns (address)
     {
-        require((from == address(0) && to != address(0)), "Only mint transfers are allowed");
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        address from = _ownerOf(firstTokenId);
+        if (from != address(0) || to == address(0)) revert OnlyMintingAllowed();
+        return super._update(to, firstTokenId, auth);
     }
 }
 
-contract KintoAppRegistryV4 is KintoAppRegistry {
+contract KintoAppRegistryV6 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }

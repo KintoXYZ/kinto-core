@@ -16,7 +16,7 @@ contract RecoveryTest is SharedSetup {
     function testStartRecovery_RevertWhen_DirectCall(address someone) public {
         vm.assume(someone != address(_walletFactory));
         vm.prank(someone);
-        vm.expectRevert("KW: only factory");
+        vm.expectRevert(IKintoWallet.OnlyFactory.selector);
         _kintoWallet.startRecovery();
     }
 
@@ -28,21 +28,24 @@ contract RecoveryTest is SharedSetup {
         _kintoWallet.startRecovery();
         assertEq(_kintoWallet.inRecovery(), block.timestamp);
 
-        // mint NFT to new owner and burn old
+        // mint NFT to new owner
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
         uint16[] memory traits = new uint16[](0);
-
-        vm.startPrank(_kycProvider);
+        vm.prank(_kycProvider);
         _kintoID.mintIndividualKyc(sigdata, traits);
-        sigdata = _auxCreateSignature(_kintoID, _owner, 1, block.timestamp + 1000);
+
+        // burn old NFT
+        sigdata = _auxCreateSignature(_kintoID, _owner, _ownerPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
         _kintoID.burnKYC(sigdata);
-        vm.stopPrank();
 
         assertEq(_kintoID.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_owner), false);
 
         // pass recovery time
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
 
+        // trigger monitor
         address[] memory users = new address[](1);
         users[0] = _user;
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
@@ -52,6 +55,7 @@ contract RecoveryTest is SharedSetup {
         vm.prank(_kycProvider);
         _kintoID.monitor(users, updates);
 
+        // complete recovery
         vm.prank(address(_walletFactory));
         _kintoWallet.completeRecovery(users);
 
@@ -87,7 +91,7 @@ contract RecoveryTest is SharedSetup {
 
         // complete recovery
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-fr: Old KYC must be burned");
+        vm.expectRevert(IKintoWallet.OwnerKYCMustBeBurned.selector);
         _kintoWallet.completeRecovery(users);
     }
 
@@ -111,7 +115,7 @@ contract RecoveryTest is SharedSetup {
         address[] memory users = new address[](1);
         users[0] = _user;
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-rs: KYC Required");
+        vm.expectRevert(IKintoWallet.OwnerKYCMustBeBurned.selector);
         _kintoWallet.completeRecovery(users);
     }
 
@@ -147,7 +151,7 @@ contract RecoveryTest is SharedSetup {
 
         // complete recovery
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-fr: too early");
+        vm.expectRevert(IKintoWallet.RecoveryTimeNotElapsed.selector);
         _kintoWallet.completeRecovery(users);
     }
 
@@ -165,7 +169,7 @@ contract RecoveryTest is SharedSetup {
         _kintoWallet.startRecovery();
         assertEq(_kintoWallet.inRecovery(), block.timestamp);
 
-        vm.expectRevert("KW: only self");
+        vm.expectRevert(IKintoWallet.OnlySelf.selector);
         _kintoWallet.cancelRecovery();
     }
 
@@ -178,20 +182,20 @@ contract RecoveryTest is SharedSetup {
 
     function testChangeRecoverer_RevertWhen_CallerIsNotFactory(address someone) public {
         vm.assume(someone != address(_walletFactory));
-        vm.expectRevert("KW: only factory");
+        vm.expectRevert(IKintoWallet.OnlyFactory.selector);
         _kintoWallet.changeRecoverer(payable(address(_kintoWallet)));
     }
 
     function testChangeRecoverer_RevertWhen_SameRecoverer() public {
         address recoverer = _kintoWallet.recoverer();
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-cr: invalid address");
+        vm.expectRevert(IKintoWallet.InvalidRecoverer.selector);
         _kintoWallet.changeRecoverer(payable(recoverer));
     }
 
     function testChangeRecoverer_RevertWhen_ZeroAddress() public {
         vm.prank(address(_walletFactory));
-        vm.expectRevert("KW-cr: invalid address");
+        vm.expectRevert(IKintoWallet.InvalidRecoverer.selector);
         _kintoWallet.changeRecoverer(payable(address(0)));
     }
 }

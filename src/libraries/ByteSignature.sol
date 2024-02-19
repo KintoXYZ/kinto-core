@@ -2,12 +2,14 @@
 pragma solidity ^0.8.18;
 
 library ByteSignature {
+    error InvalidSignatureLength();
+
     function extractSignatures(bytes memory _fullSignature, uint256 count)
         internal
         pure
         returns (bytes[] memory signatures)
     {
-        require(_fullSignature.length >= count * 65, "ByteSignature: Invalid signature length");
+        if (_fullSignature.length < count * 65) revert InvalidSignatureLength();
         signatures = new bytes[](count);
         for (uint256 i = 0; i < count; i++) {
             signatures[i] = extractECDASignatureFromBytes(_fullSignature, i);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import "../../src/interfaces/IKintoWallet.sol";
@@ -13,6 +13,7 @@ import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
 import "../../test/helpers/UserOp.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -22,7 +23,7 @@ contract FaucetV3 is Faucet {
 }
 
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     FaucetV3 _implementation;
     UUPSProxy _proxy;
@@ -74,7 +75,7 @@ contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp 
             0,
             nonce,
             privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newFaucetImpl)),
+            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newFaucetImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

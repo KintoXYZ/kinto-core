@@ -14,7 +14,6 @@ jobs:
     secrets: inherit
 
   forge-test:
-    if: github.head_ref != 'main' # already triggered by push
     name: Forge tests
     uses: ./.github/workflows/forge-test.yml
     secrets: inherit

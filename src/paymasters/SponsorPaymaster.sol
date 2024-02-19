@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/token/ERC20/IERC20.sol";
+import "@oz/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@oz/contracts/utils/ReentrancyGuard.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 
 import "../interfaces/ISponsorPaymaster.sol";
@@ -55,7 +55,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) Ownable(msg.sender) {
         _disableInitializers();
     }
 
@@ -84,7 +84,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     // This function is called by the proxy contract when the implementation is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
-        require(msg.sender == owner(), "SP: not owner");
+        if (msg.sender != owner()) revert OnlyOwner();
         (newImplementation);
     }
 
@@ -99,9 +99,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * msg.value the amount of token to deposit.
      */
     function addDepositFor(address account) external payable override {
-        require(msg.value > 0, "SP: requires a deposit");
-        require(kintoID.isKYC(msg.sender) || msg.sender == owner(), "SP: sender KYC required");
-        if (account.code.length == 0 && !kintoID.isKYC(account)) revert("SP: account KYC required");
+        if (msg.value == 0) revert InvalidAmount();
+        if (!kintoID.isKYC(msg.sender) && msg.sender != owner()) revert SenderKYCRequired();
+        if (account.code.length == 0 && !kintoID.isKYC(account)) revert AccountKYCRequired();
 
         // sender must have approval for the paymaster
         balances[account] += msg.value;
@@ -134,11 +134,10 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @param amount amount to withdraw
      */
     function withdrawTokensTo(address target, uint256 amount) external override nonReentrant {
-        require(
-            balances[msg.sender] >= amount && unlockBlock[msg.sender] != 0 && block.number > unlockBlock[msg.sender],
-            "SP: must unlockTokenDeposit"
-        );
-        require(target != address(0) && target.code.length == 0, "SP: withdraw target cannot be a contract");
+        if (balances[msg.sender] < amount || unlockBlock[msg.sender] == 0 || block.number <= unlockBlock[msg.sender]) {
+            revert TokenDepositLocked();
+        }
+        if (target == address(0) || target.code.length > 0) revert InvalidTarget();
         balances[msg.sender] -= amount;
         entryPoint.withdrawTo(payable(target), amount);
     }
@@ -183,8 +182,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      * @param _newRegistry address of the app registry
      */
     function setAppRegistry(address _newRegistry) external override onlyOwner {
-        require(_newRegistry != address(0), "SP: new registry cannot be 0");
-        require(_newRegistry != address(appRegistry), "SP: new registry cannot be the same");
+        if (_newRegistry == address(0)) revert InvalidRegistry();
+        if (_newRegistry == address(appRegistry)) revert InvalidRegistry();
         emit AppRegistrySet(address(appRegistry), _newRegistry);
         appRegistry = IKintoAppRegistry(_newRegistry);
     }
@@ -214,21 +213,20 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         (userOpHash);
 
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        require(
-            userOp.verificationGasLimit >= COST_OF_POST && userOp.verificationGasLimit <= MAX_COST_OF_VERIFICATION,
-            "SP: gas outside of range for postOp"
-        );
-        require(userOp.preVerificationGas <= MAX_COST_OF_PREVERIFICATION, "SP: gas too high for verification");
-        require(userOp.paymasterAndData.length == 20, "SP: paymasterAndData must contain only paymaster");
+        if (userOp.verificationGasLimit < COST_OF_POST || userOp.verificationGasLimit > MAX_COST_OF_VERIFICATION) {
+            revert GasOutsideRangeForPostOp();
+        }
+        if (userOp.preVerificationGas > MAX_COST_OF_PREVERIFICATION) revert GasTooHighForVerification();
+        if (userOp.paymasterAndData.length != 20) revert PaymasterAndDataLengthInvalid();
 
         // use maxFeePerGas for conservative estimation of gas cost
         uint256 gasPriceUserOp = userOp.maxFeePerGas;
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
-        require(ethMaxCost <= userOpMaxCost, "SP: gas too high for user op");
+        if (ethMaxCost > userOpMaxCost) revert GasTooHighForUserOp();
 
         address sponsor = appRegistry.getSponsor(_decodeCallData(userOp.callData));
-        require(unlockBlock[sponsor] == 0, "SP: deposit not locked");
-        require(balances[sponsor] >= ethMaxCost, "SP: deposit too low");
+        if (unlockBlock[sponsor] != 0) revert DepositNotLocked();
+        if (balances[sponsor] < ethMaxCost) revert DepositTooLow();
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
     }
 
@@ -285,28 +283,27 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     function _checkLimits(address sender, address targetAccount, uint256 ethMaxCost) internal view {
         // global rate limit check
         ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[sender];
-        require(
-            block.timestamp >= globalData.lastOperationTime + RATE_LIMIT_PERIOD
-                || globalData.operationCount <= RATE_LIMIT_THRESHOLD_TOTAL,
-            "SP: Kinto Rate limit exceeded"
-        );
+
+        // Kinto rate limit check
+        if (
+            block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD
+                && globalData.operationCount > RATE_LIMIT_THRESHOLD_TOTAL
+        ) revert KintoRateLimitExceeded();
 
         // app rate limit check
         uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
         ISponsorPaymaster.RateLimitData memory appData = rateLimit[sender][targetAccount];
 
-        require(
-            block.timestamp >= appData.lastOperationTime + appLimits[0] || appData.operationCount <= appLimits[1],
-            "SP: App Rate limit exceeded"
-        );
+        if (block.timestamp < appData.lastOperationTime + appLimits[0] && appData.operationCount > appLimits[1]) {
+            revert AppRateLimitExceeded();
+        }
 
         // app gas limit check
         ISponsorPaymaster.RateLimitData memory gasData = costLimit[sender][targetAccount];
-        require(
-            block.timestamp >= gasData.lastOperationTime + appLimits[2]
-                || (gasData.ethCostCount + ethMaxCost) <= appLimits[3],
-            "SP: Kinto Gas App limit exceeded"
-        );
+        if (
+            block.timestamp < gasData.lastOperationTime + appLimits[2]
+                && (gasData.ethCostCount + ethMaxCost) > appLimits[3]
+        ) revert KintoGasAppLimitExceeded();
     }
 
     /**
@@ -335,6 +332,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV7 is SponsorPaymaster {
+contract SponsorPaymasterV9 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
 }

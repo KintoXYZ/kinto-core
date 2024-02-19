@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "forge-std/StdUtils.sol";
 import "forge-std/console.sol";
 
 import "@aa/core/EntryPoint.sol";
@@ -23,6 +24,14 @@ import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 import "../../script/deploy.s.sol";
+
+interface IInitialize {
+    function initialize() external;
+}
+
+interface Upgradeable {
+    function upgradeTo(address newImplementation) external;
+}
 
 abstract contract AATestScaffolding is KYCSignature {
     DeployerScript.DeployedContracts contracts;
@@ -46,6 +55,16 @@ abstract contract AATestScaffolding is KYCSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
+
+    bool fork;
+
+    function setUp() public virtual {
+        try vm.envBool("FORK") returns (bool _fork) {
+            fork = _fork;
+        } catch {
+            fork = false;
+        }
+    }
 
     /* ============ convenience methods ============ */
 
@@ -210,14 +229,88 @@ abstract contract AATestScaffolding is KYCSignature {
 
         SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
         vm.prank(_paymaster.owner());
-        _paymaster.upgradeTo(address(_paymasterImpl));
+        if (fork) {
+            Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
+        } else {
+            _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
+        }
 
         KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
-        vm.prank(_kintoAppRegistry.owner());
-        _kintoAppRegistry.upgradeTo(address(_registryImpl));
+        if (fork) {
+            vm.startPrank(_kintoAppRegistry.owner());
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_registryImpl));
+            IInitialize(address(_kintoAppRegistry)).initialize();
+            vm.stopPrank();
+        } else {
+            vm.prank(_kintoAppRegistry.owner());
+            _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
+        }
+    }
+
+    function changeWalletOwner(address _newOwner, address _kycProvider) public {
+        // start recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.startRecovery();
+
+        // change recoverer to _newOwner
+        vm.prank(_kintoWallet.recoverer());
+        _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), _newOwner);
+
+        // burn old NFT
+        deal(address(_kintoID), _kintoWallet.owners(0), 0);
+
+        // pass recovery time
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        // trigger monitor
+        address[] memory users = new address[](1);
+        users[0] = _newOwner;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // complete recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.completeRecovery(users);
+        assertEq(_kintoWallet.owners(0), _newOwner);
     }
 
     /* ============ assertion helper methods ============ */
+
+    // selector reasons
+
+    function assertRevertReasonEq(bytes4 expectedSelector) public {
+        bool foundMatchingRevert = false;
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        for (uint256 i = 0; i < logs.length; i++) {
+            // check if this is the correct event
+            if (
+                logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
+                    || logs[i].topics[0] == keccak256("PostOpRevertReason(bytes32,address,uint256,bytes)")
+            ) {
+                (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
+
+                // check if the revertReasonBytes match the expected selector
+                if (revertReasonBytes.length >= 4) {
+                    bytes4 actualSelector = bytes4(revertReasonBytes[0]) | (bytes4(revertReasonBytes[1]) >> 8)
+                        | (bytes4(revertReasonBytes[2]) >> 16) | (bytes4(revertReasonBytes[3]) >> 24);
+
+                    if (actualSelector == expectedSelector) {
+                        foundMatchingRevert = true;
+                        break; // exit the loop if a match is found
+                    }
+                }
+            }
+        }
+
+        if (!foundMatchingRevert) {
+            revert("Expected revert reason did not match");
+        }
+    }
 
     // string reasons
 
@@ -233,6 +326,7 @@ abstract contract AATestScaffolding is KYCSignature {
     }
 
     function _assertRevertReasonEq(bytes[] memory _reasons) internal {
+        uint256 matchingReverts = 0;
         uint256 idx = 0;
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -245,7 +339,7 @@ abstract contract AATestScaffolding is KYCSignature {
                 (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
 
                 // check that the revertReasonBytes is long enough (at least 4 bytes for the selector + additional data for the message)
-                if (revertReasonBytes.length > 4) {
+                if (revertReasonBytes.length >= 4) {
                     // remove the first 4 bytes (the function selector)
                     bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
                     for (uint256 j = 4; j < revertReasonBytes.length; j++) {
@@ -259,15 +353,18 @@ abstract contract AATestScaffolding is KYCSignature {
 
                     // clean revert reason & assert
                     string memory cleanRevertReason = _trimToPrefixAndRemoveTrailingNulls(decodedRevertReason, prefixes);
-                    console.log("left: %s", cleanRevertReason);
-                    console.log("right: %s", string(_reasons[idx]));
-                    assertEq(cleanRevertReason, string(_reasons[idx]), "Revert reason does not match");
-
-                    if (_reasons.length > 1) idx++; // if there's only one reason, we always use the same one
-                } else {
-                    revert("Revert reason bytes too short to decode");
+                    if (keccak256(abi.encodePacked(cleanRevertReason)) == keccak256(abi.encodePacked(_reasons[idx]))) {
+                        matchingReverts++;
+                        if (_reasons.length > 1) {
+                            idx++; // if there's only one reason, we always use the same one
+                        }
+                    }
                 }
             }
+        }
+
+        if (matchingReverts < _reasons.length) {
+            revert("Expected revert reason did not match");
         }
     }
 

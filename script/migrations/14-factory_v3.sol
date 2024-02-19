@@ -9,6 +9,7 @@ import "../../src/KintoID.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -18,11 +19,11 @@ contract KintoWalletFactoryV3 is KintoWalletFactory {
 }
 
 contract KintoIDV4 is KintoID {
-    constructor() KintoID() {}
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 }
 
 contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     KintoWalletFactoryV3 _factoryImpl;
     KintoID _kintoID;
@@ -75,7 +76,7 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         // (2). deploy new kinto ID implementation via wallet factory
 
         _kintoID = KintoID(payable(kintoIDAddr));
-        bytecode = abi.encodePacked(type(KintoIDV4).creationCode);
+        bytecode = abi.encodePacked(type(KintoIDV4).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         _kintoIDImpl =
             KintoIDV4(payable(_walletFactory.deployContract(vm.envAddress("LEDGER_ADMIN"), 0, bytecode, bytes32(0))));
 
@@ -83,9 +84,9 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         // Start admin
         vm.startBroadcast();
         // 3) Upgrade wallet factory
-        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        Upgradeable(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         // (4). upgrade kinto id to new implementation
-        _kintoID.upgradeTo(address(_kintoIDImpl));
+        Upgradeable(address(_kintoID)).upgradeTo(address(_kintoIDImpl));
         vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");

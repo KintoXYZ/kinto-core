@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
@@ -14,7 +14,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 abstract contract UserOp is Test {
     uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
-    using ECDSAUpgradeable for bytes32;
+    using MessageHashUtils for bytes32;
 
     // private keys
     uint256 _ownerPk = 1;
@@ -25,7 +25,8 @@ abstract contract UserOp is Test {
     uint256 _kycProviderPk = 6;
     uint256 _recovererPk = 7;
     uint256 _funderPk = 8;
-    uint256 _verifierPk = 8;
+    uint256 _verifierPk = 9;
+    uint256 _noKycPk = 10;
 
     // users
     address payable _owner = payable(vm.addr(_ownerPk));
@@ -37,6 +38,7 @@ abstract contract UserOp is Test {
     address payable _recoverer = payable(vm.addr(_recovererPk));
     address payable _funder = payable(vm.addr(_funderPk));
     address payable _verifier = payable(vm.addr(_verifierPk));
+    address payable _noKyc = payable(vm.addr(_noKycPk));
 
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;

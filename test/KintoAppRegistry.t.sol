@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "../src/apps/KintoAppRegistry.sol";
+import "../src/interfaces/IKintoAppRegistry.sol";
 
 import "./SharedSetup.t.sol";
 
@@ -40,7 +41,11 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.startPrank(_owner);
 
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
-        _kintoAppRegistry.upgradeTo(address(_implementationV2));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
         assertEq(KintoAppRegistryV2(address(_kintoAppRegistry)).newFunction(), 1);
 
         vm.stopPrank();
@@ -48,8 +53,12 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
-        vm.expectRevert("Ownable: caller is not the owner");
-        _kintoAppRegistry.upgradeTo(address(_implementationV2));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        if (fork) {
+            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_implementationV2));
+        } else {
+            _kintoAppRegistry.upgradeToAndCall(address(_implementationV2), bytes(""));
+        }
     }
 
     /* ============ App tests & Viewers ============ */
@@ -117,7 +126,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(_kintoWallet);
 
         // register app
-        vm.expectRevert("Wallets can not be registered");
+        vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
         vm.prank(_user);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
@@ -133,7 +142,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
 
         // try to register again
-        vm.expectRevert("App already registered");
+        vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
         vm.prank(_owner);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
@@ -152,7 +161,7 @@ contract KintoAppRegistryTest is SharedSetup {
         // registering app "app2" with parent address 2 should revert
         parentContract = address(2);
         appContracts = new address[](0);
-        vm.expectRevert("Parent contract already registered as a child");
+        vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
         vm.prank(_owner);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
@@ -162,7 +171,7 @@ contract KintoAppRegistryTest is SharedSetup {
         address[] memory appContracts = new address[](0);
 
         // register app
-        vm.expectRevert("KYC required");
+        vm.expectRevert(IKintoAppRegistry.KYCRequired.selector);
         vm.prank(_user);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
@@ -208,7 +217,7 @@ contract KintoAppRegistryTest is SharedSetup {
         // update app
         address[] memory appContracts = new address[](0);
         vm.prank(_user);
-        vm.expectRevert("Only developer can update metadata");
+        vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
         _kintoAppRegistry.updateMetadata(
             "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
@@ -229,7 +238,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testEnableDSA_RevertWhen_CallerIsNotOwner() public {
         registerApp(_owner, "app", address(_engenCredits));
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
@@ -238,7 +247,7 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
-        vm.expectRevert("DSA already enabled");
+        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
@@ -276,7 +285,7 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[1] = true;
 
         vm.prank(_user);
-        vm.expectRevert("Only developer can set sponsored contracts");
+        vm.expectRevert(IKintoAppRegistry.InvalidSponsorSetter.selector);
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
@@ -290,7 +299,7 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[0] = false;
         flags[1] = true;
 
-        vm.expectRevert("Invalid input");
+        vm.expectRevert(IKintoAppRegistry.LengthMismatch.selector);
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
@@ -316,7 +325,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(_user, 0);
-        vm.expectRevert("Only mint transfers are allowed");
+        vm.expectRevert(IKintoAppRegistry.OnlyMintingAllowed.selector);
         vm.prank(_user);
         _kintoAppRegistry.safeTransferFrom(_user, _user2, tokenIdx);
     }
