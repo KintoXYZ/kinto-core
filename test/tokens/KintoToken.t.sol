@@ -26,6 +26,7 @@ contract KintoTokenTest is SharedSetup {
         assertEq(_token.name(), "Kinto Token");
         assertEq(_token.symbol(), "KINTO");
         assertEq(_token.balanceOf(_owner), _token.SEED_TOKENS());
+        assertEq(_token.nonces(_owner), 0);
     }
 
     /* ============ Token tests ============ */
@@ -107,6 +108,13 @@ contract KintoTokenTest is SharedSetup {
         vm.startPrank(_owner);
         vm.expectRevert(KintoToken.BurnNotAllowed.selector);
         _token.burn(100);
+        vm.stopPrank();
+    }
+
+    function testBurnFrom_RevertWhen_CallerIsAnyone() public {
+        vm.startPrank(_owner);
+        vm.expectRevert(KintoToken.BurnNotAllowed.selector);
+        _token.burnFrom(_owner, 100);
         vm.stopPrank();
     }
 

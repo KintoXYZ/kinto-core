@@ -43,7 +43,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        if (!vm.envBool("FORK")) assertEq(_walletFactory.factoryWalletVersion(), 2);
+        if (!fork) assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 

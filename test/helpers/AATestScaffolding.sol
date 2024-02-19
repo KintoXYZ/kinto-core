@@ -59,7 +59,11 @@ abstract contract AATestScaffolding is KYCSignature {
     bool fork;
 
     function setUp() public virtual {
-        fork = vm.envBool("FORK");
+        try vm.envBool("FORK") returns (bool _fork) {
+            fork = _fork;
+        } catch {
+            fork = false;
+        }
     }
 
     /* ============ convenience methods ============ */
