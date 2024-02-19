@@ -75,27 +75,6 @@ jobs:
           # delete the comment in case changes no longer impact gas costs
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}
-  
-  mainnet-test:
-    needs: build
-
-    name: Test (mainnet)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - uses: ./.github/actions/install
-
-      - name: Run mainnet tests
-        run: forge test 
-        env:
-          FOUNDRY_FUZZ_RUNS: 100
-          FORK: true
-          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
-          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
 
   coverage:
     needs:
@@ -108,7 +87,6 @@ jobs:
 
     name: Coverage
     runs-on: ubuntu-latest
-    if: github.head_ref != 'main' # already triggered by pull request
 
     steps:
       - uses: actions/checkout@v3

@@ -32,7 +32,9 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         try kintoWalletFactory.UPGRADE_INTERFACE_VERSION() {
             Upgradeable(_getChainDeployment("KintoWalletFactory")).upgradeTo(address(_newImplementation));
         } catch {
-            KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory"))).upgradeToAndCall(address(_newImplementation), bytes(""));
+            KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory"))).upgradeToAndCall(
+                address(_newImplementation), bytes("")
+            );
         }
         console.log("KintoWalletFactory Upgraded to implementation", address(_newImplementation));
 
