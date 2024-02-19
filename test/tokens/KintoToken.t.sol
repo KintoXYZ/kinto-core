@@ -61,7 +61,7 @@ contract KintoTokenTest is SharedSetup {
     function testMintInflationAfter10Years_RevertWhen_MoreThanMaxCap() public {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE() + 10 * 365 days);
         vm.startPrank(_owner);
-        vm.expectRevert("Cannot exceed max supply");
+        vm.expectRevert(KintoToken.MaxSupplyExceeded.selector);
         _token.mint(_user, 15_000_001e18);
         vm.stopPrank();
     }
@@ -69,26 +69,26 @@ contract KintoTokenTest is SharedSetup {
     function testMint_RevertWhen_CallerMintMoreThanSupplyLaunch() public {
         vm.warp(_token.deployedAt() + 365 days);
         vm.startPrank(_owner);
-        vm.expectRevert("Cannot exceed max supply");
+        vm.expectRevert(KintoToken.MaxSupplyExceeded.selector);
         _token.mint(_user, 15_000_001e18);
         vm.stopPrank();
     }
 
     function testMint_RevertWhen_CallerIsOwnerBeforeDeadline() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Not transferred to governance yet");
+        vm.expectRevert(KintoToken.GovernanceDeadlineNotReached.selector);
         _token.mint(_user, 100);
         vm.stopPrank();
     }
 
     function testMint_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.mint(_user, 100);
     }
 
     function testMint_RevertWhen_CallerIsNotOwnerAfterDeadline() public {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.mint(_user, 100);
     }
 
@@ -96,7 +96,7 @@ contract KintoTokenTest is SharedSetup {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
         _token.mint(_owner, 100);
-        vm.expectRevert("Kinto Tokens Transfers are disabled");
+        vm.expectRevert(KintoToken.TransfersDisabled.selector);
         _token.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -105,7 +105,7 @@ contract KintoTokenTest is SharedSetup {
 
     function testBurn_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Burn is not allowed");
+        vm.expectRevert(KintoToken.BurnNotAllowed.selector);
         _token.burn(100);
         vm.stopPrank();
     }
@@ -115,7 +115,7 @@ contract KintoTokenTest is SharedSetup {
     function testTransferFrom_RevertWhen_CallerIsAnyoneAfterMint() public {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
-        vm.expectRevert("Kinto Tokens Transfers are disabled");
+        vm.expectRevert(KintoToken.TransfersDisabled.selector);
         _token.transfer(_user, 100);
         vm.stopPrank();
     }
@@ -139,13 +139,13 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testEnableTokenTransfers_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.enableTokenTransfers();
     }
 
     function testEnableTokenTransfers_RevertWhen_CallerIsOwnerBeforeDeadline() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Cannot enable transfers yet");
+        vm.expectRevert(KintoToken.GovernanceDeadlineNotReached.selector);
         _token.enableTokenTransfers();
         vm.stopPrank();
     }
@@ -176,13 +176,13 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testSetVestingContract_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.setVestingContract(address(1));
     }
 
     function testSetVestingContract_RevertWhen_InvalidAddress() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Invalid address");
+        vm.expectRevert(KintoToken.InvalidAddress.selector);
         _token.setVestingContract(address(0));
         vm.stopPrank();
     }
@@ -195,13 +195,13 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testSetMiningContract_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.setMiningContract(address(1));
     }
 
     function testSetMiningContract_RevertWhen_InvalidAddress() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Invalid address");
+        vm.expectRevert(KintoToken.InvalidAddress.selector);
         _token.setMiningContract(address(0));
         vm.stopPrank();
     }
