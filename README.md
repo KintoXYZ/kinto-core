@@ -76,6 +76,13 @@ In order to run the tests, execute the following command:
 ```
 forge test
 ```
+Alternatively, you run `yarn test`
+
+To run tests on a fork from mainnet you can se the env var `FORK=true`
+```
+FORK=true forge test
+```
+Alternatively, you run `yarn test-mainnet`
 
 ## Static Analysis
 
@@ -85,44 +92,40 @@ In order to run Slither for static analysis, execute the following command:
 slither --checklist --solc-remaps "$(tr '\n' ' ' < remappings.txt | xargs)" ./src/
 ```
 
-### Calling the Kinto ID smart contract
+## Continous Integration
 
-Check that the contract is deployed:
+We use Github Actions to run tests (both local and fork from mainnet tests) and several other checks.
 
-cast call $ID_PROXY_ADDRESS "name()(string)" --rpc-url $KINTO_RPC_URL
+Everytime a PR is created, the `pull_request.yml` workflow runs which runs the following actions:
+- Forge format
+- Forge tests
+  - Gas report comparison
+  - Codecov to check for coverage [![codecov](https://codecov.io/gh/KintoXYZ/kinto-core/graph/badge.svg?token=JXQ1EQTRV1)](https://codecov.io/gh/KintoXYZ/kinto-core)
+- Slither analysis (for static analysis)
 
-Check KYC on an address
+Everytime a PR is **merged** into `main` (or there's a push directly to it), fork from mainnet tests are run.
 
-```
-cast call $ID_PROXY_ADDRESS "isKYC(address)(bool)" 0xa8beb41cf4721121ea58837ebdbd36169a7f246e  --rpc-url $KINTO_RPC_URL
-```
+## Scripts
 
-### Funding a smart contract that pays for the transactions of its users
+On the `/script` directory, you can find the following subdirectories:
+- `/migrations`: all our executed migrations with contracts upgrades.
+- `/samples`: sample scripts to, for example, deploy & interact with other contracts, create a Kinto Wallet, upgrade contracts.
+- `/utilts`: scripts with some util actions
 
-```
-cast send <ENTRYPOINT_ADDRESS> "addDepositFor(address)" <ADDR> --value 0.1ether
-```
-
-### Exporting contracts ABI for frontend
-
-```
-yarn run export-testnet
-```
-
-## Deploying
+Find below the instructions to run some of these scripts:
 
 ### Deploy all core contracts
 
-Here is the code to deploy the Kinto ID and all the contracts required by account abstraction under the PUBLIC_KEY/PRIVATE_KEY signer:
+You can use the `DeployerScript` to deploy all the contracts required by account abstraction under the PUBLIC_KEY/PRIVATE_KEY signer:
 
 ```
-source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv --skip-simulation --slow
+source .env && forge script script/deploy.s.sol:DeployerScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv --skip-simulation --slow
 ```
 
 To deploy with ledger:
 
 ```
-source .env && forge script script/deploy.sol:KintoInitialDeployScript --rpc-url $KINTO_RPC_URL --broadcast --slow --ledger --sender <ADDR> --gas-estimate-multiplier 100 --legacy --skip-simulation --block-gas-limit 8000000000000000000 --verifier blockscout --verifier-url https://kinto-mainnet.calderaexplorer.xyz/api
+source .env && forge script script/deploy.s.sol:DeployerScript --rpc-url $KINTO_RPC_URL --broadcast --slow --ledger --sender <ADDR> --gas-estimate-multiplier 100 --legacy --skip-simulation --block-gas-limit 8000000000000000000 --verifier blockscout --verifier-url https://kinto-mainnet.calderaexplorer.xyz/api
 ```
 
 ### Create Kinto Smart Account
@@ -131,22 +134,33 @@ After you have deployed all core contracts, you can call the following script to
 If it already exists, it won't deploy it.
 
 ```
-source .env && forge script script/test.sol:KintoDeployTestWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
+source .env && forge script script/samples/createWallet.s.sol:KintoCreateWalletScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
 ```
 
-### Test Kinto Smart Account with Counter contract
+### Using your Kinto Smart Account to make calls to contracts
 
-After you have deployed all core contracts and you have a wallet, you can call the following script to deploy an custom contract and execute an op through your smart account.
-If it already exists, it won't deploy it.
+After you have deployed all core contracts and you have created a wallet, you can make calls to other contracts by creating a user operation
+
+#### Counter contract
+
+`KintoCounterScript` deploys a `Counter` contract (skips deployment if already exists) and executes a user operation that calls the `increment()` function using your smart account.
 
 ```
-source .env && forge script script/test.sol:KintoDeployTestCounter --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
+source .env && forge script script/samples/counter.s.sol:KintoCounterScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
+```
+
+#### Price Guesser
+
+`KintoGuesser` deploys an `ETHPriceIsRight` contract (skips deployment if already exists) and executes a user operation that calls the `enterGuess()` function using your smart account.
+
+```
+source .env && forge script script/samples/guesser.s.sol:KintoGuesserScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv  --skip-simulation --slow
 ```
 
 ### Upgrade Kinto ID to a new version
 
 ```
-source .env && forge script script/upgrade.sol:KintoIDUpgradeScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
+source .env && forge script script/samples/upgrades/upgrade.sol:KintoIDUpgradeScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
 
 ### Deploying manually other contracts

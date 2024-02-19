@@ -8,6 +8,8 @@
   },
   "license": "MIT",
   "scripts": {
+    "test": "source .env && FORK=false forge test -vvvv",
+    "test-mainnet": "source .env && FORK=true forge test -vvvv",
     "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
     "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID"
   }

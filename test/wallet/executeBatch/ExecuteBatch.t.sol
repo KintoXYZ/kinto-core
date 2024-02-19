@@ -33,6 +33,9 @@ contract ExecuteBatchTest is SharedSetup {
     }
 
     function testExecuteBatch_RevertWhen_NoPaymasterNorPrefund() public {
+        // remove any balance from the wallet
+        vm.deal(address(_kintoWallet), 0);
+
         // prep batch
         address[] memory targets = new address[](1);
         targets[0] = address(counter);

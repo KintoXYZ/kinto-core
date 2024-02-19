@@ -48,12 +48,14 @@ contract FaucetTest is SharedSetup {
     /* ============ Start Faucet tests ============ */
 
     function testStartFaucet() public {
+        uint256 previousBalance = address(_faucet).balance;
         vm.prank(_owner);
         _faucet.startFaucet{value: 1 ether}();
-        assertEq(address(_faucet).balance, _faucet.FAUCET_AMOUNT());
+        assertEq(address(_faucet).balance, previousBalance + 1 ether);
     }
 
     function testStartFaucet_RevertWhen_AmountIsLess(uint256 amt) public {
+        vm.deal(address(_faucet), 0);
         vm.assume(amt < _faucet.FAUCET_AMOUNT());
         vm.prank(_owner);
         vm.expectRevert(IFaucet.NotEnoughETH.selector);
@@ -86,17 +88,18 @@ contract FaucetTest is SharedSetup {
 
     /* ============ Claim Kinto ETH tests ============ */
 
-    function testClaimKintoETH1() public {
-        console.log(address(_faucet));
+    function testClaimKintoETH() public {
+        uint256 prevBalanceFaucet = address(_faucet).balance;
+        uint256 prevBalanceUser = address(_user).balance;
+
         vm.prank(_owner);
         _faucet.startFaucet{value: 1 ether}();
 
-        uint256 previousBalance = address(_user).balance;
         vm.prank(_user);
         _faucet.claimKintoETH();
 
-        assertEq(address(_faucet).balance, 1 ether - _faucet.CLAIM_AMOUNT());
-        assertEq(address(_user).balance, previousBalance + _faucet.CLAIM_AMOUNT());
+        assertEq(address(_faucet).balance, prevBalanceFaucet + 1 ether - _faucet.CLAIM_AMOUNT());
+        assertEq(address(_user).balance, prevBalanceUser + _faucet.CLAIM_AMOUNT());
     }
 
     function testClaimKintoETH_RevertWhen_ClaimTwice() public {
@@ -122,6 +125,10 @@ contract FaucetTest is SharedSetup {
 
     function testClaim_RevertWhen_FaucerIsNotActive() public {
         vm.prank(_owner);
+        _faucet.withdrawAll();
+        assertEq(_faucet.active(), false);
+
+        vm.prank(_owner);
         vm.expectRevert(IFaucet.FaucetNotActive.selector);
         _faucet.claimKintoETH();
     }
@@ -144,10 +151,12 @@ contract FaucetTest is SharedSetup {
     /* ============ Withdraw tests ============ */
 
     function testWithdrawAll() public {
+        uint256 previousBalance = address(_faucet).balance;
+
         vm.startPrank(_owner);
 
         _faucet.startFaucet{value: 1 ether}();
-        assertEq(address(_faucet).balance, 1 ether);
+        assertEq(address(_faucet).balance, previousBalance + 1 ether);
 
         _faucet.withdrawAll();
         assertEq(address(_faucet).balance, 0);
@@ -156,9 +165,11 @@ contract FaucetTest is SharedSetup {
     }
 
     function testWithdrawAll_RevertWhen_CallerIsNotOwner() public {
+        uint256 previousBalance = address(_faucet).balance;
+
         vm.prank(_owner);
         _faucet.startFaucet{value: 1 ether}();
-        assertEq(address(_faucet).balance, 1 ether);
+        assertEq(address(_faucet).balance, previousBalance + 1 ether);
 
         vm.expectRevert("Ownable: caller is not the owner");
         _faucet.withdrawAll();
