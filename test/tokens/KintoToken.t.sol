@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "@oz/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "../../src/tokens/KintoToken.sol";
 import "../../src/tokens/VestingContract.sol";
 import "../../src/sample/Counter.sol";
@@ -99,6 +100,22 @@ contract KintoTokenTest is SharedSetup {
         _token.mint(_owner, 100);
         vm.expectRevert(KintoToken.TransfersDisabled.selector);
         _token.transfer(_user2, 100);
+        vm.stopPrank();
+    }
+
+    /* ============ Burn tests ============ */
+
+    function testBurn_RevertWhen_CallerIsAnyone() public {
+        vm.startPrank(_owner);
+        vm.expectRevert();
+        ERC20Burnable(address(_token)).burn(100);
+        vm.stopPrank();
+    }
+
+    function testBurnFrom_RevertWhen_CallerIsAnyone() public {
+        vm.startPrank(_owner);
+        vm.expectRevert();
+        ERC20Burnable(address(_token)).burnFrom(_owner, 100);
         vm.stopPrank();
     }
 

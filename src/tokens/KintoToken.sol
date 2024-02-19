@@ -20,7 +20,6 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     error TransfersAlreadyEnabled();
     error MaxSupplyExceeded();
     error InvalidAddress();
-    error BurnNotAllowed();
     error TransfersDisabled();
 
     /// @dev EIP-20 token name for this token
