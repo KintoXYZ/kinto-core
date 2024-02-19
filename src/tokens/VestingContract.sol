@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "../interfaces/IVestingContract.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@oz/contracts/token/ERC20/IERC20.sol";
+import "@oz/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@oz/contracts/access/Ownable.sol";
+import "@oz/contracts/utils/Address.sol";
 
 /**
  * @title VestingContract - To be deployed on ETH mainnet

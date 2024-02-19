@@ -4,10 +4,11 @@ pragma solidity ^0.8.18;
 import "@aa/core/BasePaymaster.sol";
 import "@aa/core/UserOperationLib.sol";
 import "@aa/core/UserOperationLib.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/utils/Address.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @notice
@@ -32,7 +33,7 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) {
+    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable(msg.sender) {
         _disableInitializers();
         verifyingSigner = _verifyingSigner;
     }
@@ -104,11 +105,12 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32, /*userOpHash*/ uint256 requiredPreFund)
-        internal
-        override
-        returns (bytes memory context, uint256 validationData)
-    {
+    function _validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32,
+        /*userOpHash*/
+        uint256 requiredPreFund
+    ) internal override returns (bytes memory context, uint256 validationData) {
         (requiredPreFund);
 
         (uint48 validUntil, uint48 validAfter, bytes calldata signature) =
@@ -119,7 +121,7 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
             signature.length == 64 || signature.length == 65,
             "SignaturePaymaster: invalid signature length in paymasterAndData"
         );
-        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
         senderNonce[userOp.getSender()]++;
 
         //don't revert on signature failure: return SIG_VALIDATION_FAILED

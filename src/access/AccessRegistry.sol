@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@oz/contracts/utils/Address.sol";
+import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@oz/contracts/interfaces/IERC20.sol";
+import "@oz/contracts/utils/Create2.sol";
+import "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
@@ -53,7 +53,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external virtual initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         factoryVersion = 1;
     }

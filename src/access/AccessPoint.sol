@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@oz/contracts/utils/Address.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@oz/contracts/interfaces/IERC20.sol";
 
 import "@aa/core/BaseAccount.sol";
 import "@aa/core/UserOperationLib.sol";
@@ -19,7 +20,7 @@ import "../interfaces/IAccessRegistry.sol";
  */
 contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackHandler {
     using UserOperationLib for UserOperation;
-    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     /* ============ State Variables ============ */
 

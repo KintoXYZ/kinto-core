@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./IAccessPoint.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /**
  * @title IAccessRegistry

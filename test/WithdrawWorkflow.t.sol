@@ -4,8 +4,9 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC20} from "@oz/contracts/token/ERC20/IERC20.sol";
+import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@aa/core/EntryPoint.sol";
 
 import "../src/access/AccessRegistry.sol";
@@ -22,7 +23,7 @@ import "./helpers/ERC20Mock.sol";
 import "./helpers/UUPSProxy.sol";
 
 contract WithdrawWorkflowTest is UserOp {
-    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     SignaturePaymaster paymaster;
     IKintoEntryPoint entryPoint;
@@ -43,7 +44,7 @@ contract WithdrawWorkflowTest is UserOp {
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 
         // use random address for access point implementation to avoid circular dependency
-        UpgradeableBeacon beacon = new UpgradeableBeacon(address(this));
+        UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
         IAccessRegistry accessRegistryImpl = new AccessRegistryHarness(beacon);
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
