@@ -226,7 +226,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
 
@@ -604,7 +604,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.setAppRegistry(address(123));
     }
 
@@ -633,7 +633,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.setUserOpMaxCost(123);
     }
 

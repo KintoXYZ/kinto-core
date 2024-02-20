@@ -46,7 +46,7 @@ contract EngenCreditsTest is SharedSetup {
     function testUpgradeTo_RevertWhen_WhenCallerIsNotOwner() public {
         EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.upgradeTo(address(_implementation));
     }
 
@@ -60,7 +60,7 @@ contract EngenCreditsTest is SharedSetup {
     }
 
     function testSetTransferEnabled_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.setTransfersEnabled(true);
     }
 
@@ -99,7 +99,7 @@ contract EngenCreditsTest is SharedSetup {
     }
 
     function testSetBurnsEnabled_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.setBurnsEnabled(true);
     }
 
@@ -138,7 +138,7 @@ contract EngenCreditsTest is SharedSetup {
     }
 
     function testMint_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _engenCredits.mint(_user, 100);
         assertEq(_engenCredits.balanceOf(_user), 0);
     }

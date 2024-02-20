@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 /**
  * @title KintoToken - To be deployed on ETH mainnet

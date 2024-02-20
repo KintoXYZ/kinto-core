@@ -43,7 +43,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        if (!vm.envBool("FORK")) assertEq(_walletFactory.factoryWalletVersion(), 2);
+        if (!fork) assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
@@ -185,7 +185,11 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testDeployContract_RevertWhen_CreateWallet() public {
-        bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
+        bytes memory initialize = abi.encodeWithSelector(
+            IKintoWallet.initialize.selector,
+            fork ? vm.envAddress("DEPLOYER_PUBLIC_KEY") : _owner,
+            fork ? vm.envAddress("LEDGER_ADMIN") : _owner
+        );
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );

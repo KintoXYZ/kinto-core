@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "../src/interfaces/IFaucet.sol";
 import "../src/Faucet.sol";
@@ -66,7 +66,7 @@ contract FaucetTest is SharedSetup {
         vm.assume(someone != _faucet.owner());
         vm.deal(someone, 1 ether);
         vm.prank(someone);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
+        vm.expectRevert("Ownable: caller is not the owner");
         _faucet.startFaucet{value: 1 ether}();
     }
 
@@ -171,7 +171,7 @@ contract FaucetTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
         assertEq(address(_faucet).balance, previousBalance + 1 ether);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _faucet.withdrawAll();
     }
 

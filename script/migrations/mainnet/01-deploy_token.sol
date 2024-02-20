@@ -12,8 +12,6 @@ import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
 contract KintoMainnetMigration1DeployScript is Create2Helper, ArtifactsReader, Test {
-    using MessageHashUtils for bytes32;
-
     KintoToken _token;
     VestingContract _vestingContract;
 

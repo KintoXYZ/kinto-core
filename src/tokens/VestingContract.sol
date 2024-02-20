@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "../interfaces/IVestingContract.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 
 /**
  * @title VestingContract - To be deployed on ETH mainnet
@@ -55,7 +55,7 @@ contract VestingContract is Ownable, IVestingContract {
      * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
      * vesting duration of the vesting wallet.
      */
-    constructor(address token) Ownable() {
+    constructor(address token) Ownable(msg.sender) {
         kintoToken = token;
     }
 

@@ -58,3 +58,4 @@ jobs:
           FORK: true
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
           LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+          DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}

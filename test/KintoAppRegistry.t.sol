@@ -230,7 +230,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testEnableDSA_RevertWhen_CallerIsNotOwner() public {
         registerApp(_owner, "app", address(_engenCredits));
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
