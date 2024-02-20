@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/utils/structs/BitMaps.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IKintoID {
     /* ============ Errors ============ */
@@ -25,8 +25,8 @@ interface IKintoID {
         uint256 updatedAt;
         uint8 sanctionsCount;
         bool individual;
-        BitMaps.BitMap traits;
-        BitMaps.BitMap sanctions; // Follows ISO-3661 numeric codes https://en.wikipedia.org/wiki/ISO_3166-1_numeric
+        BitMapsUpgradeable.BitMap traits;
+        BitMapsUpgradeable.BitMap sanctions; // Follows ISO-3661 numeric codes https://en.wikipedia.org/wiki/ISO_3166-1_numeric
     }
 
     struct SignatureData {

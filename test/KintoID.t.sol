@@ -31,11 +31,7 @@ contract KintoIDTest is SharedSetup {
     function testUpgradeTo() public {
         vm.startPrank(_owner);
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
-        if (fork) {
-            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
-        } else {
-            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
         assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);
@@ -72,11 +68,7 @@ contract KintoIDTest is SharedSetup {
 
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
         vm.prank(_upgrader);
-        if (fork) {
-            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
-        } else {
-            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        _kintoID.upgradeTo(address(_implementationV2));
 
         // re-wrap the _proxy
         assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);

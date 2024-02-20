@@ -35,11 +35,7 @@ contract EngenCreditsTest is SharedSetup {
     function testUpgradeTo() public {
         vm.startPrank(_owner);
         EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
-        if (fork) {
-            Upgradeable(address(_engenCredits)).upgradeTo(address(_implementation));
-        } else {
-            _engenCredits.upgradeToAndCall(address(_implementation), bytes(""));
-        }
+        _engenCredits.upgradeTo(address(_implementation));
 
         // ensure that the implementation has been upgraded
         EngenCreditsUpgrade _EngenCreditsUpgrade = EngenCreditsUpgrade(address(_engenCredits));
@@ -51,11 +47,7 @@ contract EngenCreditsTest is SharedSetup {
         EngenCreditsUpgrade _implementation = new EngenCreditsUpgrade();
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        if (fork) {
-            Upgradeable(address(_engenCredits)).upgradeTo(address(_implementation));
-        } else {
-            _engenCredits.upgradeToAndCall(address(_implementation), bytes(""));
-        }
+        _engenCredits.upgradeTo(address(_implementation));
     }
 
     /* ============ Set Transfer Enabled tests ============ */

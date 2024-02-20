@@ -25,14 +25,6 @@ import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 import "../../script/deploy.s.sol";
 
-interface IInitialize {
-    function initialize() external;
-}
-
-interface Upgradeable {
-    function upgradeTo(address newImplementation) external;
-}
-
 abstract contract AATestScaffolding is KYCSignature {
     DeployerScript.DeployedContracts contracts;
 
@@ -55,16 +47,6 @@ abstract contract AATestScaffolding is KYCSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
-
-    bool fork;
-
-    function setUp() public virtual {
-        try vm.envBool("FORK") returns (bool _fork) {
-            fork = _fork;
-        } catch {
-            fork = false;
-        }
-    }
 
     /* ============ convenience methods ============ */
 
@@ -229,22 +211,11 @@ abstract contract AATestScaffolding is KYCSignature {
 
         SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
         vm.prank(_paymaster.owner());
-        if (fork) {
-            Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
-        } else {
-            _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
-        }
+        _paymaster.upgradeTo(address(_paymasterImpl));
 
         KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
-        if (fork) {
-            vm.startPrank(_kintoAppRegistry.owner());
-            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_registryImpl));
-            IInitialize(address(_kintoAppRegistry)).initialize();
-            vm.stopPrank();
-        } else {
-            vm.prank(_kintoAppRegistry.owner());
-            _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
-        }
+        vm.prank(_kintoAppRegistry.owner());
+        _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
 
     function changeWalletOwner(address _newOwner, address _kycProvider) public {

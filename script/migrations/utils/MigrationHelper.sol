@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../../src/wallet/KintoWalletFactory.sol";
 import "../../../src/paymasters/SponsorPaymaster.sol";
@@ -22,12 +23,8 @@ interface IInitialize {
     function initialize() external;
 }
 
-interface Upgradeable {
-    function upgradeTo(address newImplementation) external;
-}
-
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     bool testMode = true;
     uint256 deployerPrivateKey;
@@ -94,7 +91,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             } else {
                 if (_isGethAllowed(proxy)) {
                     vm.broadcast(); // may require LEDGER_ADMIN
-                    Upgradeable(proxy).upgradeTo(_impl);
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
                 } else {
                     try Ownable(proxy).owner() returns (address owner) {
                         if (owner != _getChainDeployment("KintoWallet-admin")) {
@@ -119,10 +116,8 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                 // todo: ideally, on testMode, we should use the KintoWallet-admin and adjust tests so they use the handleOps
                 try Ownable(proxy).owner() returns (address owner) {
                     vm.prank(owner);
-                    Upgradeable(proxy).upgradeTo(_impl);
-                } catch {
-                    Upgradeable(proxy).upgradeTo(_impl);
-                }
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
+                } catch {}
             }
         }
     }
@@ -143,7 +138,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             0,
             IKintoWallet(_from).getNonce(),
             privateKeys,
-            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newImpl)),
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

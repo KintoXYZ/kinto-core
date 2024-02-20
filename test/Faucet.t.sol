@@ -33,7 +33,7 @@ contract FaucetTest is SharedSetup {
     function testUpgradeTo() public {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
         vm.prank(_owner);
-        _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
+        _faucet.upgradeTo(address(_newImpl));
 
         assertEq(FaucetNewUpgrade(payable(address(_faucet))).newFunction(), 1);
     }
@@ -42,11 +42,7 @@ contract FaucetTest is SharedSetup {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
 
         vm.expectRevert(IFaucet.OnlyOwner.selector);
-        if (fork) {
-            Upgradeable(address(_faucet)).upgradeTo(address(_newImpl));
-        } else {
-            _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
-        }
+        _faucet.upgradeTo(address(_newImpl));
     }
 
     /* ============ Start Faucet tests ============ */

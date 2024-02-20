@@ -8,12 +8,12 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@oz/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoAppRegistry _kintoApp;
     KintoAppRegistry _kintoAppImpl;
@@ -45,7 +45,7 @@ contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
         }
         console.log("kintoAppRegistryImpl", kintoAppRegistryImpl);
         bytes memory bytecode =
-            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(kintoAppRegistryImpl)));
+            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(kintoAppRegistryImpl), bytes("")));
         // deploy _proxy contract and point it to _implementation
         _kintoApp = KintoAppRegistry(_walletFactory.deployContract{value: 0}(ledgerAdmin, 0, bytecode, bytes32("10")));
         vm.stopBroadcast();

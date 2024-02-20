@@ -2,13 +2,14 @@
 pragma solidity ^0.8.18;
 
 import {IETHPriceIsRight} from "../interfaces/IETHPriceIsRight.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title ETHPriceIsRight
  * @dev The Kinto demo application to guess the price of ETH at the end of 2024
  * @dev Guess must be entered before the end of 2023
  */
-contract ETHPriceIsRight is IETHPriceIsRight {
+contract ETHPriceIsRight is Ownable, IETHPriceIsRight {
     /* ============ Events ============ */
     event Guess(address indexed _to, uint256 _guess, uint256 _timestamp);
 
@@ -21,6 +22,8 @@ contract ETHPriceIsRight is IETHPriceIsRight {
     uint256 public override minGuess = 0;
     uint256 public override avgGuess = 0;
     uint256 public override guessCount = 0;
+
+    constructor() {}
 
     /**
      * @dev Allows users to enter a guess of the price of ETH

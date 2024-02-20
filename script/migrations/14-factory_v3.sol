@@ -23,7 +23,7 @@ contract KintoIDV4 is KintoID {
 }
 
 contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactoryV3 _factoryImpl;
     KintoID _kintoID;
@@ -84,9 +84,9 @@ contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
         // Start admin
         vm.startBroadcast();
         // 3) Upgrade wallet factory
-        Upgradeable(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         // (4). upgrade kinto id to new implementation
-        Upgradeable(address(_kintoID)).upgradeTo(address(_kintoIDImpl));
+        _kintoID.upgradeTo(address(_kintoIDImpl));
         vm.stopBroadcast();
         // writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");

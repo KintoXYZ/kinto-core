@@ -4,15 +4,15 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@oz/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IFaucet.sol";
 
 abstract contract KYCSignature is Test {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     // Create a test for minting a KYC token

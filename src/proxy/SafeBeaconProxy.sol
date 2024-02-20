@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {BeaconProxy} from "@oz/contracts/proxy/beacon/BeaconProxy.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 
 /**
  * @title GardenFactory
@@ -34,5 +34,5 @@ contract SafeBeaconProxy is BeaconProxy {
      * In a scope of Babylon project this is acceptable but should be kept in mind at all times.
      *
      */
-    receive() external payable {}
+    receive() external payable override {}
 }
