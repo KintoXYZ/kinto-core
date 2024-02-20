@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // TODO: make it ugradeable?
 // TODO: consider using assembly for encoding/decoding?
 // TODO: consider hardcoding gas params (or using smaller types, also for nonce)
+// TODO: consider using IDs instead of names for Kinto contracts
 
 /// @notice Inflator contract for Kinto user operations
 /// @dev This contract is responsible for inflating and compressing (off-chain) user operations
