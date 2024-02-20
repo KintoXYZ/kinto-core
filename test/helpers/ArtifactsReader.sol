@@ -5,25 +5,20 @@ import "forge-std/Script.sol";
 
 abstract contract ArtifactsReader is Script {
     function _getAddressesFile() internal view virtual returns (string memory) {
+        return _getAddressesFile(block.chainid);
+    }
+
+    function _getAddressesFile(uint256 chainid) internal view virtual returns (string memory) {
         string memory root = vm.projectRoot();
-        return string.concat(root, "/test/artifacts/", vm.toString(block.chainid), "/addresses.json");
+        return string.concat(root, "/test/artifacts/", vm.toString(chainid), "/addresses.json");
     }
 
     function _getChainDeployment(string memory contractName) internal virtual returns (address) {
-        try vm.readFile(_getAddressesFile()) returns (string memory json) {
-            try vm.parseJsonAddress(json, string.concat(".", contractName)) returns (address addr) {
-                return addr;
-            } catch {
-                return address(0);
-            }
-        } catch {
-            return address(0);
-        }
+        return _getChainDeployment(contractName, block.chainid);
     }
 
-    function _getOtherChainDeployment(string memory contractName, uint256 chainId) internal virtual returns (address) {
-        try vm.readFile(string.concat(vm.projectRoot(), "/test/artifacts/", vm.toString(chainId), "/addresses.json"))
-        returns (string memory json) {
+    function _getChainDeployment(string memory contractName, uint256 chainId) internal virtual returns (address) {
+        try vm.readFile(_getAddressesFile(chainId)) returns (string memory json) {
             try vm.parseJsonAddress(json, string.concat(".", contractName)) returns (address addr) {
                 return addr;
             } catch {

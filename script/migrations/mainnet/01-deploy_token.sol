@@ -28,12 +28,12 @@ contract KintoMainnetMigration1DeployScript is Create2Helper, ArtifactsReader, T
         // If not using ledger, replace
         console.log("Executing with address", msg.sender);
         vm.startBroadcast();
-        address kintoTokenAddress = _getOtherChainDeployment("KintoToken", 1);
+        address kintoTokenAddress = _getChainDeployment("KintoToken", 1);
         if (kintoTokenAddress != address(0)) {
             console.log("Already deployed token", kintoTokenAddress);
             return;
         }
-        address vestingContractAddress = _getOtherChainDeployment("VestingContract", 1);
+        address vestingContractAddress = _getChainDeployment("VestingContract", 1);
         if (vestingContractAddress != address(0)) {
             console.log("Already deployed vesting contract", vestingContractAddress);
             return;
