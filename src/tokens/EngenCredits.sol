@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@oz/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@oz/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@oz/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
 
@@ -45,7 +45,7 @@ contract EngenCredits is
     function initialize() external initializer {
         __ERC20_init(_NAME, _SYMBOL);
         __ERC20Burnable_init();
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __ERC20Permit_init(_NAME);
         __UUPSUpgradeable_init();
         transfersEnabled = false;
@@ -125,8 +125,8 @@ contract EngenCredits is
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    function _update(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
-        super._update(from, to, amount);
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
+        super._beforeTokenTransfer(from, to, amount);
         if (
             from != address(0) // mint
                 && (to != address(0) || !burnsEnabled) // burn
@@ -135,6 +135,6 @@ contract EngenCredits is
     }
 }
 
-contract EngenCreditsV3 is EngenCredits {
+contract EngenCreditsV2 is EngenCredits {
     constructor() EngenCredits() {}
 }

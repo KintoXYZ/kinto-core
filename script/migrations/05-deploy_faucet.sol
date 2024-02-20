@@ -9,7 +9,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration5DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     Faucet _faucet;
 

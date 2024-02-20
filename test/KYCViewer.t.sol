@@ -33,11 +33,7 @@ contract KYCViewerTest is SharedSetup {
     function testUpgradeTo() public {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.prank(_owner);
-        if (fork) {
-            Upgradeable(address(_kycViewer)).upgradeTo(address(_implementationV2));
-        } else {
-            _kycViewer.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        _kycViewer.upgradeTo(address(_implementationV2));
         assertEq(KYCViewerUpgraded(address(_kycViewer)).newFunction(), 1);
     }
 
@@ -46,7 +42,7 @@ contract KYCViewerTest is SharedSetup {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(address(_walletFactory), address(_faucet));
         vm.expectRevert(IKYCViewer.OnlyOwner.selector);
         vm.prank(someone);
-        _kycViewer.upgradeToAndCall(address(_implementationV2), bytes(""));
+        _kycViewer.upgradeTo(address(_implementationV2));
     }
 
     /* ============ Viewer tests ============ */

@@ -23,6 +23,8 @@ import "../script/deploy.s.sol";
 import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
 contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
+    bool fork = false;
+
     Counter counter;
     uint256[] privateKeys;
     uint256 mainnetFork;
@@ -37,8 +39,10 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual {
+        try vm.envBool("FORK") returns (bool _fork) {
+            fork = _fork;
+        } catch {}
 
         // give some eth to _owner
         vm.deal(_owner, 1e20);
@@ -75,17 +79,22 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             vm.prank(vm.envAddress("LEDGER_ADMIN"));
             _kintoID.grantRole(role, _owner);
 
+            // grant UPGRADER role to _owner on kintoID
+            role = _kintoID.UPGRADER_ROLE();
+            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            _kintoID.grantRole(role, _owner);
+
             // approve wallet's owner KYC
             approveKYC(_kycProvider, _owner, _ownerPk);
 
-            // transfer ownership of contracts to _owner
+            // for geth allowed contracts, transfer ownership from LEDGER to _owner
             vm.startPrank(vm.envAddress("LEDGER_ADMIN"));
             _kintoAppRegistry.transferOwnership(_owner);
             _walletFactory.transferOwnership(_owner);
             _paymaster.transferOwnership(_owner);
             vm.stopPrank();
 
-            // for geth allowed contracts, transfer ownership to _owner
+            // for other contracts, transfer ownership from KintoWallet-admin to _owner
             // TODO: we should actually use the KintoWallet-admin and adjust tests so they use the handleOps
             vm.startPrank(address(_kintoWallet));
             _engenCredits.transferOwnership(_owner);

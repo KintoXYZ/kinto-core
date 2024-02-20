@@ -19,7 +19,7 @@ contract KintoWalletV2 is KintoWallet {
 }
 
 contract KintoMigration2DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
     KintoWalletV2 _kintoWalletImpl;

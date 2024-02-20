@@ -20,7 +20,7 @@ contract KintoWalletFactoryV2 is KintoWalletFactory {
 }
 
 contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _factoryImpl;
     UUPSProxy _proxy;
@@ -56,7 +56,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         // Switch to admin
         vm.startBroadcast();
         // Upgrade
-        Upgradeable(address(_walletFactory)).upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(address(_walletFactory)).upgradeTo(address(_factoryImpl));
         vm.stopBroadcast();
         // Writes the addresses to a file
         console.log("Add these new addresses to the artifacts file");
