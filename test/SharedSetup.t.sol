@@ -98,7 +98,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         } else {
             console.log("Running tests locally");
             contracts = deployer.runAndReturnResults(_ownerPk);
-
             // set contracts
             _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
             _kintoAppRegistry = KintoAppRegistry(contracts.registry);

@@ -80,7 +80,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     // @dev this is used for tests
     function runAndReturnResults(uint256 _privateKey) public returns (DeployedContracts memory contracts) {
         privateKey = _privateKey;
-        write = true;
+        write = false;
         log = false;
         _run();
         contracts = DeployedContracts(

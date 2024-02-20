@@ -6,6 +6,13 @@ interface IVestingContract {
     function addBeneficiary(address beneficiary, uint256 grantAmount, uint256 startTimestamp, uint256 durationSeconds)
         external;
 
+    function addBeneficiaries(
+        address[] calldata beneficiaries,
+        uint256[] calldata grantAmounts,
+        uint256[] calldata startTimestamps,
+        uint256[] calldata durationSeconds
+    ) external;
+
     function removeBeneficiary(address beneficiary) external;
 
     function earlyLeave(address beneficiary) external;
