@@ -97,8 +97,9 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             changeWalletOwner(_owner, _kycProvider);
         } else {
             console.log("Running tests locally");
+            console.log("Chain ID", 99999999999999);
+            vm.chainId(99999999999999);
             contracts = deployer.runAndReturnResults(_ownerPk);
-
             // set contracts
             _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
             _kintoAppRegistry = KintoAppRegistry(contracts.registry);
