@@ -29,11 +29,12 @@ interface Upgradeable {
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     using MessageHashUtils for bytes32;
 
-    bool testMode = vm.envBool("TEST_MODE");
+    bool testMode = true;
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
     function run() public virtual {
+        testMode = vm.envBool("TEST_MODE");
         console.log("Running on chain: ", vm.toString(block.chainid));
         console.log("Executing from address", msg.sender);
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
