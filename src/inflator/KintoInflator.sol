@@ -14,11 +14,20 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @notice Inflator contract for Kinto user operations
 /// @dev This contract is responsible for inflating and compressing (off-chain) user operations
-/// The first byte of the compressed data is used as follows:
-/// 0x01: sender == target (whether the sender is the same as the target) so we don't need to encode the target
-/// 0x02: Kinto contract (whether the target is a Kinto contract) so we can use the contract name instead of the address
-/// 0x04: selector (whether the selector is `execute` or `executeBatch`) so we don't need to encode the selector
-/// 0x08: paymasterAndData (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address
+
+/// On the first byte of the compressed data we store some flags.
+/// The first bit is used to encode whether the selector is `execute` or `executeBatch` (so we don't need to encode the selector)
+/// 0x01: selector
+
+/// If it is an `execute`, we use the following 4 bits to as follows:
+/// 0x02: paymasterAndData (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address
+/// 0x04: sender == target (whether the sender is the same as the target) so we don't need to encode the target
+/// 0x08: Kinto contract (whether the target is a Kinto contract) so we can use the contract name instead of the address
+
+/// If it is an `executeBatch`, we use the following bits to encode the number of operations in the batch (max supported will be 128)
+/// 0x02: paymasterAndData (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address
+/// 0x04 .. 0x80: number of operations in the batch
+
 /// The rest of the flags are not used.
 /// All other UserOperation fields are encoded as is.
 contract KintoInflator is IOpInflator, Ownable {
@@ -49,52 +58,16 @@ contract KintoInflator is IOpInflator, Ownable {
         // extract `initCode` (notice: we are always using an empty initCode for now)
         op.initCode = bytes("");
 
-        // extract `calldata` (selector, target, value, bytesOp)
-        // we skip value since we assume it's always 0
-
-        // 1. extract target
-        address target;
-
-        // if second flag is set, it means target is a Kinto contract
-        if (flags & 0x02 == 0x02) {
-            uint8 nameLength = uint8(decompressedData[cursor]);
-            cursor += 1;
-            string memory name = string(_slice(decompressedData, cursor, nameLength));
-            cursor += nameLength;
-
-            // get contract address from mapping
-            target = kintoContracts[name];
+        // check if first flag indicates selector is `execute` or `executeBatch`
+        bytes memory callData;
+        if (flags & 0x01 == 0x01) {
+            // if selector is `execute`, we decode the callData as a single operation
+            (cursor, callData) = _inflateExecuteCalldata(op.sender, flags, decompressedData, cursor);
         } else {
-            // if first flag is set, it means target == sender
-            if (flags & 0x01 == 0x01) {
-                target = op.sender;
-            } else {
-                // if target is not a Kinto contract, just extract target address
-                target = _bytesToAddress(_slice(decompressedData, cursor, 20));
-                cursor += 20;
-            }
+            // if selector is `executeBatch`, we decode the callData as a batch of operations
+            (cursor, callData) = _inflateExecuteBatchCalldata(op.sender, flags, decompressedData, cursor);
         }
-
-        // 2. extract bytesOp
-        uint256 bytesOpLength = _bytesToUint256(_slice(decompressedData, cursor, 32));
-        cursor += 32;
-        bytes memory bytesOp = _slice(decompressedData, cursor, bytesOpLength);
-
-        // 3. build `callData`
-        // if third flag is set, it means selector is `execute` or `executeBatch`
-        if (flags & 0x04 == 0x04) {
-            op.callData = abi.encodeCall(IKintoWallet.execute, (target, 0, bytesOp));
-        } else {
-            address[] memory targets = new address[](1); // TODO: replace
-            targets[0] = target;
-            uint256[] memory values = new uint256[](1); // TODO: replace
-            values[0] = 0;
-            bytes[] memory operations = new bytes[](1); // TODO: replace
-            operations[0] = bytesOp;
-
-            op.callData = abi.encodeCall(IKintoWallet.executeBatch, (targets, values, operations));
-        }
-        cursor += bytesOpLength;
+        op.callData = callData;
 
         // extract `callGasLimit`
         op.callGasLimit = _bytesToUint256(_slice(decompressedData, cursor, 32));
@@ -117,8 +90,8 @@ contract KintoInflator is IOpInflator, Ownable {
         cursor += 32;
 
         // extract `paymasterAndData`
-        // if fourth flag is set, it means paymasterAndData is set so we can use the contract stored in the mapping
-        if (flags & 0x08 == 0x08) {
+        // if second flag is set, it means paymasterAndData is set so we can use the contract stored in the mapping
+        if (flags & 0x02 == 0x02) {
             op.paymasterAndData = abi.encodePacked(kintoContracts["SponsorPaymaster"]);
         }
 
@@ -165,16 +138,23 @@ contract KintoInflator is IOpInflator, Ownable {
         }
 
         // 3. decode callData
-        // we skip value since we assume it's always 0
-        (address target,, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
-
         // encode boolean flags into the first byte of the buffer
         uint8 flags = 0;
-        flags |= op.sender == target ? 0x01 : 0; // First bit for sender == target
-        flags |= _isKintoContract(target) ? 0x02 : 0; // Second bit for Kinto contract
-        flags |= (selector == IKintoWallet.execute.selector) ? 0x04 : 0; // Third bit for selector
-        flags |= op.paymasterAndData.length > 0 ? 0x08 : 0; // Fourth bit for paymasterAndData
-        // todo: we could add more flags here
+        flags |= (selector == IKintoWallet.execute.selector) ? 0x01 : 0; // first bit for selector
+        flags |= op.paymasterAndData.length > 0 ? 0x02 : 0; // second bit for paymasterAndData
+
+        if (selector == IKintoWallet.execute.selector) {
+            // we skip value since we assume it's always 0
+            (address target,, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
+            flags |= op.sender == target ? 0x04 : 0; // third bit for sender == target
+            flags |= _isKintoContract(target) ? 0x08 : 0; // fourth bit for Kinto contract
+                // todo: we could add more flags here
+        } else {
+            (address[] memory targets,,) = abi.decode(callData, (address[], uint256[], bytes[]));
+            // num ops
+            uint256 numOps = targets.length;
+            flags |= uint8(numOps << 1); // 2nd to 7th bits for number of operations in the batch
+        }
 
         // add flags to buffer
         buffer[index] = bytes1(flags);
@@ -193,38 +173,16 @@ contract KintoInflator is IOpInflator, Ownable {
         // encode `initCode` (notice: we assume this is always empty for now)
         // index = _encodeBytes(op.initCode, buffer, index);
 
-        // encode `calldata`:
-
-        // 1. encode `target`
-
-        // if sender and target are different, encode the target address
-        // otherwise, we don't need to encode the target at all
-        if (op.sender != target) {
-            // if target is a Kinto contract, encode the Kinto contract name
-            if (_isKintoContract(target)) {
-                string memory name = kintoNames[target];
-                bytes memory nameBytes = bytes(name);
-                buffer[index] = bytes1(uint8(nameBytes.length));
-                index += 1;
-                for (uint256 i = 0; i < nameBytes.length; i++) {
-                    buffer[index + i] = nameBytes[i];
-                }
-                index += nameBytes.length;
-            } else {
-                // if target is not a Kinto contract, encode the target address
-                bytes20 targetBytes = bytes20(target);
-                for (uint256 i = 0; i < 20; i++) {
-                    buffer[index + i] = targetBytes[i];
-                }
-                index += 20;
-            }
+        // encode `callData` depending on the selector
+        if (selector == IKintoWallet.execute.selector) {
+            (address target,, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
+            // if selector is `execute`, encode the callData as a single operation
+            index = _encodeExecuteCalldata(op, target, bytesOp, buffer, index);
+        } else {
+            (address[] memory targets,, bytes[] memory bytesOps) = abi.decode(callData, (address[], uint256[], bytes[]));
+            // if selector is `executeBatch`, encode the callData as a batch of operations
+            index = _encodeExecuteBatchCalldata(op, targets, bytesOps, buffer, index);
         }
-
-        // (2) encode `value` (always 0 for now)
-        // index = _encodeUint256(value, buffer, index);
-
-        // (3) encode `bytesOp` length and content
-        index = _encodeBytes(bytesOp, buffer, index);
 
         // callGasLimit
         index = _encodeUint256(op.callGasLimit, buffer, index);
@@ -262,6 +220,144 @@ contract KintoInflator is IOpInflator, Ownable {
         kintoNames[target] = name;
         // emit event
         emit KintoContractSet(name, target);
+    }
+
+    /* ============ Compress Helpers ============ */
+
+    function _encodeExecuteCalldata(
+        UserOperation memory op,
+        address target,
+        bytes memory bytesOp,
+        bytes memory buffer,
+        uint256 index
+    ) internal view returns (uint256 newIndex) {
+        // 1. encode `target`
+
+        // if sender and target are different, encode the target address
+        // otherwise, we don't need to encode the target at all
+        if (op.sender != target) {
+            // if target is a Kinto contract, encode the Kinto contract name
+            if (_isKintoContract(target)) {
+                string memory name = kintoNames[target];
+                bytes memory nameBytes = bytes(name);
+                buffer[index] = bytes1(uint8(nameBytes.length));
+                index += 1;
+                for (uint256 i = 0; i < nameBytes.length; i++) {
+                    buffer[index + i] = nameBytes[i];
+                }
+                index += nameBytes.length;
+            } else {
+                // if target is not a Kinto contract, encode the target address
+                index = _encodeAddress(target, buffer, index);
+            }
+        }
+
+        // 2. encode `value` (always 0 for now)
+        // index = _encodeUint256(value, buffer, index);
+
+        // 3. encode `bytesOp` length and content
+        newIndex = _encodeBytes(bytesOp, buffer, index);
+    }
+
+    function _encodeExecuteBatchCalldata(
+        UserOperation memory op,
+        address[] memory targets,
+        bytes[] memory bytesOps,
+        bytes memory buffer,
+        uint256 index
+    ) internal view returns (uint256 newIndex) {
+        // encode number of operations in the batch
+        buffer[index] = bytes1(uint8(targets.length));
+        index += 1;
+
+        // encode targets (as addresses, potentially we can improve this)
+        for (uint8 i = 0; i < uint8(targets.length); i++) {
+            index = _encodeAddress(targets[i], buffer, index);
+
+            // encode bytesOps content
+            index = _encodeBytes(bytesOps[i], buffer, index);
+        }
+
+        newIndex = index;
+    }
+
+    /* ============ Inflate Helpers ============ */
+
+    /// @notice extracts `calldata` (selector, target, value, bytesOp)
+    /// @dev skips `value` since we assume it's always 0
+    function _inflateExecuteCalldata(address sender, uint8 flags, bytes memory data, uint256 cursor)
+        internal
+        view
+        returns (uint256 newCursor, bytes memory callData)
+    {
+        // 1. extract target
+        address target;
+
+        // if fourth flag is set, it means target is a Kinto contract
+        if (flags & 0x08 == 0x08) {
+            uint8 nameLength = uint8(data[cursor]);
+            cursor += 1;
+            string memory name = string(_slice(data, cursor, nameLength));
+            cursor += nameLength;
+
+            // get contract address from mapping
+            target = kintoContracts[name];
+        } else {
+            // if third flag is set, it means target == sender
+            if (flags & 0x04 == 0x04) {
+                target = sender;
+            } else {
+                // if target is not a Kinto contract, just extract target address
+                target = _bytesToAddress(_slice(data, cursor, 20));
+                cursor += 20;
+            }
+        }
+
+        // 2. extract bytesOp
+        uint256 bytesOpLength = _bytesToUint256(_slice(data, cursor, 32));
+        cursor += 32;
+        bytes memory bytesOp = _slice(data, cursor, bytesOpLength);
+        cursor += bytesOpLength;
+
+        // 3. build `callData`
+        callData = abi.encodeCall(IKintoWallet.execute, (target, 0, bytesOp));
+
+        newCursor = cursor;
+    }
+
+    function _inflateExecuteBatchCalldata(address sender, uint8 flags, bytes memory data, uint256 cursor)
+        internal
+        view
+        returns (uint256 newCursor, bytes memory callData)
+    {
+        // extract number of operations in the batch
+        uint8 numOps = uint8(data[cursor]);
+        cursor += 1;
+
+        address[] memory targets = new address[](numOps);
+        uint256[] memory values = new uint256[](numOps);
+        bytes[] memory bytesOps = new bytes[](numOps);
+
+        // extract targets, values, and bytesOps
+        for (uint8 i = 0; i < numOps; i++) {
+            // extract target
+            targets[i] = _bytesToAddress(_slice(data, cursor, 20));
+            cursor += 20;
+
+            // extract value (we assume this is always 0 for now)
+            values[i] = 0;
+
+            // extract bytesOp
+            uint256 bytesOpLength = _bytesToUint256(_slice(data, cursor, 32));
+            cursor += 32;
+            bytesOps[i] = _slice(data, cursor, bytesOpLength);
+            cursor += bytesOpLength;
+        }
+
+        //build `callData`
+        callData = abi.encodeCall(IKintoWallet.executeBatch, (targets, values, bytesOps));
+
+        newCursor = cursor;
     }
 
     /* ============ Utils ============ */
@@ -320,5 +416,17 @@ contract KintoInflator is IOpInflator, Ownable {
         }
 
         return newIndex + data.length; // Increase index by the length of `data`
+    }
+
+    function _encodeAddress(address addr, bytes memory buffer, uint256 index)
+        internal
+        pure
+        returns (uint256 newIndex)
+    {
+        bytes20 addrBytes = bytes20(addr);
+        for (uint256 i = 0; i < 20; i++) {
+            buffer[index + i] = addrBytes[i];
+        }
+        return index + 20;
     }
 }
