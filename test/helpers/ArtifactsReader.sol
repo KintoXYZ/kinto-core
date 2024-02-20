@@ -20,4 +20,16 @@ abstract contract ArtifactsReader is Script {
             return address(0);
         }
     }
+
+    function _getOtherChainDeployment(string memory contractName, uint256 chainId) internal virtual returns (address) {
+        try vm.readFile(string.concat(vm.projectRoot(), "/test/artifacts/", vm.toString(chainId), "/addresses.json")) returns (string memory json) {
+            try vm.parseJsonAddress(json, string.concat(".", contractName)) returns (address addr) {
+                return addr;
+            } catch {
+                return address(0);
+            }
+        } catch {
+            return address(0);
+        }
+    }
 }
