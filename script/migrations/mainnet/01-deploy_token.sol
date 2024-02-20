@@ -11,7 +11,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-
 contract KintoMainnetMigration1DeployScript is Create2Helper, ArtifactsReader, Test {
     using MessageHashUtils for bytes32;
 
@@ -26,21 +25,20 @@ contract KintoMainnetMigration1DeployScript is Create2Helper, ArtifactsReader, T
             return;
         }
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY_PANAMA_EOA');
-        vm.startBroadcast(deployerPrivateKey);
+        // If not using ledger, replace
         console.log("Executing with address", msg.sender);
-        
+        vm.startBroadcast();
         address kintoTokenAddress = _getOtherChainDeployment("KintoToken", 1);
         if (kintoTokenAddress != address(0)) {
-          console.log("Already deployed token", kintoTokenAddress);
-          return;
+            console.log("Already deployed token", kintoTokenAddress);
+            return;
         }
         address vestingContractAddress = _getOtherChainDeployment("VestingContract", 1);
         if (vestingContractAddress != address(0)) {
-          console.log("Already deployed vesting contract", vestingContractAddress);
-          return;
+            console.log("Already deployed vesting contract", vestingContractAddress);
+            return;
         }
-        
+
         // SAFEs addresses
         address panamaSafe = 0x4108162ADC07c627eb575c6e54a00F898c7b3e18;
         address mamoriSafe = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
