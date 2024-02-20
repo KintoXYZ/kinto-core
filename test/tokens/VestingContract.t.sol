@@ -37,6 +37,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
+        assertEq(_vestingContract.totalAllocated(), 100);
         vm.stopPrank();
     }
 
@@ -48,22 +49,86 @@ contract VestingContractTest is SharedSetup, Create2Helper {
     function testAddBeneficiary_RevertWhen_BeneficiaryAlreadyExists() public {
         vm.startPrank(_owner);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
-        vm.expectRevert("Beneficiary already exists");
+        vm.expectRevert(VestingContract.BeneficiaryAlreadyExists.selector);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
         vm.stopPrank();
     }
 
     function testAddBeneficiary_RevertWhen_DurationLessThanLockPeriod() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Vesting needs to at least be 1 year");
+        vm.expectRevert(VestingContract.InLockPeriod.selector);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 364 days);
         vm.stopPrank();
     }
 
     function testAddBeneficiary_RevertWhen_NotEnoughTokens() public {
         vm.startPrank(_owner);
-        vm.expectRevert("Not enough tokens");
+        vm.expectRevert(VestingContract.NotEnoughTokens.selector);
         _vestingContract.addBeneficiary(_user, 50_000_000e18 + 1, block.timestamp, 365 days);
+        vm.stopPrank();
+    }
+
+    /* ============ Adding many beneficary tests ============ */
+
+    function testAddBeneficiaries() public {
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
+        vm.startPrank(_owner);
+        address[] memory beneficiaries = new address[](2);
+        beneficiaries[0] = _user;
+        beneficiaries[1] = _user2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 100;
+        amounts[1] = 100;
+        uint256[] memory starts = new uint256[](2);
+        starts[0] = block.timestamp;
+        starts[1] = block.timestamp;
+        uint256[] memory durations = new uint256[](2);
+        durations[0] = 365 days;
+        durations[1] = 365 days;
+        _vestingContract.addBeneficiaries(beneficiaries, amounts, starts, durations);
+
+        assertEq(_vestingContract.totalAllocated(), 200);
+        assertEq(_vestingContract.grant(_user), 100);
+        assertEq(_vestingContract.grant(_user2), 100);
+        assertEq(_vestingContract.start(_user), block.timestamp);
+        assertEq(_vestingContract.start(_user2), block.timestamp);
+        assertEq(_vestingContract.duration(_user), 365 days);
+        assertEq(_vestingContract.duration(_user2), 365 days);
+        vm.stopPrank();
+    }
+
+    function testAddBeneficiaries_RevertWhen_CallerIsNotOwner() public {
+        address[] memory beneficiaries = new address[](2);
+        beneficiaries[0] = _user;
+        beneficiaries[1] = _user2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 100;
+        amounts[1] = 100;
+        uint256[] memory starts = new uint256[](2);
+        starts[0] = block.timestamp;
+        starts[1] = block.timestamp;
+        uint256[] memory durations = new uint256[](2);
+        durations[0] = 365 days;
+        durations[1] = 365 days;
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        _vestingContract.addBeneficiaries(beneficiaries, amounts, starts, durations);
+    }
+
+    function testAddBeneficiaries_RevertWhen_ArraysMismatch() public {
+        vm.startPrank(_owner);
+        address[] memory beneficiaries = new address[](2);
+        beneficiaries[0] = _user;
+        beneficiaries[1] = _user2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 100;
+        amounts[1] = 100;
+        uint256[] memory starts = new uint256[](2);
+        starts[0] = block.timestamp;
+        starts[1] = block.timestamp;
+        uint256[] memory durations = new uint256[](1);
+        durations[0] = 365 days;
+        vm.expectRevert(VestingContract.ArrayLengthMistmatch.selector);
+        _vestingContract.addBeneficiaries(beneficiaries, amounts, starts, durations);
         vm.stopPrank();
     }
 
@@ -87,7 +152,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         _vestingContract.release();
         vm.stopPrank();
         vm.startPrank(_owner);
-        vm.expectRevert("Cannot remove beneficiary with released tokens");
+        vm.expectRevert(VestingContract.CantRemoveBeneficiary.selector);
         _vestingContract.removeBeneficiary(_user);
         vm.stopPrank();
     }
@@ -100,7 +165,6 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         _vestingContract.removeBeneficiary(_user);
     }
 
-    // test earlyLeave
     function testEarlyLeave() public {
         vm.startPrank(_owner);
         _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days * 2);
@@ -120,6 +184,17 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         assertEq(_vestingContract.releasable(_user), 0);
         assertEq(_vestingContract.vestedAmount(_user, block.timestamp + 365 days), 50);
         assertEq(_vestingContract.totalReleased(), 50);
+        vm.stopPrank();
+    }
+
+    function testEarlyLeave_RevertWhen_PeriodIsOver() public {
+        vm.startPrank(_owner);
+        _vestingContract.addBeneficiary(_user, 100, block.timestamp, 365 days);
+        vm.stopPrank();
+        vm.warp(block.timestamp + 365 days + 1);
+        vm.startPrank(_owner);
+        vm.expectRevert(VestingContract.GrantPeriodEnded.selector);
+        _vestingContract.earlyLeave(_user);
         vm.stopPrank();
     }
 
@@ -191,7 +266,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.startPrank(_user);
         _vestingContract.release();
         vm.stopPrank();
-        vm.expectRevert("Nothing to release");
+        vm.expectRevert(VestingContract.NothingToRelease.selector);
         _vestingContract.release();
     }
 
