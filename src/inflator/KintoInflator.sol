@@ -25,7 +25,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// 0x08: Kinto contract (whether the target is a Kinto contract) so we can use the contract name instead of the address
 
 /// If it is an `executeBatch`, we use the following bits to encode the number of operations in the batch (max supported will be 128)
-/// 0x02: paymasterAndData (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address
+/// 0x02: paymasterAndData (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address. We assume that paymaster is always the SponsorPaymaster.
 /// 0x04 .. 0x80: number of operations in the batch
 
 /// The rest of the flags are not used.
@@ -38,90 +38,72 @@ contract KintoInflator is IOpInflator, Ownable {
 
     function inflate(bytes calldata compressed) external view returns (UserOperation memory op) {
         // decompress the data
-        bytes memory decompressedData = LibZip.flzDecompress(compressed);
-
-        // deserialize the data
+        bytes memory decompressed = LibZip.flzDecompress(compressed);
         uint256 cursor = 0; // keep track of the current position in the decompressed data
 
-        // read flags byte
-        uint8 flags = uint8(decompressedData[cursor]);
-        cursor += 1; // move past the flags byte
+        // extract flags
+        uint8 flags = uint8(decompressed[cursor]);
+        cursor += 1;
 
         // extract `sender`
-        op.sender = _bytesToAddress(_slice(decompressedData, cursor, 20));
+        op.sender = _bytesToAddress(_slice(decompressed, cursor, 20));
         cursor += 20;
 
         // extract `nonce`
-        op.nonce = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.nonce = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `initCode` (notice: we are always using an empty initCode for now)
-        op.initCode = bytes("");
+        // op.initCode = bytes("");
 
-        // check if first flag indicates selector is `execute` or `executeBatch`
+        // read first flag to check whether selector is `execute` or `executeBatch`
+        // and inflate `callData` accordingly
         bytes memory callData;
         if (flags & 0x01 == 0x01) {
             // if selector is `execute`, we decode the callData as a single operation
-            (cursor, callData) = _inflateExecuteCalldata(op.sender, flags, decompressedData, cursor);
+            (cursor, callData) = _inflateExecuteCalldata(op.sender, flags, decompressed, cursor);
         } else {
             // if selector is `executeBatch`, we decode the callData as a batch of operations
-            (cursor, callData) = _inflateExecuteBatchCalldata(op.sender, flags, decompressedData, cursor);
+            (cursor, callData) = _inflateExecuteBatchCalldata(op.sender, flags, decompressed, cursor);
         }
         op.callData = callData;
 
         // extract `callGasLimit`
-        op.callGasLimit = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.callGasLimit = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `verificationGasLimit`
-        op.verificationGasLimit = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.verificationGasLimit = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `preVerificationGas`
-        op.preVerificationGas = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.preVerificationGas = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `maxFeePerGas`
-        op.maxFeePerGas = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.maxFeePerGas = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `maxPriorityFeePerGas`
-        op.maxPriorityFeePerGas = _bytesToUint256(_slice(decompressedData, cursor, 32));
+        op.maxPriorityFeePerGas = _bytesToUint256(_slice(decompressed, cursor, 32));
         cursor += 32;
 
         // extract `paymasterAndData`
         // if second flag is set, it means paymasterAndData is set so we can use the contract stored in the mapping
         if (flags & 0x02 == 0x02) {
-            op.paymasterAndData = abi.encodePacked(kintoContracts["SponsorPaymaster"]);
+            op.paymasterAndData = abi.encodePacked(kintoContracts["SP"]);
         }
 
         // decode signature
-        uint256 signatureLength = _bytesToUint256(_slice(decompressedData, cursor, 32));
-        cursor += 32;
-        op.signature = _slice(decompressedData, cursor, signatureLength);
+        uint256 signatureLength = _bytesToUint32(_slice(decompressed, cursor, 4));
+        cursor += 4;
+        op.signature = _slice(decompressed, cursor, signatureLength);
         cursor += signatureLength;
 
         return op;
     }
 
-    function inflateSimple(bytes calldata compressed) external pure returns (UserOperation memory op) {
-        op = abi.decode(LibZip.flzDecompress(compressed), (UserOperation));
-    }
-
-    function compressSimple(UserOperation memory op) external pure returns (bytes memory compressed) {
-        compressed = LibZip.flzCompress(abi.encode(op));
-    }
-
     function compress(UserOperation memory op) external view returns (bytes memory compressed) {
-        // (1) selective pre-compression
-        bytes memory preCompressedData = preCompress(op);
-
-        // (2) general compression via FLZ
-        compressed = LibZip.flzCompress(preCompressedData);
-        return compressed;
-    }
-
-    function preCompress(UserOperation memory op) internal view returns (bytes memory preCompressed) {
         // initialize a dynamic bytes array for the pre-compressed data
         bytes memory buffer = new bytes(1024); // arbitrary initial size of 1024 bytes
         uint256 index = 0;
@@ -170,7 +152,8 @@ contract KintoInflator is IOpInflator, Ownable {
         // encode `nonce`
         index = _encodeUint256(op.nonce, buffer, index);
 
-        // encode `initCode` (notice: we assume this is always empty for now)
+        // encode `initCode`
+        // (we assume always an empty initCode so we don't need to encode it)
         // index = _encodeBytes(op.initCode, buffer, index);
 
         // encode `callData` depending on the selector
@@ -184,33 +167,45 @@ contract KintoInflator is IOpInflator, Ownable {
             index = _encodeExecuteBatchCalldata(op, targets, bytesOps, buffer, index);
         }
 
-        // callGasLimit
+        // encode `callGasLimit`
         index = _encodeUint256(op.callGasLimit, buffer, index);
 
-        // verificationGasLimit
+        // encode `verificationGasLimit`
         index = _encodeUint256(op.verificationGasLimit, buffer, index);
 
-        // preVerificationGas
+        // encode `preVerificationGas`
         index = _encodeUint256(op.preVerificationGas, buffer, index);
 
-        // maxFeePerGas
+        // encode `maxFeePerGas`
         index = _encodeUint256(op.maxFeePerGas, buffer, index);
 
-        // maxPriorityFeePerGas
+        // encode `maxPriorityFeePerGas`
         index = _encodeUint256(op.maxPriorityFeePerGas, buffer, index);
 
-        // encode `paymasterAndData` (notice: we assume always the same paymaster and no data for now)
+        // encode `paymasterAndData`
+        // (we assume always the same paymaster so we don't need to encode it)
         // index = _encodeBytes(op.paymasterAndData, buffer, index);
 
         // encode `signature` length and content
         index = _encodeBytes(op.signature, buffer, index);
 
         // adjust the size of the buffer to the actual data length
-        preCompressed = new bytes(index);
+        compressed = new bytes(index);
         for (uint256 i = 0; i < index; i++) {
-            preCompressed[i] = buffer[i];
+            compressed[i] = buffer[i];
         }
-        return preCompressed;
+
+        return LibZip.flzCompress(compressed);
+    }
+
+    /* ============ Simple compress/inflate ============ */
+
+    function inflateSimple(bytes calldata compressed) external pure returns (UserOperation memory op) {
+        op = abi.decode(LibZip.flzDecompress(compressed), (UserOperation));
+    }
+
+    function compressSimple(UserOperation memory op) external pure returns (bytes memory compressed) {
+        compressed = LibZip.flzCompress(abi.encode(op));
     }
 
     /* ============ Auth methods ============ */
@@ -314,8 +309,8 @@ contract KintoInflator is IOpInflator, Ownable {
         }
 
         // 2. extract bytesOp
-        uint256 bytesOpLength = _bytesToUint256(_slice(data, cursor, 32));
-        cursor += 32;
+        uint256 bytesOpLength = _bytesToUint32(_slice(data, cursor, 4));
+        cursor += 4;
         bytes memory bytesOp = _slice(data, cursor, bytesOpLength);
         cursor += bytesOpLength;
 
@@ -348,8 +343,8 @@ contract KintoInflator is IOpInflator, Ownable {
             values[i] = 0;
 
             // extract bytesOp
-            uint256 bytesOpLength = _bytesToUint256(_slice(data, cursor, 32));
-            cursor += 32;
+            uint256 bytesOpLength = _bytesToUint32(_slice(data, cursor, 4));
+            cursor += 4;
             bytesOps[i] = _slice(data, cursor, bytesOpLength);
             cursor += bytesOpLength;
         }
@@ -390,6 +385,24 @@ contract KintoInflator is IOpInflator, Ownable {
         }
     }
 
+    function _bytesToUint32(bytes memory _bytes) internal pure returns (uint32 value) {
+        assembly {
+            value := mload(add(_bytes, 4))
+        }
+    }
+
+    function _encodeUint32(uint256 value, bytes memory buffer, uint256 index)
+        internal
+        pure
+        returns (uint256 newIndex)
+    {
+        for (uint256 i = 0; i < 4; i++) {
+            // uint32 is 4 bytes
+            buffer[index + i] = bytes1(uint8(value >> (8 * (3 - i))));
+        }
+        return index + 4; // increase index by 4 bytes
+    }
+
     function _encodeUint256(uint256 value, bytes memory buffer, uint256 index)
         internal
         pure
@@ -399,7 +412,7 @@ contract KintoInflator is IOpInflator, Ownable {
             // uint256 is 32 bytes
             buffer[index + i] = bytes1(uint8(value >> (8 * (31 - i))));
         }
-        return index + 32; // Increase index by 32 bytes
+        return index + 32; // increase index by 32 bytes
     }
 
     function _encodeBytes(bytes memory data, bytes memory buffer, uint256 index)
@@ -407,15 +420,15 @@ contract KintoInflator is IOpInflator, Ownable {
         pure
         returns (uint256 newIndex)
     {
-        // encode length of `data`
-        newIndex = _encodeUint256(data.length, buffer, index);
+        // encode length of `data` (we assume uint32 is more than enough for the length)
+        newIndex = _encodeUint32(data.length, buffer, index);
 
         // encode contents of `data`
         for (uint256 i = 0; i < data.length; i++) {
             buffer[newIndex + i] = data[i];
         }
 
-        return newIndex + data.length; // Increase index by the length of `data`
+        return newIndex + data.length; // increase index by the length of `data`
     }
 
     function _encodeAddress(address addr, bytes memory buffer, uint256 index)
