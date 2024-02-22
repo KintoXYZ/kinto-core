@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 
-interface IFaucet {
+interface IBridger {
     /* ============ Errors ============ */
     error OnlyOwner();
     error SignatureExpired();
@@ -24,20 +24,21 @@ interface IFaucet {
         //0x
         address spender;
         address swapTarget;
-        address swapCallData;
-
+        uint256 maxGas;
+        uint256 gasPriceBid;
+        bytes swapCallData;
         bytes permitSignature;
     }
 
     /* ============ State Change ============ */
 
-    function deposit(address asset, uint256 amount) external;
-
     function depositBySig(SignatureData calldata _signatureData) external;
 
     /* ============ Basic Viewers ============ */
 
+    function deposits(address _account, address _asset) external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
 
+    function arbitrumL1GatewayRouter() external view returns (address);
 }

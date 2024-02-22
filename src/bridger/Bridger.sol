@@ -9,6 +9,9 @@ import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
 
+// todo
+contract L1GatewayRouter {}
+
 /**
  * @title Bridger - To be deployed on ETH mainnet and on Kinto L2
  *
@@ -18,6 +21,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+    event BoughtTokens(IERC20 sellToken, IERC20 buyToken, uint256 boughtAmount);
     event Deposit(address indexed from, address indexed asset, uint256 amount);
 
     /* ============ Constants ============ */
@@ -25,8 +29,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     address public constant SENDER_ACCOUNT = address(1);
 
     /* ============ State Variables ============ */
-    L1GatewayRouter public immutable override arbitrumL1GatewayRouter;
-    mapping(address => mapping(address => amount)) public deposits;
+    address public immutable override arbitrumL1GatewayRouter;
+    mapping(address => mapping(address => uint256)) public override deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
@@ -34,7 +38,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     /* ============ Constructor & Upgrades ============ */
     constructor(address _arbitrumL1GatewayRouter) {
         _disableInitializers();
-        arbitrumL1GatewayRouter = L1GatewayRouter(_arbitrumL1GatewayRouter);
+        arbitrumL1GatewayRouter = _arbitrumL1GatewayRouter;
     }
 
     /**
@@ -59,34 +63,36 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
 
     /**
      * @dev Deposit the specified amount of tokens in to the Kinto L2
-     * @param asset address of the token
-     * @param amount amount of tokens
+     * @param _signatureData Struct with all the required information to deposit via signature
      */
-    function depositBySig(IBridger.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
-        require(
-            msg.sender == owner() || msg.sender == SENDER_ACCOUNT, "Bridger: unauthorized sender");
+    function depositBySig(IBridger.SignatureData calldata _signatureData)
+        external
+        override
+        onlySignerVerified(_signatureData)
+    {
+        require(msg.sender == owner() || msg.sender == SENDER_ACCOUNT, "Bridger: unauthorized sender");
         _permit(_signatureData.asset, _signatureData.amount, _signatureData.expiresAt, _signatureData.permitSignature);
         // swap using 0x
         uint256 amountBought = _fillQuote(
-            _signatureData.depositAsset,
-            _signatureData.asset,
-            _signatureData.spender,
-            _signatureData.swapTarget,
+            IERC20(_signatureData.depositAsset),
+            IERC20(_signatureData.asset),
+            payable(_signatureData.spender),
+            payable(_signatureData.swapTarget),
             _signatureData.swapCallData
         );
         // Lock deposit in this contract
         _deposit(_signatureData.asset, amountBought);
         nonces[_signatureData.signer]++;
         // Bridge to Kinto L2 using arbitrum or superbridge
-        arbitrumL1GatewayRouter.outboundTransferCustomRefund(
-            _signatureData.asset, //token
-            REFUND_L2_ACCOUNT, // Account to be credited with the excess gas refund in L2
-            _signatureData.signerKintoWallet, // Account to be credited with the tokens in L2
-            amountBought, // Amount of tokens to bridge
-            _signatureData.maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
-            _signatureData.gasPriceBid, // Gas price for the execution in L2
-            abi.encode(0, bytes(")) // 2 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData
-        );
+        // L1GatewayRouter(arbitrumL1GatewayRouter).outboundTransferCustomRefund(
+        //     _signatureData.asset, //token
+        //     REFUND_L2_ACCOUNT, // Account to be credited with the excess gas refund in L2
+        //     _signatureData.signerKintoWallet, // Account to be credited with the tokens in L2
+        //     amountBought, // Amount of tokens to bridge
+        //     _signatureData.maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
+        //     _signatureData.gasPriceBid, // Gas price for the execution in L2
+        //     abi.encode(0, bytes("")) // 2 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData
+        // );
     }
 
     /* ============ Private methods ============ */
@@ -99,7 +105,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
      * @param signature signature to be recovered
      */
     function _permit(address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
-        IERC20(asset).permit(msg.sender, address(this), amount, expiresAt, signature[64], signature[0:32], signature[32:64]);
+        IERC20(asset).permit(
+            msg.sender, address(this), amount, expiresAt, signature[64], signature[0:32], signature[32:64]
+        );
     }
 
     /**
@@ -130,11 +138,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         address payable swapTarget,
         // The `data` field from the API response.
         bytes calldata swapCallData
-    )
-        private returns (uint256)
-    {
+    ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
-        require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
+        // require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
@@ -146,7 +152,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: msg.value}(swapCallData);
-        require(success, 'SWAP_CALL_FAILED');
+        require(success, "SWAP_CALL_FAILED");
         // Keep the protocol fee redunds
         // msg.sender.transfer(address(this).balance);
 
@@ -162,7 +168,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
      * @dev Check that the signature is valid and it has not used yet
      * @param _signature signature to be recovered.
      */
-    modifier onlySignerVerified(IFaucet.SignatureData calldata _signature) {
+    modifier onlySignerVerified(IBridger.SignatureData calldata _signature) {
         if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
@@ -181,5 +187,4 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         if (!_signature.signer.isValidSignatureNow(dataHash, _signature.signature)) revert InvalidSigner();
         _;
     }
-
 }
