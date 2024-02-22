@@ -5,6 +5,7 @@ import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 
 interface IBridger {
     /* ============ Errors ============ */
+    error OnlySender();
     error OnlyOwner();
     error SignatureExpired();
     error InvalidNonce();
@@ -14,25 +15,26 @@ interface IBridger {
 
     struct SignatureData {
         address signer;
-        address signerKintoWallet;
-        address depositAsset;
+        address inputAsset;
         uint256 amount;
-        address asset;
+        address finalAsset;
         uint256 nonce;
         uint256 expiresAt;
         bytes signature;
-        //0x
+    }
+
+    struct SwapData {
         address spender;
         address swapTarget;
         uint256 maxGas;
         uint256 gasPriceBid;
         bytes swapCallData;
-        bytes permitSignature;
     }
 
     /* ============ State Change ============ */
 
-    function depositBySig(SignatureData calldata _signatureData) external;
+    function depositBySig(address _kintoWallet, SignatureData calldata _signatureData, SwapData calldata _swapData, bytes calldata _permitSignature)
+        external;
 
     /* ============ Basic Viewers ============ */
 
