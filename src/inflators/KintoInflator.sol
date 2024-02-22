@@ -381,20 +381,6 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function _bytesToUint256(bytes memory _bytes, uint256 start) internal pure returns (uint256 value) {
-        require(_bytes.length >= start + 32, "Data too short");
-        assembly {
-            value := mload(add(add(_bytes, 32), start))
-        }
-    }
-
-    function _bytesToUint48(bytes memory _bytes, uint256 start) internal pure returns (uint48 value) {
-        require(_bytes.length >= start + 6, "Data too short");
-        assembly {
-            value := mload(add(add(_bytes, 6), start))
-        }
-    }
-
     function _bytesToUint32(bytes memory _bytes, uint256 start) internal pure returns (uint32 value) {
         require(_bytes.length >= start + 4, "Data too short");
         assembly {
