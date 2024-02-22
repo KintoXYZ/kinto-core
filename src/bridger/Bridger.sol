@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../interfaces/IBridger.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -105,8 +106,10 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
      * @param signature signature to be recovered
      */
     function _permit(address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
-        IERC20(asset).permit(
-            msg.sender, address(this), amount, expiresAt, signature[64], signature[0:32], signature[32:64]
+        // fix Index range access is only supported for dynamic calldata arrays.
+        (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
+        ERC20Permit(asset).permit(
+            msg.sender, address(this), amount, expiresAt, v, r, s
         );
     }
 
@@ -119,7 +122,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         require(amount > 0, "Bridger: amount must be greater than 0");
         require(IERC20(asset).balanceOf(msg.sender) >= amount, "Bridger: insufficient balance");
         require(IERC20(asset).allowance(msg.sender, address(this)) >= amount, "Bridger: insufficient allowance");
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(asset).transferFrom(msg.sender, address(this), amount);
         deposits[msg.sender][asset] += amount;
         emit Deposit(msg.sender, asset, amount);
     }
@@ -148,7 +151,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         // Give `spender` an infinite allowance to spend this contract's `sellToken`.
         // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
         // allowance to 0 before being able to update it.
-        require(sellToken.approve(spender, uint256(-1)));
+        require(sellToken.approve(spender, type(uint256).max), "Failed to approve spender");
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: msg.value}(swapCallData);
