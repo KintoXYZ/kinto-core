@@ -558,7 +558,7 @@ contract SponsorPaymasterTest is SharedSetup {
         emit PostOpRevertReason(_entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes(""));
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoGasAppLimitExceeded.selector));
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
     function testValidatePaymasterUserOp_RevertWhen_AppOpsGasLimitExceeded() public {
@@ -588,7 +588,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoGasAppLimitExceeded.selector));
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
     function testSetAppRegistry() public {
