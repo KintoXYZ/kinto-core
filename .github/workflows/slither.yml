@@ -22,10 +22,10 @@ jobs:
       - name: Slither Comment
         uses: actions/github-script@v6
         env:
-          REPORT: ${{ steps.slither.outputs.stdout }}
+          OUTCOME: ${{ steps.slither.outcome }}
         with:
           script: |
-            const comment = '❌ Slither analysis failed. Please check the workflow logs for more details.';
+            const body = 'Slither analysis failed';
             const repo = context.repo;
             const issue_number = context.issue.number || context.payload.pull_request.number;
 
@@ -35,19 +35,20 @@ jobs:
                 ...repo,
                 issue_number,
               });
-              return comments.data.find(comment => comment.body.includes(comment));
+              return comments.data.find(comment => comment.body.includes(body));
             }
 
             // post or delete Slither failure comment
             const failureComment = await findFailureComment();
-            if (steps.slither.outcome == 'failure' && !failureComment) {
+            console.info("OUTCOME", failureComment);
+            if (process.env.OUTCOME == 'failure' && !failureComment) {
               await github.rest.issues.createComment({
                 ...repo,
                 issue_number,
                 body: comment,
               });
             }
-            if (steps.slither.outcome != 'failure' && failureComment) {
+            if (process.env.OUTCOME != 'failure' && failureComment) {
               // if Slither succeeds and there's a previous failure comment, delete it
               await github.rest.issues.deleteComment({
                 ...repo,
