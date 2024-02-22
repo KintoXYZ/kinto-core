@@ -56,6 +56,30 @@ abstract contract KYCSignature is Test {
         return IFaucet.SignatureData(_signer, _faucet.nonces(_signer), _expiresAt, signature);
     }
 
+    // Create a aux function to create an EIP-191 compliant signature for claiming Kinto ETH from the faucet
+    function _auxCreateBridgeSignature(IBridger _bridger, address _signer, address _asset, uint256 _amount, uint256 _privateKey, uint256 _expiresAt)
+        internal
+        view
+        returns (IFaucet.SignatureData memory signData)
+    {
+        bytes32 dataHash = keccak256(
+            abi.encode(
+                _signer,
+                address(_bridger),
+                _asset,
+                _amount,
+                _expiresAt,
+                _bridger.nonces(_signer),
+                bytes32(block.chainid)
+            )
+        );
+        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)); // EIP-191 compliant
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, ethSignedMessageHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        return IBridger.SignatureData(_signer, _bridger.nonces(_signer), _expiresAt, signature);
+    }
+
     function _auxDappSignature(IKintoID _kintoID, IKintoID.SignatureData memory signData)
         internal
         view
