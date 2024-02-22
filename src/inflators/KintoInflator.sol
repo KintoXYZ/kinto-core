@@ -80,7 +80,10 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         cursor += 4;
 
         // extract `initCode`
-        // initCode is always empty, so we skip it
+        uint32 initCodeLength = uint32(bytes4(decompressed[cursor:cursor + 4]));
+        cursor += 4;
+        op.initCode = _slice(decompressed, cursor, initCodeLength);
+        cursor += initCodeLength;
 
         // Decode callData based on the selector (execute or executeBatch)
         bytes memory callData;
@@ -139,10 +142,9 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         cursor += 1;
 
         // encode `sender`, `nonce` and `initCode`
-        /// @dev we assume `nonce` can't fits in 32 bits
         cursor = _encodeAddress(op.sender, buffer, cursor);
-        cursor = _encodeUint32(op.nonce, buffer, cursor);
-        // cursor = _encodeBytes(op.initCode, buffer, cursor); (we assume it's always empty so we don't need to encode it)
+        cursor = _encodeUint32(op.nonce, buffer, cursor); // we assume `nonce` can't fits in 32 bits
+        cursor = _encodeBytes(op.initCode, buffer, cursor);
 
         // encode `callData` depending on the selector
         if (selector == IKintoWallet.execute.selector) {

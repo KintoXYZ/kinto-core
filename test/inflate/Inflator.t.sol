@@ -49,6 +49,48 @@ contract InflatorTest is SharedSetup {
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
+        op.initCode = "0x1234567890";
+
+        // 2. compress user op
+        bytes memory compressed = _inflator.compress(op);
+        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory encodedUserOp = abi.encode(op);
+
+        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
+        console.log("compression percentage: %s", compressionPercentage);
+
+        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
+        console.log("compression simple percentage: %s", compressionSimplePercentage);
+
+        // 3. decompress (inflate) user op
+        UserOperation memory decompressed = _inflator.inflate(compressed);
+
+        // assert that the decompressed user op is the same as the original
+        assertEq(decompressed.sender, op.sender);
+        assertEq(decompressed.nonce, op.nonce);
+        assertEq(decompressed.initCode, op.initCode);
+        assertEq(decompressed.callData, op.callData);
+        assertEq(decompressed.callGasLimit, op.callGasLimit);
+        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
+        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
+        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
+        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
+        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
+        assertEq(decompressed.signature, op.signature);
+    }
+
+    function testInflate_WhenDeployContract() public {
+        // 1. create user op
+        UserOperation memory op = _createUserOperation(
+            address(_kintoWallet),
+            address(_walletFactory),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature(
+                "deployContract(bytes)", _ownerPk, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0)
+            ),
+            address(_paymaster)
+        );
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);

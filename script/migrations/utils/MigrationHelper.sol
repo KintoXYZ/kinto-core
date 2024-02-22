@@ -214,6 +214,30 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = _signerPk;
+
+        UserOperation[] memory userOps = new UserOperation[](_selectorAndParams.length);
+        uint256 nonce = IKintoWallet(_from).getNonce();
+        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+            userOps[i] = _createUserOperation(
+                block.chainid,
+                _from,
+                _to,
+                0,
+                nonce,
+                privateKeys,
+                _selectorAndParams[i],
+                _getChainDeployment("SponsorPaymaster")
+            );
+            nonce++;
+        }
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+    }
+
     function _fundPaymaster(address _proxy, uint256 _signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         vm.broadcast(_signerPk);
