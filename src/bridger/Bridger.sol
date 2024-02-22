@@ -41,7 +41,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     /* ============ Constructor & Upgrades ============ */
     constructor(address _arbitrumL1GatewayRouter) {
         _disableInitializers();
-        arbitrumL1GatewayRouter = _arbitrumL1GatewayRouter;
+        arbitrumL1GatewayRouter = _arbitrumL1GatewayRouter; // 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60
     }
 
     /**

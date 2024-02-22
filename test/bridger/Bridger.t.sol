@@ -24,13 +24,14 @@ contract BridgerTest is SharedSetup {
 
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant stETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     Bridger _bridger;
 
     function testUp() public override {
         super.testUp();
-        _bridger = new Bridger(address(2));
+        _bridger = new Bridger(l1ToL2Router);
         assertEq(_bridger.depositCount(), 0);
-        assertEq(_bridger.arbitrumL1GatewayRouter(), address(2));
+        assertEq(_bridger.arbitrumL1GatewayRouter(), l1ToL2Router);
     }
 
     /* ============ Upgrade tests ============ */
