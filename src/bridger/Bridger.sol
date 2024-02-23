@@ -141,6 +141,17 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         );
     }
 
+    /**
+     * @dev Withdraw all the ETH or a specific asset from the contract in an emergency
+     */
+    function emergencyExit(address _asset) external onlyOwner override {
+        if (_asset == address(0)) {
+            payable(msg.sender).transfer(address(this).balance);
+        } else {
+            IERC20(_asset).transfer(msg.sender, IERC20(_asset).balanceOf(address(this)));
+        }
+    }
+
     /* ============ Private methods ============ */
 
     function _swapAndSave(
@@ -180,7 +191,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @param signature signature to be recovered
      */
     function _permit(address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
-        // fix Index range access is only supported for dynamic calldata arrays.
         (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
         ERC20Permit(asset).permit(msg.sender, address(this), amount, expiresAt, v, r, s);
     }
@@ -227,9 +237,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: msg.value}(swapCallData);
         require(success, "SWAP_CALL_FAILED");
-        // Keep the protocol fee redunds
-        // msg.sender.transfer(address(this).balance);
-
+        // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
         return boughtAmount;
