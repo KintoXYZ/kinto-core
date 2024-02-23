@@ -106,7 +106,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             _signatureData.expiresAt,
             _permitSignature
         );
-        _deposit(_signatureData.inputAsset, _signatureData.amount);
+        _deposit(_signatureData.signer, _signatureData.inputAsset, _signatureData.amount);
         _swap(
             _signatureData.signer,
             _kintoWallet,
