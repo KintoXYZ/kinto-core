@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
 
@@ -31,7 +32,7 @@ interface IL1GatewayRouter {
  * @title Bridger - To be deployed on ETH mainnet and on Kinto L2
  *
  */
-contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger {
+contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridger {
     using MessageHashUtils for bytes32;
     using SignatureChecker for address;
 
@@ -101,6 +102,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
         _deposit(_signatureData.inputAsset, _signatureData.amount);
         _swapAndSave(_kintoWallet, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, _swapData);
+        nonces[_signatureData.signer]++;
     }
 
     /**
@@ -111,12 +113,13 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
      */
     function depositETH(
         address _kintoWallet,
+        address _finalAsset,
         IBridger.SwapData calldata _swapData
     ) external payable override nonReentrant {
-        require(msg.value == _signatureData.amount && msg.value >= 0.1, "Bridger: invalid amount");
+        require(msg.value >= 0.1 ether, "Bridger: invalid amount");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
-        _swapAndSave(_kintoWallet, address(WETH), msg.value, finalAsset, _swapData);
+        _swapAndSave(_kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
     }
 
     /**
@@ -158,7 +161,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
                 _swapData.swapCallData
             );
         }
-        nonces[_signatureData.signer]++;
         depositCount++;
         emit Deposit(
             msg.sender,
