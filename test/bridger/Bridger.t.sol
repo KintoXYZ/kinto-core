@@ -4,12 +4,10 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
 import "../../src/interfaces/IBridger.sol";
 import "../../src/bridger/Bridger.sol";
-import "../helpers/UUPSProxy.sol";
-import "../SharedSetup.t.sol";
+
+import {SharedSetup} from "../SharedSetup.t.sol";
 
 contract BridgerNewUpgrade is Bridger {
     function newFunction() external pure returns (uint256) {
@@ -20,7 +18,7 @@ contract BridgerNewUpgrade is Bridger {
 }
 
 contract BridgerTest is SharedSetup {
-    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
 
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant stETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
@@ -47,11 +45,7 @@ contract BridgerTest is SharedSetup {
         BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
 
         vm.expectRevert(IBridger.OnlyOwner.selector);
-        if (fork) {
-            Upgradeable(address(_bridger)).upgradeTo(address(_newImpl));
-        } else {
-            _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
-        }
+        _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
     /* ============ Bridger Deposit tests ============ */
