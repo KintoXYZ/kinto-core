@@ -40,7 +40,7 @@ contract KintoAppRegistryV3 is KintoAppRegistry {
 }
 
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
     uint256 deployerPrivateKey;
@@ -88,7 +88,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (3). upgrade paymaster to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        Upgradeable(address(payable(paymasterProxy))).upgradeTo(address(_paymasterImpl));
+        SponsorPaymaster(payable(paymasterProxy)).upgradeTo(address(_paymasterImpl));
     }
 
     function upgradeRegistry() public returns (address _registryImpl) {
@@ -147,7 +147,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
         // (2). upgrade factory to new implementation
         vm.broadcast(); // requires LEDGER_ADMIN
         // vm.prank(vm.envAddress("LEDGER_ADMIN"));
-        Upgradeable(address(payable(factoryProxy))).upgradeTo(address(_factoryImpl));
+        KintoWalletFactory(payable(factoryProxy)).upgradeTo(address(_factoryImpl));
     }
 
     function upgradeKYCViewer() public returns (address _kycViewerImpl, address _proxy) {
@@ -186,7 +186,7 @@ contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp 
             0,
             nonce,
             privateKeys,
-            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newImpl)),
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 

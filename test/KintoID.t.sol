@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@oz/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "../src/KintoID.sol";
 import "../src/interfaces/IKintoID.sol";
@@ -31,11 +31,7 @@ contract KintoIDTest is SharedSetup {
     function testUpgradeTo() public {
         vm.startPrank(_owner);
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
-        if (fork) {
-            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
-        } else {
-            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
         assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);
@@ -45,18 +41,14 @@ contract KintoIDTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                address(this),
-                _implementationV2.UPGRADER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(this)),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.UPGRADER_ROLE()), 32)
         );
-        if (fork) {
-            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
-        } else {
-            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        vm.expectRevert(err);
+        _kintoID.upgradeTo(address(_implementationV2));
     }
 
     function testAuthorizedCanUpgrade() public {
@@ -72,11 +64,7 @@ contract KintoIDTest is SharedSetup {
 
         KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
         vm.prank(_upgrader);
-        if (fork) {
-            Upgradeable(address(_kintoID)).upgradeTo(address(_implementationV2));
-        } else {
-            _kintoID.upgradeToAndCall(address(_implementationV2), bytes(""));
-        }
+        _kintoID.upgradeTo(address(_implementationV2));
 
         // re-wrap the _proxy
         assertEq(KintoIDv2(address(_kintoID)).newFunction(), 1);
@@ -243,11 +231,13 @@ contract KintoIDTest is SharedSetup {
 
     function test_RevertWhen_CallerIsNotProvider(address someone) public {
         vm.assume(someone != _kycProvider);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), _kintoID.KYC_PROVIDER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(address(this)),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
         );
+        vm.expectRevert(err);
         _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
     }
 
@@ -298,11 +288,13 @@ contract KintoIDTest is SharedSetup {
 
     function testAddTrait_RevertWhen_CallerIsNotProvider() public {
         approveKYC(_kycProvider, _user, _userPk);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, _user, _kintoID.KYC_PROVIDER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
         );
+        vm.expectRevert(err);
         vm.prank(_user);
         _kintoID.addTrait(_user, 1);
     }
@@ -330,11 +322,13 @@ contract KintoIDTest is SharedSetup {
     function testRemoveTrait_RevertWhen_CallerIsNotProvider() public {
         approveKYC(_kycProvider, _user, _userPk);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, _user, _kintoID.KYC_PROVIDER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
         );
+        vm.expectRevert(err);
         vm.prank(_user);
         _kintoID.removeTrait(_user, 1);
     }
@@ -394,11 +388,13 @@ contract KintoIDTest is SharedSetup {
     function testAddSanction_RevertWhen_CallerIsNotKYCProvider() public {
         approveKYC(_kycProvider, _user, _userPk, new uint16[](1));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, _user, _kintoID.KYC_PROVIDER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
         );
+        vm.expectRevert(err);
         vm.prank(_user);
         _kintoID.addSanction(_user2, 1);
     }
@@ -410,11 +406,13 @@ contract KintoIDTest is SharedSetup {
         _kintoID.addSanction(_user, 1);
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, _user, _kintoID.KYC_PROVIDER_ROLE()
-            )
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.KYC_PROVIDER_ROLE()), 32)
         );
+        vm.expectRevert(err);
         vm.prank(_user);
         _kintoID.removeSanction(_user2, 1);
     }

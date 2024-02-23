@@ -6,14 +6,23 @@ import "forge-std/console.sol";
 
 import "../../src/tokens/KintoToken.sol";
 import "../../src/tokens/VestingContract.sol";
-import "../SharedSetup.t.sol";
 
-contract VestingContractTest is SharedSetup, Create2Helper {
+import "../helpers/Create2Helper.sol";
+
+contract VestingContractTest is Test, Create2Helper {
     KintoToken _token;
     VestingContract _vestingContract;
 
-    function setUp() public override {
-        super.setUp();
+    uint256 _ownerPk = 1;
+    address payable _owner = payable(vm.addr(_ownerPk));
+
+    uint256 _userPk = 2;
+    address payable _user = payable(vm.addr(_userPk));
+
+    uint256 _user2Pk = 3;
+    address payable _user2 = payable(vm.addr(_user2Pk));
+
+    function setUp() public {
         vm.startPrank(_owner);
         _token = new KintoToken();
         _vestingContract = new VestingContract(address(_token));
@@ -22,8 +31,7 @@ contract VestingContractTest is SharedSetup, Create2Helper {
         vm.stopPrank();
     }
 
-    function testUp() public override {
-        super.testUp();
+    function testUp() public {
         assertEq(_token.balanceOf(address(_vestingContract)), _token.SEED_TOKENS());
         assertEq(_vestingContract.owner(), _owner);
         assertEq(_vestingContract.totalAllocated(), 0);

@@ -6,7 +6,7 @@ import "./utils/MigrationHelper.sol";
 
 // NOTE: this is a sample migration script with the new refactors
 // contract KintoMigration22DeployScript is MigrationHelper {
-//     using MessageHashUtils for bytes32;
+//     using ECDSAUpgradeable for bytes32;
 
 //     function run() public {
 //         super.run();
