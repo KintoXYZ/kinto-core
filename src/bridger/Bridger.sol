@@ -109,12 +109,11 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
      * @param _signatureData Struct with all the required information to deposit via signature
      * @param _swapData Struct with all the required information to swap the tokens
      */
-    function depositETHBySig(
+    function depositETH(
         address _kintoWallet,
-        IBridger.SignatureData calldata _signatureData,
         IBridger.SwapData calldata _swapData
-    ) external payable override onlySignerVerified(_signatureData) onlyPrivileged {
-        require(msg.value == _signatureData.amount, "Bridger: invalid amount");
+    ) external payable override nonReentrant {
+        require(msg.value == _signatureData.amount && msg.value >= 0.1, "Bridger: invalid amount");
         require(_signatureData.inputAsset == address(WETH), "Bridger: invalid asset");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
