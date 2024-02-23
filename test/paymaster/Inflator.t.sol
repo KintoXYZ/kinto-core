@@ -3,38 +3,12 @@ pragma solidity ^0.8.18;
 
 import "forge-std/console.sol";
 import "../SharedSetup.t.sol";
-import "../../src/inflators/KintoInflator.sol";
-
-contract InflatorNewUpgrade is KintoInflator {
-    function newFunction() external pure returns (uint256) {
-        return 1;
-    }
-
-    constructor(address _kintoWalletFactory) KintoInflator() {}
-}
 
 contract InflatorTest is SharedSetup {
     function setUp() public override {
         super.setUp();
         vm.prank(_owner);
-        _inflator.setKintoContract("SP", address(_paymaster));
-    }
-
-    /* ============ Upgrade tests ============ */
-
-    function testUpgradeTo() public {
-        InflatorNewUpgrade _newImpl = new InflatorNewUpgrade(address(_walletFactory));
-        vm.prank(_owner);
-        _inflator.upgradeTo(address(_newImpl));
-
-        assertEq(InflatorNewUpgrade(payable(address(_inflator))).newFunction(), 1);
-    }
-
-    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        InflatorNewUpgrade _newImpl = new InflatorNewUpgrade(address(_walletFactory));
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        _inflator.upgradeTo(address(_newImpl));
+        _paymaster.setKintoContract("SP", address(_paymaster));
     }
 
     /* ============ Compress/Inflate tests ============ */
@@ -52,8 +26,8 @@ contract InflatorTest is SharedSetup {
         op.initCode = "0x1234567890";
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
@@ -63,7 +37,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -93,8 +67,8 @@ contract InflatorTest is SharedSetup {
         );
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
@@ -104,7 +78,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -132,8 +106,8 @@ contract InflatorTest is SharedSetup {
         );
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
 
         bytes memory encodedUserOp = abi.encode(op);
         console.log("decompressed length: %s", encodedUserOp.length);
@@ -145,7 +119,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -173,8 +147,8 @@ contract InflatorTest is SharedSetup {
         op.paymasterAndData = "";
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
 
         bytes memory encodedUserOp = abi.encode(op);
         console.log("decompressed length: %s", encodedUserOp.length);
@@ -186,7 +160,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -204,7 +178,7 @@ contract InflatorTest is SharedSetup {
 
     function testInflate_WhenTargetIsKintoContract() public {
         vm.prank(_owner);
-        _inflator.setKintoContract("KAR", address(_kintoAppRegistry));
+        _paymaster.setKintoContract("KAR", address(_kintoAppRegistry));
 
         // 1. create user op
         UserOperation memory op = _createUserOperation(
@@ -217,8 +191,8 @@ contract InflatorTest is SharedSetup {
         );
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
@@ -228,7 +202,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -264,8 +238,8 @@ contract InflatorTest is SharedSetup {
         );
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
@@ -275,7 +249,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -316,8 +290,8 @@ contract InflatorTest is SharedSetup {
         op.maxPriorityFeePerGas = 690_000;
 
         // 2. compress user op
-        bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressed = _paymaster.compress(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
@@ -327,7 +301,7 @@ contract InflatorTest is SharedSetup {
         console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        UserOperation memory decompressed = _paymaster.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressed.sender, op.sender);
@@ -355,9 +329,9 @@ contract InflatorTest is SharedSetup {
         );
 
         // 2. compress user op
-        bytes memory compressedSimple = _inflator.compressSimple(op);
+        bytes memory compressedSimple = _paymaster.compressSimple(op);
 
-        UserOperation memory decompressedSimple = _inflator.inflateSimple(compressedSimple);
+        UserOperation memory decompressedSimple = _paymaster.inflateSimple(compressedSimple);
 
         // assert that the decompressed user op is the same as the original
         assertEq(decompressedSimple.sender, op.sender);

@@ -105,6 +105,27 @@ Everytime a PR is created, the `pull_request.yml` workflow runs which runs the f
 
 Everytime a PR is **merged** into `main` (or there's a push directly to it), fork from mainnet tests are run.
 
+
+## User Op compression
+In order to save costs on the user operations, we use an "Inflator" contract. This contract is responsible for inflating and compressing (off-chain) user operations.
+
+Kinto's inflator contract makes some assumptions on data to optimise the compression of the UserOperation struct. It defines some flags on the first byte to tell the `inflate()` method how to decompress the data:
+
+- 0x01: selector
+The first bit is used to encode whether the selector is `execute` or `executeBatch` (so we don't need to encode the selector)
+- 0x02: `paymasterAndData` (whether to use the SponsorPaymaster or not) so we don't need to encode the paymaster address. We assume that paymaster is always the SponsorPaymaster.
+  
+If it is an `execute`, we use the following 4 bits as follows:
+
+- 0x04: `sender == target` (whether the sender is the same as the target) so we don't need to encode the target
+- 0x08: Kinto contract (whether the target is a Kinto contract) so we can use a contract name identifier instead of the full address (e.g `SP` for `SponsorPaymaster`)
+
+If it is an `executeBatch`, we use the following bits to encode the number of operations in the batch (max supported will be 128)
+
+- 0x04 .. 0x80: number of operations in the batch
+
+All other UserOperation fields are encoded as is.
+
 ## Scripts
 
 On the `/script` directory, you can find the following subdirectories:

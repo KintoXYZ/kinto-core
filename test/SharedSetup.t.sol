@@ -71,7 +71,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
             _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
             _faucet = Faucet(payable(_getChainDeployment("Faucet")));
-            _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
 
             // grant KYC provider role to _kycProvider and _owner on kintoID
             bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -118,7 +117,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(contracts.paymaster);
             _kycViewer = KYCViewer(contracts.viewer);
             _faucet = Faucet(contracts.faucet);
-            _inflator = KintoInflator(contracts.inflator);
 
             // grant kyc provider role to _kycProvider on kintoID
             bytes32 role = _kintoID.KYC_PROVIDER_ROLE();

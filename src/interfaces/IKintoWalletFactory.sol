@@ -5,6 +5,7 @@ import {IKintoWallet} from "./IKintoWallet.sol";
 import {IKintoID} from "./IKintoID.sol";
 import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UserOperation} from "@aa/interfaces/UserOperation.sol";
 
 interface IKintoWalletFactory {
     /* ============ Errors ============ */

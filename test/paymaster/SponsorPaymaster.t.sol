@@ -7,12 +7,12 @@ import "forge-std/console.sol";
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 
-import "../src/apps/KintoAppRegistry.sol";
-import "../src/paymasters/SponsorPaymaster.sol";
-import "../src/sample/Counter.sol";
-import "../src/interfaces/IKintoWallet.sol";
+import "../../src/apps/KintoAppRegistry.sol";
+import "../../src/paymasters/SponsorPaymaster.sol";
+import "../../src/sample/Counter.sol";
+import "../../src/interfaces/IKintoWallet.sol";
 
-import "./SharedSetup.t.sol";
+import "../SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
