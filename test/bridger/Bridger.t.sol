@@ -16,7 +16,7 @@ contract BridgerNewUpgrade is Bridger {
         return 1;
     }
 
-    constructor(address _kintoWalletFactory) Bridger(_kintoWalletFactory) {}
+    constructor() Bridger() {}
 }
 
 contract BridgerTest is SharedSetup {
@@ -29,15 +29,14 @@ contract BridgerTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        _bridger = new Bridger(l1ToL2Router);
+        _bridger = new Bridger();
         assertEq(_bridger.depositCount(), 0);
-        assertEq(_bridger.arbitrumL1GatewayRouter(), l1ToL2Router);
     }
 
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(_walletFactory));
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
         vm.prank(_owner);
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
 
@@ -45,7 +44,7 @@ contract BridgerTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(_walletFactory));
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
 
         vm.expectRevert(IBridger.OnlyOwner.selector);
         if (fork) {
@@ -63,10 +62,7 @@ contract BridgerTest is SharedSetup {
 
         vm.prank(_owner);
         _bridger.depositBySig(
-          address(_kintoWallet),
-          sigdata,
-          IBridger.SwapData(address(1), address(1), 1, 1, bytes("")),
-          bytes("")
+            address(_kintoWallet), sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes("")
         );
         assertEq(_bridger.nonces(_user), 1);
         assertEq(_bridger.deposits(_user, address(1)), 1);
@@ -74,9 +70,12 @@ contract BridgerTest is SharedSetup {
 
     function testDeposit_RevertWhen_CallerIsNotOwnerOrSender() public {
         vm.prank(_owner);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(_bridger, _user, USDC, 1000e6, stETH, _userPk, block.timestamp + 1000);
+        IBridger.SignatureData memory sigdata =
+            _auxCreateBridgeSignature(_bridger, _user, USDC, 1000e6, stETH, _userPk, block.timestamp + 1000);
         vm.expectRevert(IBridger.OnlySender.selector);
-        _bridger.depositBySig(address(_kintoWallet), sigdata, IBridger.SwapData(address(1), address(1), 1, 1, bytes("")), bytes(""));
+        _bridger.depositBySig(
+            address(_kintoWallet), sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes("")
+        );
     }
 
     /* ============ Withdraw tests ============ */

@@ -26,21 +26,27 @@ interface IBridger {
     struct SwapData {
         address spender;
         address swapTarget;
-        uint256 maxGas;
-        uint256 gasPriceBid;
         bytes swapCallData;
     }
 
     /* ============ State Change ============ */
 
-    function depositBySig(address _kintoWallet, SignatureData calldata _signatureData, SwapData calldata _swapData, bytes calldata _permitSignature)
-        external;
+    function depositETHBySig(address _kintoWallet, SignatureData calldata _signatureData, SwapData calldata _swapData)
+        external
+        payable;
+
+    function depositBySig(
+        address _kintoWallet,
+        SignatureData calldata _signatureData,
+        SwapData calldata _swapData,
+        bytes calldata _permitSignature
+    ) external;
+
+    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost) external;
 
     /* ============ Basic Viewers ============ */
 
     function deposits(address _account, address _asset) external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
-
-    function arbitrumL1GatewayRouter() external view returns (address);
 }

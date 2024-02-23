@@ -67,26 +67,16 @@ abstract contract KYCSignature is Test {
         uint256 _privateKey,
         uint256 _expiresAt
     ) internal view returns (IBridger.SignatureData memory signData) {
-        uint nonce = _bridger.nonces(_signer);
+        uint256 nonce = _bridger.nonces(_signer);
         bytes32 dataHash = keccak256(
-            abi.encode(
-                _signer,
-                address(_bridger),
-                _inputAsset,
-                _amount,
-                _expiresAt,
-                nonce,
-                bytes32(block.chainid)
-            )
+            abi.encode(_signer, address(_bridger), _inputAsset, _amount, _expiresAt, nonce, bytes32(block.chainid))
         );
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)); // EIP-191 compliant
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, ethSignedMessageHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        return IBridger.SignatureData(
-            _signer, _inputAsset, _amount, _finalAsset, nonce, _expiresAt, signature
-        );
+        return IBridger.SignatureData(_signer, _inputAsset, _amount, _finalAsset, nonce, _expiresAt, signature);
     }
 
     function _auxDappSignature(IKintoID _kintoID, IKintoID.SignatureData memory signData)

@@ -10,8 +10,22 @@ import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
 
-// todo
-contract L1GatewayRouter {}
+interface IWETH is IERC20 {
+    function deposit() external payable;
+
+    function withdraw(uint256 wad) external;
+}
+
+interface IL1GatewayRouter {
+    function outboundTransfer(
+        address _token,
+        address _to,
+        uint256 _amount,
+        uint256 _maxGas,
+        uint256 _gasPriceBid,
+        bytes calldata _data
+    ) external;
+}
 
 /**
  * @title Bridger - To be deployed on ETH mainnet and on Kinto L2
@@ -22,14 +36,22 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     using SignatureChecker for address;
 
     /* ============ Events ============ */
-    event Deposit(address indexed from, address indexed asset, uint256 amount, address indexed assetBought, uint256 amountBought);
+    event Deposit(
+        address indexed from,
+        address indexed wallet,
+        address indexed asset,
+        uint256 amount,
+        address assetBought,
+        uint256 amountBought
+    );
 
     /* ============ Constants ============ */
-    address public constant REFUND_L2_ACCOUNT = address(1);
+    address public constant L2_VAULT = address(1);
     address public constant SENDER_ACCOUNT = address(1);
+    IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IL1GatewayRouter public constant L1GatewayRouter = IL1GatewayRouter(0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60);
 
     /* ============ State Variables ============ */
-    address public immutable override arbitrumL1GatewayRouter;
     /// @dev Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
@@ -39,9 +61,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     uint256 public depositCount;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _arbitrumL1GatewayRouter) {
+    constructor() {
         _disableInitializers();
-        arbitrumL1GatewayRouter = _arbitrumL1GatewayRouter; // 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60
     }
 
     /**
@@ -76,37 +97,78 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         IBridger.SignatureData calldata _signatureData,
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
-    ) external override onlySignerVerified(_signatureData) {
-        if (msg.sender != owner() && msg.sender != SENDER_ACCOUNT) {
-            revert OnlySender();
-        }
+    ) external override onlySignerVerified(_signatureData) onlyPrivileged {
         _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
-        // Lock deposit in this contract
-        _deposit(_signatureData.inputAsset, amountBought);
-        // swap using 0x
-        uint256 amountBought = _fillQuote(
-            IERC20(_signatureData.inputAsset),
-            IERC20(_signatureData.finalAsset),
-            payable(_swapData.spender),
-            payable(_swapData.swapTarget),
-            _swapData.swapCallData
-        );
-        nonces[_signatureData.signer]++;
+        _deposit(_signatureData.inputAsset, _signatureData.amount);
+        _swapAndSave(_kintoWallet, _signatureData, _swapData);
+    }
+
+    /**
+     * @dev Deposit the specified amount of ETH in to the Kinto L2 as finalAsset
+     * @param _kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
+     * @param _signatureData Struct with all the required information to deposit via signature
+     * @param _swapData Struct with all the required information to swap the tokens
+     */
+    function depositETHBySig(
+        address _kintoWallet,
+        IBridger.SignatureData calldata _signatureData,
+        IBridger.SwapData calldata _swapData
+    ) external payable override onlySignerVerified(_signatureData) onlyPrivileged {
+        require(msg.value == _signatureData.amount, "Bridger: invalid amount");
+        require(_signatureData.inputAsset == address(WETH), "Bridger: invalid asset");
+        WETH.deposit{value: msg.value}();
+        deposits[msg.sender][address(WETH)] += msg.value;
+        _swapAndSave(_kintoWallet, _signatureData, _swapData);
+    }
+
+    /**
+     * @dev Bridges deposits in bulk every hour to the L2
+     */
+    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
+        external
+        override
+        onlyPrivileged
+    {
         // Bridge to Kinto L2 using arbitrum or superbridge
-        // L1GatewayRouter(arbitrumL1GatewayRouter).outboundTransferCustomRefund(
-        //     _signatureData.finalAsset, //token
-        //     REFUND_L2_ACCOUNT, // Account to be credited with the excess gas refund in L2
-        //     _kintoWallet, // Account to be credited with the tokens in L2
-        //     amountBought, // Amount of tokens to bridge
-        //     _swapData.maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
-        //     _swapData.gasPriceBid, // Gas price for the execution in L2
-        //     abi.encode(0, bytes("")) // 2 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData
-        // );
-        depositCount++;
-        emit Deposit(msg.sender, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, amountBought);
+        L1GatewayRouter.outboundTransfer(
+            asset, //token
+            L2_VAULT, // Account to be credited with the tokens in L2
+            IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
+            maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
+            gasPriceBid, // Gas price for the execution in L2
+            abi.encode(maxSubmissionCost, bytes("")) // 2 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData
+        );
     }
 
     /* ============ Private methods ============ */
+
+    function _swapAndSave(
+        address _kintoWallet,
+        IBridger.SignatureData calldata _signatureData,
+        IBridger.SwapData calldata _swapData
+    ) private {
+        // swap using 0x
+        uint256 amountBought = _signatureData.amount;
+        if (_signatureData.inputAsset != _signatureData.finalAsset) {
+            amountBought = _fillQuote(
+                IERC20(_signatureData.inputAsset),
+                IERC20(_signatureData.finalAsset),
+                payable(_swapData.spender),
+                payable(_swapData.swapTarget),
+                _swapData.swapCallData
+            );
+        }
+        nonces[_signatureData.signer]++;
+        depositCount++;
+        emit Deposit(
+            msg.sender,
+            _kintoWallet,
+            _signatureData.inputAsset,
+            _signatureData.amount,
+            _signatureData.finalAsset,
+            amountBought
+        );
+    }
 
     /**
      * @dev Permit the spender to spend the specified amount of tokens on behalf of the owner
@@ -196,6 +258,11 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         ).toEthSignedMessageHash(); // EIP-712 hash
 
         if (!_signature.signer.isValidSignatureNow(dataHash, _signature.signature)) revert InvalidSigner();
+        _;
+    }
+
+    modifier onlyPrivileged() {
+        if (msg.sender != owner() && msg.sender != SENDER_ACCOUNT) revert OnlyOwner();
         _;
     }
 }
