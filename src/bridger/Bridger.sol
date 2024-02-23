@@ -100,13 +100,13 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
     ) external override onlySignerVerified(_signatureData) onlyPrivileged {
         _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
         _deposit(_signatureData.inputAsset, _signatureData.amount);
-        _swapAndSave(_kintoWallet, _signatureData, _swapData);
+        _swapAndSave(_kintoWallet, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, _swapData);
     }
 
     /**
      * @dev Deposit the specified amount of ETH in to the Kinto L2 as finalAsset
      * @param _kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
-     * @param _signatureData Struct with all the required information to deposit via signature
+     * @param _finalAsset Asset to depositInto
      * @param _swapData Struct with all the required information to swap the tokens
      */
     function depositETH(
@@ -114,10 +114,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         IBridger.SwapData calldata _swapData
     ) external payable override nonReentrant {
         require(msg.value == _signatureData.amount && msg.value >= 0.1, "Bridger: invalid amount");
-        require(_signatureData.inputAsset == address(WETH), "Bridger: invalid asset");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
-        _swapAndSave(_kintoWallet, _signatureData, _swapData);
+        _swapAndSave(_kintoWallet, address(WETH), msg.value, finalAsset, _swapData);
     }
 
     /**
@@ -143,15 +142,17 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
 
     function _swapAndSave(
         address _kintoWallet,
-        IBridger.SignatureData calldata _signatureData,
+        address _inputAsset,
+        uint256 _amount,
+        address _finalAsset,
         IBridger.SwapData calldata _swapData
     ) private {
         // swap using 0x
-        uint256 amountBought = _signatureData.amount;
-        if (_signatureData.inputAsset != _signatureData.finalAsset) {
+        uint256 amountBought = _amount;
+        if (_inputAsset != _finalAsset) {
             amountBought = _fillQuote(
-                IERC20(_signatureData.inputAsset),
-                IERC20(_signatureData.finalAsset),
+                IERC20(_inputAsset),
+                IERC20(_finalAsset),
                 payable(_swapData.spender),
                 payable(_swapData.swapTarget),
                 _swapData.swapCallData
@@ -162,9 +163,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
         emit Deposit(
             msg.sender,
             _kintoWallet,
-            _signatureData.inputAsset,
-            _signatureData.amount,
-            _signatureData.finalAsset,
+            _inputAsset,
+            _amount,
+            _finalAsset,
             amountBought
         );
     }
