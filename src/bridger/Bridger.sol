@@ -99,9 +99,22 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
     ) external override onlySignerVerified(_signatureData) onlyPrivileged {
-        _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
+        _permit(
+            _signatureData.signer,
+            _signatureData.inputAsset,
+            _signatureData.amount,
+            _signatureData.expiresAt,
+            _permitSignature
+        );
         _deposit(_signatureData.inputAsset, _signatureData.amount);
-        _swap(_kintoWallet, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, _swapData);
+        _swap(
+            _signatureData.signer,
+            _kintoWallet,
+            _signatureData.inputAsset,
+            _signatureData.amount,
+            _signatureData.finalAsset,
+            _swapData
+        );
         nonces[_signatureData.signer]++;
     }
 
@@ -120,7 +133,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         require(msg.value >= 0.1 ether, "Bridger: invalid amount");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
-        _swap(_kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
+        _swap(msg.sender, _kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
     }
 
     /**
@@ -156,6 +169,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     /* ============ Private methods ============ */
 
     function _swap(
+        address _sender,
         address _kintoWallet,
         address _inputAsset,
         uint256 _amount,
@@ -174,32 +188,35 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             );
         }
         depositCount++;
-        emit Deposit(msg.sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
+        emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
     }
 
     /**
      * @dev Permit the spender to spend the specified amount of tokens on behalf of the owner
+     * @param spender sender of the tokens
      * @param asset address of the token
      * @param amount amount of tokens
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
+    function _permit(address spender, address asset, uint256 amount, uint256 expiresAt, bytes memory signature)
+        private
+    {
         (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
-        ERC20Permit(asset).permit(msg.sender, address(this), amount, expiresAt, v, r, s);
+        ERC20Permit(asset).permit(spender, address(this), amount, expiresAt, v, r, s);
     }
 
     /**
      * @dev Deposit the specified amount of tokens
+     * @param sender sender of the tokens
      * @param asset address of the token
      * @param amount amount of tokens
      */
-    function _deposit(address asset, uint256 amount) private {
-        require(amount > 0, "Bridger: amount must be greater than 0");
-        require(IERC20(asset).balanceOf(msg.sender) >= amount, "Bridger: insufficient balance");
-        require(IERC20(asset).allowance(msg.sender, address(this)) >= amount, "Bridger: insufficient allowance");
-        IERC20(asset).transferFrom(msg.sender, address(this), amount);
-        deposits[msg.sender][asset] += amount;
+    function _deposit(address sender, address asset, uint256 amount) private {
+        require(amount > 0 && IERC20(asset).balanceOf(sender) >= amount, "Bridger: insufficient balance");
+        require(IERC20(asset).allowance(sender, address(this)) >= amount, "Bridger: insufficient allowance");
+        IERC20(asset).transferFrom(sender, address(this), amount);
+        deposits[sender][asset] += amount;
     }
 
     /**
