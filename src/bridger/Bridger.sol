@@ -2,14 +2,14 @@
 pragma solidity ^0.8.18;
 
 import "../interfaces/IBridger.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
-import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "@openzeppelin-5.0.1/contracts/utils/cryptography/SignatureChecker.sol";
 
 interface IWETH is IERC20 {
     function deposit() external payable;
