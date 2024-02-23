@@ -101,7 +101,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     ) external override onlySignerVerified(_signatureData) onlyPrivileged {
         _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
         _deposit(_signatureData.inputAsset, _signatureData.amount);
-        _swapAndSave(_kintoWallet, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, _swapData);
+        _swap(_kintoWallet, _signatureData.inputAsset, _signatureData.amount, _signatureData.finalAsset, _swapData);
         nonces[_signatureData.signer]++;
     }
 
@@ -111,15 +111,16 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @param _finalAsset Asset to depositInto
      * @param _swapData Struct with all the required information to swap the tokens
      */
-    function depositETH(
-        address _kintoWallet,
-        address _finalAsset,
-        IBridger.SwapData calldata _swapData
-    ) external payable override nonReentrant {
+    function depositETH(address _kintoWallet, address _finalAsset, IBridger.SwapData calldata _swapData)
+        external
+        payable
+        override
+        nonReentrant
+    {
         require(msg.value >= 0.1 ether, "Bridger: invalid amount");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
-        _swapAndSave(_kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
+        _swap(_kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
     }
 
     /**
@@ -144,7 +145,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     /**
      * @dev Withdraw all the ETH or a specific asset from the contract in an emergency
      */
-    function emergencyExit(address _asset) external onlyOwner override {
+    function emergencyExit(address _asset) external override onlyOwner {
         if (_asset == address(0)) {
             payable(msg.sender).transfer(address(this).balance);
         } else {
@@ -154,7 +155,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
 
     /* ============ Private methods ============ */
 
-    function _swapAndSave(
+    function _swap(
         address _kintoWallet,
         address _inputAsset,
         uint256 _amount,
@@ -173,14 +174,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             );
         }
         depositCount++;
-        emit Deposit(
-            msg.sender,
-            _kintoWallet,
-            _inputAsset,
-            _amount,
-            _finalAsset,
-            amountBought
-        );
+        emit Deposit(msg.sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
     }
 
     /**

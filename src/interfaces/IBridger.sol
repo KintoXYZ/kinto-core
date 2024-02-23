@@ -31,11 +31,7 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(
-        address _kintoWallet,
-        address _finalAsset,
-        SwapData calldata _swapData
-    ) external payable;
+    function depositETH(address _kintoWallet, address _finalAsset, SwapData calldata _swapData) external payable;
 
     function depositBySig(
         address _kintoWallet,
@@ -45,6 +41,8 @@ interface IBridger {
     ) external;
 
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost) external;
+
+    function emergencyExit(address _asset) external;
 
     /* ============ Basic Viewers ============ */
 
