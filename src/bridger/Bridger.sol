@@ -81,6 +81,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
             revert OnlySender();
         }
         _permit(_signatureData.inputAsset, _signatureData.amount, _signatureData.expiresAt, _permitSignature);
+        // Lock deposit in this contract
+        _deposit(_signatureData.inputAsset, amountBought);
         // swap using 0x
         uint256 amountBought = _fillQuote(
             IERC20(_signatureData.inputAsset),
@@ -89,8 +91,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, IBridger
             payable(_swapData.swapTarget),
             _swapData.swapCallData
         );
-        // Lock deposit in this contract
-        _deposit(_signatureData.inputAsset, amountBought);
         nonces[_signatureData.signer]++;
         // Bridge to Kinto L2 using arbitrum or superbridge
         // L1GatewayRouter(arbitrumL1GatewayRouter).outboundTransferCustomRefund(
