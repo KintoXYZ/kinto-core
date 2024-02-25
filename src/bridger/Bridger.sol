@@ -147,13 +147,18 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         onlyPrivileged
     {
         // Bridge to Kinto L2 using standard bridge
+        // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer(
             asset, //token
             L2_VAULT, // Account to be credited with the tokens in L2
             IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
             maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
             gasPriceBid, // Gas price for the execution in L2
-            abi.encode(maxSubmissionCost, bytes("")) // 2 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData
+            abi.encode(
+                maxSubmissionCost,
+                bytes(""),
+                (maxGas * gasPriceBid) + maxSubmissionCost // Total gas deducted from user’s L2 balance
+            ) // 3 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData hook, uint256 nativeTokenTotalFee
         );
     }
 
