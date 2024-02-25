@@ -146,7 +146,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         override
         onlyPrivileged
     {
-        // Bridge to Kinto L2 using arbitrum or superbridge
+        // Bridge to Kinto L2 using standard bridge
         L1GatewayRouter.outboundTransfer(
             asset, //token
             L2_VAULT, // Account to be credited with the tokens in L2
