@@ -2,14 +2,15 @@
 pragma solidity ^0.8.18;
 
 import "../interfaces/IBridger.sol";
-import "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
-import {SignatureChecker} from "@openzeppelin-5.0.1/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 interface IWETH is IERC20 {
     function deposit() external payable;
@@ -33,8 +34,8 @@ interface IL1GatewayRouter {
  *
  */
 contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridger {
-    using MessageHashUtils for bytes32;
     using SignatureChecker for address;
+    using ECDSA for bytes32;
 
     /* ============ Events ============ */
     event Deposit(
@@ -70,8 +71,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
+        _transferOwnership(msg.sender);
     }
 
     /**
