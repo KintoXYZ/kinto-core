@@ -52,6 +52,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     address public constant SENDER_ACCOUNT = address(1);
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IL1GatewayRouter public constant L1GatewayRouter = IL1GatewayRouter(0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60);
+    address public constant standardGateway= 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
 
     /* ============ State Variables ============ */
     /// @dev Mapping of all depositors by user address and asset address
@@ -146,6 +147,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         override
         onlyPrivileged
     {
+        // Approve the gateway to get the tokens
+        IERC20(asset).approve(standardGateway, type(uint256).max);
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer(
