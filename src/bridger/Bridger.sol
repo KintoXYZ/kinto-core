@@ -158,10 +158,10 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
             gasPriceBid, // Gas price for the execution in L2
             abi.encode(
-                maxSubmissionCost,
-                bytes(""),
+                maxSubmissionCost, // Max gas deducted from user's L2 balance to cover base submission fee. Usually 0
+                bytes(""), // bytes extraData hook
                 (maxGas * gasPriceBid) + maxSubmissionCost // Total gas deducted from user’s L2 balance
-            ) // 3 pieces of data encoded: uint256 maxSubmissionCost, bytes extraData hook, uint256 nativeTokenTotalFee
+            )
         );
     }
 
