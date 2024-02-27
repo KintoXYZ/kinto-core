@@ -50,11 +50,19 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     /* ============ Constants ============ */
     address public constant L2_VAULT = address(1);
     address public constant SENDER_ACCOUNT = address(1);
+
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+    address public constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+    address public constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
+
     IL1GatewayRouter public constant L1GatewayRouter = IL1GatewayRouter(0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60);
-    address public constant standardGateway= 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
+    address public constant standardGateway = 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
 
     /* ============ State Variables ============ */
+    bytes32 public immutable override domainSeparator;
+
     /// @dev Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
@@ -66,6 +74,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     /* ============ Constructor & Upgrades ============ */
     constructor() {
         _disableInitializers();
+        domainSeparator = _domainSeparator();
     }
 
     /**
@@ -102,6 +111,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
     ) external override onlySignerVerified(_signatureData) onlyPrivileged {
+        require(_signatureData.finalAsset != address(0), "Bridger: invalid final asset");
         _permit(
             _signatureData.signer,
             _signatureData.inputAsset,
@@ -133,6 +143,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         override
         nonReentrant
     {
+        require(_finalAsset != address(0), "Bridger: invalid final asset");
         require(msg.value >= 0.1 ether, "Bridger: invalid amount");
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
@@ -266,6 +277,13 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
 
     receive() external payable {}
 
+    function _isFinalAssetAllowed(address _asset) private pure {
+        if (
+            _asset != address(sDAI) && _asset != address(sUSDe) && _asset != address(wstETH) && _asset != address(weETH)
+                && _asset != address(0)
+        ) revert InvalidAsset();
+    }
+
     /* ============ Signature Recovery ============ */
 
     /**
@@ -276,24 +294,60 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
-        bytes32 dataHash = keccak256(
-            abi.encode(
-                _signature.signer,
-                address(this),
-                _signature.inputAsset,
-                _signature.amount,
-                _signature.expiresAt,
-                nonces[_signature.signer],
-                block.chainid
-            )
-        ).toEthSignedMessageHash(); // EIP-712 hash
+        // Ensure signer is an EOA
+        uint256 size;
+        address signer = _signature.signer;
+        assembly {
+            size := extcodesize(signer)
+        }
+        if (size > 0) revert SignerNotEOA();
 
-        if (!_signature.signer.isValidSignatureNow(dataHash, _signature.signature)) revert InvalidSigner();
+        bytes32 eip712MessageHash =
+            keccak256(abi.encodePacked("\x19\x01", domainSeparator, _hashSignatureData(_signature)));
+        if (!_signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature)) revert InvalidSigner();
         _;
     }
 
     modifier onlyPrivileged() {
         if (msg.sender != owner() && msg.sender != SENDER_ACCOUNT) revert OnlyOwner();
         _;
+    }
+
+    /* ============ EIP-712 Helpers ============ */
+
+    function _domainSeparator() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("Bridger")), // this contract's name
+                keccak256(bytes("1")), // version
+                _getChainID(),
+                address(this)
+            )
+        );
+    }
+
+    function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    "SignatureData(address signer,address inputAsset,uint256 amount,address finalAsset,uint256 nonce,uint256 expiresAt)"
+                ),
+                signatureData.signer,
+                signatureData.inputAsset,
+                signatureData.amount,
+                signatureData.finalAsset,
+                signatureData.nonce,
+                signatureData.expiresAt
+            )
+        );
+    }
+
+    function _getChainID() internal view returns (uint256) {
+        uint256 chainID;
+        assembly {
+            chainID := chainid()
+        }
+        return chainID;
     }
 }

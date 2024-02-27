@@ -7,9 +7,11 @@ interface IBridger {
     /* ============ Errors ============ */
     error OnlySender();
     error OnlyOwner();
+    error SignerNotEOA();
     error SignatureExpired();
     error InvalidNonce();
     error InvalidSigner();
+    error InvalidAsset();
 
     /* ============ Structs ============ */
 
@@ -27,6 +29,14 @@ interface IBridger {
         address spender;
         address swapTarget;
         bytes swapCallData;
+    }
+
+    struct Permit {
+        address owner;
+        address spender;
+        uint256 value;
+        uint256 nonce;
+        uint256 deadline;
     }
 
     /* ============ State Change ============ */
@@ -49,4 +59,6 @@ interface IBridger {
     function deposits(address _account, address _asset) external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
+
+    function domainSeparator() external view returns (bytes32);
 }

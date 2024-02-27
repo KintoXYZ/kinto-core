@@ -6,8 +6,7 @@ import "forge-std/console.sol";
 import "../../src/interfaces/IBridger.sol";
 import "../../src/bridger/Bridger.sol";
 import "../helpers/UUPSProxy.sol";
-
-import {SharedSetup} from "../SharedSetup.t.sol";
+import "../helpers/TestSignature.sol";
 
 contract BridgerNewUpgrade is Bridger {
     function newFunction() external pure returns (uint256) {
@@ -17,11 +16,31 @@ contract BridgerNewUpgrade is Bridger {
     constructor() Bridger() {}
 }
 
-contract BridgerTest is SharedSetup {
+contract BridgerTest is TestSignature {
+    // private keys
+    uint256 _ownerPk = 1;
+    uint256 _secondownerPk = 2;
+    uint256 _userPk = 3;
+    uint256 _user2Pk = 4;
+    uint256 _upgraderPk = 5;
+    uint256 _kycProviderPk = 6;
+    uint256 _recovererPk = 7;
+    uint256 _funderPk = 8;
+    uint256 _noKycPk = 9;
 
-    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address constant stETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    // users
+    address payable _owner = payable(vm.addr(_ownerPk));
+    address payable _secondowner = payable(vm.addr(_secondownerPk));
+    address payable _user = payable(vm.addr(_userPk));
+    address payable _user2 = payable(vm.addr(_user2Pk));
+    address payable _upgrader = payable(vm.addr(_upgraderPk));
+    address payable _kycProvider = payable(vm.addr(_kycProviderPk));
+    address payable _recoverer = payable(vm.addr(_recovererPk));
+    address payable _funder = payable(vm.addr(_funderPk));
+    address payable _noKyc = payable(vm.addr(_noKycPk));
+
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
+    address constant kintoWalletL2 = address(33);
     Bridger _bridger;
 
     constructor() {
@@ -33,8 +52,7 @@ contract BridgerTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testUp() public override {
-        super.testUp();
+    function testUp() public {
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
     }
@@ -56,27 +74,39 @@ contract BridgerTest is SharedSetup {
 
     /* ============ Bridger Deposit tests ============ */
 
-    // function testDeposit_WhenCallingOnBehalf() public {
-    //     IBridger.SignatureData memory sigdata =
-    //         _auxCreateBridgeSignature(_bridger, _user, USDC, 1000e6, stETH, _userPk, block.timestamp + 1000);
+    function testDirectDepositBySigWithoutSwap_WhenCallingViaSig() public {
+        address assetToDeposit = _bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(_user, address(_bridger), amountToDeposit, _bridger.nonces(_user), block.timestamp + 1000),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+        );
+        assertEq(_bridger.nonces(_user), _bridger.nonces(_user) + 1);
+        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+    }
 
-    //     vm.prank(_owner);
-    //     _bridger.depositBySig(
-    //         address(_kintoWallet), sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes("")
-    //     );
-    //     assertEq(_bridger.nonces(_user), 1);
-    //     assertEq(_bridger.deposits(_user, address(1)), 1);
-    // }
-
-    // function testDeposit_RevertWhen_CallerIsNotOwnerOrSender() public {
-    //     vm.prank(_owner);
-    //     IBridger.SignatureData memory sigdata =
-    //         _auxCreateBridgeSignature(_bridger, _user, USDC, 1000e6, stETH, _userPk, block.timestamp + 1000);
-    //     vm.expectRevert(IBridger.OnlySender.selector);
-    //     _bridger.depositBySig(
-    //         address(_kintoWallet), sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes("")
-    //     );
-    // }
+    function testDeposit_RevertWhen_CallerIsNotOwnerOrSender() public {
+        address assetToDeposit = _bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(address(assetToDeposit), _user, amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        vm.startPrank(_user);
+        vm.expectRevert(IBridger.OnlySender.selector);
+        _bridger.depositBySig(kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes(""));
+        vm.stopPrank();
+    }
 
     /* ============ Withdraw tests ============ */
 }
