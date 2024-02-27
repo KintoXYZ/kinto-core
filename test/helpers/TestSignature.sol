@@ -121,18 +121,9 @@ abstract contract TestSignature is Test {
         pure
         returns (bytes32)
     {
-
-        bytes32 public constant PERMIT_TYPEHASH =
-            0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+        bytes32 PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
         bytes32 structHash = keccak256(
-            abi.encode(
-                PERMIT_TYPEHASH,
-                permit.owner,
-                permit.spender,
-                permit.value,
-                permit.nonce,
-                permit.deadline
-            )
+            abi.encode(PERMIT_TYPEHASH, permit.owner, permit.spender, permit.value, permit.nonce, permit.deadline)
         );
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }

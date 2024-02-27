@@ -223,7 +223,15 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     function _permit(address spender, address asset, uint256 amount, uint256 expiresAt, bytes memory signature)
         private
     {
-        (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
+        // (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+        }
+        v = uint8(signature[64]); // last byte
         ERC20Permit(asset).permit(spender, address(this), amount, expiresAt, v, r, s);
     }
 

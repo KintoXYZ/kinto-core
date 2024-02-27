@@ -3,10 +3,17 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
+
 import "../../src/interfaces/IBridger.sol";
 import "../../src/bridger/Bridger.sol";
+
 import "../helpers/UUPSProxy.sol";
 import "../helpers/TestSignature.sol";
+import "../helpers/TestSignature.sol";
+import "../SharedSetup.t.sol";
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract BridgerNewUpgrade is Bridger {
     function newFunction() external pure returns (uint256) {
@@ -16,43 +23,43 @@ contract BridgerNewUpgrade is Bridger {
     constructor() Bridger() {}
 }
 
-contract BridgerTest is TestSignature {
-    // private keys
-    uint256 _ownerPk = 1;
-    uint256 _secondownerPk = 2;
-    uint256 _userPk = 3;
-    uint256 _user2Pk = 4;
-    uint256 _upgraderPk = 5;
-    uint256 _kycProviderPk = 6;
-    uint256 _recovererPk = 7;
-    uint256 _funderPk = 8;
-    uint256 _noKycPk = 9;
+contract ERCPermitToken is ERC20, ERC20Permit {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
+}
 
-    // users
-    address payable _owner = payable(vm.addr(_ownerPk));
-    address payable _secondowner = payable(vm.addr(_secondownerPk));
-    address payable _user = payable(vm.addr(_userPk));
-    address payable _user2 = payable(vm.addr(_user2Pk));
-    address payable _upgrader = payable(vm.addr(_upgraderPk));
-    address payable _kycProvider = payable(vm.addr(_kycProviderPk));
-    address payable _recoverer = payable(vm.addr(_recovererPk));
-    address payable _funder = payable(vm.addr(_funderPk));
-    address payable _noKyc = payable(vm.addr(_noKycPk));
-
+contract BridgerTest is TestSignature, SharedSetup {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     Bridger _bridger;
 
-    constructor() {
+    function setUp() public override {
+        super.setUp();
+        if (fork) {
+            string memory rpc = vm.envString("ETHEREUM_RPC_URL");
+            require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
+
+            vm.chainId(1);
+            mainnetFork = vm.createFork(rpc);
+            vm.selectFork(mainnetFork);
+            assertEq(vm.activeFork(), mainnetFork);
+            console.log("Running tests on fork from mainnet at:", rpc);
+        }
+
         vm.startPrank(_owner);
         Bridger implementation = new Bridger();
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         _bridger = Bridger(payable(proxy));
         _bridger.initialize();
         vm.stopPrank();
+
+        if (!fork) {
+            ERCPermitToken sDAI = new ERCPermitToken("sDAI", "sDAI");
+            vm.etch(_bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+        }
     }
 
-    function testUp() public {
+    function testUp() public override {
+        super.testUp();
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
     }
@@ -87,11 +94,13 @@ contract BridgerTest is TestSignature {
             _userPk,
             ERC20Permit(assetToDeposit)
         );
+
+        uint256 nonce = _bridger.nonces(_user);
         vm.prank(_owner);
         _bridger.depositBySig(
             kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
         );
-        assertEq(_bridger.nonces(_user), _bridger.nonces(_user) + 1);
+        assertEq(_bridger.nonces(_user), nonce + 1);
         assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
     }
 
