@@ -63,6 +63,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     /* ============ State Variables ============ */
     bytes32 public immutable override domainSeparator;
 
+    /// @dev Mapping of input assets that are allowed
+    mapping(address => bool) public override allowedAssets;
     /// @dev Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
@@ -111,7 +113,10 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
     ) external override onlySignerVerified(_signatureData) onlyPrivileged {
-        require(_signatureData.finalAsset != address(0), "Bridger: invalid final asset");
+        _isFinalAssetAllowed(_signatureData.finalAsset);
+        if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
+            revert InvalidAsset();
+        }
         _permit(
             _signatureData.signer,
             _signatureData.inputAsset,
@@ -143,8 +148,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         override
         nonReentrant
     {
-        require(_finalAsset != address(0), "Bridger: invalid final asset");
-        require(msg.value >= 0.1 ether, "Bridger: invalid amount");
+        _isFinalAssetAllowed(_finalAsset);
+        if (msg.value < 0.1 ether) revert InvalidAmount();
         WETH.deposit{value: msg.value}();
         deposits[msg.sender][address(WETH)] += msg.value;
         _swap(msg.sender, _kintoWallet, address(WETH), msg.value, _finalAsset, _swapData);
@@ -176,8 +181,22 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         );
     }
 
+    /* ============ Privileged methods ============ */
+
+    /**
+     * @dev Whitelist the assets that can be deposited
+     * @param _assets array of addresses of the assets to be whitelisted
+     */
+    function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external override onlyOwner {
+        require(_assets.length == _flags.length, "Invalid input");
+        for (uint256 i = 0; i < _assets.length; i++) {
+            allowedAssets[_assets[i]] = _flags[i];
+        }
+    }
+
     /**
      * @dev Withdraw all the ETH or a specific asset from the contract in an emergency
+     * @param _asset address of the asset to be withdrawn. If address(0), withdraws all the ETH
      */
     function emergencyExit(address _asset) external override onlyOwner {
         if (_asset == address(0)) {
@@ -242,8 +261,10 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @param amount amount of tokens
      */
     function _deposit(address sender, address asset, uint256 amount) private {
-        require(amount > 0 && IERC20(asset).balanceOf(sender) >= amount, "Bridger: insufficient balance");
-        require(IERC20(asset).allowance(sender, address(this)) >= amount, "Bridger: insufficient allowance");
+        if (
+            amount == 0 || IERC20(asset).allowance(sender, address(this)) < amount
+                || IERC20(asset).balanceOf(sender) < amount
+        ) revert InvalidAmount();
         IERC20(asset).transferFrom(sender, address(this), amount);
         deposits[sender][asset] += amount;
     }
@@ -270,8 +291,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Give `spender` an infinite allowance to spend this contract's `sellToken`.
-        // Note that for some tokens (e.g., USDT, KNC), you must first reset any existing
-        // allowance to 0 before being able to update it.
         require(sellToken.approve(spender, type(uint256).max), "Failed to approve spender");
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.

@@ -12,6 +12,7 @@ interface IBridger {
     error InvalidNonce();
     error InvalidSigner();
     error InvalidAsset();
+    error InvalidAmount();
 
     /* ============ Structs ============ */
 
@@ -54,6 +55,8 @@ interface IBridger {
 
     function emergencyExit(address _asset) external;
 
+    function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
+
     /* ============ Basic Viewers ============ */
 
     function deposits(address _account, address _asset) external view returns (uint256);
@@ -61,4 +64,6 @@ interface IBridger {
     function nonces(address _account) external view returns (uint256);
 
     function domainSeparator() external view returns (bytes32);
+
+    function allowedAssets(address) external view returns (bool);
 }

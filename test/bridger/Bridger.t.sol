@@ -79,7 +79,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
-    /* ============ Bridger Deposit tests ============ */
+    /* ============ Bridger Deposit By Sig tests ============ */
 
     function testDirectDepositBySigWithoutSwap_WhenCallingViaSig() public {
         address assetToDeposit = _bridger.sDAI();
@@ -90,7 +90,13 @@ contract BridgerTest is TestSignature, SharedSetup {
             _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(_user, address(_bridger), amountToDeposit, ERC20Permit(assetToDeposit).nonces(_user), block.timestamp + 1000),
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
             _userPk,
             ERC20Permit(assetToDeposit)
         );
@@ -104,7 +110,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
     }
 
-    function testDeposit_RevertWhen_CallerIsNotOwnerOrSender() public {
+    function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
         address assetToDeposit = _bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
@@ -112,8 +118,60 @@ contract BridgerTest is TestSignature, SharedSetup {
             _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         vm.startPrank(_user);
-        vm.expectRevert(IBridger.OnlySender.selector);
+        vm.expectRevert(IBridger.OnlyOwner.selector);
         _bridger.depositBySig(kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes(""));
+        vm.stopPrank();
+    }
+
+    function testDepositBySig_RevertWhen_AssetIsNotAllowed() public {
+        address assetToDeposit = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        uint256 amountToDeposit = 1000e18;
+        deal(address(assetToDeposit), _user, amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        vm.expectRevert(IBridger.InvalidAsset.selector);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+        );
+        vm.stopPrank();
+    }
+
+    function testDepositBySig_RevertWhen_AmountIsZero() public {
+        address assetToDeposit = _bridger.sDAI();
+        uint256 amountToDeposit = 0;
+        deal(address(assetToDeposit), _user, amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        vm.expectRevert(IBridger.InvalidAmount.selector);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+        );
         vm.stopPrank();
     }
 
