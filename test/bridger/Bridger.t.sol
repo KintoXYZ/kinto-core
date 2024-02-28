@@ -62,6 +62,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         super.testUp();
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
+        assertEq(_bridger.swapsEnabled(), false);
     }
 
     /* ============ Upgrade tests ============ */
@@ -183,8 +184,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testAnyoneCanDirectDeposit() public {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
-
-        uint256 nonce = _bridger.nonces(_user);
         vm.startPrank(_user);
         _bridger.depositETH{value: amountToDeposit}(
             kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
@@ -199,7 +198,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testDirectDeposit_RevertWhenFinalAssetisNotAllowed() public {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
-
         vm.startPrank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
         _bridger.depositETH{value: amountToDeposit}(
@@ -211,7 +209,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testDirectDeposit_RevertWhenAmountIsLessThanAllowed() public {
         uint256 amountToDeposit = 0.05 ether;
         vm.deal(_user, amountToDeposit);
-
         vm.startPrank(_owner);
         address wsteth = _bridger.wstETH();
         vm.expectRevert(IBridger.InvalidAmount.selector);
@@ -220,5 +217,78 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         vm.stopPrank();
     }
-    /* ============ Withdraw tests ============ */
+
+    /* ============ Whitelist tests ============ */
+
+    function testWhitelistAsset() public {
+        address asset = address(768);
+        vm.prank(_owner);
+        address[] memory assets = new address[](1);
+        assets[0] = asset;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        _bridger.whitelistAssets(assets, flags);
+        assertEq(_bridger.allowedAssets(asset), true);
+    }
+
+    function testWhitelistAsset_RevertWhen_CallerIsNotOwner() public {
+        vm.startPrank(_user);
+        vm.expectRevert();
+        _bridger.whitelistAssets(new address[](1), new bool[](1));
+        vm.stopPrank();
+    }
+
+    /* ============ Emergency Withdrawal tests ============ */
+
+    function testEmergencyExit() public {
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit);
+        vm.startPrank(_user);
+        _bridger.depositETH{value: amountToDeposit}(
+            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+        );
+        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        vm.startPrank(_owner);
+        _bridger.emergencyExit(_bridger.wstETH());
+        assertEq(ERC20(_bridger.wstETH()).balanceOf(address(_bridger)), 0);
+        assertEq(ERC20(_bridger.wstETH()).balanceOf(address(_owner)), wstethBalance);
+        vm.stopPrank();
+    }
+
+    function testEmergencyExit_RetrievesETH() public {
+        uint256 amountToDeposit = 6e18;
+        vm.deal(address(_bridger), amountToDeposit);
+        vm.startPrank(_owner);
+        uint256 beforeBalance = _owner.balance;
+        _bridger.emergencyExit(address(0));
+        assertEq(payable(_bridger).balance, 0);
+        assertEq(_owner.balance, beforeBalance + 6e18);
+        vm.stopPrank();
+    }
+
+    function testEmergencyExit_RevertWhen_CallerIsNotOwner() public {
+        vm.startPrank(_user);
+        address wsteth = _bridger.wstETH();
+        vm.expectRevert();
+        _bridger.emergencyExit(wsteth);
+        vm.stopPrank();
+    }
+
+    /* ============ Swaps enabled tests ============ */
+
+    function testSetSwapsEnabled() public {
+        vm.prank(_owner);
+        _bridger.setSwapsEnabled(true);
+        assertEq(_bridger.swapsEnabled(), true);
+    }
+
+    function testSetSwapsEnabled_RevertWhen_CallerIsNotOwner() public {
+        vm.startPrank(_user);
+        vm.expectRevert();
+        _bridger.setSwapsEnabled(true);
+        vm.stopPrank();
+    }
+
+    // TODO: Bridge tests
+    // TODO: Swap tests
 }

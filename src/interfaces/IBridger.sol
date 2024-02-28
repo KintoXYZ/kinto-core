@@ -59,6 +59,8 @@ interface IBridger {
 
     function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
 
+    function setSwapsEnabled(bool _swapsEnabled) external;
+
     /* ============ Basic Viewers ============ */
 
     function deposits(address _account, address _asset) external view returns (uint256);

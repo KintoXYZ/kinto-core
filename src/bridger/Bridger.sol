@@ -208,6 +208,14 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         }
     }
 
+    /**
+     * @dev Enable or disable swaps
+     * @param _swapsEnabled bool to enable or disable swaps
+     */
+    function setSwapsEnabled(bool _swapsEnabled) external override onlyOwner {
+        swapsEnabled = _swapsEnabled;
+    }
+
     /* ============ Private methods ============ */
 
     function _swap(
