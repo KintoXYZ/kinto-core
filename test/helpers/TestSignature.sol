@@ -62,13 +62,9 @@ abstract contract TestSignature is Test {
             signature: ""
         });
 
-        console.log("DS test");
-        console.logBytes32(_bridger.domainSeparator());
-
         // generate EIP-712 hash
         bytes32 eip712Hash = _getBridgerMessage(signData, _bridger.domainSeparator());
-        console.logBytes32(eip712Hash);
-        console.log("End test");
+
         // sign the hash
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
         bytes memory signature = abi.encodePacked(r, s, v);

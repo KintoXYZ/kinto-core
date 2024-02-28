@@ -104,10 +104,11 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 nonce = _bridger.nonces(_user);
         vm.prank(_owner);
         _bridger.depositBySig(
-            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
         );
         assertEq(_bridger.nonces(_user), nonce + 1);
         assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
     }
 
     function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
@@ -119,7 +120,9 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         vm.startPrank(_user);
         vm.expectRevert(IBridger.OnlyOwner.selector);
-        _bridger.depositBySig(kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), bytes(""));
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), bytes("")
+        );
         vm.stopPrank();
     }
 
@@ -144,7 +147,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
         _bridger.depositBySig(
-            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
         );
         vm.stopPrank();
     }
@@ -170,10 +173,52 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAmount.selector);
         _bridger.depositBySig(
-            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes("")), permitSignature
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
         );
         vm.stopPrank();
     }
 
+    /* ============ Bridger ETH Deposit Tests ============ */
+
+    function testAnyoneCanDirectDeposit() public {
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit);
+
+        uint256 nonce = _bridger.nonces(_user);
+        vm.startPrank(_user);
+        _bridger.depositETH{value: amountToDeposit}(
+            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+        );
+        assertEq(_bridger.nonces(_user), 0);
+        assertEq(_bridger.deposits(_user, address(0)), amountToDeposit);
+        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
+        vm.stopPrank();
+    }
+
+    function testDirectDeposit_RevertWhenFinalAssetisNotAllowed() public {
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit);
+
+        vm.startPrank(_owner);
+        vm.expectRevert(IBridger.InvalidAsset.selector);
+        _bridger.depositETH{value: amountToDeposit}(
+            kintoWalletL2, address(1), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+        );
+        vm.stopPrank();
+    }
+
+    function testDirectDeposit_RevertWhenAmountIsLessThanAllowed() public {
+        uint256 amountToDeposit = 0.05 ether;
+        vm.deal(_user, amountToDeposit);
+
+        vm.startPrank(_owner);
+        address wsteth = _bridger.wstETH();
+        vm.expectRevert(IBridger.InvalidAmount.selector);
+        _bridger.depositETH{value: amountToDeposit}(
+            kintoWalletL2, wsteth, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+        );
+        vm.stopPrank();
+    }
     /* ============ Withdraw tests ============ */
 }

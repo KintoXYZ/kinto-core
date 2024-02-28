@@ -13,6 +13,7 @@ interface IBridger {
     error InvalidSigner();
     error InvalidAsset();
     error InvalidAmount();
+    error SwapsDisabled();
 
     /* ============ Structs ============ */
 
@@ -30,6 +31,7 @@ interface IBridger {
         address spender;
         address swapTarget;
         bytes swapCallData;
+        uint256 gasFee;
     }
 
     struct Permit {
@@ -66,4 +68,6 @@ interface IBridger {
     function domainSeparator() external view returns (bytes32);
 
     function allowedAssets(address) external view returns (bool);
+
+    function swapsEnabled() external view returns (bool);
 }
