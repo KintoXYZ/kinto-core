@@ -53,7 +53,9 @@ interface IBridger {
         bytes calldata _permitSignature
     ) external;
 
-    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost) external;
+    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
+        external
+        payable;
 
     function emergencyExit(address _asset) external;
 

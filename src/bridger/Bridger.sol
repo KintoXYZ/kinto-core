@@ -26,7 +26,7 @@ interface IL1GatewayRouter {
         uint256 _maxGas,
         uint256 _gasPriceBid,
         bytes calldata _data
-    ) external;
+    ) external payable;
 }
 
 /**
@@ -162,6 +162,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      */
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
         external
+        payable
         override
         onlyPrivileged
     {
@@ -169,7 +170,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IERC20(asset).approve(standardGateway, type(uint256).max);
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
-        L1GatewayRouter.outboundTransfer(
+        L1GatewayRouter.outboundTransfer{value: msg.value}(
             asset, //token
             L2_VAULT, // Account to be credited with the tokens in L2
             IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge

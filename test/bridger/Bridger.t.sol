@@ -30,7 +30,10 @@ contract ERCPermitToken is ERC20, ERC20Permit {
 contract BridgerTest is TestSignature, SharedSetup {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
+    address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     Bridger _bridger;
+
+    error InsufficientValue(uint256 expected, uint256 actual);
 
     function setUp() public override {
         super.setUp();
@@ -45,13 +48,16 @@ contract BridgerTest is TestSignature, SharedSetup {
             console.log("Running tests on fork from mainnet at:", rpc);
         }
 
-        vm.startPrank(_owner);
+        // deploy a new Bridger contract
         Bridger implementation = new Bridger();
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         _bridger = Bridger(payable(proxy));
-        _bridger.initialize();
-        vm.stopPrank();
 
+        vm.prank(_owner);
+        _bridger.initialize();
+
+        // if running local tests, we want to replace some hardcoded addresses that the bridger uses
+        // with mocked contracts
         if (!fork) {
             ERCPermitToken sDAI = new ERCPermitToken("sDAI", "sDAI");
             vm.etch(_bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
@@ -59,7 +65,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testUp() public override {
-        super.testUp();
+        // super.testUp();
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
         assertEq(_bridger.swapsEnabled(), false);
@@ -82,7 +88,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     /* ============ Bridger Deposit By Sig tests ============ */
 
-    function testDirectDepositBySigWithoutSwap_WhenCallingViaSig() public {
+    function testDepositBySig_WhenNoSwap() public {
         address assetToDeposit = _bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
@@ -128,7 +134,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_AssetIsNotAllowed() public {
-        address assetToDeposit = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
@@ -232,10 +238,8 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testWhitelistAsset_RevertWhen_CallerIsNotOwner() public {
-        vm.startPrank(_user);
-        vm.expectRevert();
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridger.whitelistAssets(new address[](1), new bool[](1));
-        vm.stopPrank();
     }
 
     /* ============ Emergency Withdrawal tests ============ */
@@ -287,6 +291,40 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.expectRevert();
         _bridger.setSwapsEnabled(true);
         vm.stopPrank();
+    }
+
+    /* ============ Bridge tests ============ */
+
+    function testBridgeDeposits() public {
+        address asset = _bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(address(asset), address(_bridger), amountToDeposit);
+
+        uint256 kintoMaxGas = 1e6;
+        uint256 kintoGasPriceBid = 1e9;
+        uint256 kintoMaxSubmissionCost = 1e18;
+        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+
+        vm.prank(_owner);
+        _bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+
+        assertEq(_bridger.deposits(_user, asset), 0);
+        assertEq(ERC20(asset).balanceOf(address(_bridger)), 0);
+    }
+
+    function testBridgeDeposits_WhenInsufficientGas() public {
+        address asset = _bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(address(asset), address(_bridger), amountToDeposit);
+
+        uint256 kintoMaxGas = 1e6;
+        uint256 kintoGasPriceBid = 1e9;
+        uint256 kintoMaxSubmissionCost = 1e18;
+        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+
+        vm.expectRevert(abi.encodeWithSelector(InsufficientValue.selector, callValue, 1));
+        vm.prank(_owner);
+        _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
 
     // TODO: Bridge tests
