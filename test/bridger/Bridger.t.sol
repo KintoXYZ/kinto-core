@@ -90,7 +90,7 @@ contract BridgerTest is TestSignature, SharedSetup {
             _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(_user, address(_bridger), amountToDeposit, _bridger.nonces(_user), block.timestamp + 1000),
+            IBridger.Permit(_user, address(_bridger), amountToDeposit, ERC20Permit(assetToDeposit).nonces(_user), block.timestamp + 1000),
             _userPk,
             ERC20Permit(assetToDeposit)
         );
