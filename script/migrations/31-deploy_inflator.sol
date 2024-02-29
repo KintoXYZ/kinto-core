@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "../../src/inflators/KintoInflator.sol";
 import "./utils/MigrationHelper.sol";
 
-contract KintoMigration30DeployScript is MigrationHelper {
+contract KintoMigration31DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
