@@ -247,12 +247,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
         // contracts allowed to receive EOAs calls
-        address[5] memory GETH_ALLOWED_CONTRACTS = [
+        address[6] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
             _getChainDeployment("KintoWalletFactory"),
             _getChainDeployment("SponsorPaymaster"),
             _getChainDeployment("KintoID"),
-            _getChainDeployment("KintoAppRegistry")
+            _getChainDeployment("KintoAppRegistry"),
+            _getChainDeployment("KintoInflator")
         ];
 
         // check if contract is a geth allowed contract
