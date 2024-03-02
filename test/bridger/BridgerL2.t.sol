@@ -19,37 +19,36 @@ contract BridgerL2NewUpgrade is BridgerL2 {
         return 1;
     }
 
-    constructor() BridgerL2() {}
+    constructor(address factory) BridgerL2(factory) {}
 }
 
 contract BridgerL2Test is TestSignature, SharedSetup {
-
-
     function setUp() public override {
         super.setUp();
+        fundSponsorForApp(_owner, address(_bridgerL2));
+        registerApp(_owner, "bridger", address(_bridgerL2));
     }
 
     function testUp() public override {
-        // super.testUp();
-        assertEq(_bridger.depositCount(), 0);
-        assertEq(_bridger.owner(), address(_owner));
-        assertEq(_bridger.swapsEnabled(), false);
+        assertEq(_bridgerL2.depositCount(), 0);
+        assertEq(_bridgerL2.owner(), address(_owner));
+        assertEq(_bridgerL2.unlocked(), false);
     }
 
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
         vm.prank(_owner);
-        _bridger.upgradeTo(address(_newImpl));
-        assertEq(BridgerNewUpgrade(payable(address(_bridger))).newFunction(), 1);
+        _bridgerL2.upgradeTo(address(_newImpl));
+        assertEq(BridgerL2NewUpgrade(payable(address(_bridgerL2))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
         vm.expectRevert(IBridger.OnlyOwner.selector);
-        _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
+        _bridgerL2.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
-    /* ============ Bridger Deposit By Sig tests ============ */
+    /* ============ Bridger Privileged Methods ============ */
 }

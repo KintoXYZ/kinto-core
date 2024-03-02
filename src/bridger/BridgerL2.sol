@@ -23,11 +23,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     using ECDSA for bytes32;
 
     /* ============ Events ============ */
-    event Claim(
-        address indexed wallet,
-        address indexed asset,
-        uint256 amount
-    );
+    event Claim(address indexed wallet, address indexed asset, uint256 amount);
 
     /* ============ Constants ============ */
 

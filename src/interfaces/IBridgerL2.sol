@@ -15,7 +15,7 @@ interface IBridgerL2 {
 
     function unlockCommitments() external;
 
-    function claimCommitment(address kintoWallet) external;
+    function claimCommitment() external;
 
     /* ============ Basic Viewers ============ */
 
@@ -25,7 +25,7 @@ interface IBridgerL2 {
 
     function depositCount() external view returns (uint256);
 
-    function getUserDeposits() external view returns (uint256[] memory amounts);
+    function getUserDeposits(address user) external view returns (uint256[] memory amounts);
 
     function getTotalDeposits() external view returns (uint256[] memory amounts);
 

@@ -5,6 +5,7 @@ import "@aa/core/EntryPoint.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
+import "../src/bridger/BridgerL2.sol";
 import "../src/viewers/KYCViewer.sol";
 import "../src/wallet/KintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
@@ -50,6 +51,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
 
+    // Bridger
+    BridgerL2 public bridgerL2;
+    BridgerL2 public bridgerL2Impl;
+
     // Faucet
     Faucet public faucet;
     Faucet public faucetImpl;
@@ -85,7 +90,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         log = false;
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet
+            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, bridgerL2
         );
     }
 
@@ -263,7 +268,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _engenCredits.initialize();
     }
 
-    function deployBridgerL2() public returns (BridgerL2 _bridgerL2, EngenCredits _bridgerL2Impl) {
+    function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {
         bytes memory creationCode = type(BridgerL2).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
         address implementation = _deployImplementation("BridgerL2", creationCode, bytecode, false);
