@@ -51,6 +51,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     address public constant L2_VAULT = address(1);
     address public constant SENDER_ACCOUNT = address(1);
 
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address public constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
@@ -115,7 +116,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IBridger.SignatureData calldata _signatureData,
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
-    ) external override onlySignerVerified(_signatureData) onlyPrivileged {
+    ) external payable override onlySignerVerified(_signatureData) onlyPrivileged {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             revert InvalidAsset();
@@ -153,8 +154,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     {
         _isFinalAssetAllowed(_finalAsset);
         if (msg.value < 0.1 ether) revert InvalidAmount();
-        deposits[msg.sender][address(0)] += msg.value;
-        _swap(msg.sender, _kintoWallet, address(0), msg.value, _finalAsset, _swapData);
+        deposits[msg.sender][ETH] += msg.value - _swapData.gasFee;
+        _swap(msg.sender, _kintoWallet, ETH, msg.value, _finalAsset, _swapData);
     }
 
     /**
@@ -170,6 +171,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         IERC20(asset).approve(standardGateway, type(uint256).max);
+
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer{value: gasCost}(
@@ -204,7 +206,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @param _asset address of the asset to be withdrawn. If address(0), withdraws all the ETH
      */
     function emergencyExit(address _asset) external override onlyOwner {
-        if (_asset == address(0)) {
+        if (_asset == ETH) {
             payable(msg.sender).transfer(address(this).balance);
         } else {
             IERC20(_asset).transfer(msg.sender, IERC20(_asset).balanceOf(address(this)));
@@ -232,16 +234,17 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         // swap using 0x
         uint256 amountBought = _amount;
         if (_inputAsset != _finalAsset) {
-            if (_inputAsset == address(0) && _finalAsset == wstETH) {
+            if (_inputAsset == ETH && _finalAsset == wstETH) {
                 uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
                 (bool sent,) = wstETH.call{value: msg.value}("");
                 if (!sent) revert InvalidAmount();
                 amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
             } else {
                 if (!swapsEnabled) revert SwapsDisabled();
-                if (_inputAsset == address(0)) {
-                    // swap ETH to ERC20
-                    IWETH(wstETH).deposit{value: _amount}();
+                if (_inputAsset == ETH) {
+                    _amount = _amount - _swapData.gasFee;
+                    // swap ETH to WETH
+                    WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
                 amountBought = _fillQuote(
@@ -261,15 +264,13 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
 
     /**
      * @dev Permit the spender to spend the specified amount of tokens on behalf of the owner
-     * @param spender sender of the tokens
+     * @param owner sender of the tokens
      * @param asset address of the token
      * @param amount amount of tokens
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address spender, address asset, uint256 amount, uint256 expiresAt, bytes memory signature)
-        private
-    {
+    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
         // (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
         bytes32 r;
         bytes32 s;
@@ -279,7 +280,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             s := mload(add(signature, 0x40))
         }
         v = uint8(signature[64]); // last byte
-        ERC20Permit(asset).permit(spender, address(this), amount, expiresAt, v, r, s);
+        ERC20Permit(asset).permit(owner, address(this), amount, expiresAt, v, r, s);
     }
 
     /**
@@ -316,17 +317,17 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
         // require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
-        require(gasFee < 0.05 ether, "Gas fee too high");
+        if (gasFee >= 0.05 ether) revert GasFeeTooHigh();
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Give `spender` an allowance to spend this tx's `sellToken`.
-        require(sellToken.approve(spender, amount), "Failed to approve spender");
+        if (!sellToken.approve(spender, amount)) revert ApprovalFailed();
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: gasFee}(swapCallData);
-        require(success, "SWAP_CALL_FAILED");
+        if (!success) revert SwapCallFailed();
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;

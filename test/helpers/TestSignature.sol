@@ -95,7 +95,14 @@ abstract contract TestSignature is Test {
         view
         returns (bytes memory signature)
     {
-        bytes32 domainSeparator = ERC20Permit(_asset).DOMAIN_SEPARATOR();
+        bytes32 domainSeparator;
+        if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("UNI"))) {
+            bytes32 DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+            domainSeparator =
+                keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(_asset.name())), block.chainid, address(_asset)));
+        } else {
+            domainSeparator = _asset.DOMAIN_SEPARATOR();
+        }
         bytes32 eip712Hash = _getPermitMessage(_permit, domainSeparator);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
         signature = abi.encodePacked(r, s, v);
@@ -117,7 +124,8 @@ abstract contract TestSignature is Test {
         pure
         returns (bytes32)
     {
-        bytes32 PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+        bytes32 PERMIT_TYPEHASH =
+            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
         bytes32 structHash = keccak256(
             abi.encode(PERMIT_TYPEHASH, permit.owner, permit.spender, permit.value, permit.nonce, permit.deadline)
         );

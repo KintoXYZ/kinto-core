@@ -13,6 +13,9 @@ interface IBridger {
     error InvalidAmount();
     error SwapsDisabled();
     error NotEnoughEthToBridge();
+    error GasFeeTooHigh();
+    error ApprovalFailed();
+    error SwapCallFailed();
 
     /* ============ Structs ============ */
 
@@ -50,7 +53,7 @@ interface IBridger {
         SignatureData calldata _signatureData,
         SwapData calldata _swapData,
         bytes calldata _permitSignature
-    ) external;
+    ) external payable;
 
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
         external
