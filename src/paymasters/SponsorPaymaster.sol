@@ -290,7 +290,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     /**
      * @notice ensures the operation rate and costs are within the user's limits for a given sponsor (app)
      */
-    function _checkLimits(address user, address sponsor, uint256 /* ethMaxCost */) internal view {
+    function _checkLimits(address user, address sponsor, uint256 /* ethMaxCost */ ) internal view {
         // global rate limit check
         ISponsorPaymaster.RateLimitData memory limit = globalRateLimit[user];
         if (

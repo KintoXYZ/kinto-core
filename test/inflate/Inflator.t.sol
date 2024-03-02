@@ -16,6 +16,10 @@ contract InflatorNewUpgrade is KintoInflator {
 contract InflatorTest is SharedSetup {
     function setUp() public override {
         super.setUp();
+        if (fork) {
+            vm.prank(_inflator.owner());
+            _inflator.transferOwnership(_owner);
+        }
         vm.prank(_owner);
         _inflator.setKintoContract("SP", address(_paymaster));
     }
