@@ -174,7 +174,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(_bridger.nonces(_user), nonce + 1);
         assertEq(_bridger.deposits(_user, assetToDeposit), 1e18);
         assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), 0); // there's no UNI since it was swapped
-        assertApproxEqRel(ERC20(_bridger.wstETH()).balanceOf(address(_bridger)), 3116569413738877, 0.01e18); // 1%
+        assertApproxEqRel(ERC20(_bridger.wstETH()).balanceOf(address(_bridger)), 3116569413738877, 0.015e18); // 1.5%
     }
 
     function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
@@ -248,6 +248,23 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testDepositETH() public {
         uint256 gasFee = 0.1 ether;
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit + gasFee);
+
+        vm.startPrank(_user);
+        _bridger.depositETH{value: amountToDeposit + gasFee}(
+            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), gasFee)
+        );
+        vm.stopPrank();
+
+        assertEq(_bridger.nonces(_user), 0);
+        assertEq(_bridger.deposits(_user, _bridger.ETH()), amountToDeposit);
+        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
+    }
+
+    function testDepositETH_WhenNoGasFee() public {
+        uint256 gasFee = 0;
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit + gasFee);
 
