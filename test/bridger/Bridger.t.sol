@@ -192,7 +192,33 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
-    function testDepositBySig_RevertWhen_AssetIsNotAllowed() public {
+    function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
+        address assetToDeposit = DAI;
+        uint256 amountToDeposit = 1000e18;
+        deal(address(assetToDeposit), _user, amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, _bridger.wstETH(), _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        vm.expectRevert(IBridger.InvalidAsset.selector);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
+        );
+        vm.stopPrank();
+    }
+
+    function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
