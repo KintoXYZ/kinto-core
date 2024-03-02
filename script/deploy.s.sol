@@ -88,6 +88,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         privateKey = _privateKey;
         write = false;
         log = false;
+
+        // remove addresses.json file if it exists
+        try vm.removeFile(_getAddressesFile(block.chainid)) {} catch {}
+
         _run();
         contracts = DeployedContracts(
             entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, inflator
