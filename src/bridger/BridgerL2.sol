@@ -23,13 +23,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     using ECDSA for bytes32;
 
     /* ============ Events ============ */
-    event Deposit(
-        address indexed from,
+    event Claim(
         address indexed wallet,
         address indexed asset,
-        uint256 amount,
-        address assetBought,
-        uint256 amountBought
+        uint256 amount
     );
 
     /* ============ Constants ============ */
@@ -76,12 +73,24 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /* ============ Privileged Functions ============ */
 
-    function writeL2Deposit(address depositor, address assetL2, uint256 amount) external override {
+    /**
+     * @dev Sets the deposit on the L2 to be claimed by the wallet at the end of phase IV
+     * Note: Only owner can call this function
+     * @param walletAddress address of the wallet
+     * @param assetL2 address of the asset on the L2
+     * @param amount amount of the asset to receive
+     */
+    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
         _onlyOwner();
-        deposits[depositor][assetL2] += amount;
+        deposits[walletAddress][assetL2] += amount;
         depositTotals[assetL2] += amount;
+        depositCount++;
     }
 
+    /**
+     * @dev Unlock the commitments
+     * Note: Only owner can call this function
+     */
     function unlockCommitments() external override {
         _onlyOwner();
         unlocked = true;
@@ -89,8 +98,12 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /* ============ Claim L2 ============ */
 
-    function claimCommitment(address kintoWallet) external nonReentrant {
-        if (walletFactory.walletTs(kintoWallet) == 0 || IKintoWallet(kintoWallet).owners(0) != msg.sender) {
+    /**
+     * @dev Claim the commitment of a wallet
+     * Note: This function has to be called via user operation from the wallet
+     */
+    function claimCommitment() external nonReentrant {
+        if (walletFactory.walletTs(msg.sender) == 0) {
             revert InvalidWallet();
         }
         if (!unlocked) {
@@ -101,21 +114,29 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
                 deposits[msg.sender][currentAsset] = 0;
-                IERC20(currentAsset).transfer(kintoWallet, balance);
+                IERC20(currentAsset).transfer(msg.sender, balance);
+                emit Claim(msg.sender, currentAsset, balance);
             }
         }
     }
 
     /* ============ Viewers ============ */
 
-    function getUserDeposits() external view override returns (uint256[] memory amounts) {
+    /**
+     * @dev Get the total number of deposits from an user address
+     * @param user address of the user
+     */
+    function getUserDeposits(address user) external view override returns (uint256[] memory amounts) {
         amounts = new uint256[](allowedAssets.length);
         for (uint256 i = 0; i < allowedAssets.length; i++) {
             address currentAsset = allowedAssets[i];
-            amounts[i] = deposits[msg.sender][currentAsset];
+            amounts[i] = deposits[user][currentAsset];
         }
     }
 
+    /**
+     * @dev Get the total number of deposits of all assets
+     */
     function getTotalDeposits() external view override returns (uint256[] memory amounts) {
         amounts = new uint256[](allowedAssets.length);
         for (uint256 i = 0; i < allowedAssets.length; i++) {

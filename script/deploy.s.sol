@@ -75,6 +75,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         EngenCredits engenCredits;
         Faucet faucet;
+        BridgerL2 bridgerL2;
     }
 
     // @dev this is used for tests
@@ -122,6 +123,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
+
+        // deploy bridger l2
+        (bridgerL2, bridgerL2Impl) = deployBridgerL2();
 
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
@@ -257,6 +261,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _engenCredits.initialize();
+    }
+
+    function deployBridgerL2() public returns (BridgerL2 _bridgerL2, EngenCredits _bridgerL2Impl) {
+        bytes memory creationCode = type(BridgerL2).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
+        address implementation = _deployImplementation("BridgerL2", creationCode, bytecode, false);
+        address proxy = _deployProxy("BridgerL2", implementation, false);
+
+        _bridgerL2 = BridgerL2(payable(proxy));
+        _bridgerL2Impl = BridgerL2(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _bridgerL2.initialize();
     }
 
     function deployFaucet() public returns (Faucet _faucet, Faucet _faucetImpl) {

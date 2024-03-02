@@ -47,6 +47,7 @@ abstract contract AATestScaffolding is TestSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
+    BridgerL2 _bridgerL2;
 
     /* ============ convenience methods ============ */
 

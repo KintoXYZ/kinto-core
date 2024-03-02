@@ -71,6 +71,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
             _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
             _faucet = Faucet(payable(_getChainDeployment("Faucet")));
+            _bridgerL2 = IBridgerL2(_getChainDeployment("BridgerL2"));
 
             // grant KYC provider role to _kycProvider and _owner on kintoID
             bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -117,6 +118,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(contracts.paymaster);
             _kycViewer = KYCViewer(contracts.viewer);
             _faucet = Faucet(contracts.faucet);
+            _bridgerL2 = IBridgerL2(contracts.bridgerL2);
 
             // grant kyc provider role to _kycProvider on kintoID
             bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -152,6 +154,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         vm.label(address(_paymaster), "SponsorPaymaster");
         vm.label(address(_kycViewer), "KYCViewer");
         vm.label(address(_faucet), "Faucet");
+        vm.label(address(_bridgerL2), "BrigerL2");
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
