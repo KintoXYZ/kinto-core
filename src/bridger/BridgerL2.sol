@@ -35,11 +35,11 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     /// @dev Deposit totals per asset
     mapping(address => uint256) public override depositTotals;
     /// @dev Count of deposits
-    uint256 public depositCount;
+    uint256 public override depositCount;
     /// @dev Enable or disable the locks
-    bool public unlocked;
+    bool public override unlocked;
     /// @dev Phase IV assets
-    address[] allowedAssets;
+    address[] public depositedAssets;
 
     /* ============ Constructor & Upgrades ============ */
     constructor(address _walletFactory) {
@@ -92,6 +92,16 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         unlocked = true;
     }
 
+    /**
+     * @dev Set the assets that are deposited
+     * Note: Only owner can call this function
+     * @param assets array of addresses of the assets
+     */
+    function setDepositedAssets(address[] memory assets) external override {
+        _onlyOwner();
+        depositedAssets = assets;
+    }
+
     /* ============ Claim L2 ============ */
 
     /**
@@ -105,8 +115,8 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         if (!unlocked) {
             revert NotUnlockedYet();
         }
-        for (uint256 i = 0; i < allowedAssets.length; i++) {
-            address currentAsset = allowedAssets[i];
+        for (uint256 i = 0; i < depositedAssets.length; i++) {
+            address currentAsset = depositedAssets[i];
             uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
                 deposits[msg.sender][currentAsset] = 0;
@@ -123,9 +133,9 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param user address of the user
      */
     function getUserDeposits(address user) external view override returns (uint256[] memory amounts) {
-        amounts = new uint256[](allowedAssets.length);
-        for (uint256 i = 0; i < allowedAssets.length; i++) {
-            address currentAsset = allowedAssets[i];
+        amounts = new uint256[](depositedAssets.length);
+        for (uint256 i = 0; i < depositedAssets.length; i++) {
+            address currentAsset = depositedAssets[i];
             amounts[i] = deposits[user][currentAsset];
         }
     }
@@ -134,9 +144,9 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Get the total number of deposits of all assets
      */
     function getTotalDeposits() external view override returns (uint256[] memory amounts) {
-        amounts = new uint256[](allowedAssets.length);
-        for (uint256 i = 0; i < allowedAssets.length; i++) {
-            address currentAsset = allowedAssets[i];
+        amounts = new uint256[](depositedAssets.length);
+        for (uint256 i = 0; i < depositedAssets.length; i++) {
+            address currentAsset = depositedAssets[i];
             amounts[i] = depositTotals[currentAsset];
         }
     }

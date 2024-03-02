@@ -15,6 +15,8 @@ interface IBridgerL2 {
 
     function unlockCommitments() external;
 
+    function setDepositedAssets(address[] memory assets) external;
+
     function claimCommitment() external;
 
     /* ============ Basic Viewers ============ */
