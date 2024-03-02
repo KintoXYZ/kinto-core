@@ -166,4 +166,6 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         vm.expectRevert(IBridgerL2.NotUnlockedYet.selector);
         _bridgerL2.claimCommitment();
     }
+
+    // todo: test everything through user ops because it is what we will use
 }
