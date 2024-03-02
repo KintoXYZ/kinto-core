@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../interfaces/IBridger.sol";
+import "../interfaces/IBridgerL2.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -49,9 +49,9 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     address[] allowedAssets;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address walletFactory) {
+    constructor(address _walletFactory) {
         _disableInitializers();
-        walletFactory = IKintoWalletFactory(walletFactory);
+        walletFactory = IKintoWalletFactory(_walletFactory);
     }
 
     /**
@@ -90,40 +90,41 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     /* ============ Claim L2 ============ */
 
     function claimCommitment(address kintoWallet) external nonReentrant {
-        if (walletFactory.walletTs(kintoWallet) == 0 || IKintoWallet(wallet).owners(0) != msg.sender)
+        if (walletFactory.walletTs(kintoWallet) == 0 || IKintoWallet(kintoWallet).owners(0) != msg.sender) {
             revert InvalidWallet();
-        if (!unlocked)
+        }
+        if (!unlocked) {
             revert NotUnlockedYet();
-        for (uint i = 0; i < allowedAssets.length; i++) {
+        }
+        for (uint256 i = 0; i < allowedAssets.length; i++) {
             address currentAsset = allowedAssets[i];
-            uint256 balance = deposits[msg.sender][asset];
+            uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
-                deposits[msg.sender][asset] = 0;
-                IERC20(asset).transfer(kintoWallet, balance);
+                deposits[msg.sender][currentAsset] = 0;
+                IERC20(currentAsset).transfer(kintoWallet, balance);
             }
         }
     }
 
     /* ============ Viewers ============ */
-    
-    function getUserDeposits() external view override returns (uint256[] amounts) {
-        amounts = new uint[](allowedAssets.length);
-        for (uint i = 0; i < allowedAssets.length; i++) {
+
+    function getUserDeposits() external view override returns (uint256[] memory amounts) {
+        amounts = new uint256[](allowedAssets.length);
+        for (uint256 i = 0; i < allowedAssets.length; i++) {
             address currentAsset = allowedAssets[i];
-            amounts[i] = deposits[msg.sender][asset];
+            amounts[i] = deposits[msg.sender][currentAsset];
         }
     }
 
-    function getTotalDeposits() external view override returns (uint256[] amounts) {
-        amounts = new uint[](allowedAssets.length);
-        for (uint i = 0; i < allowedAssets.length; i++) {
+    function getTotalDeposits() external view override returns (uint256[] memory amounts) {
+        amounts = new uint256[](allowedAssets.length);
+        for (uint256 i = 0; i < allowedAssets.length; i++) {
             address currentAsset = allowedAssets[i];
-            amounts[i] = depositTotals[asset];
+            amounts[i] = depositTotals[currentAsset];
         }
     }
 
-    function _onlyOwner() {
+    function _onlyOwner() private view {
         if (msg.sender != owner()) revert OnlyOwner();
     }
 }
-

@@ -5,10 +5,9 @@ interface IBridgerL2 {
     /* ============ Errors ============ */
     error OnlyOwner();
     error InvalidWallet();
-    error NotUNlockedYet();
+    error NotUnlockedYet();
 
     /* ============ Structs ============ */
-
 
     /* ============ State Change ============ */
 
@@ -26,9 +25,9 @@ interface IBridgerL2 {
 
     function depositCount() external view returns (uint256);
 
-    function getUserDeposits() external view returns (uint256[] amounts);
-    
-    function getTotalDeposits() external view returns (uint256[] amounts);
+    function getUserDeposits() external view returns (uint256[] memory amounts);
+
+    function getTotalDeposits() external view returns (uint256[] memory amounts);
 
     function unlocked() external view returns (bool);
 }

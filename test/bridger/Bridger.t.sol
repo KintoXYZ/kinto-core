@@ -338,7 +338,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 kintoMaxSubmissionCost = 1e18;
         uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
 
-        vm.expectRevert(abi.encodeWithSelector(NotEnoughEthToBridge.selector, callValue, 1));
+        vm.expectRevert(abi.encodeWithSelector(IBridger.NotEnoughEthToBridge.selector, callValue, 1));
         vm.prank(_owner);
         _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }

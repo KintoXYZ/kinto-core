@@ -167,7 +167,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         onlyPrivileged
     {
         // Approve the gateway to get the tokens
-        uint gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
+        uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         IERC20(asset).approve(standardGateway, type(uint256).max);
         // Bridge to Kinto L2 using standard bridge
