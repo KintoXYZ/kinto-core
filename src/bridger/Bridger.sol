@@ -167,10 +167,12 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         onlyPrivileged
     {
         // Approve the gateway to get the tokens
+        uint gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
+        if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         IERC20(asset).approve(standardGateway, type(uint256).max);
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
-        L1GatewayRouter.outboundTransfer{value: msg.value}(
+        L1GatewayRouter.outboundTransfer{value: gasCost}(
             asset, //token
             L2_VAULT, // Account to be credited with the tokens in L2
             IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
@@ -179,7 +181,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
             abi.encode(
                 maxSubmissionCost, // Max gas deducted from user's L2 balance to cover base submission fee. Usually 0
                 bytes(""), // bytes extraData hook
-                (maxGas * gasPriceBid) + maxSubmissionCost // Total gas deducted from user’s L2 balance
+                gasCost // Total gas deducted from user’s L2 balance
             )
         );
     }
@@ -336,7 +338,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     function _isFinalAssetAllowed(address _asset) private pure {
         if (
             _asset != address(sDAI) && _asset != address(sUSDe) && _asset != address(wstETH) && _asset != address(weETH)
-                && _asset != address(0)
         ) revert InvalidAsset();
     }
 

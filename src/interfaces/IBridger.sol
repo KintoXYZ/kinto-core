@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 
 interface IBridger {
     /* ============ Errors ============ */
@@ -14,6 +13,7 @@ interface IBridger {
     error InvalidAsset();
     error InvalidAmount();
     error SwapsDisabled();
+    error NotEnoughEthToBridge();
 
     /* ============ Structs ============ */
 
@@ -74,4 +74,6 @@ interface IBridger {
     function allowedAssets(address) external view returns (bool);
 
     function swapsEnabled() external view returns (bool);
+
+    function depositCount() external view returns (uint256);
 }

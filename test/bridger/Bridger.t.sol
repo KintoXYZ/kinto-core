@@ -312,7 +312,23 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(ERC20(asset).balanceOf(address(_bridger)), 0);
     }
 
-    function testBridgeDeposits_WhenInsufficientGas() public {
+    function testBridgeDeposits_WhenInsufficientGasPassedButHasEth() public {
+        address asset = _bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(address(asset), address(_bridger), amountToDeposit);
+
+        uint256 kintoMaxGas = 1e6;
+        uint256 kintoGasPriceBid = 1e9;
+        uint256 kintoMaxSubmissionCost = 1e18;
+        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+        vm.deal(address(_bridger), callValue); // to cover the call value (maxSubmissionCost + (maxGas * gasPriceBid
+
+        vm.expectRevert(abi.encodeWithSelector(InsufficientValue.selector, callValue, 1));
+        vm.prank(_owner);
+        _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+    }
+
+    function testBridgeDeposits_RevertsWhenInsufficientGas() public {
         address asset = _bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(asset), address(_bridger), amountToDeposit);
