@@ -34,6 +34,7 @@ interface IBridger {
     error InvalidSigner();
     error InvalidAsset();
     error InvalidAmount();
+    error InvalidAssets();
     error SwapsDisabled();
     error NotEnoughEthToBridge();
     error GasFeeTooHigh();

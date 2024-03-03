@@ -545,6 +545,11 @@ contract BridgerTest is TestSignature, SharedSetup {
         bridger.whitelistAssets(new address[](1), new bool[](1));
     }
 
+    function testWhitelistAsset_RevertWhen_LengthMismatch() public {
+        vm.expectRevert(IBridger.InvalidAssets.selector);
+        bridger.whitelistAssets(new address[](1), new bool[](2));
+    }
+
     /* ============ Emergency Withdrawal ============ */
 
     function testEmergencyExit() public {

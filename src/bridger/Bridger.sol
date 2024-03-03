@@ -227,7 +227,7 @@ contract Bridger is
      * @param _assets array of addresses of the assets to be whitelisted
      */
     function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external override onlyOwner {
-        require(_assets.length == _flags.length, "Invalid input");
+        if (_assets.length != _flags.length) revert InvalidAssets();
         for (uint256 i = 0; i < _assets.length; i++) {
             allowedAssets[_assets[i]] = _flags[i];
         }
