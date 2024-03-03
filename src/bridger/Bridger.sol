@@ -125,8 +125,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for usde special case
-            if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe)
+            if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
                 revert InvalidAsset();
+            }
         }
         _permit(
             _signatureData.signer,
