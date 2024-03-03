@@ -11,7 +11,8 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title Bridger - To be deployed on ETH mainnet.
@@ -79,7 +80,7 @@ contract Bridger is
     /* ============ Constructor & Upgrades ============ */
     constructor(address _l2Vault) {
         _disableInitializers();
-        domainSeparator = _domainSeparator();
+        domainSeparator = _domainSeparatorV4();
         l2Vault = _l2Vault;
     }
 
@@ -419,9 +420,8 @@ contract Bridger is
         }
         if (size > 0) revert SignerNotEOA();
 
-        bytes32 eip712MessageHash =
-            keccak256(abi.encodePacked("\x19\x01", domainSeparator, _hashSignatureData(_signature)));
-        if (!_signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature)) revert InvalidSigner();
+        bytes32 digest = _hashTypedDataV4(_hashSignatureData(_signature));
+        if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
         _;
     }
 
@@ -432,7 +432,7 @@ contract Bridger is
 
     /* ============ EIP-712 Helpers ============ */
 
-    function _domainSeparator() internal view returns (bytes32) {
+    function _domainSeparatorV4() internal view returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
@@ -442,6 +442,14 @@ contract Bridger is
                 address(this)
             )
         );
+    }
+
+    /**
+     * @dev Given an already https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct[hashed struct], this
+     * function returns the hash of the fully encoded EIP712 message for this domain.
+     */
+    function _hashTypedDataV4(bytes32 structHash) internal view virtual returns (bytes32) {
+        return MessageHashUtils.toTypedDataHash(domainSeparator, structHash);
     }
 
     function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
