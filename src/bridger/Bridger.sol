@@ -99,9 +99,8 @@ contract Bridger is
      * @dev Authorize the upgrade. Only by an owner.
      * @param newImplementation address of the new implementation
      */
-    function _authorizeUpgrade(address newImplementation) internal view override {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
-        _onlyOwner();
     }
 
     /* ============ Pause and Unpause ============ */
@@ -109,16 +108,14 @@ contract Bridger is
     /**
      * @dev Pause the contract. Only owner
      */
-    function pause() external override {
-        _onlyOwner();
+    function pause() external override onlyOwner {
         _pause();
     }
 
     /**
      * @dev Unpause the contract. Only owner
      */
-    function unpause() external override {
-        _onlyOwner();
+    function unpause() external override onlyOwner {
         _unpause();
     }
 
@@ -126,8 +123,7 @@ contract Bridger is
      * @dev Set the sender account. Only owner
      * @param _senderAccount address of the sender account
      */
-    function setSenderAccount(address _senderAccount) external override {
-        _onlyOwner();
+    function setSenderAccount(address _senderAccount) external override onlyOwner {
         senderAccount = _senderAccount;
     }
 
@@ -360,6 +356,7 @@ contract Bridger is
         address payable swapTarget,
         // The `data` field from the API response.
         bytes calldata swapCallData,
+        // Slippage protection
         uint256 minReceive
     ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
@@ -417,10 +414,6 @@ contract Bridger is
     modifier onlyPrivileged() {
         if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
         _;
-    }
-
-    function _onlyOwner() private view {
-        if (msg.sender != owner()) revert OnlyOwner();
     }
 
     /* ============ EIP-712 Helpers ============ */

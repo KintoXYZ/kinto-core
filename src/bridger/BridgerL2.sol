@@ -65,9 +65,8 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
-        _onlyOwner();
     }
 
     /* ============ Privileged Functions ============ */
@@ -79,8 +78,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param assetL2 address of the asset on the L2
      * @param amount amount of the asset to receive
      */
-    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
-        _onlyOwner();
+    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override onlyOwner {
         deposits[walletAddress][assetL2] += amount;
         depositTotals[assetL2] += amount;
         depositCount++;
@@ -90,8 +88,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Unlock the commitments
      * Note: Only owner can call this function
      */
-    function unlockCommitments() external override {
-        _onlyOwner();
+    function unlockCommitments() external override onlyOwner {
         unlocked = true;
     }
 
@@ -100,8 +97,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * Note: Only owner can call this function
      * @param assets array of addresses of the assets
      */
-    function setDepositedAssets(address[] memory assets) external override {
-        _onlyOwner();
+    function setDepositedAssets(address[] memory assets) external override onlyOwner {
         depositedAssets = assets;
     }
 
@@ -152,9 +148,5 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             address currentAsset = depositedAssets[i];
             amounts[i] = depositTotals[currentAsset];
         }
-    }
-
-    function _onlyOwner() private view {
-        if (msg.sender != owner()) revert OnlyOwner();
     }
 }

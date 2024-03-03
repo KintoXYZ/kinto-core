@@ -68,7 +68,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testUp() public override {
-        // super.testUp();
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
         assertEq(_bridger.swapsEnabled(), false);
@@ -85,7 +84,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(99), address(100));
-        vm.expectRevert(IBridger.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
