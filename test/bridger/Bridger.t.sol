@@ -37,7 +37,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
-    BridgerHarness internal _bridger;
+    BridgerHarness internal bridger;
 
     function setUp() public override {
         super.setUp();
@@ -56,25 +56,25 @@ contract BridgerTest is TestSignature, SharedSetup {
         // deploy a new Bridger contract
         BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
-        _bridger = BridgerHarness(payable(proxy));
+        bridger = BridgerHarness(payable(proxy));
 
         vm.prank(_owner);
-        _bridger.initialize(senderAccount);
+        bridger.initialize(senderAccount);
 
         // if running local tests, we want to replace some hardcoded addresses that the bridger uses
         // with mocked contracts
         if (!fork) {
             ERCPermitToken sDAI = new ERCPermitToken("sDAI", "sDAI");
-            vm.etch(_bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+            vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
         }
     }
 
     function testUp() public override {
-        assertEq(_bridger.depositCount(), 0);
-        assertEq(_bridger.owner(), address(_owner));
-        assertEq(_bridger.swapsEnabled(), false);
-        assertEq(_bridger.senderAccount(), senderAccount);
-        assertEq(_bridger.l2Vault(), l2Vault);
+        assertEq(bridger.depositCount(), 0);
+        assertEq(bridger.owner(), address(_owner));
+        assertEq(bridger.swapsEnabled(), false);
+        assertEq(bridger.senderAccount(), senderAccount);
+        assertEq(bridger.l2Vault(), l2Vault);
     }
 
     /* ============ Upgrade ============ */
@@ -82,30 +82,30 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testUpgradeTo() public {
         BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.prank(_owner);
-        _bridger.upgradeTo(address(_newImpl));
-        assertEq(BridgerNewUpgrade(payable(address(_bridger))).newFunction(), 1);
+        bridger.upgradeTo(address(_newImpl));
+        assertEq(BridgerNewUpgrade(payable(address(bridger))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.expectRevert("Ownable: caller is not the owner");
-        _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
+        bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
     /* ============ Bridger Deposit ============ */
 
     function testDepositBySig_WhenNoSwap() public {
-        address assetToDeposit = _bridger.sDAI();
+        address assetToDeposit = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -114,31 +114,31 @@ contract BridgerTest is TestSignature, SharedSetup {
             ERC20Permit(assetToDeposit)
         );
 
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2,
             sigdata,
             IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, amountToDeposit),
             permitSignature
         );
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
     }
 
     function testDepositBySig_wtstETHWhenNoSwap() public {
-        address assetToDeposit = _bridger.wstETH();
+        address assetToDeposit = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -147,31 +147,31 @@ contract BridgerTest is TestSignature, SharedSetup {
             ERC20Permit(assetToDeposit)
         );
 
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2,
             sigdata,
             IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, amountToDeposit),
             permitSignature
         );
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
     }
 
     function testDepositBySig_weETHWhenNoSwap() public {
-        address assetToDeposit = _bridger.weETH();
+        address assetToDeposit = bridger.weETH();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -180,31 +180,31 @@ contract BridgerTest is TestSignature, SharedSetup {
             ERC20Permit(assetToDeposit)
         );
 
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2,
             sigdata,
             IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, amountToDeposit),
             permitSignature
         );
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
     }
 
     function testDepositBySig_sUSDeWhenNoSwap() public {
-        address assetToDeposit = _bridger.sUSDe();
+        address assetToDeposit = bridger.sUSDe();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -213,31 +213,31 @@ contract BridgerTest is TestSignature, SharedSetup {
             ERC20Permit(assetToDeposit)
         );
 
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2,
             sigdata,
             IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, amountToDeposit),
             permitSignature
         );
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
     }
 
     function testDepositBySig_USDeWhenNoSwap() public {
-        address assetToDeposit = _bridger.USDe();
+        address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, _bridger.sUSDe(), _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, bridger.sUSDe(), _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -246,17 +246,17 @@ contract BridgerTest is TestSignature, SharedSetup {
             ERC20Permit(assetToDeposit)
         );
 
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2,
             sigdata,
             IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1e17),
             permitSignature
         );
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(_bridger.sUSDe()).balanceOf(address(_bridger)) > 0, true);
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)) > 0, true);
     }
 
     function testDepositBySig_WhenSwap() public {
@@ -264,7 +264,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         // enable swaps
         vm.prank(_owner);
-        _bridger.setSwapsEnabled(true);
+        bridger.setSwapsEnabled(true);
 
         // whitelist UNI as inputAsset
         address[] memory assets = new address[](1);
@@ -272,7 +272,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         bool[] memory flags = new bool[](1);
         flags[0] = true;
         vm.prank(_owner);
-        _bridger.whitelistAssets(assets, flags);
+        bridger.whitelistAssets(assets, flags);
 
         // top-up _user UNI balance
         address assetToDeposit = UNI;
@@ -283,7 +283,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -294,9 +294,9 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         // create a bridge signature to allow the bridger to deposit the user's UNI
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, _bridger.wstETH(), _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, bridger.wstETH(), _userPk, block.timestamp + 1000
         );
-        uint256 nonce = _bridger.nonces(_user);
+        uint256 nonce = bridger.nonces(_user);
 
         // UNI to wstETH quote's swapData
         // https://api.0x.org/swap/v1/quote?sellToken=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&buyToken=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&sellAmount=1000000000000000000
@@ -307,24 +307,24 @@ contract BridgerTest is TestSignature, SharedSetup {
         IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee, 3106569413738877); // spender, swapTarget, swapCallData, gasFee
 
         vm.prank(_owner);
-        _bridger.depositBySig{value: gasFee}(kintoWalletL2, sigdata, swapData, permitSignature);
+        bridger.depositBySig{value: gasFee}(kintoWalletL2, sigdata, swapData, permitSignature);
 
-        assertEq(_bridger.nonces(_user), nonce + 1);
-        assertEq(_bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), 0); // there's no UNI since it was swapped
-        assertApproxEqRel(ERC20(_bridger.wstETH()).balanceOf(address(_bridger)), 3116569413738877, 0.015e18); // 1.5%
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no UNI since it was swapped
+        assertApproxEqRel(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 3116569413738877, 0.015e18); // 1.5%
     }
 
     function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
-        address assetToDeposit = _bridger.sDAI();
+        address assetToDeposit = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         vm.startPrank(_user);
         vm.expectRevert(IBridger.OnlyOwner.selector);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1), bytes("")
         );
         vm.stopPrank();
@@ -335,12 +335,12 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, _bridger.wstETH(), _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, bridger.wstETH(), _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -350,7 +350,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1), permitSignature
         );
         vm.stopPrank();
@@ -361,12 +361,12 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -376,23 +376,23 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1), permitSignature
         );
         vm.stopPrank();
     }
 
     function testDepositBySig_RevertWhen_AmountIsZero() public {
-        address assetToDeposit = _bridger.sDAI();
+        address assetToDeposit = bridger.sDAI();
         uint256 amountToDeposit = 0;
         deal(address(assetToDeposit), _user, amountToDeposit);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+            bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
-                address(_bridger),
+                address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
                 block.timestamp + 1000
@@ -402,7 +402,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAmount.selector);
-        _bridger.depositBySig(
+        bridger.depositBySig(
             kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1), permitSignature
         );
         vm.stopPrank();
@@ -416,14 +416,14 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.deal(_user, amountToDeposit + gasFee);
 
         vm.startPrank(_user);
-        _bridger.depositETH{value: amountToDeposit + gasFee}(
-            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), gasFee, 1e17)
+        bridger.depositETH{value: amountToDeposit + gasFee}(
+            kintoWalletL2, bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), gasFee, 1e17)
         );
         vm.stopPrank();
 
-        assertEq(_bridger.nonces(_user), 0);
-        assertEq(_bridger.deposits(_user, _bridger.ETH()), amountToDeposit);
-        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        assertEq(bridger.nonces(_user), 0);
+        assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
+        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
         assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
     }
 
@@ -433,14 +433,14 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.deal(_user, amountToDeposit + gasFee);
 
         vm.startPrank(_user);
-        _bridger.depositETH{value: amountToDeposit + gasFee}(
-            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), gasFee, 1e17)
+        bridger.depositETH{value: amountToDeposit + gasFee}(
+            kintoWalletL2, bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), gasFee, 1e17)
         );
         vm.stopPrank();
 
-        assertEq(_bridger.nonces(_user), 0);
-        assertEq(_bridger.deposits(_user, _bridger.ETH()), amountToDeposit);
-        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        assertEq(bridger.nonces(_user), 0);
+        assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
+        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
         assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
     }
 
@@ -449,7 +449,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         // enable swaps
         vm.prank(_owner);
-        _bridger.setSwapsEnabled(true);
+        bridger.setSwapsEnabled(true);
 
         // top-up `_user` ETH balance
         uint256 amountToDeposit = 1.01 ether;
@@ -463,15 +463,15 @@ contract BridgerTest is TestSignature, SharedSetup {
         IBridger.SwapData memory swapData =
             IBridger.SwapData(swapTarget, swapTarget, data, 0.01 ether, 3202049186553158309369); // spender, swapTarget, swapCallData, gasFee
 
-        // uint256 balanceBefore = address(_bridger).balance;
+        // uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        _bridger.depositETH{value: amountToDeposit}(kintoWalletL2, _bridger.sDAI(), swapData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.sDAI(), swapData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
-        assertEq(_bridger.deposits(_user, _bridger.ETH()), 1e18);
-        // assertEq(address(_bridger).balance, balanceBefore); // there's no ETH since it was swapped FIXME: there can be some ETH if the gasFee was not used
-        assertApproxEqRel(ERC20(_bridger.sDAI()).balanceOf(address(_bridger)), 3252049186553158309369, 0.01e18); // 1%
+        assertEq(bridger.deposits(_user, bridger.ETH()), 1e18);
+        // assertEq(address(bridger).balance, balanceBefore); // there's no ETH since it was swapped FIXME: there can be some ETH if the gasFee was not used
+        assertApproxEqRel(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 3252049186553158309369, 0.01e18); // 1%
     }
 
     function testDepositETH_WhenSwap_WhenNoGasFee() public {
@@ -479,7 +479,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         // enable swaps
         vm.prank(_owner);
-        _bridger.setSwapsEnabled(true);
+        bridger.setSwapsEnabled(true);
 
         // top-up `_user` ETH balance
         uint256 amountToDeposit = 1 ether;
@@ -493,15 +493,15 @@ contract BridgerTest is TestSignature, SharedSetup {
         IBridger.SwapData memory swapData =
             IBridger.SwapData(swapTarget, swapTarget, data, 0 ether, 3202049186553158309369); // spender, swapTarget, swapCallData, gasFee
 
-        uint256 balanceBefore = address(_bridger).balance;
+        uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        _bridger.depositETH{value: amountToDeposit}(kintoWalletL2, _bridger.sDAI(), swapData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.sDAI(), swapData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
-        assertEq(_bridger.deposits(_user, _bridger.ETH()), 1e18);
-        assertEq(address(_bridger).balance, balanceBefore); // there's no ETH since it was swapped
-        assertApproxEqRel(ERC20(_bridger.sDAI()).balanceOf(address(_bridger)), 3252049186553158309369, 0.01e18); // 1%
+        assertEq(bridger.deposits(_user, bridger.ETH()), 1e18);
+        assertEq(address(bridger).balance, balanceBefore); // there's no ETH since it was swapped
+        assertApproxEqRel(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 3252049186553158309369, 0.01e18); // 1%
     }
 
     function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
@@ -509,7 +509,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
-        _bridger.depositETH{value: amountToDeposit}(
+        bridger.depositETH{value: amountToDeposit}(
             kintoWalletL2, address(1), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1)
         );
         vm.stopPrank();
@@ -519,9 +519,9 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 amountToDeposit = 0.05 ether;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
-        address wsteth = _bridger.wstETH();
+        address wsteth = bridger.wstETH();
         vm.expectRevert(IBridger.InvalidAmount.selector);
-        _bridger.depositETH{value: amountToDeposit}(
+        bridger.depositETH{value: amountToDeposit}(
             kintoWalletL2, wsteth, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1)
         );
         vm.stopPrank();
@@ -536,13 +536,13 @@ contract BridgerTest is TestSignature, SharedSetup {
         assets[0] = asset;
         bool[] memory flags = new bool[](1);
         flags[0] = true;
-        _bridger.whitelistAssets(assets, flags);
-        assertEq(_bridger.allowedAssets(asset), true);
+        bridger.whitelistAssets(assets, flags);
+        assertEq(bridger.allowedAssets(asset), true);
     }
 
     function testWhitelistAsset_RevertWhen_CallerIsNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        _bridger.whitelistAssets(new address[](1), new bool[](1));
+        bridger.whitelistAssets(new address[](1), new bool[](1));
     }
 
     /* ============ Emergency Withdrawal ============ */
@@ -551,35 +551,35 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_user);
-        _bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, _bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1)
+        bridger.depositETH{value: amountToDeposit}(
+            kintoWalletL2, bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1)
         );
-        uint256 wstethBalance = ERC20(_bridger.wstETH()).balanceOf(address(_bridger));
+        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
         vm.startPrank(_owner);
-        _bridger.emergencyExit(_bridger.wstETH());
-        assertEq(ERC20(_bridger.wstETH()).balanceOf(address(_bridger)), 0);
-        assertEq(ERC20(_bridger.wstETH()).balanceOf(address(_owner)), wstethBalance);
+        bridger.emergencyExit(bridger.wstETH());
+        assertEq(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 0);
+        assertEq(ERC20(bridger.wstETH()).balanceOf(address(_owner)), wstethBalance);
         vm.stopPrank();
     }
 
     function testEmergencyExit_RetrievesETH() public {
         uint256 amountToDeposit = 6e18;
-        vm.deal(address(_bridger), amountToDeposit);
+        vm.deal(address(bridger), amountToDeposit);
 
         uint256 beforeBalance = _owner.balance;
         vm.startPrank(_owner);
-        _bridger.emergencyExit(_bridger.ETH());
+        bridger.emergencyExit(bridger.ETH());
         vm.stopPrank();
 
-        assertEq(payable(_bridger).balance, 0);
+        assertEq(payable(bridger).balance, 0);
         assertEq(_owner.balance, beforeBalance + 6e18);
     }
 
     function testEmergencyExit_RevertWhen_CallerIsNotOwner() public {
         vm.startPrank(_user);
-        address wsteth = _bridger.wstETH();
+        address wsteth = bridger.wstETH();
         vm.expectRevert();
-        _bridger.emergencyExit(wsteth);
+        bridger.emergencyExit(wsteth);
         vm.stopPrank();
     }
 
@@ -587,23 +587,23 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testSetSwapsEnabled() public {
         vm.prank(_owner);
-        _bridger.setSwapsEnabled(true);
-        assertEq(_bridger.swapsEnabled(), true);
+        bridger.setSwapsEnabled(true);
+        assertEq(bridger.swapsEnabled(), true);
     }
 
     function testSetSwapsEnabled_RevertWhen_CallerIsNotOwner() public {
         vm.startPrank(_user);
         vm.expectRevert();
-        _bridger.setSwapsEnabled(true);
+        bridger.setSwapsEnabled(true);
         vm.stopPrank();
     }
 
     /* ============ Bridge ============ */
 
     function testBridgeDeposits() public {
-        address asset = _bridger.sDAI();
+        address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(_bridger), amountToDeposit);
+        deal(address(asset), address(bridger), amountToDeposit);
 
         uint256 kintoMaxGas = 1e6;
         uint256 kintoGasPriceBid = 1e9;
@@ -611,16 +611,16 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
 
         vm.prank(_owner);
-        _bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+        bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
 
-        assertEq(_bridger.deposits(_user, asset), 0);
-        assertEq(ERC20(asset).balanceOf(address(_bridger)), 0);
+        assertEq(bridger.deposits(_user, asset), 0);
+        assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
     }
 
     function testBridgeDeposits_RevertWhen_InsufficientGas() public {
-        address asset = _bridger.sDAI();
+        address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(_bridger), amountToDeposit);
+        deal(address(asset), address(bridger), amountToDeposit);
 
         uint256 kintoMaxGas = 1e6;
         uint256 kintoGasPriceBid = 1e9;
@@ -628,51 +628,51 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         vm.expectRevert(IBridger.NotEnoughEthToBridge.selector);
         vm.prank(_owner);
-        _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+        bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
 
     /* ============ Pause ============ */
 
     function testPauseWhenOwner() public {
-        assertEq(_bridger.paused(), false);
+        assertEq(bridger.paused(), false);
         vm.prank(_owner);
-        _bridger.pause();
-        assertEq(_bridger.paused(), true);
+        bridger.pause();
+        assertEq(bridger.paused(), true);
     }
 
     function testPause_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        _bridger.pause();
+        bridger.pause();
     }
 
     function testUnpauseWhenOwner() public {
         vm.prank(_owner);
-        _bridger.pause();
+        bridger.pause();
 
-        assertEq(_bridger.paused(), true);
+        assertEq(bridger.paused(), true);
         vm.prank(_owner);
-        _bridger.unpause();
-        assertEq(_bridger.paused(), false);
+        bridger.unpause();
+        assertEq(bridger.paused(), false);
     }
 
     function testUnpause_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        _bridger.unpause();
+        bridger.unpause();
     }
 
     /* ============ Sender account ============ */
 
     function testSetSenderAccountWhenOwner() public {
-        assertEq(_bridger.senderAccount(), senderAccount, 'Initial sender account is invalid');
+        assertEq(bridger.senderAccount(), senderAccount, 'Initial sender account is invalid');
 
         vm.prank(_owner);
-        _bridger.setSenderAccount(address(0xdead));
-        assertEq(_bridger.senderAccount(), address(0xdead), 'Sender account invalid address');
+        bridger.setSenderAccount(address(0xdead));
+        assertEq(bridger.senderAccount(), address(0xdead), 'Sender account invalid address');
     }
 
     function testSetSenderAccount_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        _bridger.setSenderAccount(address(0xdead));
+        bridger.setSenderAccount(address(0xdead));
     }
 
     /* ============ EIP712 ============ */
