@@ -18,6 +18,10 @@ interface IWETH is IERC20 {
     function withdraw(uint256 wad) external;
 }
 
+interface IsUSDe is IERC20 {
+    function deposit(uint256 amount, address recipient) external;
+}
+
 interface IL1GatewayRouter {
     function outboundTransfer(
         address _token,
@@ -54,6 +58,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+    address public constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address public constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     address public constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
@@ -119,7 +124,9 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     ) external payable override onlySignerVerified(_signatureData) onlyPrivileged {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
-            revert InvalidAsset();
+            // checks for usde special case
+            if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe)
+                revert InvalidAsset();
         }
         _permit(
             _signatureData.signer,
@@ -240,22 +247,34 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
                 if (!sent) revert InvalidAmount();
                 amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
             } else {
-                if (!swapsEnabled) revert SwapsDisabled();
                 if (_inputAsset == ETH) {
                     _amount = _amount - _swapData.gasFee;
                     // swap ETH to WETH
                     WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
-                amountBought = _fillQuote(
-                    _amount,
-                    _swapData.gasFee,
-                    IERC20(_inputAsset),
-                    IERC20(_finalAsset),
-                    payable(_swapData.spender),
-                    payable(_swapData.swapTarget),
-                    _swapData.swapCallData
-                );
+                address swapToAsset = _finalAsset;
+                // Swap to USDe if sUSDE then stake
+                if (_finalAsset == sUSDe) {
+                    swapToAsset = USDe;
+                }
+                if (swapToAsset != _inputAsset) {
+                    if (!swapsEnabled) revert SwapsDisabled();
+                    amountBought = _fillQuote(
+                        _amount,
+                        _swapData.gasFee,
+                        IERC20(_inputAsset),
+                        IERC20(swapToAsset),
+                        payable(_swapData.spender),
+                        payable(_swapData.swapTarget),
+                        _swapData.swapCallData
+                    );
+                }
+                // Stake the sUSDe
+                if (_finalAsset == sUSDe) {
+                    IERC20(USDe).approve(address(sUSDe), amountBought);
+                    IsUSDe(sUSDe).deposit(amountBought, address(this));
+                }
             }
         }
         depositCount++;

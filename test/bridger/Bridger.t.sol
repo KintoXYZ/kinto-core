@@ -121,6 +121,126 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
     }
 
+    function testDepositBySig_wtstETHWhenNoSwap() public {
+        address assetToDeposit = _bridger.wstETH();
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        uint256 nonce = _bridger.nonces(_user);
+        vm.prank(_owner);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
+        );
+        assertEq(_bridger.nonces(_user), nonce + 1);
+        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+    }
+
+    function testDepositBySig_weETHWhenNoSwap() public {
+        address assetToDeposit = _bridger.weETH();
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        uint256 nonce = _bridger.nonces(_user);
+        vm.prank(_owner);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
+        );
+        assertEq(_bridger.nonces(_user), nonce + 1);
+        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+    }
+
+    function testDepositBySig_sUSDeWhenNoSwap() public {
+        address assetToDeposit = _bridger.sUSDe();
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, assetToDeposit, _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        uint256 nonce = _bridger.nonces(_user);
+        vm.prank(_owner);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
+        );
+        assertEq(_bridger.nonces(_user), nonce + 1);
+        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(_bridger)), amountToDeposit);
+    }
+
+    function testDepositBySig_USDeWhenNoSwap() public {
+        address assetToDeposit = _bridger.USDe();
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            _bridger, _user, assetToDeposit, amountToDeposit, _bridger.sUSDe(), _userPk, block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(_bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        uint256 nonce = _bridger.nonces(_user);
+        vm.prank(_owner);
+        _bridger.depositBySig(
+            kintoWalletL2, sigdata, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether), permitSignature
+        );
+        assertEq(_bridger.nonces(_user), nonce + 1);
+        assertEq(_bridger.deposits(_user, assetToDeposit), amountToDeposit);
+        assertEq(ERC20(_bridger.sUSDe()).balanceOf(address(_bridger)) > 0, true);
+    }
+
     function testDepositBySig_WhenSwap() public {
         if (!fork) return;
 
