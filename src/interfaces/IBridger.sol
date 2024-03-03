@@ -16,6 +16,7 @@ interface IBridger {
     error GasFeeTooHigh();
     error ApprovalFailed();
     error SwapCallFailed();
+    error SlippageError();
 
     /* ============ Structs ============ */
 
@@ -34,6 +35,7 @@ interface IBridger {
         address swapTarget;
         bytes swapCallData;
         uint256 gasFee;
+        uint256 minReceive;
     }
 
     struct Permit {

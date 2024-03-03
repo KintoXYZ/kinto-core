@@ -267,7 +267,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
                         IERC20(swapToAsset),
                         payable(_swapData.spender),
                         payable(_swapData.swapTarget),
-                        _swapData.swapCallData
+                        _swapData.swapCallData,
+                        _swapData.minReceive
                     );
                 }
                 // Stake the sUSDe
@@ -332,7 +333,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         // The `to` field from the API response.
         address payable swapTarget,
         // The `data` field from the API response.
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        uint256 minReceive
     ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
         // require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
@@ -350,6 +352,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
+        if (boughtAmount < minReceive) revert SlippageError();
         return boughtAmount;
     }
 
