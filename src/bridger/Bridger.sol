@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
@@ -34,7 +35,7 @@ interface IL1GatewayRouter {
 }
 
 /**
- * @title Bridger - To be deployed on ETH mainnet and on Kinto L2
+ * @title Bridger - To be deployed on ETH mainnet.
  * Users can deposit tokens in to the Kinto L2 using this contract.
  * The contract will swap the tokens if needed and deposit them in to the Kinto L2
  * in batches every few hours.
@@ -46,7 +47,14 @@ interface IL1GatewayRouter {
  * ETH when swaps are enabled is wrapped first to WETH and then swapped to desire asset.
  * If USDe is provided, it is directly staked.
  */
-contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridger {
+contract Bridger is
+    Initializable,
+    UUPSUpgradeable,
+    OwnableUpgradeable,
+    ReentrancyGuard,
+    PausableUpgradeable,
+    IBridger
+{
     using SignatureChecker for address;
     using ECDSA for bytes32;
 
@@ -61,9 +69,6 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     );
 
     /* ============ Constants ============ */
-    address public constant L2_VAULT = address(1);
-    address public constant SENDER_ACCOUNT = address(1);
-
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
@@ -77,6 +82,8 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
 
     /* ============ State Variables ============ */
     bytes32 public immutable override domainSeparator;
+    address public immutable override l2Vault;
+    address public override senderAccount;
 
     /// @dev Mapping of input assets that are allowed
     mapping(address => bool) public override allowedAssets;
@@ -91,9 +98,11 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     bool public swapsEnabled;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor() {
+    constructor(address _l2Vault, address _senderAccount) {
         _disableInitializers();
         domainSeparator = _domainSeparator();
+        l2Vault = _l2Vault;
+        senderAccount = _senderAccount;
     }
 
     /**
@@ -102,6 +111,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
+        __Pausable_init();
         _transferOwnership(msg.sender);
         swapsEnabled = false;
     }
@@ -110,10 +120,36 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
      * @dev Authorize the upgrade. Only by an owner.
      * @param newImplementation address of the new implementation
      */
-    // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
         if (msg.sender != owner()) revert OnlyOwner();
+    }
+
+    /* ============ Pause and Unpause ============ */
+
+    /**
+     * @dev Pause the contract. Only owner
+     */
+    function pause() external override {
+        if (msg.sender != owner()) revert OnlyOwner();
+        _pause();
+    }
+
+    /**
+     * @dev Unpause the contract. Only owner
+     */
+    function unpause() external override {
+        if (msg.sender != owner()) revert OnlyOwner();
+        _unpause();
+    }
+
+    /**
+     * @dev Set the sender account. Only owner
+     * @param _senderAccount address of the sender account
+     */
+    function setSenderAccount(address _senderAccount) external override {
+        if (msg.sender != owner()) revert OnlyOwner();
+        senderAccount = _senderAccount;
     }
 
     /* ============ Deposit methods ============ */
@@ -130,7 +166,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         IBridger.SignatureData calldata _signatureData,
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
-    ) external payable override onlySignerVerified(_signatureData) onlyPrivileged {
+    ) external payable override whenNotPaused onlySignerVerified(_signatureData) onlyPrivileged {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for usde special case
@@ -167,6 +203,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         external
         payable
         override
+        whenNotPaused
         nonReentrant
     {
         _isFinalAssetAllowed(_finalAsset);
@@ -193,7 +230,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer{value: gasCost}(
             asset, //token
-            L2_VAULT, // Account to be credited with the tokens in L2
+            l2Vault, // Account to be credited with the tokens in L2
             IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
             maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
             gasPriceBid, // Gas price for the execution in L2
@@ -399,7 +436,7 @@ contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentran
     }
 
     modifier onlyPrivileged() {
-        if (msg.sender != owner() && msg.sender != SENDER_ACCOUNT) revert OnlyOwner();
+        if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
         _;
     }
 

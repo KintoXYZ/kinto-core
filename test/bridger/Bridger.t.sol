@@ -20,7 +20,7 @@ contract BridgerNewUpgrade is Bridger {
         return 1;
     }
 
-    constructor() Bridger() {}
+    constructor(address l2Vault, address senderAccount) Bridger(l2Vault, senderAccount) {}
 }
 
 contract ERCPermitToken is ERC20, ERC20Permit {
@@ -52,7 +52,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         }
 
         // deploy a new Bridger contract
-        Bridger implementation = new Bridger();
+        Bridger implementation = new Bridger(address(99), address(100));
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         _bridger = Bridger(payable(proxy));
 
@@ -77,14 +77,14 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(99), address(100));
         vm.prank(_owner);
         _bridger.upgradeTo(address(_newImpl));
         assertEq(BridgerNewUpgrade(payable(address(_bridger))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade();
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(99), address(100));
         vm.expectRevert(IBridger.OnlyOwner.selector);
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
@@ -627,4 +627,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
+
+    // todo: test pause and setSender account
 }

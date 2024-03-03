@@ -67,6 +67,12 @@ interface IBridger {
 
     function setSwapsEnabled(bool _swapsEnabled) external;
 
+    function pause() external;
+
+    function unpause() external;
+
+    function setSenderAccount(address _senderAccount) external;
+
     /* ============ Basic Viewers ============ */
 
     function deposits(address _account, address _asset) external view returns (uint256);
@@ -80,4 +86,8 @@ interface IBridger {
     function swapsEnabled() external view returns (bool);
 
     function depositCount() external view returns (uint256);
+
+    function l2Vault() external view returns (address);
+
+    function senderAccount() external view returns (address);
 }
