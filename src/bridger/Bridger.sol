@@ -413,12 +413,7 @@ contract Bridger is
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
         // Ensure signer is an EOA
-        uint256 size;
-        address signer = _signature.signer;
-        assembly {
-            size := extcodesize(signer)
-        }
-        if (size > 0) revert SignerNotEOA();
+        if (_signature.signer.code.length > 0) revert SignerNotEOA();
 
         bytes32 digest = _hashTypedDataV4(_hashSignatureData(_signature));
         if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
