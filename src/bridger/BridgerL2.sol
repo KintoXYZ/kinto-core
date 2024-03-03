@@ -16,6 +16,9 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 
 /**
  * @title BridgerL2 - The vault that holds the bridged assets during Phase IV
+ * @dev This contract is used to hold the assets that are bridged from L1 to L2 during Phase IV
+ * The assets are held in this contract until the wallet claims them at the end of phase IV.
+ * Only Kinto wallets can claim the assets and only after the commitments are unlocked.
  *
  */
 contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridgerL2 {

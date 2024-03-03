@@ -35,7 +35,16 @@ interface IL1GatewayRouter {
 
 /**
  * @title Bridger - To be deployed on ETH mainnet and on Kinto L2
- *
+ * Users can deposit tokens in to the Kinto L2 using this contract.
+ * The contract will swap the tokens if needed and deposit them in to the Kinto L2
+ * in batches every few hours.
+ * Users can select one of 4 final assets to deposit in to the Kinto L2:
+ * sDAI, sUSDe, wstETH, weETH.
+ * Swaps are initially disabled but will be performed using 0x API.
+ * Input assets are only assets that support ERC20 permit + ETH.
+ * ETH when swaps are disabled is just switched to wstETH.
+ * ETH when swaps are enabled is wrapped first to WETH and then swapped to desire asset.
+ * If USDe is provided, it is directly staked.
  */
 contract Bridger is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridger {
     using SignatureChecker for address;
