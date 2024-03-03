@@ -635,4 +635,9 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.pause();
         assertEq(_bridger.paused(), true);
     }
+
+    function testPause_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridger.pause();
+    }
 }
