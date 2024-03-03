@@ -631,6 +631,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Pause tests ============ */
 
     function testPauseWhenOwner() public {
+        assertEq(_bridger.paused(), false);
         vm.prank(_owner);
         _bridger.pause();
         assertEq(_bridger.paused(), true);
@@ -639,5 +640,20 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testPause_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         _bridger.pause();
+    }
+
+    function testUnpauseWhenOwner() public {
+        vm.prank(_owner);
+        _bridger.pause();
+
+        assertEq(_bridger.paused(), true);
+        vm.prank(_owner);
+        _bridger.unpause();
+        assertEq(_bridger.paused(), false);
+    }
+
+    function testUnpause_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridger.unpause();
     }
 }
