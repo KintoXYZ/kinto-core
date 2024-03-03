@@ -531,11 +531,11 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testWhitelistAsset() public {
         address asset = address(768);
-        vm.prank(_owner);
         address[] memory assets = new address[](1);
         assets[0] = asset;
         bool[] memory flags = new bool[](1);
         flags[0] = true;
+        vm.prank(_owner);
         bridger.whitelistAssets(assets, flags);
         assertEq(bridger.allowedAssets(asset), true);
     }
@@ -547,10 +547,11 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testWhitelistAsset_RevertWhen_LengthMismatch() public {
         vm.expectRevert(IBridger.InvalidAssets.selector);
+        vm.prank(_owner);
         bridger.whitelistAssets(new address[](1), new bool[](2));
     }
 
-    /* ============ Emergency Withdrawal ============ */
+    /* ============ Emergency Exit ============ */
 
     function testEmergencyExit() public {
         uint256 amountToDeposit = 1e18;
@@ -583,7 +584,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testEmergencyExit_RevertWhen_CallerIsNotOwner() public {
         vm.startPrank(_user);
         address wsteth = bridger.wstETH();
-        vm.expectRevert();
+        vm.expectRevert("Ownable: caller is not the owner");
         bridger.emergencyExit(wsteth);
         vm.stopPrank();
     }
@@ -598,7 +599,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testSetSwapsEnabled_RevertWhen_CallerIsNotOwner() public {
         vm.startPrank(_user);
-        vm.expectRevert();
+        vm.expectRevert("Ownable: caller is not the owner");
         bridger.setSwapsEnabled(true);
         vm.stopPrank();
     }

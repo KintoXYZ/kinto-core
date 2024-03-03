@@ -77,6 +77,12 @@ contract Bridger is
     /// @dev Enable or disable swaps
     bool public swapsEnabled;
 
+    /* ============ Modifiers ============ */
+    modifier onlyPrivileged() {
+        if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
+        _;
+    }
+
     /* ============ Constructor & Upgrades ============ */
     constructor(address _l2Vault) {
         _disableInitializers();
@@ -147,7 +153,7 @@ contract Bridger is
         _isFinalAssetAllowed(_signatureData.finalAsset);
         // Only allows assets for now which do not require swap.
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
-            // checks for usde special case
+            // checks for USDe special case
             if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
                 revert InvalidAsset();
             }
@@ -417,11 +423,6 @@ contract Bridger is
 
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
         if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
-        _;
-    }
-
-    modifier onlyPrivileged() {
-        if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
         _;
     }
 
