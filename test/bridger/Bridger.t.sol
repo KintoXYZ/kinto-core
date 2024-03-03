@@ -20,7 +20,7 @@ contract BridgerNewUpgrade is Bridger {
         return 1;
     }
 
-    constructor(address l2Vault, address senderAccount) Bridger(l2Vault, senderAccount) {}
+    constructor(address l2Vault) Bridger(l2Vault) {}
 }
 
 contract ERCPermitToken is ERC20, ERC20Permit {
@@ -34,6 +34,8 @@ contract BridgerTest is TestSignature, SharedSetup {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     Bridger _bridger;
+    address constant senderAccount = address(100);
+    address constant l2Vault = address(99);
 
     error InsufficientValue(uint256 expected, uint256 actual);
 
@@ -52,12 +54,12 @@ contract BridgerTest is TestSignature, SharedSetup {
         }
 
         // deploy a new Bridger contract
-        Bridger implementation = new Bridger(address(99), address(100));
+        Bridger implementation = new Bridger(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         _bridger = Bridger(payable(proxy));
 
         vm.prank(_owner);
-        _bridger.initialize();
+        _bridger.initialize(senderAccount);
 
         // if running local tests, we want to replace some hardcoded addresses that the bridger uses
         // with mocked contracts
@@ -71,19 +73,21 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(_bridger.depositCount(), 0);
         assertEq(_bridger.owner(), address(_owner));
         assertEq(_bridger.swapsEnabled(), false);
+        assertEq(_bridger.senderAccount(), senderAccount);
+        assertEq(_bridger.l2Vault(), l2Vault);
     }
 
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(99), address(100));
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.prank(_owner);
         _bridger.upgradeTo(address(_newImpl));
         assertEq(BridgerNewUpgrade(payable(address(_bridger))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(address(99), address(100));
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.expectRevert("Ownable: caller is not the owner");
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
@@ -655,5 +659,20 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testUnpause_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         _bridger.unpause();
+    }
+
+    /* ============ Sender account tests ============ */
+
+    function testSetSenderAccountWhenOwner() public {
+        assertEq(_bridger.senderAccount(), senderAccount, 'Initial sender account is invalid');
+
+        vm.prank(_owner);
+        _bridger.setSenderAccount(address(0xdead));
+        assertEq(_bridger.senderAccount(), address(0xdead), 'Sender account invalid address');
+    }
+
+    function testSetSenderAccount_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridger.setSenderAccount(address(0xdead));
     }
 }
