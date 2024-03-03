@@ -122,7 +122,7 @@ contract Bridger is
      */
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
-        if (msg.sender != owner()) revert OnlyOwner();
+        _onlyOwner();
     }
 
     /* ============ Pause and Unpause ============ */
@@ -131,7 +131,7 @@ contract Bridger is
      * @dev Pause the contract. Only owner
      */
     function pause() external override {
-        if (msg.sender != owner()) revert OnlyOwner();
+        _onlyOwner();
         _pause();
     }
 
@@ -139,7 +139,7 @@ contract Bridger is
      * @dev Unpause the contract. Only owner
      */
     function unpause() external override {
-        if (msg.sender != owner()) revert OnlyOwner();
+        _onlyOwner();
         _unpause();
     }
 
@@ -148,7 +148,7 @@ contract Bridger is
      * @param _senderAccount address of the sender account
      */
     function setSenderAccount(address _senderAccount) external override {
-        if (msg.sender != owner()) revert OnlyOwner();
+        _onlyOwner();
         senderAccount = _senderAccount;
     }
 
@@ -438,6 +438,10 @@ contract Bridger is
     modifier onlyPrivileged() {
         if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
         _;
+    }
+
+    function _onlyOwner() private view {
+        if (msg.sender != owner()) revert OnlyOwner();
     }
 
     /* ============ EIP-712 Helpers ============ */
