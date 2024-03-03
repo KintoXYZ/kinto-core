@@ -13,27 +13,6 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-interface IWETH is IERC20 {
-    function deposit() external payable;
-
-    function withdraw(uint256 wad) external;
-}
-
-interface IsUSDe is IERC20 {
-    function deposit(uint256 amount, address recipient) external;
-}
-
-interface IL1GatewayRouter {
-    function outboundTransfer(
-        address _token,
-        address _to,
-        uint256 _amount,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        bytes calldata _data
-    ) external payable;
-}
-
 /**
  * @title Bridger - To be deployed on ETH mainnet.
  * Users can deposit tokens in to the Kinto L2 using this contract.
