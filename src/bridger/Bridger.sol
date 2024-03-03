@@ -415,7 +415,7 @@ contract Bridger is
         // Ensure signer is an EOA
         if (_signature.signer.code.length > 0) revert SignerNotEOA();
 
-        bytes32 digest = _hashTypedDataV4(_hashSignatureData(_signature));
+        bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
         if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
         _;
     }
@@ -433,18 +433,10 @@ contract Bridger is
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("Bridger")), // this contract's name
                 keccak256(bytes("1")), // version
-                _getChainID(),
+                block.chainid,
                 address(this)
             )
         );
-    }
-
-    /**
-     * @dev Given an already https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct[hashed struct], this
-     * function returns the hash of the fully encoded EIP712 message for this domain.
-     */
-    function _hashTypedDataV4(bytes32 structHash) internal view virtual returns (bytes32) {
-        return MessageHashUtils.toTypedDataHash(domainSeparator, structHash);
     }
 
     function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
@@ -461,13 +453,5 @@ contract Bridger is
                 signatureData.expiresAt
             )
         );
-    }
-
-    function _getChainID() internal view returns (uint256) {
-        uint256 chainID;
-        assembly {
-            chainID := chainid()
-        }
-        return chainID;
     }
 }

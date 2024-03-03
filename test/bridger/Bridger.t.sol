@@ -10,6 +10,7 @@ import "../../src/bridger/Bridger.sol";
 import "../helpers/UUPSProxy.sol";
 import "../helpers/TestSignature.sol";
 import "../helpers/TestSignature.sol";
+import "../harness/BridgerHarness.sol";
 import "../SharedSetup.t.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -33,11 +34,10 @@ contract BridgerTest is TestSignature, SharedSetup {
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    Bridger _bridger;
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
-    error InsufficientValue(uint256 expected, uint256 actual);
+    BridgerHarness internal _bridger;
 
     function setUp() public override {
         super.setUp();
@@ -54,9 +54,9 @@ contract BridgerTest is TestSignature, SharedSetup {
         }
 
         // deploy a new Bridger contract
-        Bridger implementation = new Bridger(l2Vault);
+        BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
-        _bridger = Bridger(payable(proxy));
+        _bridger = BridgerHarness(payable(proxy));
 
         vm.prank(_owner);
         _bridger.initialize(senderAccount);
@@ -77,7 +77,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(_bridger.l2Vault(), l2Vault);
     }
 
-    /* ============ Upgrade tests ============ */
+    /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
         BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
@@ -92,7 +92,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
-    /* ============ Bridger Deposit tests ============ */
+    /* ============ Bridger Deposit ============ */
 
     function testDepositBySig_WhenNoSwap() public {
         address assetToDeposit = _bridger.sDAI();
@@ -408,7 +408,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Bridger ETH Deposit Tests ============ */
+    /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
         uint256 gasFee = 0.1 ether;
@@ -527,7 +527,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Whitelist tests ============ */
+    /* ============ Whitelist ============ */
 
     function testWhitelistAsset() public {
         address asset = address(768);
@@ -545,7 +545,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.whitelistAssets(new address[](1), new bool[](1));
     }
 
-    /* ============ Emergency Withdrawal tests ============ */
+    /* ============ Emergency Withdrawal ============ */
 
     function testEmergencyExit() public {
         uint256 amountToDeposit = 1e18;
@@ -583,7 +583,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Swaps enabled tests ============ */
+    /* ============ Swaps ============ */
 
     function testSetSwapsEnabled() public {
         vm.prank(_owner);
@@ -598,7 +598,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Bridge tests ============ */
+    /* ============ Bridge ============ */
 
     function testBridgeDeposits() public {
         address asset = _bridger.sDAI();
@@ -631,8 +631,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
 
-    // todo: test pause and setSender account
-    /* ============ Pause tests ============ */
+    /* ============ Pause ============ */
 
     function testPauseWhenOwner() public {
         assertEq(_bridger.paused(), false);
@@ -661,7 +660,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         _bridger.unpause();
     }
 
-    /* ============ Sender account tests ============ */
+    /* ============ Sender account ============ */
 
     function testSetSenderAccountWhenOwner() public {
         assertEq(_bridger.senderAccount(), senderAccount, 'Initial sender account is invalid');
@@ -675,4 +674,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.expectRevert("Ownable: caller is not the owner");
         _bridger.setSenderAccount(address(0xdead));
     }
+
+    /* ============ EIP712 ============ */
 }
