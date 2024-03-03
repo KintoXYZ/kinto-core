@@ -77,22 +77,23 @@ contract Bridger is
     bool public swapsEnabled;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _l2Vault, address _senderAccount) {
+    constructor(address _l2Vault) {
         _disableInitializers();
         domainSeparator = _domainSeparator();
         l2Vault = _l2Vault;
-        senderAccount = _senderAccount;
     }
 
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize() external initializer {
+    function initialize(address _senderAccount) external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         __Pausable_init();
+
         _transferOwnership(msg.sender);
         swapsEnabled = false;
+        senderAccount = _senderAccount;
     }
 
     /**
@@ -143,6 +144,7 @@ contract Bridger is
         bytes calldata _permitSignature
     ) external payable override whenNotPaused onlySignerVerified(_signatureData) onlyPrivileged {
         _isFinalAssetAllowed(_signatureData.finalAsset);
+        // Only allows assets for now which do not require swap.
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for usde special case
             if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
@@ -304,6 +306,7 @@ contract Bridger is
     }
 
     function _swapETHtoWstETH(uint256 _amount) private returns (uint256 amountBought) {
+        // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
         (bool sent,) = wstETH.call{value: _amount}("");
         if (!sent) revert InvalidAmount();
