@@ -628,4 +628,11 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     // todo: test pause and setSender account
+    /* ============ Pause tests ============ */
+
+    function testPauseWhenOwner() public {
+        vm.prank(_owner);
+        _bridger.pause();
+        assertEq(_bridger.paused(), true);
+    }
 }
