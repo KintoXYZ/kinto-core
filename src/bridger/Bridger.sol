@@ -258,50 +258,61 @@ contract Bridger is
         address _inputAsset,
         uint256 _amount,
         address _finalAsset,
-        IBridger.SwapData calldata _swapData
+        SwapData calldata _swapData
     ) private {
-        // swap using 0x
         uint256 amountBought = _amount;
         if (_inputAsset != _finalAsset) {
             if (_inputAsset == ETH && _finalAsset == wstETH) {
-                uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
-                (bool sent,) = wstETH.call{value: msg.value}("");
-                if (!sent) revert InvalidAmount();
-                amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
+                amountBought = _swapETHtoWstETH(_amount);
             } else {
                 if (_inputAsset == ETH) {
                     _amount = _amount - _swapData.gasFee;
-                    // swap ETH to WETH
                     WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
-                address swapToAsset = _finalAsset;
-                // Swap to USDe if sUSDE then stake
-                if (_finalAsset == sUSDe) {
-                    swapToAsset = USDe;
-                }
-                if (swapToAsset != _inputAsset) {
-                    if (!swapsEnabled) revert SwapsDisabled();
-                    amountBought = _fillQuote(
-                        _amount,
-                        _swapData.gasFee,
-                        IERC20(_inputAsset),
-                        IERC20(swapToAsset),
-                        payable(_swapData.spender),
-                        payable(_swapData.swapTarget),
-                        _swapData.swapCallData,
-                        _swapData.minReceive
-                    );
-                }
-                // Stake the sUSDe
-                if (_finalAsset == sUSDe) {
-                    IERC20(USDe).approve(address(sUSDe), amountBought);
-                    IsUSDe(sUSDe).deposit(amountBought, address(this));
-                }
+                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _swapData);
+            }
+
+            if (_finalAsset == sUSDe) {
+                _stakeAssets(USDe, amountBought);
             }
         }
+
         depositCount++;
         emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
+    }
+
+    function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
+        private
+        returns (uint256 amountBought)
+    {
+        amountBought = _amount;
+        if (_finalAsset == sUSDe) _finalAsset = USDe; // if sUSDE, swap to USDe & then stake
+        if (_finalAsset != _inputAsset) {
+            if (!swapsEnabled) revert SwapsDisabled();
+            amountBought = _fillQuote(
+                _amount,
+                _swapData.gasFee,
+                IERC20(_inputAsset),
+                IERC20(_finalAsset),
+                payable(_swapData.spender),
+                payable(_swapData.swapTarget),
+                _swapData.swapCallData,
+                _swapData.minReceive
+            );
+        }
+    }
+
+    function _swapETHtoWstETH(uint256 _amount) private returns (uint256 amountBought) {
+        uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
+        (bool sent,) = wstETH.call{value: _amount}("");
+        if (!sent) revert InvalidAmount();
+        amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
+    }
+
+    function _stakeAssets(address _asset, uint256 _amount) private {
+        IERC20(_asset).approve(address(sUSDe), _amount);
+        IsUSDe(sUSDe).deposit(_amount, address(this));
     }
 
     /**
