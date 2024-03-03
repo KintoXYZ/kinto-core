@@ -663,11 +663,11 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Sender account ============ */
 
     function testSetSenderAccountWhenOwner() public {
-        assertEq(bridger.senderAccount(), senderAccount, 'Initial sender account is invalid');
+        assertEq(bridger.senderAccount(), senderAccount, "Initial sender account is invalid");
 
         vm.prank(_owner);
         bridger.setSenderAccount(address(0xdead));
-        assertEq(bridger.senderAccount(), address(0xdead), 'Sender account invalid address');
+        assertEq(bridger.senderAccount(), address(0xdead), "Sender account invalid address");
     }
 
     function testSetSenderAccount_RevertWhen_NotOwner() public {
@@ -676,4 +676,57 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     /* ============ EIP712 ============ */
+
+    function testDomainSeparatorV4() public {
+        assertEq(
+            bridger.domainSeparatorV4(),
+            keccak256(
+                abi.encode(
+                    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                    keccak256(bytes("Bridger")), // this contract's name
+                    keccak256(bytes("1")), // version
+                    block.chainid,
+                    address(bridger)
+                )
+            ),
+            "Domain separator is invalid"
+        );
+    }
+
+    function testHashSignatureData(
+        address signer,
+        address inputAsset,
+        uint256 amount,
+        address finalAsset,
+        uint256 nonce,
+        uint256 expiresAt,
+        bytes calldata signature
+    ) public {
+        IBridger.SignatureData memory data = IBridger.SignatureData({
+            signer: signer,
+            inputAsset: inputAsset,
+            amount: amount,
+            finalAsset: finalAsset,
+            nonce: nonce,
+            expiresAt: expiresAt,
+            signature: signature
+        });
+        assertEq(
+            bridger.hashSignatureData(data),
+            keccak256(
+                abi.encode(
+                    keccak256(
+                        "SignatureData(address signer,address inputAsset,uint256 amount,address finalAsset,uint256 nonce,uint256 expiresAt)"
+                    ),
+                    signer,
+                    inputAsset,
+                    amount,
+                    finalAsset,
+                    nonce,
+                    expiresAt
+                )
+            ),
+            "Signature data is invalid"
+        );
+    }
 }
