@@ -240,18 +240,6 @@ contract Bridger is
     }
 
     /**
-     * @dev Withdraw all the ETH or a specific asset from the contract in an emergency
-     * @param _asset address of the asset to be withdrawn. If address(0), withdraws all the ETH
-     */
-    function emergencyExit(address _asset) external override onlyOwner {
-        if (_asset == ETH) {
-            payable(msg.sender).transfer(address(this).balance);
-        } else {
-            IERC20(_asset).transfer(msg.sender, IERC20(_asset).balanceOf(address(this)));
-        }
-    }
-
-    /**
      * @dev Enable or disable swaps
      * @param _swapsEnabled bool to enable or disable swaps
      */

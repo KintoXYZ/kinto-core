@@ -551,44 +551,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         bridger.whitelistAssets(new address[](1), new bool[](2));
     }
 
-    /* ============ Emergency Exit ============ */
-
-    function testEmergencyExit() public {
-        uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, bridger.wstETH(), IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether, 1)
-        );
-        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        vm.startPrank(_owner);
-        bridger.emergencyExit(bridger.wstETH());
-        assertEq(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 0);
-        assertEq(ERC20(bridger.wstETH()).balanceOf(address(_owner)), wstethBalance);
-        vm.stopPrank();
-    }
-
-    function testEmergencyExit_RetrievesETH() public {
-        uint256 amountToDeposit = 6e18;
-        vm.deal(address(bridger), amountToDeposit);
-
-        uint256 beforeBalance = _owner.balance;
-        vm.startPrank(_owner);
-        bridger.emergencyExit(bridger.ETH());
-        vm.stopPrank();
-
-        assertEq(payable(bridger).balance, 0);
-        assertEq(_owner.balance, beforeBalance + 6e18);
-    }
-
-    function testEmergencyExit_RevertWhen_CallerIsNotOwner() public {
-        vm.startPrank(_user);
-        address wsteth = bridger.wstETH();
-        vm.expectRevert("Ownable: caller is not the owner");
-        bridger.emergencyExit(wsteth);
-        vm.stopPrank();
-    }
-
     /* ============ Swaps ============ */
 
     function testSetSwapsEnabled() public {

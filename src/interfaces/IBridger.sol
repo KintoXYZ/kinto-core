@@ -85,8 +85,6 @@ interface IBridger {
         external
         payable;
 
-    function emergencyExit(address _asset) external;
-
     function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
 
     function setSwapsEnabled(bool _swapsEnabled) external;
