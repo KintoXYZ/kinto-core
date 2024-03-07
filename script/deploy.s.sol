@@ -14,6 +14,7 @@ import "../src/wallet/KintoWallet.sol";
 import "../src/apps/KintoAppRegistry.sol";
 import "../src/tokens/EngenCredits.sol";
 import "../src/Faucet.sol";
+import "../src/inflators/KintoInflator.sol";
 
 import "../test/helpers/Create2Helper.sol";
 import "../test/helpers/ArtifactsReader.sol";
@@ -59,6 +60,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     Faucet public faucet;
     Faucet public faucetImpl;
 
+    // Inflator
+    KintoInflator public inflator;
+    KintoInflator public inflatorImpl;
+
     // whether to write addresses to a file or not (and console.log them)
     bool write;
 
@@ -81,6 +86,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         EngenCredits engenCredits;
         Faucet faucet;
         BridgerL2 bridgerL2;
+        KintoInflator inflator;
     }
 
     // @dev this is used for tests
@@ -90,7 +96,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         log = false;
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, bridgerL2
+            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, bridgerL2, inflator
         );
     }
 
@@ -134,6 +140,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
+
+        // deploy Inflator
+        (inflator, inflatorImpl) = deployInflator();
 
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
@@ -292,6 +301,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _faucet.initialize();
+    }
+
+    function deployInflator() public returns (KintoInflator _inflator, KintoInflator _inflatorImpl) {
+        bytes memory creationCode = type(KintoInflator).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("KintoInflator", creationCode, bytecode, true);
+        address proxy = _deployProxy("KintoInflator", implementation, true);
+
+        _inflator = KintoInflator(payable(proxy));
+        _inflatorImpl = KintoInflator(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _inflator.initialize();
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer

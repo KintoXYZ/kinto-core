@@ -34,10 +34,10 @@ You can read more about our architecture [here](https://docs.kinto.xyz/kinto-the
 
 * Kinto is fully EVM-compatible.
 * To send a transaction, you must have a KintoWallet, and its first signer must hold a Kinto ID. The transaction must be sent to the entry point.
-* Only four contracts can receive direct transactions from EOAs: EntryPoint, SponsorPaymaster, KintoWalletFactory, and Kinto ID.
+* Only five contracts can receive direct transactions from EOAs: EntryPoint, SponsorPaymaster, KintoWalletFactory, Kinto ID and KintoAppRegistry.
 * KintoWallet is fully non-custodial, but there is a way for users to recover their accounts through a week-long recovery process.
 * EOAs can perform calls that don't alter the chain's state without KYC.
-* Users do not need to pay for transactions. Developers will charge users and top the paymaster to cover the applications users send to their contracts.
+* Users do not need to pay for transactions. Developers will charge users and top up the paymaster to cover the applications users send to their contracts.
 * If a user gets added to a sanction list, his NFT will automatically be updated with this information.
 * Kinto core contracts are upgradeable. Upgradeable powers will eventually be handed out to governance.
 

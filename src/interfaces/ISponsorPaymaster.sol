@@ -21,7 +21,7 @@ interface ISponsorPaymaster {
     error DepositTooLow();
     error KintoRateLimitExceeded();
     error AppRateLimitExceeded();
-    error KintoGasAppLimitExceeded();
+    error AppGasLimitExceeded();
 
     /* ============ Structs ============ */
 

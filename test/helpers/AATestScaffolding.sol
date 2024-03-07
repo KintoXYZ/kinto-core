@@ -17,6 +17,7 @@ import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/viewers/KYCViewer.sol";
 import "../../src/Faucet.sol";
+import "../../src/inflators/KintoInflator.sol";
 
 import "../helpers/UUPSProxy.sol";
 import "../helpers/TestSignature.sol";
@@ -48,6 +49,7 @@ abstract contract AATestScaffolding is TestSignature {
     KYCViewer _kycViewer;
     Faucet _faucet;
     BridgerL2 _bridgerL2;
+    KintoInflator _inflator;
 
     /* ============ convenience methods ============ */
 

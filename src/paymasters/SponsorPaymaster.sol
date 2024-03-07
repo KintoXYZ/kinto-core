@@ -14,12 +14,17 @@ import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IKintoID.sol";
 
 /**
- * An ETH-based paymaster that accepts ETH deposits
+ * @notice An ETH-based paymaster that accepts ETH deposits
  * The deposit is only a safeguard: the user pays with his ETH deposited in the entry point if any.
  * The deposit is locked for the current block: the user must issue unlockTokenDeposit() to be allowed to withdraw
  *  (but can't use the deposit for this or further operations)
  *
- * paymasterAndData holds the paymaster address followed by the token address to use.
+ * @dev paymaster defines global, per-app, and per-user limits on operation frequency (rate limit) and accumulated gas costs (gas limit).
+ * - Global rate limit controls the total number of operations within a set period across all users and apps.
+ * - App rate limit restricts the number of operations a user can perform on a specific app within a certain timeframe.
+ * - App gas limit monitors the accumulated gas costs per user per app, preventing exceeding a specified gas threshold.
+ *
+ * `paymasterAndData` holds the paymaster address followed by the token address to use.
  */
 contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, ReentrancyGuard, ISponsorPaymaster {
     using SafeERC20 for IERC20;
@@ -231,22 +236,15 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
-     * @notice performs the post-operation to charge the account contract for the gas.
+     * @notice performs the post-operation to charge the sponsor contract for the gas.
      */
     function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
-        (address account, address walletAccount, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
+        (address sponsor, address kintoWallet, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
             abi.decode(context, (address, address, uint256, uint256));
-
-        // calculate actual gas limits using the owner because a person can have many wallets
-        address userAccount = IKintoWallet(walletAccount).owners(0);
-        // calculate actual gas cost using block.basefee and maxPriorityFeePerGas
-        uint256 actualGasPrice = _min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-        uint256 ethCost = (actualGasCost + COST_OF_POST * actualGasPrice);
-        balances[account] -= ethCost;
-        contractSpent[account] += ethCost;
+        address user = IKintoWallet(kintoWallet).owners(0); // use owner because a person can have many wallets
 
         // update global rate limit
-        ISponsorPaymaster.RateLimitData storage globalTxLimit = globalRateLimit[userAccount];
+        ISponsorPaymaster.RateLimitData storage globalTxLimit = globalRateLimit[user];
         if (block.timestamp > globalTxLimit.lastOperationTime + RATE_LIMIT_PERIOD) {
             globalTxLimit.lastOperationTime = block.timestamp;
             globalTxLimit.operationCount = 1;
@@ -254,10 +252,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             globalTxLimit.operationCount += 1;
         }
 
-        uint256[4] memory appLimits = appRegistry.getContractLimits(account);
+        // app limits
+        uint256[4] memory appLimits = appRegistry.getContractLimits(sponsor);
 
         // update app rate limiting
-        ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[userAccount][account];
+        ISponsorPaymaster.RateLimitData storage appTxLimit = rateLimit[user][sponsor];
         if (block.timestamp > appTxLimit.lastOperationTime + appLimits[0]) {
             appTxLimit.lastOperationTime = block.timestamp;
             appTxLimit.operationCount = 1;
@@ -266,7 +265,15 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         }
 
         // app gas limit
-        ISponsorPaymaster.RateLimitData storage costApp = costLimit[userAccount][account];
+
+        // calculate actual gas cost using block.basefee and maxPriorityFeePerGas
+        uint256 actualGasPrice = _min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+        uint256 ethCost = (actualGasCost + COST_OF_POST * actualGasPrice);
+        balances[sponsor] -= ethCost;
+        contractSpent[sponsor] += ethCost;
+
+        // update app gas limiting
+        ISponsorPaymaster.RateLimitData storage costApp = costLimit[user][sponsor];
         if (block.timestamp > costApp.lastOperationTime + appLimits[2]) {
             costApp.lastOperationTime = block.timestamp;
             costApp.ethCostCount = ethCost;
@@ -275,35 +282,35 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         }
 
         // check limits after updating
-        _checkLimits(userAccount, account, ethCost);
+        _checkLimits(user, sponsor, ethCost);
     }
 
     /* =============== Internal methods ============= */
 
-    function _checkLimits(address sender, address targetAccount, uint256 ethMaxCost) internal view {
+    /**
+     * @notice ensures the operation rate and costs are within the user's limits for a given sponsor (app)
+     */
+    function _checkLimits(address user, address sponsor, uint256 /* ethMaxCost */) internal view {
         // global rate limit check
-        ISponsorPaymaster.RateLimitData memory globalData = globalRateLimit[sender];
-
-        // Kinto rate limit check
+        ISponsorPaymaster.RateLimitData memory limit = globalRateLimit[user];
         if (
-            block.timestamp < globalData.lastOperationTime + RATE_LIMIT_PERIOD
-                && globalData.operationCount > RATE_LIMIT_THRESHOLD_TOTAL
+            block.timestamp < limit.lastOperationTime + RATE_LIMIT_PERIOD
+                && limit.operationCount > RATE_LIMIT_THRESHOLD_TOTAL
         ) revert KintoRateLimitExceeded();
 
         // app rate limit check
-        uint256[4] memory appLimits = appRegistry.getContractLimits(targetAccount);
-        ISponsorPaymaster.RateLimitData memory appData = rateLimit[sender][targetAccount];
+        uint256[4] memory appLimits = appRegistry.getContractLimits(sponsor);
+        limit = rateLimit[user][sponsor];
 
-        if (block.timestamp < appData.lastOperationTime + appLimits[0] && appData.operationCount > appLimits[1]) {
+        if (block.timestamp < limit.lastOperationTime + appLimits[0] && limit.operationCount > appLimits[1]) {
             revert AppRateLimitExceeded();
         }
 
         // app gas limit check
-        ISponsorPaymaster.RateLimitData memory gasData = costLimit[sender][targetAccount];
-        if (
-            block.timestamp < gasData.lastOperationTime + appLimits[2]
-                && (gasData.ethCostCount + ethMaxCost) > appLimits[3]
-        ) revert KintoGasAppLimitExceeded();
+        limit = costLimit[user][sponsor];
+        if (block.timestamp < limit.lastOperationTime + appLimits[2] && limit.ethCostCount > appLimits[3]) {
+            revert AppGasLimitExceeded();
+        }
     }
 
     /**
@@ -332,6 +339,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV8 is SponsorPaymaster {
+contract SponsorPaymasterV9 is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
 }
