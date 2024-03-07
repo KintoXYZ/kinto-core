@@ -52,6 +52,7 @@ contract Bridger is
     /* ============ Constants ============ */
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address public constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address public constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
@@ -164,6 +165,7 @@ contract Bridger is
             _signatureData.inputAsset,
             _signatureData.amount,
             _signatureData.expiresAt,
+            _signatureData.nonce,
             _permitSignature
         );
         _deposit(_signatureData.signer, _signatureData.inputAsset, _signatureData.amount);
@@ -323,9 +325,14 @@ contract Bridger is
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes calldata signature)
-        private
-    {
+    function _permit(
+        address owner,
+        address asset,
+        uint256 amount,
+        uint256 expiresAt,
+        uint256 nonce,
+        bytes calldata signature
+    ) private {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -338,6 +345,12 @@ contract Bridger is
             return;
         }
         v = uint8(signature[64]); // last byte
+
+        if (asset == DAI) {
+            // DAI uses a different permit function
+            IDAI(asset).permit(owner, address(this), nonce, expiresAt, true, v, r, s);
+            return;
+        }
         ERC20Permit(asset).permit(owner, address(this), amount, expiresAt, v, r, s);
     }
 
