@@ -45,7 +45,8 @@ contract Bridger is
         address indexed asset,
         uint256 amount,
         address assetBought,
-        uint256 amountBought
+        uint256 amountBought,
+        uint256 depositCount
     );
 
     /* ============ Constants ============ */
@@ -276,7 +277,7 @@ contract Bridger is
         }
 
         depositCount++;
-        emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
+        emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought, depositCount);
     }
 
     function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
