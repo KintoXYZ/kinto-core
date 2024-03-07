@@ -528,6 +528,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed_2() public {
+        if (!fork) return;
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
