@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../interfaces/IBridger.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -37,6 +38,7 @@ contract Bridger is
 {
     using SignatureChecker for address;
     using ECDSA for bytes32;
+    using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
     event Deposit(
@@ -215,7 +217,7 @@ contract Bridger is
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
-            IERC20(asset).approve(standardGateway, type(uint256).max);
+            IERC20(asset).safeApprove(standardGateway, type(uint256).max);
         }
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
@@ -316,7 +318,7 @@ contract Bridger is
     }
 
     function _stakeAssets(address _asset, uint256 _amount) private returns (uint256) {
-        IERC20(_asset).approve(address(sUSDe), _amount);
+        IERC20(_asset).safeApprove(address(sUSDe), _amount);
         return IsUSDe(sUSDe).deposit(_amount, address(this));
     }
 
@@ -369,7 +371,7 @@ contract Bridger is
             amount == 0 || IERC20(asset).allowance(sender, address(this)) < amount
                 || IERC20(asset).balanceOf(sender) < amount
         ) revert InvalidAmount();
-        IERC20(asset).transferFrom(sender, address(this), amount);
+        IERC20(asset).safeTransferFrom(sender, address(this), amount);
         deposits[sender][asset] += amount;
     }
 
@@ -400,7 +402,7 @@ contract Bridger is
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Give `spender` an allowance to spend this tx's `sellToken`.
-        if (!sellToken.approve(spender, amount)) revert ApprovalFailed();
+        sellToken.safeApprove(spender, amount);
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: gasFee}(swapCallData);

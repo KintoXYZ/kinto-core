@@ -50,7 +50,6 @@ interface IBridger {
     error SwapsDisabled();
     error NotEnoughEthToBridge();
     error GasFeeTooHigh();
-    error ApprovalFailed();
     error SwapCallFailed();
     error SlippageError();
     error OnlyExchangeProxy();
