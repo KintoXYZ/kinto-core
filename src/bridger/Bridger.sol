@@ -330,6 +330,10 @@ contract Bridger is
             r := mload(add(signature, 0x20))
             s := mload(add(signature, 0x40))
         }
+        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
+            // If allowance is already set, we don't need to call permit
+            return;
+        }
         v = uint8(signature[64]); // last byte
         ERC20Permit(asset).permit(owner, address(this), amount, expiresAt, v, r, s);
     }
