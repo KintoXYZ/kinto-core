@@ -153,7 +153,7 @@ contract Bridger is
         IBridger.SignatureData calldata _signatureData,
         IBridger.SwapData calldata _swapData,
         bytes calldata _permitSignature
-    ) external payable override whenNotPaused onlySignerVerified(_signatureData) onlyPrivileged {
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(_signatureData) {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
@@ -161,6 +161,8 @@ contract Bridger is
                 revert InvalidAsset();
             }
         }
+
+        nonces[_signatureData.signer]++;
         _permit(
             _signatureData.signer,
             _signatureData.inputAsset,
@@ -178,7 +180,6 @@ contract Bridger is
             _signatureData.finalAsset,
             _swapData
         );
-        nonces[_signatureData.signer]++;
     }
 
     /**
