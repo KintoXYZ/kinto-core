@@ -149,9 +149,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
-        kintoIDImpl = _deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true);
+        kintoIDImpl = KintoID(_deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        kintoID.upgradeTo(kintoIDImpl);
+        kintoID.upgradeTo(address(kintoIDImpl));
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
