@@ -209,8 +209,9 @@ contract Bridger is
         // Approve the gateway to get the tokens
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
-        IERC20(asset).approve(standardGateway, type(uint256).max);
-
+        if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
+            IERC20(asset).approve(standardGateway, type(uint256).max);
+        }
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer{value: gasCost}(
@@ -322,7 +323,7 @@ contract Bridger is
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
+    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes calldata signature) private {
         // (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
         bytes32 r;
         bytes32 s;
@@ -430,7 +431,7 @@ contract Bridger is
         );
     }
 
-    function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
+    function _hashSignatureData(SignatureData calldata signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256(
