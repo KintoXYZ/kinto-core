@@ -55,7 +55,10 @@ contract KintoAppRegistryTest is SharedSetup {
 
     /* ============ App tests & Viewers ============ */
 
-    function testRegisterApp(string memory name, address parentContract) public {
+    function testRegisterApp() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
@@ -110,7 +113,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.name, name);
     }
 
-    function testRegisterApp_RevertWhen_ChildrenIsWallet(string memory name, address parentContract) public {
+    function testRegisterApp_RevertWhen_ChildrenIsWallet() public {
         approveKYC(_kycProvider, _user, _userPk);
 
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
@@ -120,7 +123,7 @@ contract KintoAppRegistryTest is SharedSetup {
         // register app
         vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
         vm.prank(_user);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits);
     }
 
     function testRegisterApp_RevertWhen_AlreadyRegistered() public {
@@ -158,7 +161,9 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
-    function testRegisterApp_RevertWhen_CallerIsNotKYCd(string memory name, address parentContract) public {
+    function testRegisterApp_RevertWhen_CallerIsNotKYCd() public {
+        string memory name = "app";
+        address parentContract = address(123);
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](0);
 
@@ -168,7 +173,10 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
-    function testUpdateMetadata(string memory name, address parentContract) public {
+    function testUpdateMetadata() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
