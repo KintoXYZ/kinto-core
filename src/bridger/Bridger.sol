@@ -411,9 +411,6 @@ contract Bridger is
         if (block.timestamp > _signature.expiresAt) revert SignatureExpired();
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
-        // Ensure signer is an EOA
-        if (_signature.signer.code.length > 0) revert SignerNotEOA();
-
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
         if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
         _;
