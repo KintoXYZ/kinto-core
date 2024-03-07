@@ -323,6 +323,7 @@ contract Bridger is
      * @param asset address of the token
      * @param amount amount of tokens
      * @param expiresAt deadline for the signature
+     * @param nonce (only for DAI permit), nonce of the last permit transaction of a user’s wallet
      * @param signature signature to be recovered
      */
     function _permit(
@@ -347,7 +348,7 @@ contract Bridger is
         v = uint8(signature[64]); // last byte
 
         if (asset == DAI) {
-            // DAI uses a different permit function
+            // DAI uses a different permit function, only infinite allowance is supported
             IDAI(asset).permit(owner, address(this), nonce, expiresAt, true, v, r, s);
             return;
         }
