@@ -473,7 +473,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
 
         address swapTarget = address(0x123);
-        uint256 gasFee;
         IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, "0x", 0, 0); // spender, swapTarget, swapCallData, gasFee
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
@@ -489,7 +488,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
         vm.expectRevert(IBridger.OnlyExchangeProxy.selector);
         vm.prank(_owner);
-        bridger.depositBySig{value: gasFee}(sigdata, permitSignature);
+        bridger.depositBySig{value: 0}(sigdata, permitSignature);
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
