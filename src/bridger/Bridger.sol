@@ -23,8 +23,8 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
  * sDAI, sUSDe, wstETH, weETH.
  * Swaps are initially disabled but will be performed using 0x API.
  * Input assets are only assets that support ERC20 permit + ETH.
- * ETH when swaps are disabled is just switched to wstETH.
- * ETH when swaps are enabled is wrapped first to WETH and then swapped to desire asset.
+ * If depositing ETH and final asset is wstETH, it is just converted to wstETH (no swap is done).
+ * If depositing ETH and final asset is other than wstETH, ETH is first wrapped to WETH and then swapped to desired asset.
  * If USDe is provided, it is directly staked.
  */
 contract Bridger is
@@ -153,7 +153,6 @@ contract Bridger is
         bytes calldata _permitSignature
     ) external payable override whenNotPaused onlySignerVerified(_signatureData) onlyPrivileged {
         _isFinalAssetAllowed(_signatureData.finalAsset);
-        // Only allows assets for now which do not require swap.
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
             if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
