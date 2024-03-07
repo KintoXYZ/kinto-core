@@ -103,7 +103,7 @@ abstract contract TestSignature is Test {
         } else {
             domainSeparator = _asset.DOMAIN_SEPARATOR();
         }
-        bytes32 eip712Hash = _getPermitMessage(_permit, domainSeparator);
+        bytes32 eip712Hash = _getPermitMessage(vm.addr(_privateKey), _asset, _permit, domainSeparator);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
         signature = abi.encodePacked(r, s, v);
     }
@@ -119,16 +119,29 @@ abstract contract TestSignature is Test {
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
 
-    function _getPermitMessage(IBridger.Permit memory permit, bytes32 domainSeparator)
-        internal
-        pure
-        returns (bytes32)
-    {
-        bytes32 PERMIT_TYPEHASH =
-            keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-        bytes32 structHash = keccak256(
-            abi.encode(PERMIT_TYPEHASH, permit.owner, permit.spender, permit.value, permit.nonce, permit.deadline)
-        );
+    function _getPermitMessage(
+        address holder,
+        ERC20Permit _asset,
+        IBridger.Permit memory permit,
+        bytes32 domainSeparator
+    ) internal view returns (bytes32) {
+        bytes32 PERMIT_TYPEHASH;
+        bytes32 structHash;
+        if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("DAI"))) {
+            console.log("RERERE");
+            PERMIT_TYPEHASH =
+                keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
+            console.logBytes32(PERMIT_TYPEHASH);
+            structHash =
+                keccak256(abi.encode(PERMIT_TYPEHASH, holder, permit.spender, permit.nonce, permit.deadline, true));
+        } else {
+            PERMIT_TYPEHASH =
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+            structHash = keccak256(
+                abi.encode(PERMIT_TYPEHASH, permit.owner, permit.spender, permit.value, permit.nonce, permit.deadline)
+            );
+        }
+
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
 
