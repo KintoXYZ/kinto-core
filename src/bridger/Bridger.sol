@@ -323,14 +323,15 @@ contract Bridger is
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes calldata signature) private {
-        // (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
+    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes calldata signature)
+        private
+    {
         bytes32 r;
         bytes32 s;
         uint8 v;
         assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
+            r := calldataload(add(signature.offset, 0x00))
+            s := calldataload(add(signature.offset, 0x20))
         }
         if (IERC20(asset).allowance(owner, address(this)) >= amount) {
             // If allowance is already set, we don't need to call permit
