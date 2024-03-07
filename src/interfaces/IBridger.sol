@@ -53,6 +53,7 @@ interface IBridger {
     error ApprovalFailed();
     error SwapCallFailed();
     error SlippageError();
+    error OnlyExchangeProxy();
 
     /* ============ Structs ============ */
 
@@ -124,4 +125,6 @@ interface IBridger {
     function l2Vault() external view returns (address);
 
     function senderAccount() external view returns (address);
+
+    function exchangeProxy() external view returns (address);
 }

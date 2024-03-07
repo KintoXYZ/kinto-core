@@ -65,6 +65,7 @@ contract Bridger is
     /* ============ State Variables ============ */
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
+    address public immutable exchangeProxy;
     address public override senderAccount;
 
     /// @dev Mapping of input assets that are allowed
@@ -90,6 +91,7 @@ contract Bridger is
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
         l2Vault = _l2Vault;
+        exchangeProxy = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     }
 
     /**
@@ -389,7 +391,7 @@ contract Bridger is
         uint256 minReceive
     ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
-        // require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
+        if (swapTarget != exchangeProxy) revert OnlyExchangeProxy();
         if (gasFee >= 0.05 ether) revert GasFeeTooHigh();
 
         // Track our balance of the buyToken to determine how much we've bought.

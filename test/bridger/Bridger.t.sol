@@ -390,6 +390,51 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.stopPrank();
     }
 
+    function testDepositBySig_WhenSwap_WhenInvalidExchangeProxy() public {
+        if (!fork) return;
+
+        // enable swaps
+        vm.prank(_owner);
+        bridger.setSwapsEnabled(true);
+
+        // whitelist UNI as inputAsset
+        address[] memory assets = new address[](1);
+        assets[0] = UNI;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
+
+        // top-up _user UNI balance
+        address assetToDeposit = UNI;
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+
+        // create a permit signature to allow the bridger to transfer the user's UNI
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            bridger, _user, assetToDeposit, amountToDeposit, bridger.wstETH(), _userPk, block.timestamp + 1000
+        );
+        address swapTarget = address(0x123);
+        uint256 gasFee;
+        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, "0x", 0, 0); // spender, swapTarget, swapCallData, gasFee
+
+        vm.expectRevert(IBridger.OnlyExchangeProxy.selector);
+        vm.prank(_owner);
+        bridger.depositBySig{value: gasFee}(kintoWalletL2, sigdata, swapData, permitSignature);
+    }
+
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
         if (!fork) return;
         address assetToDeposit = DAI;
