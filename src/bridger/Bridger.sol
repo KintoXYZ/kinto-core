@@ -157,7 +157,7 @@ contract Bridger is
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
-            if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
+            if (_signatureData.inputAsset != USDe || _signatureData.finalAsset != sUSDe) {
                 revert InvalidAsset();
             }
         }
