@@ -625,10 +625,9 @@ contract BridgerTest is TestSignature, SharedSetup {
             _userPk,
             ERC20Permit(assetToDeposit)
         );
-        vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidAmount.selector);
+        vm.prank(_owner);
         bridger.depositBySig(sigdata, permitSignature);
-        vm.stopPrank();
     }
 
     /* ============ Bridger ETH Deposit ============ */
