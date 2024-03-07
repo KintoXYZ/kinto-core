@@ -96,7 +96,17 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         log = false;
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet, bridgerL2, inflator
+            entryPoint,
+            paymaster,
+            kintoID,
+            wallet,
+            factory,
+            kintoRegistry,
+            viewer,
+            engenCredits,
+            faucet,
+            bridgerL2,
+            inflator
         );
     }
 
