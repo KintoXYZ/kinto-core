@@ -45,7 +45,8 @@ contract Bridger is
         address indexed asset,
         uint256 amount,
         address assetBought,
-        uint256 amountBought
+        uint256 amountBought,
+        uint256 depositCount
     );
 
     /* ============ Constants ============ */
@@ -208,8 +209,9 @@ contract Bridger is
         // Approve the gateway to get the tokens
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
-        IERC20(asset).approve(standardGateway, type(uint256).max);
-
+        if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
+            IERC20(asset).approve(standardGateway, type(uint256).max);
+        }
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
         L1GatewayRouter.outboundTransfer{value: gasCost}(
@@ -276,7 +278,7 @@ contract Bridger is
         }
 
         depositCount++;
-        emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought);
+        emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought, depositCount);
     }
 
     function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
@@ -321,14 +323,19 @@ contract Bridger is
      * @param expiresAt deadline for the signature
      * @param signature signature to be recovered
      */
-    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes memory signature) private {
-        // (uint8 v, bytes32 r, bytes32 s) = abi.decode(signature, (uint8, bytes32, bytes32));
+    function _permit(address owner, address asset, uint256 amount, uint256 expiresAt, bytes calldata signature)
+        private
+    {
         bytes32 r;
         bytes32 s;
         uint8 v;
         assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
+            r := calldataload(add(signature.offset, 0x00))
+            s := calldataload(add(signature.offset, 0x20))
+        }
+        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
+            // If allowance is already set, we don't need to call permit
+            return;
         }
         v = uint8(signature[64]); // last byte
         ERC20Permit(asset).permit(owner, address(this), amount, expiresAt, v, r, s);
@@ -403,11 +410,8 @@ contract Bridger is
      * @param _signature signature to be recovered.
      */
     modifier onlySignerVerified(IBridger.SignatureData calldata _signature) {
-        if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
+        if (block.timestamp > _signature.expiresAt) revert SignatureExpired();
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
-
-        // Ensure signer is an EOA
-        if (_signature.signer.code.length > 0) revert SignerNotEOA();
 
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
         if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
@@ -428,7 +432,7 @@ contract Bridger is
         );
     }
 
-    function _hashSignatureData(SignatureData memory signatureData) internal pure returns (bytes32) {
+    function _hashSignatureData(SignatureData calldata signatureData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256(

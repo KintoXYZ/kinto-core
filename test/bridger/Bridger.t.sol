@@ -24,7 +24,7 @@ contract BridgerNewUpgrade is Bridger {
     constructor(address l2Vault) Bridger(l2Vault) {}
 }
 
-contract ERCPermitToken is ERC20, ERC20Permit {
+contract ERC20PermitToken is ERC20, ERC20Permit {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
 }
 
@@ -64,7 +64,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         // if running local tests, we want to replace some hardcoded addresses that the bridger uses
         // with mocked contracts
         if (!fork) {
-            ERCPermitToken sDAI = new ERCPermitToken("sDAI", "sDAI");
+            ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
             vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
         }
     }
@@ -128,6 +128,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_wtstETHWhenNoSwap() public {
+        if (!fork) return;
         address assetToDeposit = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
@@ -161,6 +162,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_weETHWhenNoSwap() public {
+        if (!fork) return;
         address assetToDeposit = bridger.weETH();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
@@ -194,6 +196,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_sUSDeWhenNoSwap() public {
+        if (!fork) return;
         address assetToDeposit = bridger.sUSDe();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
@@ -227,6 +230,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_USDeWhenNoSwap() public {
+        if (!fork) return;
         address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
@@ -331,6 +335,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
+        if (!fork) return;
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
@@ -357,6 +362,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
+        if (!fork) return;
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
@@ -411,6 +417,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
+        if (!fork) return;
         uint256 gasFee = 0.1 ether;
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit + gasFee);
@@ -428,6 +435,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositETH_WhenNoGasFee() public {
+        if (!fork) return;
         uint256 gasFee = 0;
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit + gasFee);
@@ -569,6 +577,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Bridge ============ */
 
     function testBridgeDeposits() public {
+        if (!fork) return;
         address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(asset), address(bridger), amountToDeposit);

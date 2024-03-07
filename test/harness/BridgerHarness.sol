@@ -10,7 +10,7 @@ contract BridgerHarness is Bridger {
         return _domainSeparatorV4();
     }
 
-    function hashSignatureData(SignatureData memory signatureData) external pure returns (bytes32) {
+    function hashSignatureData(SignatureData calldata signatureData) external pure returns (bytes32) {
         return _hashSignatureData(signatureData);
     }
 }

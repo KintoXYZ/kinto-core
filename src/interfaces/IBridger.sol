@@ -28,7 +28,6 @@ interface IBridger {
     /* ============ Errors ============ */
     error OnlySender();
     error OnlyOwner();
-    error SignerNotEOA();
     error SignatureExpired();
     error InvalidNonce();
     error InvalidSigner();

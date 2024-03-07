@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 interface IBridgerL2 {
     /* ============ Errors ============ */
-    error OnlyOwner();
     error InvalidWallet();
     error NotUnlockedYet();
 
