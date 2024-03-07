@@ -49,7 +49,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
-        vm.expectRevert(IBridgerL2.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.upgradeToAndCall(address(_newImpl), bytes(""));
     }
 
@@ -80,7 +80,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     function testWriteL2Deposit_RevertWhen_CallerIsNotOwner() public {
         address _asset = address(_token);
         uint256 _amount = 100;
-        vm.expectRevert(IBridgerL2.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
     }
 
@@ -93,7 +93,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     }
 
     function testUnlockCommitments_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(IBridgerL2.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.unlockCommitments();
     }
 
@@ -113,7 +113,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         address[] memory _assets = new address[](2);
         _assets[0] = address(0x45);
         _assets[1] = address(0x46);
-        vm.expectRevert(IBridgerL2.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.setDepositedAssets(_assets);
     }
 
