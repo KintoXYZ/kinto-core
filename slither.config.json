@@ -3,5 +3,5 @@
     "exclude_low": false,
     "exclude_medium": false,
     "exclude_high": false,
-    "filter_paths": "^(?!src/)"
+    "filter_paths": "^src/"
 }
