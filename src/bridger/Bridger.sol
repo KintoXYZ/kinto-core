@@ -276,7 +276,7 @@ contract Bridger is
             }
 
             if (_finalAsset == sUSDe) {
-                _stakeAssets(USDe, amountBought);
+                amountBought = _stakeAssets(USDe, amountBought);
             }
         }
 
@@ -313,9 +313,9 @@ contract Bridger is
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
     }
 
-    function _stakeAssets(address _asset, uint256 _amount) private {
+    function _stakeAssets(address _asset, uint256 _amount) private returns (uint256) {
         IERC20(_asset).approve(address(sUSDe), _amount);
-        IsUSDe(sUSDe).deposit(_amount, address(this));
+        return IsUSDe(sUSDe).deposit(_amount, address(this));
     }
 
     /**

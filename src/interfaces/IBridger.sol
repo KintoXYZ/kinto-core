@@ -23,7 +23,7 @@ interface IDAI {
 }
 
 interface IsUSDe is IERC20 {
-    function deposit(uint256 amount, address recipient) external;
+    function deposit(uint256 amount, address recipient) external returns (uint256);
 }
 
 interface IL1GatewayRouter {

@@ -15,6 +15,7 @@ import "../SharedSetup.t.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract BridgerNewUpgrade is Bridger {
     function newFunction() external pure returns (uint256) {
@@ -260,7 +261,9 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)) > 0, true);
+
+        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(amountToDeposit);
+        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares);
     }
 
     function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
