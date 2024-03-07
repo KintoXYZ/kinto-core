@@ -407,7 +407,7 @@ contract Bridger is
      * @param _signature signature to be recovered.
      */
     modifier onlySignerVerified(IBridger.SignatureData calldata _signature) {
-        if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
+        if (block.timestamp > _signature.expiresAt) revert SignatureExpired();
         if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
         // Ensure signer is an EOA
