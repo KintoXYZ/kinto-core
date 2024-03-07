@@ -44,6 +44,8 @@ abstract contract TestSignature is Test {
 
     // Create a aux function to create an EIP-191 compliant signature for claiming Kinto ETH from the faucet
     function _auxCreateBridgeSignature(
+        address kintoWalletL2,
+        IBridger.SwapData memory _swapData,
         IBridger _bridger,
         address _signer,
         address _inputAsset,
@@ -53,13 +55,15 @@ abstract contract TestSignature is Test {
         uint256 _expiresAt
     ) internal view returns (IBridger.SignatureData memory signData) {
         signData = IBridger.SignatureData({
+            kintoWallet: kintoWalletL2,
             signer: _signer,
             inputAsset: _inputAsset,
-            amount: _amount,
             finalAsset: _finalAsset,
+            amount: _amount,
             nonce: _bridger.nonces(_signer),
             expiresAt: _expiresAt,
-            signature: ""
+            signature: "",
+            swapData: _swapData
         });
 
         // generate EIP-712 hash

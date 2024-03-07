@@ -143,17 +143,18 @@ contract Bridger is
 
     /**
      * @dev Deposit the specified amount of tokens in to the Kinto L2
-     * @param _kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
      * @param _signatureData Struct with all the required information to deposit via signature
-     * @param _swapData Struct with all the required information to swap the tokens
      * @param _permitSignature Signature to be recovered to allow the spender to spend the tokens
      */
-    function depositBySig(
-        address _kintoWallet,
-        IBridger.SignatureData calldata _signatureData,
-        IBridger.SwapData calldata _swapData,
-        bytes calldata _permitSignature
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(_signatureData) {
+    function depositBySig(IBridger.SignatureData calldata _signatureData, bytes calldata _permitSignature)
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+        onlyPrivileged
+        onlySignerVerified(_signatureData)
+    {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
@@ -174,11 +175,11 @@ contract Bridger is
         _deposit(_signatureData.signer, _signatureData.inputAsset, _signatureData.amount);
         _swap(
             _signatureData.signer,
-            _kintoWallet,
+            _signatureData.kintoWallet,
             _signatureData.inputAsset,
             _signatureData.amount,
             _signatureData.finalAsset,
-            _swapData
+            _signatureData.swapData
         );
     }
 

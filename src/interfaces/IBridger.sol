@@ -58,13 +58,15 @@ interface IBridger {
     /* ============ Structs ============ */
 
     struct SignatureData {
+        address kintoWallet; // Kinto Wallet Address on L2 where tokens will be deposited
         address signer;
         address inputAsset;
-        uint256 amount;
         address finalAsset;
+        uint256 amount;
         uint256 nonce;
         uint256 expiresAt;
         bytes signature;
+        SwapData swapData; // Struct with all the required information to swap the tokens
     }
 
     struct SwapData {
@@ -87,12 +89,7 @@ interface IBridger {
 
     function depositETH(address _kintoWallet, address _finalAsset, SwapData calldata _swapData) external payable;
 
-    function depositBySig(
-        address _kintoWallet,
-        SignatureData calldata _signatureData,
-        SwapData calldata _swapData,
-        bytes calldata _permitSignature
-    ) external payable;
+    function depositBySig(SignatureData calldata _signatureData, bytes calldata _permitSignature) external payable;
 
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
         external
