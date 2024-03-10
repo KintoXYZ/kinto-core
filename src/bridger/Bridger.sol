@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../interfaces/IBridger.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -23,8 +24,8 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
  * sDAI, sUSDe, wstETH, weETH.
  * Swaps are initially disabled but will be performed using 0x API.
  * Input assets are only assets that support ERC20 permit + ETH.
- * ETH when swaps are disabled is just switched to wstETH.
- * ETH when swaps are enabled is wrapped first to WETH and then swapped to desire asset.
+ * If depositing ETH and final asset is wstETH, it is just converted to wstETH (no swap is done).
+ * If depositing ETH and final asset is other than wstETH, ETH is first wrapped to WETH and then swapped to desired asset.
  * If USDe is provided, it is directly staked.
  */
 contract Bridger is
@@ -37,6 +38,7 @@ contract Bridger is
 {
     using SignatureChecker for address;
     using ECDSA for bytes32;
+    using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
     event Deposit(
@@ -65,6 +67,7 @@ contract Bridger is
     /* ============ State Variables ============ */
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
+    address public immutable exchangeProxy;
     address public override senderAccount;
 
     /// @dev Mapping of input assets that are allowed
@@ -90,6 +93,7 @@ contract Bridger is
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
         l2Vault = _l2Vault;
+        exchangeProxy = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     }
 
     /**
@@ -141,25 +145,23 @@ contract Bridger is
 
     /**
      * @dev Deposit the specified amount of tokens in to the Kinto L2
-     * @param _kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
      * @param _signatureData Struct with all the required information to deposit via signature
-     * @param _swapData Struct with all the required information to swap the tokens
      * @param _permitSignature Signature to be recovered to allow the spender to spend the tokens
      */
     function depositBySig(
-        address _kintoWallet,
+        bytes calldata _permitSignature,
         IBridger.SignatureData calldata _signatureData,
-        IBridger.SwapData calldata _swapData,
-        bytes calldata _permitSignature
-    ) external payable override whenNotPaused onlySignerVerified(_signatureData) onlyPrivileged {
+        IBridger.SwapData calldata _swapData
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(_signatureData) {
         _isFinalAssetAllowed(_signatureData.finalAsset);
-        // Only allows assets for now which do not require swap.
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
-            if (_signatureData.inputAsset != USDe && _signatureData.finalAsset != sUSDe) {
+            if (_signatureData.inputAsset != USDe || _signatureData.finalAsset != sUSDe) {
                 revert InvalidAsset();
             }
         }
+
+        nonces[_signatureData.signer]++;
         _permit(
             _signatureData.signer,
             _signatureData.inputAsset,
@@ -171,13 +173,13 @@ contract Bridger is
         _deposit(_signatureData.signer, _signatureData.inputAsset, _signatureData.amount);
         _swap(
             _signatureData.signer,
-            _kintoWallet,
+            _signatureData.kintoWallet,
             _signatureData.inputAsset,
-            _signatureData.amount,
             _signatureData.finalAsset,
+            _signatureData.amount,
+            _signatureData.minReceive,
             _swapData
         );
-        nonces[_signatureData.signer]++;
     }
 
     /**
@@ -186,17 +188,16 @@ contract Bridger is
      * @param _finalAsset Asset to depositInto
      * @param _swapData Struct with all the required information to swap the tokens
      */
-    function depositETH(address _kintoWallet, address _finalAsset, IBridger.SwapData calldata _swapData)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-    {
+    function depositETH(
+        address _kintoWallet,
+        address _finalAsset,
+        uint256 _minReceive,
+        IBridger.SwapData calldata _swapData
+    ) external payable override whenNotPaused nonReentrant {
         _isFinalAssetAllowed(_finalAsset);
         if (msg.value < 0.1 ether) revert InvalidAmount();
         deposits[msg.sender][ETH] += msg.value - _swapData.gasFee;
-        _swap(msg.sender, _kintoWallet, ETH, msg.value, _finalAsset, _swapData);
+        _swap(msg.sender, _kintoWallet, ETH, _finalAsset, msg.value, _minReceive, _swapData);
     }
 
     /**
@@ -212,7 +213,7 @@ contract Bridger is
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
-            IERC20(asset).approve(standardGateway, type(uint256).max);
+            IERC20(asset).safeApprove(standardGateway, type(uint256).max);
         }
         // Bridge to Kinto L2 using standard bridge
         // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
@@ -257,8 +258,9 @@ contract Bridger is
         address _sender,
         address _kintoWallet,
         address _inputAsset,
-        uint256 _amount,
         address _finalAsset,
+        uint256 _amount,
+        uint256 _minReceive,
         SwapData calldata _swapData
     ) private {
         uint256 amountBought = _amount;
@@ -271,11 +273,11 @@ contract Bridger is
                     WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
-                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _swapData);
+                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _minReceive, _swapData);
             }
 
             if (_finalAsset == sUSDe) {
-                _stakeAssets(USDe, amountBought);
+                amountBought = _stakeAssets(USDe, amountBought);
             }
         }
 
@@ -283,10 +285,13 @@ contract Bridger is
         emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought, depositCount);
     }
 
-    function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
-        private
-        returns (uint256 amountBought)
-    {
+    function _executeSwap(
+        address _inputAsset,
+        address _finalAsset,
+        uint256 _amount,
+        uint256 _minReceive,
+        SwapData calldata _swapData
+    ) private returns (uint256 amountBought) {
         amountBought = _amount;
         if (_finalAsset == sUSDe) _finalAsset = USDe; // if sUSDE, swap to USDe & then stake
         if (_finalAsset != _inputAsset) {
@@ -299,7 +304,7 @@ contract Bridger is
                 payable(_swapData.spender),
                 payable(_swapData.swapTarget),
                 _swapData.swapCallData,
-                _swapData.minReceive
+                _minReceive
             );
         }
     }
@@ -312,9 +317,9 @@ contract Bridger is
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
     }
 
-    function _stakeAssets(address _asset, uint256 _amount) private {
-        IERC20(_asset).approve(address(sUSDe), _amount);
-        IsUSDe(sUSDe).deposit(_amount, address(this));
+    function _stakeAssets(address _asset, uint256 _amount) private returns (uint256) {
+        IERC20(_asset).safeApprove(address(sUSDe), _amount);
+        return IsUSDe(sUSDe).deposit(_amount, address(this));
     }
 
     /**
@@ -366,7 +371,7 @@ contract Bridger is
             amount == 0 || IERC20(asset).allowance(sender, address(this)) < amount
                 || IERC20(asset).balanceOf(sender) < amount
         ) revert InvalidAmount();
-        IERC20(asset).transferFrom(sender, address(this), amount);
+        IERC20(asset).safeTransferFrom(sender, address(this), amount);
         deposits[sender][asset] += amount;
     }
 
@@ -390,14 +395,14 @@ contract Bridger is
         uint256 minReceive
     ) private returns (uint256) {
         // Checks that the swapTarget is actually the address of 0x ExchangeProxy
-        // require(swapTarget == exchangeProxy, "Target not ExchangeProxy");
+        if (swapTarget != exchangeProxy) revert OnlyExchangeProxy();
         if (gasFee >= 0.05 ether) revert GasFeeTooHigh();
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Give `spender` an allowance to spend this tx's `sellToken`.
-        if (!sellToken.approve(spender, amount)) revert ApprovalFailed();
+        sellToken.safeApprove(spender, amount);
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
         (bool success,) = swapTarget.call{value: gasFee}(swapCallData);

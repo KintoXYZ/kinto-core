@@ -40,6 +40,7 @@ const getQuote = async (sellTokenAddr, buyTokenAddr, sellAmount) => {
   const quote = await response.json();
   console.info(`  * Received a quote with price ${quote.price}`);
   console.info(`  * Received a quote buy amount of: ${quote.buyAmount}`);
+  console.info(`  * Received a quote guaranteed amount of: ${BigInt(quote.guaranteedPrice * quote.sellAmount).toString()}`);
   return quote;
 };
 

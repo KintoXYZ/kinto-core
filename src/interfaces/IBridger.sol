@@ -23,7 +23,7 @@ interface IDAI {
 }
 
 interface IsUSDe is IERC20 {
-    function deposit(uint256 amount, address recipient) external;
+    function deposit(uint256 amount, address recipient) external returns (uint256);
 }
 
 interface IL1GatewayRouter {
@@ -50,17 +50,19 @@ interface IBridger {
     error SwapsDisabled();
     error NotEnoughEthToBridge();
     error GasFeeTooHigh();
-    error ApprovalFailed();
     error SwapCallFailed();
     error SlippageError();
+    error OnlyExchangeProxy();
 
     /* ============ Structs ============ */
 
     struct SignatureData {
+        address kintoWallet; // Kinto Wallet Address on L2 where tokens will be deposited
         address signer;
         address inputAsset;
-        uint256 amount;
         address finalAsset;
+        uint256 amount;
+        uint256 minReceive; // Minimum amount of finalAsset to receive
         uint256 nonce;
         uint256 expiresAt;
         bytes signature;
@@ -71,7 +73,6 @@ interface IBridger {
         address swapTarget;
         bytes swapCallData;
         uint256 gasFee;
-        uint256 minReceive;
     }
 
     struct Permit {
@@ -84,13 +85,14 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(address _kintoWallet, address _finalAsset, SwapData calldata _swapData) external payable;
+    function depositETH(address _kintoWallet, address _finalAsset, uint256 _minReceive, SwapData calldata _swapData)
+        external
+        payable;
 
     function depositBySig(
-        address _kintoWallet,
-        SignatureData calldata _signatureData,
-        SwapData calldata _swapData,
-        bytes calldata _permitSignature
+        bytes calldata _permitSignature,
+        IBridger.SignatureData calldata _signatureData,
+        IBridger.SwapData calldata _swapData
     ) external payable;
 
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
@@ -124,4 +126,6 @@ interface IBridger {
     function l2Vault() external view returns (address);
 
     function senderAccount() external view returns (address);
+
+    function exchangeProxy() external view returns (address);
 }
