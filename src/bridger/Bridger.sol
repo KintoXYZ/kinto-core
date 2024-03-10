@@ -148,15 +148,11 @@ contract Bridger is
      * @param _signatureData Struct with all the required information to deposit via signature
      * @param _permitSignature Signature to be recovered to allow the spender to spend the tokens
      */
-    function depositBySig(IBridger.SignatureData calldata _signatureData, bytes calldata _permitSignature)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(_signatureData)
-    {
+    function depositBySig(
+        bytes calldata _permitSignature,
+        IBridger.SignatureData calldata _signatureData,
+        IBridger.SwapData calldata _swapData
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(_signatureData) {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
@@ -179,9 +175,10 @@ contract Bridger is
             _signatureData.signer,
             _signatureData.kintoWallet,
             _signatureData.inputAsset,
-            _signatureData.amount,
             _signatureData.finalAsset,
-            _signatureData.swapData
+            _signatureData.amount,
+            _signatureData.minReceive,
+            _swapData
         );
     }
 
@@ -191,17 +188,16 @@ contract Bridger is
      * @param _finalAsset Asset to depositInto
      * @param _swapData Struct with all the required information to swap the tokens
      */
-    function depositETH(address _kintoWallet, address _finalAsset, IBridger.SwapData calldata _swapData)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-    {
+    function depositETH(
+        address _kintoWallet,
+        address _finalAsset,
+        uint256 _minReceive,
+        IBridger.SwapData calldata _swapData
+    ) external payable override whenNotPaused nonReentrant {
         _isFinalAssetAllowed(_finalAsset);
         if (msg.value < 0.1 ether) revert InvalidAmount();
         deposits[msg.sender][ETH] += msg.value - _swapData.gasFee;
-        _swap(msg.sender, _kintoWallet, ETH, msg.value, _finalAsset, _swapData);
+        _swap(msg.sender, _kintoWallet, ETH, _finalAsset, msg.value, _minReceive, _swapData);
     }
 
     /**
@@ -262,8 +258,9 @@ contract Bridger is
         address _sender,
         address _kintoWallet,
         address _inputAsset,
-        uint256 _amount,
         address _finalAsset,
+        uint256 _amount,
+        uint256 _minReceive,
         SwapData calldata _swapData
     ) private {
         uint256 amountBought = _amount;
@@ -276,7 +273,7 @@ contract Bridger is
                     WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
-                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _swapData);
+                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _minReceive, _swapData);
             }
 
             if (_finalAsset == sUSDe) {
@@ -288,10 +285,13 @@ contract Bridger is
         emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought, depositCount);
     }
 
-    function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
-        private
-        returns (uint256 amountBought)
-    {
+    function _executeSwap(
+        address _inputAsset,
+        address _finalAsset,
+        uint256 _amount,
+        uint256 _minReceive,
+        SwapData calldata _swapData
+    ) private returns (uint256 amountBought) {
         amountBought = _amount;
         if (_finalAsset == sUSDe) _finalAsset = USDe; // if sUSDE, swap to USDe & then stake
         if (_finalAsset != _inputAsset) {
@@ -304,7 +304,7 @@ contract Bridger is
                 payable(_swapData.spender),
                 payable(_swapData.swapTarget),
                 _swapData.swapCallData,
-                _swapData.minReceive
+                _minReceive
             );
         }
     }
