@@ -148,15 +148,11 @@ contract Bridger is
      * @param _signatureData Struct with all the required information to deposit via signature
      * @param _permitSignature Signature to be recovered to allow the spender to spend the tokens
      */
-    function depositBySig(IBridger.SignatureData calldata _signatureData, bytes calldata _permitSignature)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(_signatureData)
-    {
+    function depositBySig(
+        bytes calldata _permitSignature,
+        IBridger.SignatureData calldata _signatureData,
+        bytes calldata _swapCallData
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(_signatureData) {
         _isFinalAssetAllowed(_signatureData.finalAsset);
         if (_signatureData.inputAsset != _signatureData.finalAsset && !allowedAssets[_signatureData.inputAsset]) {
             // checks for USDe special case
@@ -181,7 +177,8 @@ contract Bridger is
             _signatureData.inputAsset,
             _signatureData.amount,
             _signatureData.finalAsset,
-            _signatureData.swapData
+            _signatureData.swapParams,
+            _swapCallData
         );
     }
 
@@ -189,19 +186,18 @@ contract Bridger is
      * @dev Deposit the specified amount of ETH in to the Kinto L2 as finalAsset
      * @param _kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
      * @param _finalAsset Asset to depositInto
-     * @param _swapData Struct with all the required information to swap the tokens
+     * @param _swapParams Struct with all the required information to swap the tokens
      */
-    function depositETH(address _kintoWallet, address _finalAsset, IBridger.SwapData calldata _swapData)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-    {
+    function depositETH(
+        address _kintoWallet,
+        address _finalAsset,
+        IBridger.SwapParams calldata _swapParams,
+        bytes calldata _swapCallData
+    ) external payable override whenNotPaused nonReentrant {
         _isFinalAssetAllowed(_finalAsset);
         if (msg.value < 0.1 ether) revert InvalidAmount();
-        deposits[msg.sender][ETH] += msg.value - _swapData.gasFee;
-        _swap(msg.sender, _kintoWallet, ETH, msg.value, _finalAsset, _swapData);
+        deposits[msg.sender][ETH] += msg.value - _swapParams.gasFee;
+        _swap(msg.sender, _kintoWallet, ETH, msg.value, _finalAsset, _swapParams, _swapCallData);
     }
 
     /**
@@ -264,7 +260,8 @@ contract Bridger is
         address _inputAsset,
         uint256 _amount,
         address _finalAsset,
-        SwapData calldata _swapData
+        SwapParams calldata _swapParams,
+        bytes calldata _swapCallData
     ) private {
         uint256 amountBought = _amount;
         if (_inputAsset != _finalAsset) {
@@ -272,11 +269,11 @@ contract Bridger is
                 amountBought = _swapETHtoWstETH(_amount);
             } else {
                 if (_inputAsset == ETH) {
-                    _amount = _amount - _swapData.gasFee;
+                    _amount = _amount - _swapParams.gasFee;
                     WETH.deposit{value: _amount}();
                     _inputAsset = address(WETH);
                 }
-                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _swapData);
+                amountBought = _executeSwap(_inputAsset, _finalAsset, _amount, _swapParams, _swapCallData);
             }
 
             if (_finalAsset == sUSDe) {
@@ -288,23 +285,26 @@ contract Bridger is
         emit Deposit(_sender, _kintoWallet, _inputAsset, _amount, _finalAsset, amountBought, depositCount);
     }
 
-    function _executeSwap(address _inputAsset, address _finalAsset, uint256 _amount, SwapData calldata _swapData)
-        private
-        returns (uint256 amountBought)
-    {
+    function _executeSwap(
+        address _inputAsset,
+        address _finalAsset,
+        uint256 _amount,
+        SwapParams calldata _swapParams,
+        bytes calldata _swapCallData
+    ) private returns (uint256 amountBought) {
         amountBought = _amount;
         if (_finalAsset == sUSDe) _finalAsset = USDe; // if sUSDE, swap to USDe & then stake
         if (_finalAsset != _inputAsset) {
             if (!swapsEnabled) revert SwapsDisabled();
             amountBought = _fillQuote(
                 _amount,
-                _swapData.gasFee,
+                _swapParams.gasFee,
                 IERC20(_inputAsset),
                 IERC20(_finalAsset),
-                payable(_swapData.spender),
-                payable(_swapData.swapTarget),
-                _swapData.swapCallData,
-                _swapData.minReceive
+                payable(_swapParams.spender),
+                payable(_swapParams.swapTarget),
+                _swapCallData,
+                _swapParams.minReceive
             );
         }
     }
@@ -426,14 +426,14 @@ contract Bridger is
 
     /**
      * @dev Check that the signature is valid and it has not used yet
-     * @param _signature signature to be recovered.
+     * @param _signatureData signature to be recovered.
      */
-    modifier onlySignerVerified(IBridger.SignatureData calldata _signature) {
-        if (block.timestamp > _signature.expiresAt) revert SignatureExpired();
-        if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
+    modifier onlySignerVerified(IBridger.SignatureData calldata _signatureData) {
+        if (block.timestamp > _signatureData.expiresAt) revert SignatureExpired();
+        if (nonces[_signatureData.signer] != _signatureData.nonce) revert InvalidNonce();
 
-        bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
-        if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
+        bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signatureData));
+        if (!_signatureData.signer.isValidSignatureNow(digest, _signatureData.signature)) revert InvalidSigner();
         _;
     }
 
