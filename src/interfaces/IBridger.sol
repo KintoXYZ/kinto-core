@@ -65,12 +65,13 @@ interface IBridger {
         uint256 nonce;
         uint256 expiresAt;
         bytes signature;
-        SwapParams swapParams;
+        SwapData swapData; // Struct with all the required information to swap the tokens
     }
 
-    struct SwapParams {
+    struct SwapData {
         address spender;
         address swapTarget;
+        bytes swapCallData;
         uint256 gasFee;
         uint256 minReceive;
     }
@@ -85,18 +86,9 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(
-        address _kintoWallet,
-        address _finalAsset,
-        SwapParams calldata _swapParams,
-        bytes calldata _swapCallData
-    ) external payable;
+    function depositETH(address _kintoWallet, address _finalAsset, SwapData calldata _swapData) external payable;
 
-    function depositBySig(
-        bytes calldata _permitSignature,
-        SignatureData calldata _signatureData,
-        bytes calldata _swapCallData
-    ) external payable;
+    function depositBySig(SignatureData calldata _signatureData, bytes calldata _permitSignature) external payable;
 
     function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
         external
