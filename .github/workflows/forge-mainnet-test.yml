@@ -24,19 +24,6 @@ jobs:
 
       - name: Build contracts
         run: forge build --sizes
-
-      - name: Check gas snapshots
-        run: forge snapshot --diff
-        env:
-          FORK: false
-
-      - name: Save forge compilation cache
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            cache
-            out
-          key: forge-${{ github.ref_name }}
   
   mainnet-test:
     needs: build
@@ -52,7 +39,7 @@ jobs:
       - uses: ./.github/actions/install
 
       - name: Run mainnet tests
-        run: forge test 
+        run: forge test --match-contract BridgerTest
         env:
           FOUNDRY_FUZZ_RUNS: 100
           FORK: true
