@@ -242,9 +242,9 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         newCursor = cursor;
     }
 
-    function _inflateExecuteBatchCalldata(address sender, uint8 flags, bytes memory data, uint256 cursor)
+    function _inflateExecuteBatchCalldata(address, uint8, bytes memory data, uint256 cursor)
         internal
-        view
+        pure
         returns (uint256 newCursor, bytes memory callData)
     {
         // extract number of operations in the batch
@@ -290,7 +290,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
         if (selector == IKintoWallet.execute.selector) {
             // we skip value since we assume it's always 0
-            (address target,, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
+            (address target,,) = abi.decode(callData, (address, uint256, bytes));
             flags |= op.sender == target ? 0x04 : 0; // third bit for sender == target
             flags |= _isKintoContract(target) ? 0x08 : 0; // fourth bit for Kinto contract
         } else {
@@ -337,12 +337,12 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _encodeExecuteBatchCalldata(
-        UserOperation memory op,
+        UserOperation memory,
         address[] memory targets,
         bytes[] memory bytesOps,
         bytes memory buffer,
         uint256 index
-    ) internal view returns (uint256 newIndex) {
+    ) internal pure returns (uint256 newIndex) {
         // encode number of operations in the batch
         buffer[index] = bytes1(uint8(targets.length));
         index += 1;
