@@ -461,7 +461,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         // top-up _user USDC balance (since forge doesn't support doing deal with USDC, we grab a USDC from an account)
         address accountWithUSDC = 0xD6153F5af5679a75cC85D8974463545181f48772;
         address assetToDeposit = USDC;
-        uint256 amountToDeposit = 1e18;
+        uint256 amountToDeposit = 1e6;
         vm.prank(accountWithUSDC);
         ERC20(USDC).transfer(_user, amountToDeposit);
 
