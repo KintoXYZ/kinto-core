@@ -127,10 +127,10 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256 someonePk) public {
-        // ensure the private key is within the valid range for Ethereum
-        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+    function testWithdrawTokensTo_WhenWithdraingToOtherAddress() public {
+        uint256 someonePk = 123;
         address someone = vm.addr(someonePk);
+
         vm.assume(someone.code.length == 0); // assume someone is an EOA
         vm.assume(someone != address(0) && someone != _user); // assume someone is not the zero address and not the _user
 

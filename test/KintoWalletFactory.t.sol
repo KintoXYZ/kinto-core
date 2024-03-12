@@ -404,6 +404,34 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(address(_user).balance, 1e18);
     }
 
+    function testSendMoneyToAccount_WhenCallerIsKYCProvider_WhenTargetKYCProvider() public {
+        // make sure target is not KYC'd
+        assertFalse(_kintoID.isKYC(_user2));
+
+        // grant kyc provider role to _user2
+        bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
+        vm.prank(_owner);
+        _kintoID.grantRole(role, _user2);
+
+        // top up _user2
+        vm.deal(_kycProvider, 1e18);
+
+        // send money from _kycProvider to _user2
+        vm.prank(_kycProvider);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
+        assertEq(address(_user2).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwner_WhenTargetKYCProvider() public {
+        // make sure target is not KYC'd
+        assertFalse(_kintoID.isKYC(_kycProvider));
+
+        // send money from _owner to _kycProvider
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kycProvider));
+        assertEq(address(_kycProvider).balance, 1e18);
+    }
+
     function testSendMoneyToAccount_WhenCallerIsKYCProvider() public {
         vm.deal(_kycProvider, 1 ether);
         vm.prank(_kycProvider);

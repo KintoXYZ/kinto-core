@@ -92,7 +92,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
             (cursor, callData) = _inflateExecuteCalldata(op.sender, flags, decompressed, cursor);
         } else {
             // if selector is `executeBatch`, decode the callData as a batch of operations
-            (cursor, callData) = _inflateExecuteBatchCalldata(op.sender, flags, decompressed, cursor);
+            (cursor, callData) = _inflateExecuteBatchCalldata(decompressed, cursor);
         }
         op.callData = callData;
 
@@ -154,7 +154,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         } else {
             // if selector is `executeBatch`, encode the callData as a batch of operations
             (address[] memory targets,, bytes[] memory bytesOps) = abi.decode(callData, (address[], uint256[], bytes[]));
-            cursor = _encodeExecuteBatchCalldata(op, targets, bytesOps, buffer, cursor);
+            cursor = _encodeExecuteBatchCalldata(targets, bytesOps, buffer, cursor);
         }
 
         // encode gas params: `callGasLimit`, `verificationGasLimit`, `preVerificationGas`, `maxFeePerGas`, `maxPriorityFeePerGas`
@@ -242,7 +242,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         newCursor = cursor;
     }
 
-    function _inflateExecuteBatchCalldata(address, uint8, bytes memory data, uint256 cursor)
+    function _inflateExecuteBatchCalldata(bytes memory data, uint256 cursor)
         internal
         pure
         returns (uint256 newCursor, bytes memory callData)
@@ -337,7 +337,6 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _encodeExecuteBatchCalldata(
-        UserOperation memory,
         address[] memory targets,
         bytes[] memory bytesOps,
         bytes memory buffer,

@@ -4,13 +4,21 @@ pragma solidity ^0.8.18;
 import "forge-std/Script.sol";
 
 abstract contract ArtifactsReader is Script {
+    function _getAddressesDir(uint256 chainId) internal view virtual returns (string memory) {
+        string memory root = vm.projectRoot();
+        return string.concat(root, "/test/artifacts/", vm.toString(chainId));
+    }
+
+    function _getAddressesDir() internal view virtual returns (string memory) {
+        return _getAddressesDir(block.chainid);
+    }
+
     function _getAddressesFile() internal view virtual returns (string memory) {
         return _getAddressesFile(block.chainid);
     }
 
     function _getAddressesFile(uint256 chainid) internal view virtual returns (string memory) {
-        string memory root = vm.projectRoot();
-        return string.concat(root, "/test/artifacts/", vm.toString(chainid), "/addresses.json");
+        return string.concat(_getAddressesDir(chainid), "/addresses.json");
     }
 
     function _getChainDeployment(string memory contractName) internal virtual returns (address) {

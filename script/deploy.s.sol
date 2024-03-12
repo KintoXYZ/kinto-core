@@ -94,6 +94,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         privateKey = _privateKey;
         write = false;
         log = false;
+
+        // remove addresses.json file if it exists
+        try vm.removeFile(_getAddressesFile(block.chainid)) {} catch {}
+
         _run();
         contracts = DeployedContracts(
             entryPoint,
@@ -122,7 +126,12 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         if (log) console.log("-----------------------------------\n");
 
         // write addresses to a file
-        if (write) vm.writeFile(_getAddressesFile(), "{\n");
+        if (write) {
+            // create dir if it doesn't exist
+            string memory dir = _getAddressesDir();
+            if (!vm.isDir(dir)) vm.createDir(dir, true);
+            vm.writeFile(_getAddressesFile(), "{\n");
+        }
 
         // deploy KintoID
         (kintoID, kintoIDImpl) = deployKintoID();
@@ -157,24 +166,23 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
 
-        // set factory on KintoID
+        // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
-        (address implementation) = _deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true);
+        kintoIDImpl = KintoID(_deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        kintoID.upgradeTo(implementation);
+        kintoID.upgradeTo(address(kintoIDImpl));
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
 
     function deployKintoID() public returns (KintoID _kintoID, KintoID _kintoIDImpl) {
-        bytes memory creationCode = type(KintoID).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(0)));
-        address implementation = _deployImplementation("KintoID", creationCode, bytecode, false);
-        address proxy = _deployProxy("KintoID", implementation, false);
-        if (log) console.log("* Disregard KintoID implementation at:", implementation, false);
+        // deploy a dummy KintoID that will be then replaced after the factory has been deployed by the script
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        KintoID dummy = new KintoID{salt: 0}(address(0));
 
+        address proxy = _deployProxy("KintoID", address(dummy), false);
         _kintoID = KintoID(payable(proxy));
-        _kintoIDImpl = KintoID(payable(implementation));
+        _kintoIDImpl = KintoID(dummy);
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kintoID.initialize();
@@ -316,8 +324,8 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     function deployInflator() public returns (KintoInflator _inflator, KintoInflator _inflatorImpl) {
         bytes memory creationCode = type(KintoInflator).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
-        address implementation = _deployImplementation("KintoInflator", creationCode, bytecode, true);
-        address proxy = _deployProxy("KintoInflator", implementation, true);
+        address implementation = _deployImplementation("KintoInflator", creationCode, bytecode, false);
+        address proxy = _deployProxy("KintoInflator", implementation, false);
 
         _inflator = KintoInflator(payable(proxy));
         _inflatorImpl = KintoInflator(payable(implementation));
