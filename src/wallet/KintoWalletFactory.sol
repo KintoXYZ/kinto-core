@@ -213,7 +213,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
         if (!isPrivileged && !kintoID.isKYC(msg.sender)) revert OnlyPrivileged();
-        bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0;
+        bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0
+            || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), target);
         if (!isValidTarget && !isPrivileged) revert InvalidTarget();
         (bool sent,) = target.call{value: msg.value}("");
         if (!sent) revert SendFailed();
@@ -311,6 +312,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV9 is KintoWalletFactory {
+contract KintoWalletFactoryV10 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
