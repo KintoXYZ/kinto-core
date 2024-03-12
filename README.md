@@ -5,7 +5,7 @@
 # What is Kinto?
 Kinto is an **Ethereum L2 rollup designed to accelerate the transition to an on-chain financial system**. It features **permissionless KYC/AML and native account abstraction** to solve the two biggest blockers to mainstream adoption: compliance and user experience.
 
-## Docs
+## Documentation
 
 Check our gitbook to see all the documentation.
 
