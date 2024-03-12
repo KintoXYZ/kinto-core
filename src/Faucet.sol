@@ -25,7 +25,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
 
     /* ============ Constants ============ */
 
-    uint256 public constant CLAIM_AMOUNT = 1 ether / 2500;
+    uint256 public constant CLAIM_AMOUNT = 1 ether / 2000;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 
     /* ============ State Variables ============ */
@@ -139,6 +139,6 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 }
 
-contract FaucetV5 is Faucet {
+contract FaucetV7 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }

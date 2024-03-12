@@ -24,7 +24,7 @@ contract FaucetTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2500);
+        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2000);
         assertEq(_faucet.FAUCET_AMOUNT(), 1 ether);
     }
 
