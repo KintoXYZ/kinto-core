@@ -74,16 +74,21 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
             _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
 
+            // grant admin role to _owner on kintoID
+            bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();
+            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            _kintoID.grantRole(role, _owner);
+
             // grant KYC provider role to _kycProvider and _owner on kintoID
-            bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
-            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            role = _kintoID.KYC_PROVIDER_ROLE();
+            vm.prank(_owner);
             _kintoID.grantRole(role, _kycProvider);
-            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            vm.prank(_owner);
             _kintoID.grantRole(role, _owner);
 
             // grant UPGRADER role to _owner on kintoID
             role = _kintoID.UPGRADER_ROLE();
-            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            vm.prank(_owner);
             _kintoID.grantRole(role, _owner);
 
             // approve wallet's owner KYC
