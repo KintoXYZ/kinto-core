@@ -150,3 +150,8 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         }
     }
 }
+
+contract BridgerL2V1 is BridgerL2 {
+    constructor(address _walletFactory) BridgerL2(_walletFactory) {}
+}
+
