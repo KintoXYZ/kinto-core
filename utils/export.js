@@ -20,7 +20,7 @@ function processSolidityFile(filePath, contractName) {
   const result = execSync(cmd).toString();
   const jsonObject = JSON.parse(result);
   let address = addresses[contractName];
-  if (!address || address.length < 8) {
+  if ((!address || address.length < 8) && contractName !== 'KintoWallet') {
     console.error(`* Missing address for ${contractName}`);
   } else {
     console.log(`Exported: ${contractName} ABI`);
