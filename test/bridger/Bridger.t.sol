@@ -360,7 +360,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         );
         uint256 nonce = bridger.nonces(_user);
 
-        console.log("SDAI BALANCE", ERC20(bridger.sDAI()).balanceOf(address(bridger)));
         vm.prank(_owner);
         bridger.depositBySig{value: 0}(permitSignature, sigdata, swapData);
 
@@ -1150,11 +1149,13 @@ contract BridgerTest is TestSignature, SharedSetup {
             keccak256(
                 abi.encode(
                     keccak256(
-                        "SignatureData(address signer,address inputAsset,uint256 amount,address finalAsset,uint256 nonce,uint256 expiresAt)"
+                        "SignatureData(address kintoWallet,address signer,address inputAsset,uint256 amount,uint256 minReceive,address finalAsset,uint256 nonce,uint256 expiresAt)"
                     ),
+                    kintoWallet,
                     signer,
                     inputAsset,
                     amount,
+                    minReceive,
                     finalAsset,
                     nonce,
                     expiresAt

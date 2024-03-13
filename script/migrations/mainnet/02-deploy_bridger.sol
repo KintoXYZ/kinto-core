@@ -7,11 +7,9 @@ import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UUPSProxy.sol";
 
-
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
-
 
 contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
@@ -50,7 +48,7 @@ contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, T
         // Initialize proxy
         _bridger.initialize(0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
         vm.stopBroadcast();
-  
+
         // Checks
         assertEq(_bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
         assertEq(_bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
