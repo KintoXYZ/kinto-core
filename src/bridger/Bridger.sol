@@ -455,12 +455,13 @@ contract Bridger is
         return keccak256(
             abi.encode(
                 keccak256(
-                    "SignatureData(address kintoWallet,address signer,address inputAsset,uint256 amount,address finalAsset,uint256 nonce,uint256 expiresAt)"
+                    "SignatureData(address kintoWallet,address signer,address inputAsset,uint256 amount,uint256 minReceive,address finalAsset,uint256 nonce,uint256 expiresAt)"
                 ),
                 signatureData.kintoWallet,
                 signatureData.signer,
                 signatureData.inputAsset,
                 signatureData.amount,
+                signatureData.minReceive,
                 signatureData.finalAsset,
                 signatureData.nonce,
                 signatureData.expiresAt
