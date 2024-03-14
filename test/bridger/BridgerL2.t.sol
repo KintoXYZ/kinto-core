@@ -80,7 +80,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     function testWriteL2Deposit_RevertWhen_CallerIsNotOwner() public {
         address _asset = address(_token);
         uint256 _amount = 100;
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(IBridgerL2.Unauthorized.selector);
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
     }
 

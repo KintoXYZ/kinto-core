@@ -78,7 +78,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param assetL2 address of the asset on the L2
      * @param amount amount of the asset to receive
      */
-    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override onlyOwner {
+    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
+        if (msg.sender != owner() && msg.sender != 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7) {
+            revert Unauthorized();
+        }
         deposits[walletAddress][assetL2] += amount;
         depositTotals[assetL2] += amount;
         depositCount++;
@@ -151,6 +154,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V1 is BridgerL2 {
+contract BridgerL2V2 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }

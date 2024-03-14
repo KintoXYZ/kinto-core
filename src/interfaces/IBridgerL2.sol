@@ -5,6 +5,7 @@ interface IBridgerL2 {
     /* ============ Errors ============ */
     error InvalidWallet();
     error NotUnlockedYet();
+    error Unauthorized();
 
     /* ============ Structs ============ */
 
