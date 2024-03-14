@@ -513,30 +513,129 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
     }
 
+    // TEST
+    function testDepositBySig_WhenSwap_WhenUSDCTosUSDe2() public {
+        if (!fork) return;
+
+        // vm.rollFork(19408563); // block number in which the 0x API data was fetched
+        // _deployBridger(); // re-deploy the bridger on block
+
+        // enable swaps
+        // vm.prank(_owner);
+        // bridger.setSwapsEnabled(true);
+
+        // // whitelist USDC as inputAsset
+        // address[] memory assets = new address[](1);
+        // assets[0] = USDC;
+        // bool[] memory flags = new bool[](1);
+        // flags[0] = true;
+        // vm.prank(_owner);
+        // bridger.whitelistAssets(assets, flags);
+
+        // top-up _user USDC balance (since forge doesn't support doing deal with USDC, we grab a USDC from an account)
+        // address accountWithUSDC = 0xD6153F5af5679a75cC85D8974463545181f48772;
+        address assetToDeposit = USDC;
+        uint256 amountToDeposit = 1e6;
+        vm.deal(_user, amountToDeposit);
+        // vm.prank(accountWithUSDC);
+        // ERC20(USDC).transfer(_user, amountToDeposit);
+
+        _userPk = 0x3aca0ef9d37a78eec7c6dfbee04e55113e1a221d2e25907921452d1f5fbd48d9; // 0x01f778Be099167068cEd5395c920269A7A006924
+        _user = payable(vm.addr(_userPk));
+        // _userPk = vm.envUint("PRIVATE_KEY");
+        // _user = payable(vm.addr(_userPk));
+        uint256 expiresAt = 1710457419;
+        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
+        _owner = payable(bridger.owner());
+
+        // create a permit signature to allow the bridger to transfer the user's UNI
+        console.log("owner/depositAddress", _user);
+        console.log("bridger", address(bridger));
+        console.log("inputAmount", amountToDeposit);
+        console.log("tokenNonce", ERC20Permit(assetToDeposit).nonces(_user));
+        console.log("chainid", block.chainid);
+        console.log("BLOCK>TIMESTMAP", block.timestamp);
+        console.log("deadline", expiresAt);
+        console.log("allowed", bridger.allowedAssets(USDC));
+        console.log("allowed", bridger.allowedAssets(DAI));
+        console.log("allowed", bridger.allowedAssets(UNI));
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                // 0x0f1b7bd7762662B23486320AA91F30312184f70C,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                // block.timestamp + 1000
+                expiresAt
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        console.log("PERMITTTT");
+        console.logBytes(permitSignature);
+
+        // USDC to USDe quote's swapData
+        // https://api.0x.org/swap/v1/quote?sellToken=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&buyToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&sellAmount=1000000
+        bytes memory data =
+            hex"e102a874d7770c323ea1ba1129a03021d942f3867805b2e55287e8bb1e35e96b43ef16737dfd4e6e2a64847c31402a238e96671acfa0f101cb8615353359cc4f1b";
+        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, 0); // spender, swapTarget, swapCallData, gasFee
+
+        // create a bridge signature to allow the bridger to deposit the user's UNI
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            bridger.sUSDe(),
+            amountToDeposit,
+            996263698022367457,
+            _userPk,
+            block.timestamp + 1000
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        permitSignature = hex"d7fce1a3f45e788780779e7399e727bba4b193facb2e38a8cd5af34e9abdc4b940bc7aab9691a1f7168235c427a09835481f5fcc64f723c5ba616ff726569a761b";
+        vm.prank(_owner);
+        bridger.depositBySig{value: 0}(permitSignature, sigdata, swapData);
+
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), 1e6);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDC since it was swapped
+
+        // preview deposit on 4626 vault
+        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(996263698022367457);
+        assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
+    }
+
     // UNI to wstETH
     function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
         if (!fork) return;
 
-        vm.rollFork(19402329); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
+        // vm.rollFork(19402329); // block number in which the 0x API data was fetched
+        // _deployBridger(); // re-deploy the bridger on block
+        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
+        _owner = payable(bridger.owner());
 
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
+        // // enable swaps
+        // vm.prank(_owner);
+        // bridger.setSwapsEnabled(true);
 
-        // whitelist UNI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = UNI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
+        // // whitelist UNI as inputAsset
+        // address[] memory assets = new address[](1);
+        // assets[0] = UNI;
+        // bool[] memory flags = new bool[](1);
+        // flags[0] = true;
+        // vm.prank(_owner);
+        // bridger.whitelistAssets(assets, flags);
 
         // top-up _user UNI balance
         address assetToDeposit = UNI;
         uint256 amountToDeposit = 1e18;
         deal(assetToDeposit, _user, amountToDeposit);
 
+        uint256 deadline = block.timestamp + 1000;
         // create a permit signature to allow the bridger to transfer the user's UNI
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
@@ -544,7 +643,7 @@ contract BridgerTest is TestSignature, SharedSetup {
                 address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                deadline
             ),
             _userPk,
             ERC20Permit(assetToDeposit)
