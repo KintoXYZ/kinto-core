@@ -47,6 +47,8 @@ interface IKintoWalletFactory {
 
     function sendMoneyToAccount(address target) external payable;
 
+    function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);

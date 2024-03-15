@@ -73,13 +73,13 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /**
      * @dev Sets the deposit on the L2 to be claimed by the wallet at the end of phase IV
-     * Note: Only owner can call this function
+     * Note: Only owner or factory can call this function
      * @param walletAddress address of the wallet
      * @param assetL2 address of the asset on the L2
      * @param amount amount of the asset to receive
      */
     function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
-        if (msg.sender != owner() && msg.sender != 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7) {
+        if (msg.sender != owner() && msg.sender != address(walletFactory)) {
             revert Unauthorized();
         }
         deposits[walletAddress][assetL2] += amount;
@@ -154,6 +154,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V2 is BridgerL2 {
+contract BridgerL2V3 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }

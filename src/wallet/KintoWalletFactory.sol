@@ -11,6 +11,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
+import "../interfaces/IBridgerL2.sol";
 import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
@@ -205,6 +206,20 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 
     /**
+     * @dev Sets the deposit on the L2 to be claimed by the wallet at the end of phase IV
+     * Note: Only owner can call this function
+     * @param walletAddress address of the wallet
+     * @param assetL2 address of the asset on the L2
+     * @param amount amount of the asset to receive
+     */
+    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
+        if (msg.sender != 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7) {
+            revert InvalidSender();
+        }
+        IBridgerL2(0x26181Dfc530d96523350e895180b09BAf3d816a0).writeL2Deposit(walletAddress, assetL2, amount);
+    }
+
+    /**
      * @dev Send money to an account from privileged accounts or from kyc accounts to kyc accounts or contracts.
      * @param target The target address
      */
@@ -312,6 +327,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV10 is KintoWalletFactory {
+contract KintoWalletFactoryV11 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
