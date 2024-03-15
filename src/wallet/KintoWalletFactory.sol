@@ -213,7 +213,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param amount amount of the asset to receive
      */
     function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
-        if (msg.sender != 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7) {
+        if (msg.sender != 0xb539019776eF803E89EC062Ad54cA24D1Fdb008a) {
             revert InvalidSender();
         }
         IBridgerL2(0x26181Dfc530d96523350e895180b09BAf3d816a0).writeL2Deposit(walletAddress, assetL2, amount);
@@ -327,6 +327,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV11 is KintoWalletFactory {
+contract KintoWalletFactoryV12 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
