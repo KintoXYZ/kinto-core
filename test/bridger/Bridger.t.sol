@@ -513,29 +513,32 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
     }
 
-    // UNI to wstETH
-    function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
+    function splitSig(bytes memory sig) internal view returns (uint8, bytes32, bytes32) {
+        console.log("PERMITTTT");
+        console.logBytes(sig);
+
+        uint8 v = uint8(sig[64]); // last byte
+        bytes32 r;
+        bytes32 s;
+
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+        }
+        return (v, r, s);
+    }
+
+    // TEST
+    function testDepositBySig_WhenSwap_WhenUSDCTAAAAA() public {
         if (!fork) return;
 
-        vm.rollFork(19402329); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist UNI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = UNI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user UNI balance
-        address assetToDeposit = UNI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
+        _userPk = 0x92d326aea5351f8840cc9cebb1608b5368df7b2889f4006e2b8f6c5905e4c3b4; // 0x1CB295bB191e26899c75F3f859eA6C0B35229A13
+        _user = payable(vm.addr(_userPk));
+        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
+        address assetToDeposit = USDC;
+        uint256 amountToDeposit = 1060e6;
+        uint256 expiresAt = 1710463397;
+        _owner = payable(bridger.owner());
 
         // create a permit signature to allow the bridger to transfer the user's UNI
         bytes memory permitSignature = _auxCreatePermitSignature(
@@ -544,7 +547,51 @@ contract BridgerTest is TestSignature, SharedSetup {
                 address(bridger),
                 amountToDeposit,
                 ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                expiresAt
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = splitSig(bytes(permitSignature));
+        ERC20Permit(assetToDeposit).permit(_user, address(bridger), amountToDeposit, expiresAt, v, r, s);
+        assertEq(IERC20(assetToDeposit).allowance(_user, address(bridger)), amountToDeposit);
+    }
+
+    // UNI to wstETH
+    function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
+        if (!fork) return;
+
+        // vm.rollFork(19402329); // block number in which the 0x API data was fetched
+        // _deployBridger(); // re-deploy the bridger on block
+        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
+        _owner = payable(bridger.owner());
+
+        // // enable swaps
+        // vm.prank(_owner);
+        // bridger.setSwapsEnabled(true);
+
+        // // whitelist UNI as inputAsset
+        // address[] memory assets = new address[](1);
+        // assets[0] = UNI;
+        // bool[] memory flags = new bool[](1);
+        // flags[0] = true;
+        // vm.prank(_owner);
+        // bridger.whitelistAssets(assets, flags);
+
+        // top-up _user UNI balance
+        address assetToDeposit = UNI;
+        uint256 amountToDeposit = 1e18;
+        deal(assetToDeposit, _user, amountToDeposit);
+
+        uint256 deadline = block.timestamp + 1000;
+        // create a permit signature to allow the bridger to transfer the user's UNI
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                deadline
             ),
             _userPk,
             ERC20Permit(assetToDeposit)
