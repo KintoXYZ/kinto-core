@@ -167,7 +167,7 @@ contract Bridger is
             _signatureData.inputAsset,
             _signatureData.amount,
             _signatureData.expiresAt,
-            _signatureData.nonce,
+            ERC20Permit(_signatureData.inputAsset).nonces(_signatureData.signer),
             _permitSignature
         );
         _deposit(_signatureData.signer, _signatureData.inputAsset, _signatureData.amount);
