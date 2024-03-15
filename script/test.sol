@@ -12,14 +12,14 @@ import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
 
 import "../test/helpers/AASetup.sol";
-import "../test/helpers/KYCSignature.sol";
+import "../test/helpers/TestSignature.sol";
 import "../test/helpers/UserOp.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 // This script is used to test the wallet creation
-contract KintoDeployTestWalletScript is AASetup, KYCSignature {
+contract KintoDeployTestWalletScript is AASetup, TestSignature {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
@@ -65,7 +65,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
 }
 
 // This script is used to test the monitor function of the KintoID
-contract KintoMonitoringTest is AASetup, KYCSignature, UserOp {
+contract KintoMonitoringTest is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -95,7 +95,7 @@ contract KintoMonitoringTest is AASetup, KYCSignature, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
+contract KintoDeployTestCounter is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -202,7 +202,7 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
+contract KintoDeployETHPriceIsRight is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;

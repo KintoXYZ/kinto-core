@@ -66,7 +66,5 @@ contract UpgradeTest is SharedSetup {
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
-
-        vm.stopPrank();
     }
 }

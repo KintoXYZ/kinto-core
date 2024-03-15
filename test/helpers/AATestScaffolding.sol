@@ -20,13 +20,13 @@ import "../../src/Faucet.sol";
 import "../../src/inflators/KintoInflator.sol";
 
 import "../helpers/UUPSProxy.sol";
-import "../helpers/KYCSignature.sol";
+import "../helpers/TestSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 import "../../script/deploy.s.sol";
 
-abstract contract AATestScaffolding is KYCSignature {
+abstract contract AATestScaffolding is TestSignature {
     DeployerScript.DeployedContracts contracts;
 
     IKintoEntryPoint _entryPoint;
@@ -48,6 +48,7 @@ abstract contract AATestScaffolding is KYCSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
+    BridgerL2 _bridgerL2;
     KintoInflator _inflator;
 
     /* ============ convenience methods ============ */
