@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, Test {
+contract KintoMainnetMigration6DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
 
     function setUp() public {}
