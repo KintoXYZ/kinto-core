@@ -529,7 +529,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     // TEST
-    function testDepositBySig_WhenSwap_WhenUSDCTAAAAA(bytes calldata x) public {
+    function testDepositBySig_WhenSwap_WhenUSDCTAAAAA() public {
         if (!fork) return;
 
         _userPk = 0x92d326aea5351f8840cc9cebb1608b5368df7b2889f4006e2b8f6c5905e4c3b4; // 0x1CB295bB191e26899c75F3f859eA6C0B35229A13
@@ -537,7 +537,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
         address assetToDeposit = USDC;
         uint256 amountToDeposit = 1060e6;
-        uint256 expiresAt = 1710462830;
+        uint256 expiresAt = 1710463397;
         _owner = payable(bridger.owner());
 
         // create a permit signature to allow the bridger to transfer the user's UNI
