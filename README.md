@@ -105,6 +105,13 @@ Everytime a PR is created, the `pull_request.yml` workflow runs which runs the f
 
 Everytime a PR is **merged** into `main` (or there's a push directly to it), fork from mainnet tests are run.
 
+## Coverage
+To create a complete coverage report we need to run coverage on local + run coverage on mainnet fork and then merge both lcov.info files into one. Finally, we remove the unnecessary files from the report (scripts, tests):
+
+```
+forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage --ignore-errors category & lcov
+```
+
 ## Scripts
 
 On the `/script` directory, you can find the following subdirectories:
