@@ -14,6 +14,7 @@ import "forge-std/console.sol";
 
 contract FundFaucetScript is Create2Helper, ArtifactsReader {
     using ECDSAUpgradeable for bytes32;
+
     function setUp() public {}
 
     // NOTE: this migration must be run from the ledger admin
@@ -29,7 +30,9 @@ contract FundFaucetScript is Create2Helper, ArtifactsReader {
         // Start admin
         vm.startBroadcast();
         uint256 AMOUNT_TO_SEND = 0.1 ether;
-        KintoWalletFactory(address(factoryAddr)).sendMoneyToAccount{value: AMOUNT_TO_SEND}(0xb539019776eF803E89EC062Ad54cA24D1Fdb008a);
+        KintoWalletFactory(address(factoryAddr)).sendMoneyToAccount{value: AMOUNT_TO_SEND}(
+            0xb539019776eF803E89EC062Ad54cA24D1Fdb008a
+        );
         vm.stopBroadcast();
         require(address(0xb539019776eF803E89EC062Ad54cA24D1Fdb008a).balance >= AMOUNT_TO_SEND, "amount was not sent");
         // writes the addresses to a file

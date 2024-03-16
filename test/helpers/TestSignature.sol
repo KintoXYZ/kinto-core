@@ -113,7 +113,9 @@ abstract contract TestSignature is Test {
             // "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract"
             domainSeparator = _asset.DOMAIN_SEPARATOR();
         }
-        bytes32 eip712Hash = _getPermitMessage(vm.addr(_privateKey), _asset, _permit, domainSeparator);
+        bytes32 structHash = _getStructHash(vm.addr(_privateKey), _asset, _permit);
+        bytes32 eip712Hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_privateKey, eip712Hash);
         signature = abi.encodePacked(r, s, v);
     }
@@ -129,40 +131,26 @@ abstract contract TestSignature is Test {
         return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
     }
 
-    function _getPermitMessage(
-        address holder,
-        ERC20Permit _asset,
-        IBridger.Permit memory permit,
-        bytes32 domainSeparator
-    ) internal view returns (bytes32) {
+    function _getStructHash(address holder, ERC20Permit _asset, IBridger.Permit memory permit)
+        internal
+        view
+        returns (bytes32)
+    {
         bytes32 PERMIT_TYPEHASH;
         bytes32 structHash;
         if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("DAI"))) {
-            console.log("RERERE");
             PERMIT_TYPEHASH =
                 keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
-            console.logBytes32(PERMIT_TYPEHASH);
             structHash =
                 keccak256(abi.encode(PERMIT_TYPEHASH, holder, permit.spender, permit.nonce, permit.deadline, true));
         } else {
-            console.log("owner", permit.owner);
-            console.log("spender", permit.spender);
-            console.log("value", permit.value);
-            console.log("nonce", permit.nonce);
-            console.log("deadline", permit.deadline);
-            console.logBytes32(IUSDC(address(_asset)).PERMIT_TYPEHASH());
-            if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("DAI"))) {
-                PERMIT_TYPEHASH = IUSDC(address(_asset)).PERMIT_TYPEHASH();
-            } else {
-                PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-            }
-            
-            console.logBytes32(PERMIT_TYPEHASH);
+            PERMIT_TYPEHASH =
+                keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
             structHash = keccak256(
                 abi.encode(PERMIT_TYPEHASH, permit.owner, permit.spender, permit.value, permit.nonce, permit.deadline)
             );
         }
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        return structHash;
     }
 
     function _getBridgerMessage(IBridger.SignatureData memory signatureData, bytes32 domainSeparator)

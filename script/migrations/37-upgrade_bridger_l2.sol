@@ -15,6 +15,5 @@ contract KintoMigration37DeployScript is MigrationHelper {
             abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
 
         _deployImplementationAndUpgrade("BridgerL2", "V2", bytecode);
-
     }
 }

@@ -7,11 +7,9 @@ import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UUPSProxy.sol";
 
-
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
-
 
 contract KintoMainnetMigration5DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
@@ -53,9 +51,9 @@ contract KintoMainnetMigration5DeployScript is Create2Helper, ArtifactsReader, T
         // transfer to safe
         _bridger.transferOwnership(0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82);
         vm.stopBroadcast();
-  
+
         // Checks
-        for (uint i = 0; i < _assets.length; i++) {
+        for (uint256 i = 0; i < _assets.length; i++) {
             assertEq(_bridger.allowedAssets(_assets[i]), true);
         }
         assertEq(_bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82);

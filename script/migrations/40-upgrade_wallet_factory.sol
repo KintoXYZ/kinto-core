@@ -15,6 +15,5 @@ contract KintoMigration40DeployScript is MigrationHelper {
             type(KintoWalletFactory).creationCode, abi.encode(_getChainDeployment("KintoWalletV6-impl"))
         );
         _deployImplementationAndUpgrade("KintoWalletFactory", "V12", bytecode);
-
     }
 }

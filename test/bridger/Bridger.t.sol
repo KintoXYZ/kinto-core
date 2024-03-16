@@ -35,6 +35,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
@@ -513,6 +514,79 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
     }
 
+    // stETH to sUSDe
+    function testDepositBySig_WhenSwap_WhenStETHTosUSDe() public {
+        if (!fork) return;
+
+        vm.rollFork(19447098); // block number in which the 0x API data was fetched
+        _deployBridger(); // re-deploy the bridger on block
+
+        // enable swaps
+        vm.prank(_owner);
+        bridger.setSwapsEnabled(true);
+
+        // whitelist stETH as inputAsset
+        address[] memory assets = new address[](1);
+        assets[0] = STETH;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
+
+        // top-up _user stETH balance (since forge doesn't support doing deal with stETH, we grab a stETH from an account)
+        address accountWithStETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+        address assetToDeposit = STETH;
+        uint256 amountToDeposit = 1e18;
+        vm.prank(accountWithStETH);
+        ERC20(assetToDeposit).transfer(_user, amountToDeposit + 1); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/lido-tokens-integration-guide/#1-2-wei-corner-case
+
+        // create a permit signature to allow the bridger to transfer the user's UNI
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+
+        // stETH to USDe quote's swapData
+        // https://api.0x.org/swap/v1/quote?sellToken=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&buyToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&sellAmount=1000000000000000000
+        bytes memory data =
+            hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000004c9edd5852cd905f086c759e8383e09bff1e68b30000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000c4729df37ec9b93ef200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e000000000000000000000000000000000000000000000000000000000000007c000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000001437572766500000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df02124000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000004c9edd5852cd905f086c759e8383e09bff1e68b30000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000300ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e6973776170563300000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000c4729df37ec9b93ef2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000042c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4dac17f958d2ee523a2206206994597c13d831ec70000644c9edd5852cd905f086c759e8383e09bff1e68b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000053492f68bf3d43cb7271e63cf94db5ed";
+        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+        uint256 gasFee = 0 ether;
+        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee); // spender, swapTarget, swapCallData, gasFee
+
+        // create a bridge signature to allow the bridger to deposit the user's UNI
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            bridger.sUSDe(),
+            amountToDeposit,
+            3623820863464615182336,
+            _userPk,
+            block.timestamp + 1000
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        vm.prank(_owner);
+        bridger.depositBySig{value: gasFee}(permitSignature, sigdata, swapData);
+
+        assertEq(bridger.nonces(_user), nonce + 1);
+        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no stETH since it was swapped
+
+        // preview deposit on 4626 vault
+        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(3623820863464615182336);
+        assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
+    }
+
     function splitSig(bytes memory sig) internal view returns (uint8, bytes32, bytes32) {
         console.log("PERMITTTT");
         console.logBytes(sig);
@@ -528,55 +602,24 @@ contract BridgerTest is TestSignature, SharedSetup {
         return (v, r, s);
     }
 
-    // TEST
-    function testDepositBySig_WhenSwap_WhenUSDCTAAAAA() public {
-        if (!fork) return;
-
-        _userPk = 0x92d326aea5351f8840cc9cebb1608b5368df7b2889f4006e2b8f6c5905e4c3b4; // 0x1CB295bB191e26899c75F3f859eA6C0B35229A13
-        _user = payable(vm.addr(_userPk));
-        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
-        address assetToDeposit = USDC;
-        uint256 amountToDeposit = 1060e6;
-        uint256 expiresAt = 1710463397;
-        _owner = payable(bridger.owner());
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                expiresAt
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        (uint8 v, bytes32 r, bytes32 s) = splitSig(bytes(permitSignature));
-        ERC20Permit(assetToDeposit).permit(_user, address(bridger), amountToDeposit, expiresAt, v, r, s);
-        assertEq(IERC20(assetToDeposit).allowance(_user, address(bridger)), amountToDeposit);
-    }
-
     // UNI to wstETH
     function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
         if (!fork) return;
 
-        // vm.rollFork(19402329); // block number in which the 0x API data was fetched
-        // _deployBridger(); // re-deploy the bridger on block
-        bridger = BridgerHarness(payable(0x0f1b7bd7762662B23486320AA91F30312184f70C));
-        _owner = payable(bridger.owner());
+        vm.rollFork(19402329); // block number in which the 0x API data was fetched
+        _deployBridger(); // re-deploy the bridger on block
 
-        // // enable swaps
-        // vm.prank(_owner);
-        // bridger.setSwapsEnabled(true);
+        // enable swaps
+        vm.prank(_owner);
+        bridger.setSwapsEnabled(true);
 
-        // // whitelist UNI as inputAsset
-        // address[] memory assets = new address[](1);
-        // assets[0] = UNI;
-        // bool[] memory flags = new bool[](1);
-        // flags[0] = true;
-        // vm.prank(_owner);
-        // bridger.whitelistAssets(assets, flags);
+        // whitelist UNI as inputAsset
+        address[] memory assets = new address[](1);
+        assets[0] = UNI;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
 
         // top-up _user UNI balance
         address assetToDeposit = UNI;
@@ -587,11 +630,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         // create a permit signature to allow the bridger to transfer the user's UNI
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                deadline
+                _user, address(bridger), amountToDeposit, ERC20Permit(assetToDeposit).nonces(_user), deadline
             ),
             _userPk,
             ERC20Permit(assetToDeposit)

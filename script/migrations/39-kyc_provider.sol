@@ -23,7 +23,9 @@ contract KintoMigration39DeployScript is MigrationHelper {
         vm.startBroadcast();
         kintoID.grantRole(role, DEFENDER_KYC_PROVIDER);
         uint256 AMOUNT_TO_SEND = 0.1 ether;
-        KintoWalletFactory(address(factoryAddr)).sendMoneyToAccount{value: AMOUNT_TO_SEND}(0xb539019776eF803E89EC062Ad54cA24D1Fdb008a);
+        KintoWalletFactory(address(factoryAddr)).sendMoneyToAccount{value: AMOUNT_TO_SEND}(
+            0xb539019776eF803E89EC062Ad54cA24D1Fdb008a
+        );
         require(address(0xb539019776eF803E89EC062Ad54cA24D1Fdb008a).balance >= AMOUNT_TO_SEND, "amount was not sent");
 
         assertTrue(kintoID.hasRole(role, DEFENDER_KYC_PROVIDER));
