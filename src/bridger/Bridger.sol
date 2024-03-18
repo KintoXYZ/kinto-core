@@ -339,6 +339,11 @@ contract Bridger is
         uint256 nonce,
         bytes calldata signature
     ) private {
+        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
+            // If allowance is already set, we don't need to call permit
+            return;
+        }
+
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -346,10 +351,7 @@ contract Bridger is
             r := calldataload(add(signature.offset, 0x00))
             s := calldataload(add(signature.offset, 0x20))
         }
-        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
-            // If allowance is already set, we don't need to call permit
-            return;
-        }
+
         v = uint8(signature[64]); // last byte
 
         if (asset == DAI) {
