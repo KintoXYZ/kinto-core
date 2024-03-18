@@ -213,6 +213,7 @@ contract Bridger is
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
+            if (asset == wstETH) IERC20(asset).safeApprove(standardGateway, 0); // wstETH decreases allowance and does not allow non-zero to non-zero approval
             IERC20(asset).safeApprove(standardGateway, type(uint256).max);
         }
         // Bridge to Kinto L2 using standard bridge

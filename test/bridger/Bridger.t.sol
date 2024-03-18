@@ -1146,6 +1146,39 @@ contract BridgerTest is TestSignature, SharedSetup {
         bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
 
+    function testBridgeDeposits_WhenMultipleTimes() public {
+        if (!fork) return;
+
+        // array of allowedAssets
+        address[4] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH()];
+
+        uint256 amountToDeposit = 1e18;
+        uint256 kintoMaxGas = 1e6;
+        uint256 kintoGasPriceBid = 1e9;
+        uint256 kintoMaxSubmissionCost = 1e18;
+        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+
+        // for each allowed asset, deposit 1e18 2 times
+        for (uint256 i = 0; i < allowedAssets.length; i++) {
+            address asset = allowedAssets[i];
+            deal(address(asset), address(bridger), amountToDeposit);
+
+            vm.prank(_owner);
+            bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+
+            assertEq(bridger.deposits(_user, asset), 0);
+            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+
+            // 2nd time
+
+            vm.prank(_owner);
+            bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+
+            assertEq(bridger.deposits(_user, asset), 0);
+            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+        }
+    }
+
     /* ============ Pause ============ */
 
     function testPauseWhenOwner() public {
