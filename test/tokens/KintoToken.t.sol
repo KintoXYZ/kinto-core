@@ -85,7 +85,7 @@ contract KintoTokenTest is Test {
 
     function testMint_RevertWhen_CallerIsOwnerBeforeDeadline() public {
         vm.startPrank(_owner);
-        vm.expectRevert(KintoToken.GovernanceDeadlineNotReached.selector);
+        vm.expectRevert(KintoToken.MaxSupplyExceeded.selector);
         _token.mint(_user, 100);
         vm.stopPrank();
     }
@@ -174,7 +174,7 @@ contract KintoTokenTest is Test {
     }
 
     function testTransferAfterEnabling() public {
-        vm.warp(_token.deployedAt() + 365 days);
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
         _token.enableTokenTransfers();
         _token.transfer(_user, 100);
