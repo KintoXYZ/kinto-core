@@ -97,9 +97,9 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     }
 
     function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        if (!tokenTransfersEnabled &&
-            from != address(0) && from != address(miningContract) && from != address(vestingContract)
-                && to != address(vestingContract) && to != address(miningContract)
+        if (
+            !tokenTransfersEnabled && from != address(0) && from != address(miningContract)
+                && from != address(vestingContract) && to != address(vestingContract) && to != address(miningContract)
         ) revert TransfersDisabled();
         super._update(from, to, amount);
     }
