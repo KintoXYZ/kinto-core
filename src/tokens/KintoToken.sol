@@ -22,6 +22,11 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     error InvalidAddress();
     error TransfersDisabled();
 
+    /// @dev Logs
+    event MiningContractSet(address indexed miningContract, address oldMiningContract);
+    event VestingContractSet(address indexed vestingContract, address oldVestingContract);
+    event TokenTransfersEnabled();
+
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Kinto Token";
     /// @dev EIP-20 token symbol for this token
@@ -57,7 +62,6 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      * @param amount The amount of tokens to mint
      */
     function mint(address to, uint256 amount) public onlyOwner {
-        if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
         if (totalSupply() + amount > getSupplyCap()) revert MaxSupplyExceeded();
         _mint(to, amount);
     }
@@ -69,6 +73,7 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
         if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
         if (tokenTransfersEnabled) revert TransfersAlreadyEnabled();
         tokenTransfersEnabled = true;
+        emit TokenTransfersEnabled();
     }
 
     /**
@@ -77,6 +82,7 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      */
     function setVestingContract(address _vestingContract) public onlyOwner {
         if (_vestingContract == address(0)) revert InvalidAddress();
+        emit VestingContractSet(_vestingContract, vestingContract);
         vestingContract = _vestingContract;
     }
 
@@ -86,15 +92,16 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      */
     function setMiningContract(address _miningContract) public onlyOwner {
         if (_miningContract == address(0)) revert InvalidAddress();
+        emit MiningContractSet(_miningContract, miningContract);
         miningContract = _miningContract;
     }
 
     function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        super._update(from, to, amount);
-        if (
+        if (!tokenTransfersEnabled &&
             from != address(0) && from != address(miningContract) && from != address(vestingContract)
-                && to != address(vestingContract) && !tokenTransfersEnabled
+                && to != address(vestingContract) && to != address(miningContract)
         ) revert TransfersDisabled();
+        super._update(from, to, amount);
     }
 
     // Need to override this because of the imports
