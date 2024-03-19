@@ -473,6 +473,6 @@ contract Bridger is
     }
 }
 
-contract BridgerV3 is Bridger {
+contract BridgerV4 is Bridger {
     constructor(address _l2Vault) Bridger(_l2Vault) {}
 }

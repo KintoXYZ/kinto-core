@@ -11,11 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract BridgerV3 is Bridger {
-    constructor(address _l2Vault) Bridger(_l2Vault) {}
-}
-
-contract KintoMainnetMigration6DeployScript is Create2Helper, ArtifactsReader, Test {
+contract KintoMainnetMigration7DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
 
     function setUp() public {}
@@ -25,10 +21,12 @@ contract KintoMainnetMigration6DeployScript is Create2Helper, ArtifactsReader, T
             console.log("This script is meant to be run on the mainnet");
             return;
         }
+
         console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
+
         // If not using ledger, replace
         console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
+
         address bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
@@ -36,18 +34,15 @@ contract KintoMainnetMigration6DeployScript is Create2Helper, ArtifactsReader, T
         }
         address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
 
-        // Deploy Engen Credits implementation
-        BridgerV3 _newIimplementation = new BridgerV3(bridgerAddressL2);
-        // wrap in ABI to support easier calls
-        _bridger = Bridger(payable(bridgerAddress));
-        // _bridger.upgradeTo(address(_newIimplementation));
-        // Upgrade needs to happen via SAFE
-        vm.stopBroadcast();
+        // Deploy BridgerV4 implementation
+        vm.broadcast();
+        BridgerV4 _newImplementation = new BridgerV4(bridgerAddressL2);
 
-        // Checks
+        // NOTE: upgrade not broadcast since it needs to happen via SAFE
+        // Bridger(payable(bridgerAddress)).upgradeTo(address(_newImplementation));
 
-        // Writes the addresses to a file
+        // write addresses to file
         console.log("Add these addresses to the artifacts mainnet file");
-        console.log(string.concat('"BridgerV3-impl": "', vm.toString(address(_newIimplementation)), '"'));
+        console.log(string.concat('"BridgerV4-impl": "', vm.toString(address(_newImplementation)), '"'));
     }
 }
