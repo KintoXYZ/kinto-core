@@ -52,14 +52,18 @@ contract BridgerTest is TestSignature, SharedSetup {
             vm.selectFork(mainnetFork);
             assertEq(vm.activeFork(), mainnetFork);
             console.log("Running tests on fork from mainnet at:", rpc);
-        }
 
-        // deploy a new Bridger contract
-        _deployBridger();
+            bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
 
-        // if running local tests, we want to replace some hardcoded addresses that the bridger uses
-        // with mocked contracts
-        if (!fork) {
+            // transfer owner's ownership to _owner
+            vm.prank(bridger.owner());
+            bridger.transferOwnership(_owner);
+        } else {
+            // deploy a new Bridger contract
+            _deployBridger();
+
+            // if running local tests, we want to replace some hardcoded addresses that the bridger uses
+            // with mocked contracts
             ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
             vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
         }

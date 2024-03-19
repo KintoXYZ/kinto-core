@@ -95,7 +95,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             approveKYC(_kycProvider, _owner, _ownerPk);
 
             // for geth allowed contracts, transfer ownership from LEDGER to _owner
-            vm.startPrank(vm.envAddress("LEDGER_ADMIN"));
+            vm.startPrank(_kintoAppRegistry.owner());
             _kintoAppRegistry.transferOwnership(_owner);
             _walletFactory.transferOwnership(_owner);
             _paymaster.transferOwnership(_owner);
