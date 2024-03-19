@@ -38,7 +38,8 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     /// @dev EIP-20 Max token supply ever
     uint256 public constant MAX_CAP_SUPPLY_EVER = 15_000_000e18;
     /// @dev Governance time bomb
-    uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1717113600; // May 1st UTC
+    uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1717113600; // May 31st UTC
+
     /// @dev Timestamp of the contract deployment
     uint256 public immutable deployedAt;
 
