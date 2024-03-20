@@ -4,6 +4,20 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 interface IKintoID {
+    /* ============ Errors ============ */
+    error BalanceNotZero();
+    error MethodNotAllowed(string reason);
+    error NothingToBurn();
+    error LengthMismatch();
+    error AccountsAmountExceeded();
+    error KYCRequired();
+    error SignatureExpired();
+    error InvalidNonce();
+    error InvalidProvider();
+    error SignerNotEOA();
+    error OnlyMintBurnOrTransfer();
+    error InvalidSigner();
+
     /* ============ Structs ============ */
 
     struct Metadata {
@@ -35,6 +49,8 @@ interface IKintoID {
     function mintCompanyKyc(SignatureData calldata _signatureData, uint16[] calldata _traits) external;
 
     function burnKYC(SignatureData calldata _signatureData) external;
+
+    function transferOnRecovery(address _from, address _to) external;
 
     function addTrait(address _account, uint16 _traitId) external;
 
@@ -79,4 +95,10 @@ interface IKintoID {
     function lastMonitoredAt() external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);
+
+    function recoveryTargets(address _from) external view returns (address);
+
+    function domainSeparator() external view returns (bytes32);
+
+    function walletFactory() external view returns (address);
 }

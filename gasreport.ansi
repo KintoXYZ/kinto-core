@@ -1,0 +1,925 @@
+Compiling 32 files with 0.8.18
+Solc 0.8.18 finished in 31.42s
+Compiler run [32msuccessful![0m
+
+Running 1 test for test/SharedSetup.t.sol:SharedSetup
+[32m[PASS][0m testUp() (gas: 33998)
+Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 13.40ms
+
+Running 2 tests for test/KintoEntryPoint.t.sol:KintoEntryPointTest
+[32m[PASS][0m testCannotResetWalletFactoryAddress() (gas: 13610)
+[32m[PASS][0m testUp() (gas: 9896)
+Test result: [32mok[0m. [32m2[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 16.95ms
+
+Running 3 tests for test/wallet/upgrade/Upgrade.t.sol:PolicyTest
+[32m[PASS][0m testUp() (gas: 34020)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner() (gas: 3659982)
+[32m[PASS][0m test_RevertWhen_OwnerCannotUpgrade() (gas: 3179977)
+Test result: [32mok[0m. [32m3[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 16.45ms
+
+Running 3 tests for test/wallet/funder/Funder.t.sol:FunderTest
+[32m[PASS][0m testSetFunderWhitelist() (gas: 353053)
+[32m[PASS][0m testSetFunderWhitelist_RevertWhen_LengthMismatch() (gas: 345075)
+[32m[PASS][0m testUp() (gas: 51250)
+Test result: [32mok[0m. [32m3[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 14.39ms
+
+Running 2 tests for test/SponsorPaymastExploit.t.sol:SponsorPaymasterExploitTest
+[32m[PASS][0m testExploit() (gas: 148023)
+[32m[PASS][0m testUp() (gas: 33998)
+Test result: [32mok[0m. [32m2[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 14.66ms
+
+Running 6 tests for test/wallet/execute/Execute.t.sol:ExecuteTest
+[32m[PASS][0m testExecute_RevertWhen_AppIsNotWhitelisted() (gas: 349162)
+[32m[PASS][0m testExecute_RevertWhen_NoPaymasterNorPrefund() (gas: 109079)
+[32m[PASS][0m testExecute_WhenMultipleOps_WhenPaymaster() (gas: 424823)
+[32m[PASS][0m testExecute_WhenPaymaster() (gas: 350646)
+[32m[PASS][0m testExecute_WhenPrefund() (gas: 212840)
+[32m[PASS][0m testUp() (gas: 33998)
+Test result: [32mok[0m. [32m6[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 17.36ms
+
+Running 1 test for test/DeployTests.t.sol:DeveloperDeployTest
+[32m[PASS][0m testUp() (gas: 24235)
+Test result: [32mok[0m. [32m1[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 17.05ms
+
+Running 5 tests for test/wallet/setAppKey/AppKey.t.sol:AppKeyTest
+[32m[PASS][0m testSetAppKey() (gas: 360096)
+[32m[PASS][0m testSetAppKey_RevertWhen_AppIsNotWhitelisted() (gas: 355287)
+[32m[PASS][0m testSetAppKey_RevertWhen_InvalidApp() (gas: 344115)
+[32m[PASS][0m testSetAppKey_RevertWhen_InvalidSigner() (gas: 488022)
+[32m[PASS][0m testUp() (gas: 33998)
+Test result: [32mok[0m. [32m5[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 26.02ms
+
+Running 5 tests for test/ETHPriceIsRight.t.sol:ETHPriceIsRightTest
+[32m[PASS][0m testAnyoneCanChangeGuessBeforeEnd() (gas: 131829)
+[32m[PASS][0m testAnyoneCanEnterGuessBeforeEnd() (gas: 127363)
+[32m[PASS][0m testGuessCalculations() (gas: 156151)
+[32m[PASS][0m testUp() (gas: 16852)
+[32m[PASS][0m test_RevertWhen_CannotEnterGuessAfterTime() (gas: 9400)
+Test result: [32mok[0m. [32m5[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 2.02ms
+
+Running 3 tests for test/wallet/whitelist/Whitelist.t.sol:WhitelistTest
+[32m[PASS][0m testUp() (gas: 33998)
+[32m[PASS][0m testWhitelistApp() (gas: 428556)
+[32m[PASS][0m testWhitelistApp_RevertWhen_AlreadyWhitelisted() (gas: 25180)
+Test result: [32mok[0m. [32m3[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 11.90ms
+
+Running 7 tests for test/KYCViewer.t.sol:KYCViewerTest
+[32m[PASS][0m testGetUserInfo() (gas: 92631)
+[32m[PASS][0m testGetUserInfo_WhenAccountDoesNotExist() (gas: 54943)
+[32m[PASS][0m testGetUserInfo_WhenWalletDoesNotExist() (gas: 62559)
+[32m[PASS][0m testIsKYC_WhenBothOwnerAndWallet() (gas: 108394)
+[32m[PASS][0m testUp() (gas: 60552)
+[32m[PASS][0m testUpgradeTo() (gas: 1487445)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner(address) (runs: 16, μ: 1479721, ~: 1479721)
+Test result: [32mok[0m. [32m7[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 20.69ms
+
+Running 46 tests for test/KintoWalletFactory.t.sol:KintoWalletFactoryTest
+[32m[PASS][0m testChangeWalletRecoverer_RevertWhen_CallerIsNotRecoverer(address) (runs: 16, μ: 36418, ~: 36418)
+[32m[PASS][0m testChangeWalletRecoverer_RevertWhen_CallerIsRecoverer_WhenWalletNotExists() (gas: 33743)
+[32m[PASS][0m testChangeWalletRecoverer_WhenCallerIsRecoverer() (gas: 47580)
+[32m[PASS][0m testClaimFromFaucet_RevertWhen_CallerIsNotKYCd() (gas: 82617)
+[32m[PASS][0m testClaimFromFaucet_RevertWhen_FaucetIsZeroAddress() (gas: 85125)
+[32m[PASS][0m testClaimFromFaucet_WhenCallerIsKYCd() (gas: 176284)
+[32m[PASS][0m testCompleteWalletRecovery_RevertWhenCallerIsRecovererButOwnerBurnedID() (gas: 160083)
+[32m[PASS][0m testCompleteWalletRecovery_RevertWhen_CallerIsNotRecoverer(address) (runs: 16, μ: 36896, ~: 36896)
+[32m[PASS][0m testCompleteWalletRecovery_RevertWhen_CallerIsRecovererAndAlreadyKYC() (gas: 369842)
+[32m[PASS][0m testCompleteWalletRecovery_RevertWhen_WhenCallerIsRecoverer_WalletNotExists() (gas: 34150)
+[32m[PASS][0m testCompleteWalletRecovery_WhenCallerIsRecoverer() (gas: 180278)
+[32m[PASS][0m testCreateAccount() (gas: 418343)
+[32m[PASS][0m testCreateAccount_RevertWhen_OwnerAndSenderMismatch() (gas: 31637)
+[32m[PASS][0m testCreateAccount_RevertWhen_OwnerNotKYCd() (gas: 31585)
+[32m[PASS][0m testCreateAccount_RevertWhen_ZeroAddress() (gas: 25176)
+[32m[PASS][0m testCreateAccount_WhenAlreadyExists() (gas: 428957)
+[32m[PASS][0m testDeployContract() (gas: 136570)
+[32m[PASS][0m testDeployContract_RevertWhen_AmountMismatch() (gas: 36141)
+[32m[PASS][0m testDeployContract_RevertWhen_CreateWallet() (gas: 52962)
+[32m[PASS][0m testDeployContract_RevertWhen_SenderNotKYCd() (gas: 32963)
+[32m[PASS][0m testDeployContract_RevertWhen_ZeroBytecode() (gas: 34100)
+[32m[PASS][0m testFundWallet() (gas: 71272)
+[32m[PASS][0m testFundWallet_RevertWhen_CallerIsInvalid() (gas: 67517)
+[32m[PASS][0m testFundWallet_RevertWhen_InvalidWallet() (gas: 24964)
+[32m[PASS][0m testFundWallet_RevertWhen_NotEnoughETH() (gas: 18151)
+[32m[PASS][0m testFundWallet_WhenCallerIsWhitelisted() (gas: 380194)
+[32m[PASS][0m testSendMoneyToAccount_RevertWhen_CallerIsKYCd_WhenTargetisNotKYCd() (gas: 293175)
+[32m[PASS][0m testSendMoneyToAccount_RevertWhen_CallerIsNotAllowed() (gas: 40715)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsKYCProvider() (gas: 77284)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsKYCd() (gas: 548575)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() (gas: 302060)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsKYCd_WhenTargetIsContract() (gas: 54705)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsOwner() (gas: 124903)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsEOA() (gas: 71829)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsOwner_WhenAccountIsWallet() (gas: 49137)
+[32m[PASS][0m testSendMoneyToAccount_WhenCallerIsOwner_WhenTargetIsKYC() (gas: 320529)
+[32m[PASS][0m testStartWalletRecovery_RevertWhen_CallerIsNotRecoverer(address) (runs: 16, μ: 36482, ~: 36482)
+[32m[PASS][0m testStartWalletRecovery_WhenCallerIsRecoverer() (gas: 64690)
+[32m[PASS][0m testStartWalletRecovery_WhenCallerIsRecoverer_RevertWhen_WalletNotExists() (gas: 33794)
+[32m[PASS][0m testUp() (gas: 45666)
+[32m[PASS][0m testUpgradeAllWalletImplementations() (gas: 3180516)
+[32m[PASS][0m testUpgradeAllWalletImplementations_RevertWhen_BeaconAddress() (gas: 27791)
+[32m[PASS][0m testUpgradeAllWalletImplementations_RevertWhen_CallerIsNotOwner() (gas: 3165104)
+[32m[PASS][0m testUpgradeAllWalletImplementations_RevertWhen_ZeroAddress() (gas: 18232)
+[32m[PASS][0m testUpgradeTo() (gas: 3029892)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner(address) (runs: 16, μ: 3022217, ~: 3022217)
+Test result: [32mok[0m. [32m46[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 55.06ms
+
+Running 8 tests for test/wallet/executeBatch/ExecuteBatch.t.sol:ExecuteBatchTest
+[32m[PASS][0m testExecuteBatch_RevertWhen_AppIsNotWhitelisted() (gas: 375109)
+[32m[PASS][0m testExecuteBatch_RevertWhen_LenghtMismatch() (gas: 359090)
+[32m[PASS][0m testExecuteBatch_RevertWhen_LenghtMismatch2() (gas: 358612)
+[32m[PASS][0m testExecuteBatch_RevertWhen_NoPaymasterNorPrefund() (gas: 121580)
+[32m[PASS][0m testExecuteBatch_WhenMultipleOps_WhenPaymaster() (gas: 375456)
+[32m[PASS][0m testExecuteBatch_WhenPaymaster() (gas: 366061)
+[32m[PASS][0m testExecuteBatch_WhenPrefund() (gas: 226586)
+[32m[PASS][0m testUp() (gas: 34020)
+Test result: [32mok[0m. [32m8[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 22.85ms
+
+Running 15 tests for test/Faucet.t.sol:FaucetTest
+[32m[PASS][0m testClaimFromFaucet_WhenCallingOnBehalf() (gas: 179563)
+[32m[PASS][0m testClaimKintoETH1() (gas: 114226)
+[32m[PASS][0m testClaimKintoETH_RevertWhen_CallerIsNotFactory() (gas: 65143)
+[32m[PASS][0m testClaimKintoETH_RevertWhen_ClaimTwice() (gas: 108222)
+[32m[PASS][0m testClaim_DeactivatesWhenNotEnoughBalanceForNextClaim() (gas: 89431)
+[32m[PASS][0m testClaim_RevertWhen_FaucerIsNotActive() (gas: 17992)
+[32m[PASS][0m testSendMoneyToAccount() (gas: 54298)
+[32m[PASS][0m testStartFaucet() (gas: 47650)
+[32m[PASS][0m testStartFaucet_RevertWhen_AmountIsLess(uint256) (runs: 16, μ: 25538, ~: 26376)
+[32m[PASS][0m testStartFaucet_RevertWhen_CallerIsNotOwner(address) (runs: 16, μ: 25033, ~: 25033)
+[32m[PASS][0m testUp() (gas: 45479)
+[32m[PASS][0m testUpgradeTo() (gas: 1304423)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner() (gas: 1293696)
+[32m[PASS][0m testWithdrawAll() (gas: 40312)
+[32m[PASS][0m testWithdrawAll_RevertWhen_CallerIsNotOwner() (gas: 48347)
+Test result: [32mok[0m. [32m15[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 20.39ms
+
+Running 39 tests for test/KintoID.t.sol:KintoIDTest
+[32m[PASS][0m testAddSanction() (gas: 326887)
+[32m[PASS][0m testAddSanction_RevertWhen_AccountIsNotKYCd() (gas: 22987)
+[32m[PASS][0m testAddSanction_RevertWhen_CallerIsNotKYCProvider() (gas: 359322)
+[32m[PASS][0m testAddTrait() (gas: 299982)
+[32m[PASS][0m testAddTrait_RevertWhen_CallerIsNotProvider() (gas: 334628)
+[32m[PASS][0m testAddTrait_RevertWhen_UserIsNotKYCd() (gas: 24852)
+[32m[PASS][0m testAuthorizedCanUpgrade() (gas: 3956272)
+[32m[PASS][0m testBurnKYC() (gas: 235812)
+[32m[PASS][0m testBurnKYC_WhenBurningTwice() (gas: 245570)
+[32m[PASS][0m testBurnKYC_WhenCallerIsNotProvider() (gas: 278835)
+[32m[PASS][0m testBurnKYC_WhenUserIsNotKYCd() (gas: 42258)
+[32m[PASS][0m testBurn_RevertWhen_BurnIsCalled() (gas: 274073)
+[32m[PASS][0m testBurn_RevertWhen_UsingBurn() (gas: 14135)
+[32m[PASS][0m testDappSignature() (gas: 276)
+[32m[PASS][0m testIsSanctionsMonitored() (gas: 28373)
+[32m[PASS][0m testMintCompanyKYC() (gas: 288301)
+[32m[PASS][0m testMintIndividualKYC() (gas: 286377)
+[32m[PASS][0m testMintIndividualKYC_RevertWhen_AlreadyMinted() (gas: 283644)
+[32m[PASS][0m testMintIndividualKYC_RevertWhen_ExpiredSignature() (gas: 50097)
+[32m[PASS][0m testMintIndividualKYC_RevertWhen_InvalidNonce() (gas: 295396)
+[32m[PASS][0m testMintIndividualKYC_RevertWhen_InvalidSender() (gas: 50325)
+[32m[PASS][0m testMintIndividualKYC_RevertWhen_InvalidSigner() (gas: 62342)
+[32m[PASS][0m testMonitorNoChanges() (gas: 24080)
+[32m[PASS][0m testMonitor_WhenPassingTraitsAndSactions() (gas: 353350)
+[32m[PASS][0m testRemoveSancion() (gas: 314875)
+[32m[PASS][0m testRemoveSanction_RevertWhen_AccountIsNotKYCd() (gas: 22918)
+[32m[PASS][0m testRemoveSanction_RevertWhen_CallerIsNotKYCProvider() (gas: 368949)
+[32m[PASS][0m testRemoveTrait() (gas: 286684)
+[32m[PASS][0m testRemoveTrait_RevertWhen_AccountIsNotKYCd() (gas: 22945)
+[32m[PASS][0m testRemoveTrait_RevertWhen_CallerIsNotProvider() (gas: 334562)
+[32m[PASS][0m testSupportsInterface() (gas: 11018)
+[32m[PASS][0m testTrais() (gas: 476116)
+[32m[PASS][0m testUp() (gas: 18261)
+[32m[PASS][0m testUpgradeTo() (gas: 3918067)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner() (gas: 3944419)
+[32m[PASS][0m test_RevertWhen_CallerIsNotProvider(address) (runs: 16, μ: 79700, ~: 79700)
+[32m[PASS][0m test_RevertWhen_LenghtMismatch() (gas: 19791)
+[32m[PASS][0m test_RevertWhen_TooManyAccounts() (gas: 93833)
+[32m[PASS][0m test_RevertWhen_TransfersAreDisabled() (gas: 279233)
+Test result: [32mok[0m. [32m39[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 40.14ms
+
+Running 26 tests for test/EngenCredits.t.sol:EngenCreditsTest
+[32m[PASS][0m testBurn_RevertWhen_CallerIsAnyone() (gas: 70705)
+[32m[PASS][0m testBurn_WhenBurnsAreEnabled() (gas: 70935)
+[32m[PASS][0m testMint() (gas: 68285)
+[32m[PASS][0m testMintCredits() (gas: 418322)
+[32m[PASS][0m testMintCredits_RevertWhen_BurnsEnabled() (gas: 398412)
+[32m[PASS][0m testMintCredits_RevertWhen_TransfersEnabled() (gas: 398249)
+[32m[PASS][0m testMintCredits_WhenCalledTwice() (gas: 528804)
+[32m[PASS][0m testMintCredits_whenOverride() (gas: 442107)
+[32m[PASS][0m testMint_RevertWhen_CallerIsNotOwner() (gas: 26094)
+[32m[PASS][0m testSetBurnsEnabled() (gas: 42713)
+[32m[PASS][0m testSetBurnsEnabled_RevertWhen_AlreadyEnabled() (gas: 42395)
+[32m[PASS][0m testSetBurnsEnabled_RevertWhen_CallerIsNotOwner() (gas: 15725)
+[32m[PASS][0m testSetBurnsEnabled_WhenDisabling() (gas: 21449)
+[32m[PASS][0m testSetBurnsEnabled_WhenDisablingAndEnabling() (gas: 45080)
+[32m[PASS][0m testSetPhase1Override() (gas: 46894)
+[32m[PASS][0m testSetPhase1Override_RevertWhen_LengthMismatch() (gas: 21718)
+[32m[PASS][0m testSetTransferEnabled() (gas: 42691)
+[32m[PASS][0m testSetTransferEnabled_RevertWhen_AlreadyEnabled() (gas: 42298)
+[32m[PASS][0m testSetTransferEnabled_RevertWhen_CallerIsNotOwner() (gas: 15673)
+[32m[PASS][0m testSetTransferEnabled_WhenDisabling() (gas: 21435)
+[32m[PASS][0m testSetTransferEnabled_WhenDisablingAndEnabling() (gas: 44964)
+[32m[PASS][0m testTransfer_RevertWhen_CallerIsAnyone() (gas: 71943)
+[32m[PASS][0m testTransfer_WhenTransfersAreEnabled() (gas: 100096)
+[32m[PASS][0m testUp() (gas: 54752)
+[32m[PASS][0m testUpgradeTo() (gas: 2057817)
+[32m[PASS][0m testUpgradeTo_RevertWhen_WhenCallerIsNotOwner() (gas: 2046629)
+Test result: [32mok[0m. [32m26[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 34.21ms
+
+Running 10 tests for test/wallet/policy/Policy.t.sol:ResetSignerTest
+[32m[PASS][0m testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners() (gas: 352940)
+[32m[PASS][0m testResetSigners_RevertWhen_DuplicateSigner() (gas: 350009)
+[32m[PASS][0m testResetSigners_RevertWhen_EmptyArray() (gas: 344744)
+[32m[PASS][0m testResetSigners_RevertWhen_InvalidPolicy(uint256) (runs: 16, μ: 351321, ~: 351321)
+[32m[PASS][0m testResetSigners_RevertWhen_ManyOwners() (gas: 350127)
+[32m[PASS][0m testResetSigners_RevertWhen_WithoutKYCSigner() (gas: 331580)
+[32m[PASS][0m testResetSigners_WhenAddingOneSigner() (gas: 366525)
+[32m[PASS][0m testResetSigners_WhenChangingPolicy_WhenThreeSigners() (gas: 404986)
+[32m[PASS][0m testResetSigners_WhenChangingPolicy_WhenTwoSigners() (gas: 382561)
+[32m[PASS][0m testUp() (gas: 34054)
+Test result: [32mok[0m. [32m10[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 41.22ms
+
+Running 13 tests for test/wallet/recovery/Recovery.t.sol:RecoveryTest
+[32m[PASS][0m testCancelRecovery() (gas: 37968)
+[32m[PASS][0m testCancelRecovery_RevertWhen_CallerIsNotWallet() (gas: 52411)
+[32m[PASS][0m testChangeRecoverer_RevertWhen_CallerIsNotFactory() (gas: 37188)
+[32m[PASS][0m testChangeRecoverer_RevertWhen_CallerIsNotFactory(address) (runs: 16, μ: 26770, ~: 26770)
+[32m[PASS][0m testChangeRecoverer_RevertWhen_SameRecoverer() (gas: 30944)
+[32m[PASS][0m testChangeRecoverer_RevertWhen_ZeroAddress() (gas: 26652)
+[32m[PASS][0m testComplete_RevertWhen_RecoverNotEnoughTime() (gas: 364339)
+[32m[PASS][0m testComplete_RevertWhen_RecoverWithoutBurningOldOwner() (gas: 366025)
+[32m[PASS][0m testComplete_RevertWhen_RecoverWithoutNewOwnerKYCd() (gas: 137518)
+[32m[PASS][0m testRecoverAccountSuccessfully() (gas: 362506)
+[32m[PASS][0m testStartRecovery() (gas: 50163)
+[32m[PASS][0m testStartRecovery_RevertWhen_DirectCall(address) (runs: 16, μ: 27086, ~: 27086)
+[32m[PASS][0m testUp() (gas: 34076)
+Test result: [32mok[0m. [32m13[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 39.05ms
+
+Running 28 tests for test/wallet/validateSignature/ValidateSignature.t.sol:ValidateSignatureTest
+[32m[PASS][0m testUp() (gas: 34087)
+[32m[PASS][0m testValidateSignature_RevertWhen_OwnerIsNotKYCd() (gas: 99548)
+[32m[PASS][0m testValidateSignature_RevertWhen_SignatureLengthMismatch() (gas: 99582)
+[32m[PASS][0m testValidateSignature_RevertWhen_UsingAppKey_SignatureLengthMismatch() (gas: 99583)
+[32m[PASS][0m testValidateSignature_SpecialCase1() (gas: 258859)
+[32m[PASS][0m testValidateSignature_SpecialCase2() (gas: 169519)
+[32m[PASS][0m testValidateSignature_SpecialCase3() (gas: 256074)
+[32m[PASS][0m testValidateSignature_When2Owners_WhenAllSignersPolicy() (gas: 186724)
+[32m[PASS][0m testValidateSignature_When2Owners_WhenAllSignersPolicy_WhenWrongSigners() (gas: 142415)
+[32m[PASS][0m testValidateSignature_When3Owners_WhenAllSignersPolicy() (gas: 201507)
+[32m[PASS][0m testValidateSignature_When3Owners_WhenAllSignersPolicy_WhenWrongSigners() (gas: 246434)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey() (gas: 122084)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet() (gas: 126303)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenCallToWallet_WhenExecuteBatch(uint256) (runs: 16, μ: 151244, ~: 151477)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenExecuteBatch() (gas: 140043)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenWalletHas2Signers() (gas: 180373)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsAppKey_WhenWalletHas2Signers_WhenExecuteBatch() (gas: 198364)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsOwner() (gas: 123517)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsOwner_WhenCallToWallet() (gas: 121008)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsOwner_WhenCallToWallet_WhenExecuteBatch(uint256) (runs: 16, μ: 157252, ~: 157252)
+[32m[PASS][0m testValidateSignature_WhenAppKeyIsSet_WhenSignerIsOwner_WhenExecuteBatch() (gas: 188)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch() (gas: 111558)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch_WhenChildren() (gas: 255437)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch_WhenChildrenAndSponsoredContract() (gas: 365185)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch_WhenMoreThanWalletCallsLimit() (gas: 120876)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch_WhenNotRelated() (gas: 190843)
+[32m[PASS][0m testValidateSignature_WhenExecuteBatch_WhenSponsoredContract() (gas: 224232)
+[32m[PASS][0m testValidateSignature_WhenMultipleOwners_When1SignerPolicy() (gas: 89938)
+Test result: [32mok[0m. [32m28[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 111.73ms
+
+Running 18 tests for test/KintoAppRegistry.t.sol:KintoAppRegistryTest
+[32m[PASS][0m testEnableDSA_RevertWhen_AlreadyEnabled() (gas: 370282)
+[32m[PASS][0m testEnableDSA_RevertWhen_CallerIsNotOwner() (gas: 345713)
+[32m[PASS][0m testEnableDSA_WhenCallerIsOwner() (gas: 372659)
+[32m[PASS][0m testRegisterApp(string,address) (runs: 16, μ: 658751, ~: 660081)
+[32m[PASS][0m testRegisterApp_RevertWhen_AlreadyRegistered() (gas: 263411)
+[32m[PASS][0m testRegisterApp_RevertWhen_CallerIsNotKYCd(string,address) (runs: 16, μ: 28851, ~: 28831)
+[32m[PASS][0m testRegisterApp_RevertWhen_ChildrenIsWallet(string,address) (runs: 16, μ: 391752, ~: 374936)
+[32m[PASS][0m testRegisterApp_RevertWhen_ParentIsChild() (gas: 292121)
+[32m[PASS][0m testSetSponsoredContracts() (gas: 386693)
+[32m[PASS][0m testSetSponsoredContracts_RevertWhen_CallerIsNotCreator() (gas: 348516)
+[32m[PASS][0m testSetSponsoredContracts_RevertWhen_LengthMismatch() (gas: 345098)
+[32m[PASS][0m testSupportsInterface() (gas: 10951)
+[32m[PASS][0m testUp() (gas: 8114852)
+[32m[PASS][0m testUpdateMetadata(string,address) (runs: 16, μ: 629377, ~: 627465)
+[32m[PASS][0m testUpdateMetadata_RevertWhen_CallerIsNotDeveloper(string,address) (runs: 16, μ: 368385, ~: 368385)
+[32m[PASS][0m testUpgradeTo() (gas: 2978041)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner() (gas: 2966884)
+[32m[PASS][0m test_RevertWhen_TransfersAreDisabled() (gas: 592200)
+Test result: [32mok[0m. [32m18[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 101.22ms
+
+Running 4 tests for test/BytesSignature.t.sol:ByteSignatureTest
+[32m[PASS][0m testExtractMultipleSignatures() (gas: 38892)
+[32m[PASS][0m testExtractSingleSignature() (gas: 19349)
+[32m[PASS][0m testExtract_RevertWhen_InvalidLength() (gas: 3282)
+[32m[PASS][0m testFuzzExtractMultipleSignatures(uint8) (runs: 16, μ: 10078887, ~: 695739)
+Test result: [32mok[0m. [32m4[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 276.68ms
+
+Running 40 tests for test/SponsorPaymaster.t.sol:SponsorPaymasterTest
+[32m[PASS][0m testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() (gas: 52275)
+[32m[PASS][0m testAddDepositFor_RevertWhen_SenderIsNotKYCd() (gas: 41455)
+[32m[PASS][0m testAddDepositFor_RevertWhen_ZeroValue() (gas: 16058)
+[32m[PASS][0m testAddDepositFor_WhenAccountIsContract() (gas: 86114)
+[32m[PASS][0m testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() (gas: 86113)
+[32m[PASS][0m testAppLimits() (gas: 1830090)
+[32m[PASS][0m testDepositInfo_WhenCallerDepositsToHimself() (gas: 83546)
+[32m[PASS][0m testDepositInfo_WhenCallerDepositsToSomeoneElse() (gas: 330471)
+[32m[PASS][0m testSetAppRegistry() (gas: 29848)
+[32m[PASS][0m testSetAppRegistry_RevertWhen_AddressIsZero() (gas: 18167)
+[32m[PASS][0m testSetAppRegistry_RevertWhen_CallerIsNotOwner() (gas: 15767)
+[32m[PASS][0m testSetAppRegistry_RevertWhen_SameAddress() (gas: 22513)
+[32m[PASS][0m testUp() (gas: 47558)
+[32m[PASS][0m testUpgradeTo() (gas: 2334063)
+[32m[PASS][0m testUpgradeTo_RevertWhen_CallerIsNotOwner() (gas: 2325336)
+[32m[PASS][0m testUserOpMaxCost() (gas: 28176)
+[32m[PASS][0m testUserOpMaxCost_RevertWhen_CallerIsNotOwner() (gas: 15627)
+[32m[PASS][0m testValidatePaymasterUserOp() (gas: 72271)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_AppOpsGasLimitExceeded() (gas: 965865)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_AppOpsRateLimitExceeded() (gas: 1187260)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_AppTxGasLimitExceeded() (gas: 711796)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_AppTxRateLimitExceeded() (gas: 2064225)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_GasIsTooHigh() (gas: 54740)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() (gas: 53315)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_GasLimitIsMoreThanCostOfVerification() (gas: 53421)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_OpsRateLimitExceeded() (gas: 4325870)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_PaymasterAndDataIsNotLength20() (gas: 52491)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_PreGasLimitIsMoreThanMaxPreVerification() (gas: 53411)
+[32m[PASS][0m testValidatePaymasterUserOp_RevertWhen_TxRateLimitExceeded() (gas: 106068914)
+[32m[PASS][0m testValidatePaymasterUserOp_WithinAppOpsRateLimit() (gas: 1025596)
+[32m[PASS][0m testValidatePaymasterUserOp_WithinAppTxRateLimit() (gas: 1908638)
+[32m[PASS][0m testValidatePaymasterUserOp_WithinOpsRateLimit() (gas: 4070050)
+[32m[PASS][0m testValidatePaymasterUserOp_WithinTxRateLimit() (gas: 379334078)
+[32m[PASS][0m testWithdrawTokensTo(uint256) (runs: 16, μ: 357649, ~: 357649)
+[32m[PASS][0m testWithdrawTokensTo_RevertWhen_DepositLocked() (gas: 348687)
+[32m[PASS][0m testWithdrawTokensTo_RevertWhen_TargetIsContract() (gas: 113305)
+[32m[PASS][0m testWithdrawTokensTo_RevertWhen_TargetIsZeroAddress() (gas: 111090)
+[32m[PASS][0m testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256) (runs: 16, μ: 347189, ~: 363088)
+[32m[PASS][0m testWithrawTo_RevertWhen_CallerIsNotOwner() (gas: 22653)
+[32m[PASS][0m testWithrawTo_WhenCallerIsOwner() (gas: 391029)
+Test result: [32mok[0m. [32m40[0m passed; [31m0[0m failed; [33m0[0m skipped; finished in 1.51s
+| lib/account-abstraction/contracts/core/EntryPoint.sol:EntryPoint contract |                 |        |        |         |         |
+|---------------------------------------------------------------------------|-----------------|--------|--------|---------|---------|
+| Deployment Cost                                                           | Deployment Size |        |        |         |         |
+| 3072757                                                                   | 15196           |        |        |         |         |
+| Function Name                                                             | min             | avg    | median | max     | # calls |
+| balanceOf                                                                 | 575             | 1241   | 575    | 2575    | 3       |
+| depositTo                                                                 | 2613            | 12860  | 2613   | 24513   | 511     |
+| getNonce                                                                  | 830             | 1415   | 830    | 2830    | 263     |
+| getUserOpHash                                                             | 2026            | 2133   | 2089   | 2373    | 51      |
+| handleOps                                                                 | 64459           | 152481 | 76888  | 3537444 | 233     |
+| innerHandleOp                                                             | 21571           | 48291  | 31340  | 217459  | 351     |
+| receive                                                                   | 0               | 11139  | 11139  | 22278   | 4       |
+| setWalletFactory                                                          | 2586            | 22563  | 22648  | 22648   | 238     |
+| walletFactory                                                             | 447             | 728    | 447    | 2447    | 284     |
+| withdrawTo                                                                | 9710            | 9710   | 9710   | 9710    | 3       |
+
+
+| lib/openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol:UpgradeableBeacon contract |                 |      |        |      |         |
+|----------------------------------------------------------------------------------------------------|-----------------|------|--------|------|---------|
+| Deployment Cost                                                                                    | Deployment Size |      |        |      |         |
+| 216907                                                                                             | 1284            |      |        |      |         |
+| Function Name                                                                                      | min             | avg  | median | max  | # calls |
+| implementation                                                                                     | 308             | 331  | 308    | 2308 | 10857   |
+| upgradeTo                                                                                          | 2009            | 2044 | 2009   | 6809 | 267     |
+
+
+| script/deploy.s.sol:DeployerScript contract |                 |          |          |          |         |
+|---------------------------------------------|-----------------|----------|----------|----------|---------|
+| Deployment Cost                             | Deployment Size |          |          |          |         |
+| 25639243                                    | 127691          |          |          |          |         |
+| Function Name                               | min             | avg      | median   | max      | # calls |
+| runAndReturnResults                         | 33638214        | 33638214 | 33638214 | 33638214 | 237     |
+
+
+| src/Faucet.sol:Faucet contract                 |                 |       |        |       |         |
+|------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                | Deployment Size |       |        |       |         |
+| 1227788                                        | 6584            |       |        |       |         |
+| Function Name                                  | min             | avg   | median | max   | # calls |
+| CLAIM_AMOUNT                                   | 241             | 241   | 241    | 241   | 5       |
+| FAUCET_AMOUNT                                  | 284             | 284   | 284    | 284   | 3       |
+| active                                         | 323             | 323   | 323    | 323   | 1       |
+| claimKintoETH((address,uint256,uint256,bytes)) | 6135            | 60639 | 86892  | 88892 | 3       |
+| claimKintoETH()                                | 626             | 34354 | 56171  | 56389 | 5       |
+| claimed                                        | 586             | 2186  | 2586   | 2586  | 5       |
+| initialize                                     | 50169           | 50169 | 50169  | 50169 | 237     |
+| nonces                                         | 630             | 1463  | 630    | 2630  | 12      |
+| owner                                          | 2387            | 2387  | 2387   | 2387  | 1       |
+| receive                                        | 55              | 55    | 55     | 55    | 1       |
+| startFaucet                                    | 474             | 20976 | 24525  | 24525 | 13      |
+| upgradeTo                                      | 2856            | 6611  | 6611   | 10366 | 2       |
+| withdrawAll                                    | 454             | 3957  | 3957   | 7461  | 2       |
+
+
+| src/KintoID.sol:KintoID contract |                 |        |        |        |         |
+|----------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                  | Deployment Size |        |        |        |         |
+| 3820495                          | 19394           |        |        |        |         |
+| Function Name                    | min             | avg    | median | max    | # calls |
+| KYC_PROVIDER_ROLE                | 383             | 383    | 383    | 383    | 291     |
+| UPGRADER_ROLE                    | 327             | 327    | 327    | 327    | 3       |
+| addSanction                      | 5194            | 24513  | 28309  | 32445  | 5       |
+| addTrait                         | 1514            | 14353  | 3818   | 32468  | 7       |
+| balanceOf                        | 657             | 1657   | 1657   | 2657   | 6       |
+| burn                             | 403             | 403    | 403    | 403    | 2       |
+| burnKYC                          | 3274            | 50339  | 66913  | 72304  | 14      |
+| grantRole                        | 27527           | 27527  | 27527  | 27527  | 277     |
+| hasRole                          | 810             | 2643   | 2810   | 2810   | 12      |
+| hasTrait                         | 838             | 1238   | 838    | 2838   | 10      |
+| initialize                       | 188676          | 188676 | 188676 | 188676 | 276     |
+| isCompany                        | 670             | 670    | 670    | 670    | 2       |
+| isIndividual                     | 689             | 689    | 689    | 689    | 3       |
+| isKYC                            | 740             | 1769   | 1336   | 7336   | 1503    |
+| isSanctionsMonitored             | 728             | 728    | 728    | 728    | 3       |
+| isSanctionsSafe                  | 991             | 991    | 991    | 991    | 3       |
+| isSanctionsSafeIn                | 1293            | 1515   | 1293   | 3293   | 9       |
+| lastMonitoredAt                  | 406             | 739    | 406    | 2406   | 6       |
+| mintCompanyKyc                   | 246390          | 246390 | 246390 | 246390 | 1       |
+| mintIndividualKyc                | 1624            | 232674 | 236538 | 265603 | 279     |
+| mintedAt                         | 627             | 627    | 627    | 627    | 2       |
+| monitor                          | 3258            | 22278  | 12967  | 65514  | 13      |
+| name                             | 645             | 645    | 645    | 645    | 1       |
+| nonces                           | 609             | 2574   | 2609   | 2609   | 293     |
+| proxiableUUID                    | 352             | 352    | 352    | 352    | 237     |
+| removeSanction                   | 4313            | 13982  | 5192   | 32443  | 3       |
+| removeTrait                      | 5217            | 14540  | 5935   | 32468  | 3       |
+| safeTransferFrom                 | 3928            | 3928   | 3928   | 3928   | 1       |
+| supportsInterface                | 709             | 709    | 709    | 709    | 2       |
+| symbol                           | 611             | 611    | 611    | 611    | 1       |
+| tokenOfOwnerByIndex              | 998             | 998    | 998    | 998    | 2       |
+| traits                           | 127341          | 127341 | 127341 | 127341 | 1       |
+| transferOnRecovery               | 872             | 47104  | 47104  | 93337  | 2       |
+| upgradeTo                        | 5833            | 5976   | 5833   | 32649  | 240     |
+
+
+| src/apps/KintoAppRegistry.sol:KintoAppRegistry contract |                 |        |        |        |         |
+|---------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                         | Deployment Size |        |        |        |         |
+| 2898093                                                 | 14933           |        |        |        |         |
+| Function Name                                           | min             | avg    | median | max    | # calls |
+| GAS_LIMIT_PERIOD                                        | 263             | 263    | 263    | 263    | 279     |
+| GAS_LIMIT_THRESHOLD                                     | 262             | 262    | 262    | 262    | 277     |
+| RATE_LIMIT_PERIOD                                       | 262             | 262    | 262    | 262    | 273     |
+| RATE_LIMIT_THRESHOLD                                    | 285             | 285    | 285    | 285    | 273     |
+| appCount                                                | 340             | 1340   | 1340   | 2340   | 2       |
+| balanceOf                                               | 656             | 1656   | 1656   | 2656   | 2       |
+| enableDSA                                               | 859             | 13138  | 13599  | 24498  | 4       |
+| getAppMetadata                                          | 3001            | 3046   | 3001   | 3184   | 4       |
+| getContractLimits                                       | 3015            | 3928   | 3184   | 19184  | 705     |
+| getSponsor                                              | 722             | 807    | 726    | 2726   | 1056    |
+| initialize                                              | 95784           | 95784  | 95784  | 95784  | 237     |
+| isSponsored                                             | 639             | 1745   | 639    | 5128   | 13      |
+| owner                                                   | 399             | 467    | 399    | 2399   | 29      |
+| ownerOf                                                 | 647             | 647    | 647    | 647    | 1       |
+| registerApp                                             | 3345            | 303598 | 309910 | 362798 | 279     |
+| safeTransferFrom                                        | 1432            | 1432   | 1432   | 1432   | 1       |
+| setSponsoredContracts                                   | 937             | 10004  | 1632   | 27445  | 3       |
+| tokenOfOwnerByIndex                                     | 1042            | 1042   | 1042   | 1042   | 1       |
+| updateMetadata                                          | 1407            | 26015  | 32231  | 35031  | 8       |
+| upgradeTo                                               | 2984            | 5837   | 5679   | 10501  | 31      |
+
+
+| src/paymasters/SponsorPaymaster.sol:SponsorPaymaster contract |                 |        |        |        |         |
+|---------------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                               | Deployment Size |        |        |        |         |
+| 2262031                                                       | 11651           |        |        |        |         |
+| Function Name                                                 | min             | avg    | median | max    | # calls |
+| COST_OF_POST                                                  | 229             | 229    | 229    | 229    | 2       |
+| MAX_COST_OF_PREVERIFICATION                                   | 274             | 274    | 274    | 274    | 1       |
+| MAX_COST_OF_VERIFICATION                                      | 318             | 318    | 318    | 318    | 1       |
+| RATE_LIMIT_PERIOD                                             | 273             | 273    | 273    | 273    | 5       |
+| RATE_LIMIT_THRESHOLD_TOTAL                                    | 275             | 275    | 275    | 275    | 9       |
+| addDepositFor                                                 | 404             | 45232  | 34842  | 64471  | 514     |
+| appRegistry                                                   | 448             | 448    | 448    | 448    | 1       |
+| appUserLimit                                                  | 3635            | 15385  | 15385  | 27135  | 2       |
+| balances                                                      | 548             | 548    | 548    | 548    | 2       |
+| depositInfo                                                   | 795             | 1795   | 1795   | 2795   | 2       |
+| getDeposit                                                    | 1251            | 2751   | 1251   | 5751   | 3       |
+| initialize                                                    | 115134          | 115134 | 115134 | 115134 | 237     |
+| owner                                                         | 453             | 521    | 453    | 2453   | 29      |
+| postOp                                                        | 11537           | 31745  | 17645  | 134045 | 349     |
+| setAppRegistry                                                | 2625            | 4830   | 3714   | 9267   | 4       |
+| setUserOpMaxCost                                              | 2532            | 4651   | 4651   | 6771   | 2       |
+| unlockTokenDeposit                                            | 398             | 10348  | 10348  | 20298  | 4       |
+| upgradeTo                                                     | 2828            | 5665   | 5506   | 10328  | 31      |
+| userOpMaxCost                                                 | 351             | 1684   | 2351   | 2351   | 3       |
+| validatePaymasterUserOp                                       | 634             | 6561   | 5577   | 22577  | 355     |
+| withdrawTo                                                    | 2695            | 7699   | 7699   | 12704  | 2       |
+| withdrawTokensTo                                              | 23047           | 27538  | 23415  | 33973  | 5       |
+
+
+| src/proxy/SafeBeaconProxy.sol:SafeBeaconProxy contract |                 |       |        |       |         |
+|--------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                        | Deployment Size |       |        |       |         |
+| 287998                                                 | 2498            |       |        |       |         |
+| Function Name                                          | min             | avg   | median | max   | # calls |
+| ALL_SIGNERS                                            | 1379            | 6288  | 10379  | 10379 | 11      |
+| MINUS_ONE_SIGNER                                       | 1399            | 4399  | 1399   | 10399 | 3       |
+| RECOVERY_TIME                                          | 1369            | 1369  | 1369   | 1369  | 7       |
+| SINGLE_SIGNER                                          | 1422            | 3666  | 1422   | 10400 | 4       |
+| WALLET_TARGET_LIMIT                                    | 10434           | 10434 | 10434  | 10434 | 1       |
+| appSigner                                              | 1707            | 2373  | 1707   | 3707  | 3       |
+| appWhitelist                                           | 1734            | 1734  | 1734   | 1734  | 1       |
+| cancelRecovery                                         | 1375            | 1470  | 1470   | 1565  | 2       |
+| changeRecoverer                                        | 7137            | 12542 | 11821  | 15999 | 5       |
+| completeRecovery                                       | 3035            | 12147 | 9556   | 21684 | 5       |
+| entryPoint                                             | 1365            | 1365  | 1365   | 1432  | 8004    |
+| execute                                                | 3749            | 7940  | 5318   | 75338 | 345     |
+| executeBatch                                           | 2437            | 21645 | 25465  | 39032 | 6       |
+| exposed_validateSignature                              | 16712           | 37527 | 38279  | 62864 | 27      |
+| getNonce                                               | 2639            | 5609  | 2661   | 16161 | 263     |
+| getOwnersCount                                         | 1511            | 1622  | 1511   | 3511  | 18      |
+| inRecovery                                             | 1446            | 1446  | 1446   | 1446  | 8       |
+| isFunderWhitelisted                                    | 2082            | 3223  | 2480   | 4480  | 7       |
+| owners                                                 | 1815            | 2632  | 1815   | 14815 | 410     |
+| receive                                                | 33              | 33    | 33     | 33    | 5       |
+| recoverer                                              | 1533            | 6711  | 2533   | 12533 | 28      |
+| resetSigners                                           | 1854            | 50619 | 60400  | 84818 | 16      |
+| setAppKey                                              | 1765            | 27483 | 36890  | 36890 | 14      |
+| setFunderWhitelist                                     | 2092            | 17254 | 24835  | 24835 | 3       |
+| setSignerPolicy                                        | 1640            | 1803  | 1803   | 1966  | 2       |
+| signerPolicy                                           | 1477            | 2825  | 1499   | 12499 | 27      |
+| startRecovery                                          | 15821           | 30053 | 28893  | 37893 | 12      |
+| upgradeTo                                              | 1343            | 1343  | 1343   | 1343  | 1       |
+| validateUserOp                                         | 12684           | 16728 | 12684  | 78020 | 354     |
+| walletFunction                                         | 1345            | 1345  | 1345   | 1345  | 1       |
+| whitelistApp                                           | 13912           | 24818 | 24812  | 33812 | 249     |
+
+
+| src/sample/Counter.sol:Counter contract |                 |      |        |       |         |
+|-----------------------------------------|-----------------|------|--------|-------|---------|
+| Deployment Cost                         | Deployment Size |      |        |       |         |
+| 43099                                   | 239             |      |        |       |         |
+| Function Name                           | min             | avg  | median | max   | # calls |
+| count                                   | 261             | 269  | 261    | 2261  | 247     |
+| increment                               | 444             | 1658 | 444    | 22344 | 323     |
+| owner                                   | 126             | 126  | 126    | 126   | 1       |
+
+
+| src/sample/ETHPriceIsRight.sol:ETHPriceIsRight contract |                 |       |        |        |         |
+|---------------------------------------------------------|-----------------|-------|--------|--------|---------|
+| Deployment Cost                                         | Deployment Size |       |        |        |         |
+| 296871                                                  | 1466            |       |        |        |         |
+| Function Name                                           | min             | avg   | median | max    | # calls |
+| END_ENTER_TIMESTAMP                                     | 206             | 206   | 206    | 206    | 2       |
+| avgGuess                                                | 307             | 807   | 307    | 2307   | 4       |
+| enterGuess                                              | 285             | 64957 | 69429  | 113338 | 6       |
+| guessCount                                              | 328             | 828   | 328    | 2328   | 4       |
+| maxGuess                                                | 351             | 851   | 351    | 2351   | 4       |
+| minGuess                                                | 350             | 850   | 350    | 2350   | 4       |
+
+
+| src/sample/InitializableCounter.sol:InitializableCounter contract |                 |       |        |       |         |
+|-------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                   | Deployment Size |       |        |       |         |
+| 705890                                                            | 3688            |       |        |       |         |
+| Function Name                                                     | min             | avg   | median | max   | # calls |
+| initialize                                                        | 50351           | 50351 | 50351  | 50351 | 1       |
+| owner                                                             | 2323            | 2323  | 2323   | 2323  | 2       |
+
+
+| src/sample/OwnableCounter.sol:OwnableCounter contract |                 |      |        |      |         |
+|-------------------------------------------------------|-----------------|------|--------|------|---------|
+| Deployment Cost                                       | Deployment Size |      |        |      |         |
+| 161333                                                | 808             |      |        |      |         |
+| Function Name                                         | min             | avg  | median | max  | # calls |
+| owner                                                 | 323             | 1323 | 1323   | 2323 | 2       |
+| transferOwnership                                     | 2367            | 2367 | 2367   | 2367 | 1       |
+
+
+| src/tokens/EngenCredits.sol:EngenCredits contract |                 |        |        |        |         |
+|---------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                   | Deployment Size |        |        |        |         |
+| 1990252                                           | 10142           |        |        |        |         |
+| Function Name                                     | min             | avg    | median | max    | # calls |
+| balanceOf                                         | 627             | 1293   | 627    | 2627   | 12      |
+| burn                                              | 2776            | 2942   | 2942   | 3108   | 2       |
+| burnsEnabled                                      | 432             | 765    | 432    | 2432   | 6       |
+| calculatePoints                                   | 5072            | 10120  | 6895   | 18395  | 3       |
+| initialize                                        | 140981          | 140981 | 140981 | 140981 | 237     |
+| mint                                              | 2633            | 41222  | 48940  | 48940  | 6       |
+| mintCredits                                       | 416             | 25639  | 26523  | 50006  | 6       |
+| owner                                             | 2412            | 2412   | 2412   | 2412   | 1       |
+| phase1Override                                    | 609             | 1609   | 1609   | 2609   | 2       |
+| setBurnsEnabled                                   | 686             | 14342  | 20798  | 24798  | 9       |
+| setPhase1Override                                 | 3037            | 17385  | 23510  | 25610  | 3       |
+| setTransfersEnabled                               | 654             | 14300  | 20752  | 24752  | 9       |
+| totalSupply                                       | 2372            | 2372   | 2372   | 2372   | 1       |
+| transfer                                          | 2819            | 14074  | 14074  | 25330  | 2       |
+| transfersEnabled                                  | 421             | 1087   | 421    | 2421   | 6       |
+| upgradeTo                                         | 2918            | 6654   | 6654   | 10391  | 2       |
+
+
+| src/viewers/KYCViewer.sol:KYCViewer contract |                 |       |        |       |         |
+|----------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                              | Deployment Size |       |        |       |         |
+| 1408468                                      | 7667            |       |        |       |         |
+| Function Name                                | min             | avg   | median | max   | # calls |
+| getUserInfo                                  | 36763           | 48335 | 41359  | 66884 | 3       |
+| hasTrait                                     | 7825            | 7825  | 7825   | 7825  | 1       |
+| initialize                                   | 50235           | 50235 | 50235  | 50235 | 237     |
+| isCompany                                    | 5536            | 5536  | 5536   | 5536  | 1       |
+| isIndividual                                 | 3367            | 4495  | 4495   | 5623  | 2       |
+| isKYC                                        | 5395            | 13423 | 5991   | 43747 | 5       |
+| isSanctionsSafe                              | 5881            | 5881  | 5881   | 5881  | 1       |
+| isSanctionsSafeIn                            | 8349            | 8349  | 8349   | 8349  | 1       |
+| kintoID                                      | 305             | 305   | 305    | 305   | 1       |
+| owner                                        | 2343            | 2343  | 2343   | 2343  | 1       |
+| upgradeTo                                    | 2828            | 6583  | 6583   | 10338 | 2       |
+| walletFactory                                | 260             | 260   | 260    | 260   | 1       |
+
+
+| src/wallet/KintoWallet.sol:KintoWallet contract |                 |       |        |       |         |
+|-------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                 | Deployment Size |       |        |       |         |
+| 2675279                                         | 13883           |       |        |       |         |
+| Function Name                                   | min             | avg   | median | max   | # calls |
+| ALL_SIGNERS                                     | 272             | 272   | 272    | 272   | 4       |
+| MINUS_ONE_SIGNER                                | 292             | 292   | 292    | 292   | 2       |
+| RECOVERY_TIME                                   | 262             | 262   | 262    | 262   | 7       |
+| SINGLE_SIGNER                                   | 315             | 315   | 315    | 315   | 3       |
+| appSigner                                       | 597             | 1263  | 597    | 2597  | 3       |
+| appWhitelist                                    | 624             | 624   | 624    | 624   | 1       |
+| cancelRecovery                                  | 267             | 364   | 364    | 461   | 2       |
+| changeRecoverer                                 | 5821            | 7832  | 6026   | 10714 | 5       |
+| completeRecovery                                | 1918            | 11032 | 8439   | 20571 | 5       |
+| entryPoint                                      | 258             | 258   | 258    | 258   | 7970    |
+| execute                                         | 2623            | 6817  | 4196   | 74180 | 345     |
+| executeBatch                                    | 1263            | 20469 | 24290  | 37844 | 6       |
+| getNonce                                        | 1554            | 2560  | 1554   | 6054  | 239     |
+| getOwnersCount                                  | 404             | 521   | 404    | 2404  | 17      |
+| inRecovery                                      | 339             | 339   | 339    | 339   | 8       |
+| initialize                                      | 93646           | 93738 | 93646  | 98146 | 242     |
+| isFunderWhitelisted                             | 972             | 2113  | 1370   | 3370  | 7       |
+| owners                                          | 705             | 976   | 705    | 4705  | 391     |
+| recoverer                                       | 426             | 1426  | 1426   | 2426  | 28      |
+| resetSigners                                    | 737             | 21190 | 4637   | 64712 | 7       |
+| setAppKey                                       | 651             | 11240 | 2861   | 26802 | 5       |
+| setFunderWhitelist                              | 954             | 16122 | 23707  | 23707 | 3       |
+| setSignerPolicy                                 | 529             | 692   | 692    | 855   | 2       |
+| signerPolicy                                    | 392             | 1392  | 1392   | 2392  | 18      |
+| startRecovery                                   | 5713            | 25949 | 27789  | 27789 | 12      |
+| upgradeTo                                       | 235             | 235   | 235    | 235   | 1       |
+| validateUserOp                                  | 11420           | 15461 | 11420  | 76719 | 354     |
+| whitelistApp                                    | 3784            | 23329 | 23684  | 23684 | 249     |
+
+
+| src/wallet/KintoWalletFactory.sol:KintoWalletFactory contract |                 |        |        |        |         |
+|---------------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                               | Deployment Size |        |        |        |         |
+| 2956393                                                       | 15072           |        |        |        |         |
+| Function Name                                                 | min             | avg    | median | max    | # calls |
+| beacon                                                        | 2404            | 2404   | 2404   | 2404   | 2       |
+| changeWalletRecoverer                                         | 2670            | 8067   | 4680   | 16851  | 3       |
+| claimFromFaucet                                               | 14429           | 59045  | 58554  | 104645 | 4       |
+| completeWalletRecovery                                        | 2793            | 31914  | 7296   | 129730 | 5       |
+| createAccount                                                 | 630             | 374602 | 381949 | 395349 | 247     |
+| deployContract                                                | 13299           | 158776 | 19401  | 746882 | 7       |
+| factoryWalletVersion                                          | 2395            | 2395   | 2395   | 2395   | 1       |
+| fundWallet                                                    | 452             | 21946  | 16988  | 47090  | 5       |
+| getContractAddress                                            | 541             | 541    | 541    | 541    | 1       |
+| getWalletTimestamp                                            | 564             | 852    | 564    | 2564   | 367     |
+| initialize                                                    | 364304          | 364304 | 364304 | 364304 | 237     |
+| kintoID                                                       | 426             | 447    | 426    | 2426   | 747     |
+| owner                                                         | 376             | 444    | 376    | 2376   | 29      |
+| sendMoneyToAccount                                            | 20079           | 34625  | 27299  | 54745  | 11      |
+| startWalletRecovery                                           | 2679            | 23824  | 33894  | 33894  | 6       |
+| upgradeAllWalletImplementations                               | 2669            | 6775   | 6739   | 18339  | 270     |
+| upgradeTo                                                     | 2934            | 6653   | 6653   | 10373  | 2       |
+| walletTs                                                      | 570             | 2562   | 2570   | 2570   | 284     |
+
+
+| test/EngenCredits.t.sol:EngenCreditsUpgrade contract |                 |     |        |     |         |
+|------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                      | Deployment Size |     |        |     |         |
+| 1996459                                              | 10141           |     |        |     |         |
+| Function Name                                        | min             | avg | median | max | # calls |
+| newFunction                                          | 305             | 305 | 305    | 305 | 1       |
+| proxiableUUID                                        | 375             | 375 | 375    | 375 | 1       |
+
+
+| test/Faucet.t.sol:FaucetNewUpgrade contract |                 |     |        |     |         |
+|---------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                             | Deployment Size |     |        |     |         |
+| 1242202                                     | 6614            |     |        |     |         |
+| Function Name                               | min             | avg | median | max | # calls |
+| newFunction                                 | 227             | 227 | 227    | 227 | 1       |
+| proxiableUUID                               | 352             | 352 | 352    | 352 | 1       |
+
+
+| test/KYCViewer.t.sol:KYCViewerUpgraded contract |                 |     |        |     |         |
+|-------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                 | Deployment Size |     |        |     |         |
+| 1422887                                         | 7699            |     |        |     |         |
+| Function Name                                   | min             | avg | median | max | # calls |
+| newFunction                                     | 249             | 249 | 249    | 249 | 1       |
+| proxiableUUID                                   | 352             | 352 | 352    | 352 | 1       |
+
+
+| test/KintoAppRegistry.t.sol:KintoAppRegistryV2 contract |                 |     |        |     |         |
+|---------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                         | Deployment Size |     |        |     |         |
+| 2913309                                                 | 14967           |     |        |     |         |
+| Function Name                                           | min             | avg | median | max | # calls |
+| newFunction                                             | 238             | 238 | 238    | 238 | 1       |
+| proxiableUUID                                           | 419             | 419 | 419    | 419 | 1       |
+
+
+| test/KintoID.t.sol:KintoIDv2 contract |                 |     |        |     |         |
+|---------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                       | Deployment Size |     |        |     |         |
+| 3829917                               | 19443           |     |        |     |         |
+| Function Name                         | min             | avg | median | max | # calls |
+| UPGRADER_ROLE                         | 327             | 327 | 327    | 327 | 1       |
+| newFunction                           | 260             | 260 | 260    | 260 | 2       |
+| proxiableUUID                         | 374             | 374 | 374    | 374 | 2       |
+
+
+| test/KintoWalletFactory.t.sol:KintoWalletFactoryUpgrade contract |                 |     |        |     |         |
+|------------------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                                  | Deployment Size |     |        |     |         |
+| 2965614                                                          | 15120           |     |        |     |         |
+| Function Name                                                    | min             | avg | median | max | # calls |
+| newFunction                                                      | 238             | 238 | 238    | 238 | 1       |
+| proxiableUUID                                                    | 341             | 341 | 341    | 341 | 1       |
+
+
+| test/KintoWalletFactory.t.sol:KintoWalletUpgrade contract |                 |     |        |     |         |
+|-----------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                           | Deployment Size |     |        |     |         |
+| 2681502                                                   | 13920           |     |        |     |         |
+| Function Name                                             | min             | avg | median | max | # calls |
+| walletFunction                                            | 238             | 238 | 238    | 238 | 1       |
+
+
+| test/SponsorPaymaster.t.sol:SponsorPaymasterUpgrade contract |                 |     |        |     |         |
+|--------------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                              | Deployment Size |     |        |     |         |
+| 2270528                                                      | 11776           |     |        |     |         |
+| Function Name                                                | min             | avg | median | max | # calls |
+| newFunction                                                  | 294             | 294 | 294    | 294 | 1       |
+| proxiableUUID                                                | 342             | 342 | 342    | 342 | 1       |
+
+
+| test/harness/KintoAppRegistryHarness.sol:KintoAppRegistryHarness contract |                 |       |        |       |         |
+|---------------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                           | Deployment Size |       |        |       |         |
+| 2909509                                                                   | 14983           |       |        |       |         |
+| Function Name                                                             | min             | avg   | median | max   | # calls |
+| GAS_LIMIT_PERIOD                                                          | 263             | 263   | 263    | 263   | 3       |
+| GAS_LIMIT_THRESHOLD                                                       | 262             | 262   | 262    | 262   | 3       |
+| RATE_LIMIT_PERIOD                                                         | 262             | 262   | 262    | 262   | 3       |
+| RATE_LIMIT_THRESHOLD                                                      | 285             | 285   | 285    | 285   | 3       |
+| childToParentContract                                                     | 691             | 691   | 691    | 691   | 1       |
+| exposed_baseURI                                                           | 785             | 785   | 785    | 785   | 1       |
+| getSponsor                                                                | 726             | 2642  | 2726   | 2726  | 24      |
+| isSponsored                                                               | 639             | 1133  | 639    | 5128  | 20      |
+| name                                                                      | 601             | 601   | 601    | 601   | 1       |
+| owner                                                                     | 399             | 399   | 399    | 399   | 1       |
+| proxiableUUID                                                             | 397             | 397   | 397    | 397   | 29      |
+| setSponsoredContracts                                                     | 28511           | 28511 | 28511  | 28511 | 2       |
+| symbol                                                                    | 677             | 677   | 677    | 677   | 1       |
+| updateMetadata                                                            | 53034           | 55034 | 55034  | 57034 | 2       |
+
+
+| test/harness/KintoWalletHarness.sol:KintoWalletHarness contract |                 |       |        |       |         |
+|-----------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                 | Deployment Size |       |        |       |         |
+| 2703732                                                         | 14031           |       |        |       |         |
+| Function Name                                                   | min             | avg   | median | max   | # calls |
+| ALL_SIGNERS                                                     | 272             | 272   | 272    | 272   | 7       |
+| MINUS_ONE_SIGNER                                                | 292             | 292   | 292    | 292   | 1       |
+| SINGLE_SIGNER                                                   | 293             | 293   | 293    | 293   | 1       |
+| WALLET_TARGET_LIMIT                                             | 327             | 327   | 327    | 327   | 1       |
+| entryPoint                                                      | 325             | 325   | 325    | 325   | 34      |
+| exposed_validateSignature                                       | 6515            | 35230 | 36996  | 61446 | 27      |
+| getNonce                                                        | 1532            | 5844  | 6032   | 6032  | 24      |
+| getOwnersCount                                                  | 404             | 404   | 404    | 404   | 1       |
+| owners                                                          | 705             | 915   | 705    | 4705  | 19      |
+| resetSigners                                                    | 59278           | 71509 | 76690  | 83690 | 9       |
+| setAppKey                                                       | 26780           | 26780 | 26780  | 26780 | 9       |
+| signerPolicy                                                    | 370             | 370   | 370    | 370   | 9       |
+
+
+| test/harness/SponsorPaymasterHarness.sol:SponsorPaymasterHarness contract |                 |     |        |     |         |
+|---------------------------------------------------------------------------|-----------------|-----|--------|-----|---------|
+| Deployment Cost                                                           | Deployment Size |     |        |     |         |
+| 2271044                                                                   | 11698           |     |        |     |         |
+| Function Name                                                             | min             | avg | median | max | # calls |
+| proxiableUUID                                                             | 320             | 320 | 320    | 320 | 29      |
+
+
+| test/helpers/UUPSProxy.sol:UUPSProxy contract  |                 |        |        |        |         |
+|------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                | Deployment Size |        |        |        |         |
+| 164298                                         | 1944            |        |        |        |         |
+| Function Name                                  | min             | avg    | median | max    | # calls |
+| CLAIM_AMOUNT                                   | 636             | 1536   | 636    | 5136   | 5       |
+| COST_OF_POST                                   | 5124            | 5124   | 5124   | 5124   | 2       |
+| FAUCET_AMOUNT                                  | 679             | 2179   | 679    | 5179   | 3       |
+| GAS_LIMIT_PERIOD                               | 658             | 753    | 658    | 5158   | 282     |
+| GAS_LIMIT_THRESHOLD                            | 657             | 657    | 657    | 657    | 280     |
+| KYC_PROVIDER_ROLE                              | 778             | 901    | 778    | 5278   | 291     |
+| MAX_COST_OF_PREVERIFICATION                    | 5169            | 5169   | 5169   | 5169   | 1       |
+| MAX_COST_OF_VERIFICATION                       | 5213            | 5213   | 5213   | 5213   | 1       |
+| RATE_LIMIT_PERIOD                              | 657             | 897    | 657    | 5168   | 281     |
+| RATE_LIMIT_THRESHOLD                           | 680             | 680    | 680    | 680    | 276     |
+| RATE_LIMIT_THRESHOLD_TOTAL                     | 670             | 670    | 670    | 670    | 9       |
+| UPGRADER_ROLE                                  | 722             | 2222   | 722    | 5222   | 3       |
+| active                                         | 718             | 718    | 718    | 718    | 1       |
+| addDepositFor                                  | 5303            | 45733  | 35237  | 69366  | 514     |
+| addSanction                                    | 10096           | 25820  | 28707  | 32883  | 5       |
+| addTrait                                       | 1912            | 14757  | 4216   | 32906  | 7       |
+| appCount                                       | 735             | 1735   | 1735   | 2735   | 2       |
+| appRegistry                                    | 843             | 843    | 843    | 843    | 1       |
+| appUserLimit                                   | 4048            | 18048  | 18048  | 32048  | 2       |
+| balanceOf                                      | 1025            | 3186   | 1055   | 7555   | 20      |
+| balances                                       | 946             | 946    | 946    | 946    | 2       |
+| beacon                                         | 7299            | 7299   | 7299   | 7299   | 2       |
+| burn                                           | 814             | 3201   | 3339   | 5314   | 4       |
+| burnKYC                                        | 3718            | 50780  | 67353  | 72744  | 14      |
+| burnsEnabled                                   | 827             | 1910   | 827    | 7327   | 6       |
+| calculatePoints                                | 5470            | 10518  | 7293   | 18793  | 3       |
+| changeWalletRecoverer                          | 7572            | 12967  | 9582   | 21749  | 3       |
+| childToParentContract                          | 1089            | 1089   | 1089   | 1089   | 1       |
+| claimFromFaucet                                | 19379           | 63993  | 63502  | 109591 | 4       |
+| claimKintoETH((address,uint256,uint256,bytes)) | 6579            | 61081  | 87332  | 89332  | 3       |
+| claimKintoETH()                                | 1022            | 35647  | 56563  | 56781  | 5       |
+| claimed                                        | 984             | 5284   | 7484   | 7484   | 5       |
+| completeWalletRecovery                         | 7701            | 34126  | 9711   | 130140 | 5       |
+| createAccount                                  | 5538            | 375173 | 382356 | 400256 | 247     |
+| deployContract                                 | 18267           | 161342 | 22918  | 748026 | 7       |
+| depositInfo                                    | 1196            | 2196   | 2196   | 3196   | 2       |
+| enableDSA                                      | 1258            | 13538  | 14002  | 24893  | 4       |
+| exposed_baseURI                                | 1192            | 1192   | 1192   | 1192   | 1       |
+| factoryWalletVersion                           | 7290            | 7290   | 7290   | 7290   | 1       |
+| fundWallet                                     | 5351            | 25943  | 17383  | 51985  | 5       |
+| getAppMetadata                                 | 3447            | 3492   | 3447   | 3630   | 4       |
+| getContractAddress                             | 5442            | 5442   | 5442   | 5442   | 1       |
+| getContractLimits                              | 3425            | 4370   | 3594   | 24094  | 705     |
+| getDeposit                                     | 1646            | 4646   | 1646   | 10646  | 3       |
+| getSponsor                                     | 1120            | 1487   | 1124   | 7624   | 1080    |
+| getUserInfo                                    | 41706           | 53280  | 46302  | 71833  | 3       |
+| getWalletTimestamp                             | 962             | 1851   | 962    | 7462   | 367     |
+| grantRole                                      | 27925           | 27925  | 27925  | 27925  | 277     |
+| hasRole                                        | 1211            | 3044   | 3211   | 3211   | 12      |
+| hasTrait(address,uint16)                       | 1239            | 1639   | 1239   | 3239   | 10      |
+| hasTrait(address,uint8)                        | 8226            | 8226   | 8226   | 8226   | 1       |
+| initialize()                                   | 50561           | 108221 | 96176  | 189068 | 1224    |
+| initialize(address)                            | 50746           | 363379 | 364699 | 364699 | 238     |
+| initialize(address,address,address)            | 115538          | 115538 | 115538 | 115538 | 237     |
+| isCompany                                      | 1068            | 2690   | 1068   | 5934   | 3       |
+| isIndividual                                   | 1087            | 2609   | 1087   | 6021   | 5       |
+| isKYC                                          | 1138            | 2522   | 1734   | 48645  | 1508    |
+| isSanctionsMonitored                           | 1126            | 1126   | 1126   | 1126   | 3       |
+| isSanctionsSafe                                | 1389            | 2611   | 1389   | 6279   | 4       |
+| isSanctionsSafeIn                              | 1694            | 2599   | 1694   | 8750   | 10      |
+| isSponsored                                    | 1040            | 1775   | 1040   | 5529   | 33      |
+| kintoID                                        | 700             | 884    | 821    | 7321   | 748     |
+| lastMonitoredAt                                | 801             | 1884   | 801    | 7301   | 6       |
+| mint                                           | 7547            | 46122  | 53838  | 53838  | 6       |
+| mintCompanyKyc                                 | 246854          | 246854 | 246854 | 246854 | 1       |
+| mintCredits                                    | 812             | 26033  | 26917  | 50398  | 6       |
+| mintIndividualKyc                              | 2086            | 233126 | 236990 | 266061 | 279     |
+| mintedAt                                       | 1025            | 1025   | 1025   | 1025   | 2       |
+| monitor                                        | 8196            | 24784  | 17913  | 66014  | 13      |
+| name                                           | 1002            | 1024   | 1024   | 1046   | 2       |
+| newFunction                                    | 622             | 653    | 649    | 700    | 8       |
+| nonces                                         | 1007            | 3637   | 3007   | 7528   | 305     |
+| owner                                          | 771             | 1248   | 794    | 7348   | 92      |
+| ownerOf                                        | 1045            | 1045   | 1045   | 1045   | 1       |
+| phase1Override                                 | 1007            | 4257   | 4257   | 7507   | 2       |
+| postOp                                         | 11975           | 32179  | 18079  | 134479 | 349     |
+| receive                                        | 4954            | 4954   | 4954   | 4954   | 1       |
+| registerApp                                    | 3795            | 304109 | 310356 | 363250 | 279     |
+| removeSanction                                 | 4711            | 15895  | 10094  | 32881  | 3       |
+| removeTrait                                    | 6333            | 16452  | 10119  | 32906  | 3       |
+| safeTransferFrom                               | 1840            | 3088   | 3088   | 4336   | 2       |
+| sendMoneyToAccount                             | 24978           | 39521  | 32194  | 59640  | 11      |
+| setAppRegistry                                 | 7524            | 9731   | 8619   | 14162  | 4       |
+| setBurnsEnabled                                | 1085            | 17239  | 21193  | 29693  | 9       |
+| setPhase1Override                              | 7969            | 20811  | 23932  | 30532  | 3       |
+| setSponsoredContracts                          | 1375            | 19642  | 27885  | 33439  | 5       |
+| setTransfersEnabled                            | 1053            | 17197  | 21147  | 29647  | 9       |
+| setUserOpMaxCost                               | 7166            | 7304   | 7304   | 7443   | 2       |
+| startFaucet                                    | 882             | 24831  | 29417  | 29417  | 13      |
+| startWalletRecovery                            | 7578            | 28720  | 38789  | 38789  | 6       |
+| supportsInterface                              | 5607            | 5607   | 5607   | 5607   | 2       |
+| symbol                                         | 1012            | 1045   | 1045   | 1078   | 2       |
+| tokenOfOwnerByIndex                            | 1399            | 1413   | 1399   | 1443   | 3       |
+| totalSupply                                    | 7267            | 7267   | 7267   | 7267   | 1       |
+| traits                                         | 129405          | 129405 | 129405 | 129405 | 1       |
+| transfer                                       | 3221            | 14476  | 14476  | 25731  | 2       |
+| transferOnRecovery                             | 1286            | 47510  | 47510  | 93735  | 2       |
+| transfersEnabled                               | 816             | 2232   | 816    | 7316   | 6       |
+| unlockTokenDeposit                             | 790             | 10740  | 10740  | 20690  | 4       |
+| updateMetadata                                 | 1857            | 32267  | 32677  | 57486  | 10      |
+| upgradeAllWalletImplementations                | 3082            | 7187   | 7134   | 18734  | 270     |
+| upgradeTo                                      | 5901            | 6546   | 6228   | 37584  | 310     |
+| userOpMaxCost                                  | 746             | 3579   | 2746   | 7246   | 3       |
+| validatePaymasterUserOp                        | 1193            | 7659   | 6153   | 27653  | 355     |
+| walletFactory                                  | 655             | 655    | 655    | 655    | 1       |
+| walletTs                                       | 968             | 3198   | 2968   | 7468   | 284     |
+| withdrawAll                                    | 862             | 4357   | 4357   | 7853   | 2       |
+| withdrawTo                                     | 7609            | 10355  | 10355  | 13102  | 2       |
+| withdrawTokensTo                               | 23449           | 27939  | 23817  | 34371  | 5       |
+
+
+
+ 
+Ran 22 test suites: [32m285[0m tests passed, [31m0[0m failed, [33m0[0m skipped (285 total tests)

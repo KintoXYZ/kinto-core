@@ -57,15 +57,19 @@ contract KintoID is
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
-    bytes32 public domainSeparator;
+    bytes32 public override domainSeparator;
 
-    /* ============ Modifiers ============ */
+    // Indicates which accounts are allowed to transfer their Kinto ID to another account
+    mapping(address => address) public override recoveryTargets;
+
+    address public immutable override walletFactory;
 
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address _walletFactory) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     function initialize() external initializer {
@@ -81,12 +85,6 @@ contract KintoID is
 
         lastMonitoredAt = block.timestamp;
         domainSeparator = _domainSeparator();
-    }
-
-    function initializeV6() external {
-        if (domainSeparator == 0) {
-            domainSeparator = _domainSeparator();
-        }
     }
 
     /**
@@ -163,7 +161,7 @@ contract KintoID is
         uint16[] calldata _traits,
         bool _indiv
     ) private onlySignerVerified(_signatureData) {
-        require(balanceOf(_signatureData.signer) == 0, "Balance before mint must be 0");
+        if (balanceOf(_signatureData.signer) > 0) revert BalanceNotZero();
 
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = block.timestamp;
@@ -180,8 +178,27 @@ contract KintoID is
 
     /* ============ Burn ============ */
 
+    /**
+     * @dev Transfers the NFT from the old account to the new account
+     * @param _from Old address
+     * @param _to New address
+     */
+    function transferOnRecovery(address _from, address _to) external override {
+        require(balanceOf(_from) > 0 && balanceOf(_to) == 0, "Invalid transfer");
+        require(
+            msg.sender == walletFactory || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
+            "Only the wallet factory or admins can trigger this"
+        );
+        recoveryTargets[_from] = _to;
+        _transfer(_from, _to, tokenOfOwnerByIndex(_from, 0));
+        recoveryTargets[_from] = address(0);
+    }
+
+    /**
+     * @dev Burns a KYC token base ERC721 burn method. Override to disable.
+     */
     function burn(uint256 /* tokenId */ ) public pure override {
-        require(false, "Use burnKYC instead");
+        if (true) revert MethodNotAllowed("Use burnKYC instead");
     }
 
     /**
@@ -189,11 +206,11 @@ contract KintoID is
      * @param _signatureData Signature data
      */
     function burnKYC(SignatureData calldata _signatureData) external override onlySignerVerified(_signatureData) {
-        require(balanceOf(_signatureData.signer) > 0, "Nothing to burn");
+        if (balanceOf(_signatureData.signer) == 0) revert NothingToBurn();
 
         nonces[_signatureData.signer] += 1;
         _burn(tokenOfOwnerByIndex(_signatureData.signer, 0));
-        require(balanceOf(_signatureData.signer) == 0, "Balance after burn must be 0");
+        if (balanceOf(_signatureData.signer) > 0) revert BalanceNotZero();
 
         // Update metadata after burning the token
         Metadata storage meta = _kycmetas[_signatureData.signer];
@@ -217,8 +234,8 @@ contract KintoID is
         override
         onlyRole(KYC_PROVIDER_ROLE)
     {
-        require(_accounts.length == _traitsAndSanctions.length, "Length mismatch");
-        require(_accounts.length <= 200, "Too many accounts to monitor at once");
+        if (_accounts.length != _traitsAndSanctions.length) revert LengthMismatch();
+        if (_accounts.length > 200) revert AccountsAmountExceeded();
 
         uint256 time = block.timestamp;
 
@@ -253,7 +270,7 @@ contract KintoID is
      * @param _traitId trait id to be added.
      */
     function addTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account) > 0, "Account must have a KYC token");
+        if (balanceOf(_account) == 0) revert KYCRequired();
 
         Metadata storage meta = _kycmetas[_account];
         if (!meta.traits.get(_traitId)) {
@@ -270,7 +287,7 @@ contract KintoID is
      * @param _traitId trait id to be removed.
      */
     function removeTrait(address _account, uint16 _traitId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account) > 0, "Account must have a KYC token");
+        if (balanceOf(_account) == 0) revert KYCRequired();
         Metadata storage meta = _kycmetas[_account];
 
         if (meta.traits.get(_traitId)) {
@@ -287,7 +304,7 @@ contract KintoID is
      * @param _countryId country id to be added.
      */
     function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account) > 0, "Account must have a KYC token");
+        if (balanceOf(_account) == 0) revert KYCRequired();
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -304,7 +321,7 @@ contract KintoID is
      * @param _countryId country id to be removed.
      */
     function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
-        require(balanceOf(_account) > 0, "Account must have a KYC token");
+        if (balanceOf(_account) == 0) revert KYCRequired();
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
@@ -412,9 +429,9 @@ contract KintoID is
      * @param _signature signature to be recovered.
      */
     modifier onlySignerVerified(IKintoID.SignatureData calldata _signature) {
-        require(block.timestamp < _signature.expiresAt, "Signature has expired");
-        require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
-        require(hasRole(KYC_PROVIDER_ROLE, msg.sender), "Invalid Provider");
+        if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
+        if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
+        if (!hasRole(KYC_PROVIDER_ROLE, msg.sender)) revert InvalidProvider();
 
         // Ensure signer is an EOA
         uint256 size;
@@ -422,11 +439,11 @@ contract KintoID is
         assembly {
             size := extcodesize(signer)
         }
-        require(size == 0, "Signer must be an EOA");
+        if (size > 0) revert SignerNotEOA();
 
         bytes32 eip712MessageHash =
             keccak256(abi.encodePacked("\x19\x01", domainSeparator, _hashSignatureData(_signature)));
-        require(_signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature), "Invalid Signer");
+        if (!_signature.signer.isValidSignatureNow(eip712MessageHash, _signature.signature)) revert InvalidSigner();
         _;
     }
 
@@ -476,10 +493,10 @@ contract KintoID is
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
-        require(
-            (from == address(0) && to != address(0)) || (from != address(0) && to == address(0)),
-            "Only mint or burn transfers are allowed"
-        );
+        if (
+            (from == address(0) || recoveryTargets[from] != to || !isSanctionsSafe(from))
+                && (from != address(0) || to == address(0)) && (from == address(0) || to != address(0))
+        ) revert OnlyMintBurnOrTransfer();
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
@@ -500,6 +517,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV6 is KintoID {
-    constructor() KintoID() {}
+contract KintoIDV7 is KintoID {
+    constructor(address _walletFactory) KintoID(_walletFactory) {}
 }

@@ -6,6 +6,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";

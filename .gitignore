@@ -12,3 +12,6 @@ bin
 # node
 node_modules/
 out/
+
+# addresses.json on local testnet
+/test/artifacts/31337/addresses.json

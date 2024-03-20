@@ -1,0 +1,6 @@
+{
+    "contract_inspector": {
+        "enabled": true,
+        "scan_directories": ["src/"]
+    }
+}

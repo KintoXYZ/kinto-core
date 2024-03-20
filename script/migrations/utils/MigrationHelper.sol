@@ -26,10 +26,14 @@ interface IInitialize {
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     using ECDSAUpgradeable for bytes32;
 
+    bool testMode;
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
     function run() public virtual {
+        try vm.envBool("TEST_MODE") returns (bool _testMode) {
+            testMode = _testMode;
+        } catch {}
         console.log("Running on chain: ", vm.toString(block.chainid));
         console.log("Executing from address", msg.sender);
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -82,15 +86,40 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         _impl = _deployImplementation(contractName, version, bytecode);
 
         // (2). call upgradeTo to set new implementation
-        if (isWallet) {
-            vm.broadcast(); // may require LEDGER_ADMIN
-            factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
-        } else {
-            if (_isGethAllowed(proxy)) {
+        if (!testMode) {
+            if (isWallet) {
                 vm.broadcast(); // may require LEDGER_ADMIN
-                UUPSUpgradeable(proxy).upgradeTo(_impl);
+                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
             } else {
-                _upgradeTo(proxy, _impl, deployerPrivateKey);
+                if (_isGethAllowed(proxy)) {
+                    vm.broadcast(); // may require LEDGER_ADMIN
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
+                } else {
+                    try Ownable(proxy).owner() returns (address owner) {
+                        if (owner != _getChainDeployment("KintoWallet-admin")) {
+                            console.log(
+                                "%s contract is not owned by the KintoWallet-admin, its owner is %s",
+                                contractName,
+                                vm.toString(owner)
+                            );
+                            revert("Contract is not owned by KintoWallet-admin");
+                        }
+                        _upgradeTo(proxy, _impl, deployerPrivateKey);
+                    } catch {
+                        _upgradeTo(proxy, _impl, deployerPrivateKey);
+                    }
+                }
+            }
+        } else {
+            if (isWallet) {
+                vm.prank(factory.owner());
+                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
+            } else {
+                // todo: ideally, on testMode, we should use the KintoWallet-admin and adjust tests so they use the handleOps
+                try Ownable(proxy).owner() returns (address owner) {
+                    vm.prank(owner);
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
+                } catch {}
             }
         }
     }
@@ -115,7 +144,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             _getChainDeployment("SponsorPaymaster")
         );
 
-        vm.broadcast(deployerPrivateKey);
+        vm.broadcast(_signerPk);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
@@ -149,15 +178,19 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     }
 
     /// @notice whitelists an app in the KintoWallet
-    function _whitelistApp(address _app, uint256 _signerPk) internal {
+    function _whitelistApp(address _app, uint256 _signerPk, bool _whitelist) internal {
         address payable _to = payable(_getChainDeployment("KintoWallet-admin"));
         address[] memory apps = new address[](1);
         apps[0] = _app;
 
         bool[] memory flags = new bool[](1);
-        flags[0] = true;
+        flags[0] = _whitelist;
 
         _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _to, _signerPk);
+    }
+
+    function _whitelistApp(address _app, uint256 _signerPk) internal {
+        _whitelistApp(_app, _signerPk, true);
     }
 
     function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
@@ -181,6 +214,30 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = _signerPk;
+
+        UserOperation[] memory userOps = new UserOperation[](_selectorAndParams.length);
+        uint256 nonce = IKintoWallet(_from).getNonce();
+        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+            userOps[i] = _createUserOperation(
+                block.chainid,
+                _from,
+                _to,
+                0,
+                nonce,
+                privateKeys,
+                _selectorAndParams[i],
+                _getChainDeployment("SponsorPaymaster")
+            );
+            nonce++;
+        }
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+    }
+
     function _fundPaymaster(address _proxy, uint256 _signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         vm.broadcast(_signerPk);
@@ -190,12 +247,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
         // contracts allowed to receive EOAs calls
-        address[4] memory GETH_ALLOWED_CONTRACTS = [
+        address[6] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
             _getChainDeployment("KintoWalletFactory"),
             _getChainDeployment("SponsorPaymaster"),
-            _getChainDeployment("KintoID")
-            // _getChainDeployment("KintoAppRegistry"), soon to be added
+            _getChainDeployment("KintoID"),
+            _getChainDeployment("KintoAppRegistry"),
+            _getChainDeployment("KintoInflator")
         ];
 
         // check if contract is a geth allowed contract
@@ -205,5 +263,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                 break;
             }
         }
+    }
+
+    // @dev this is a workaround to get the address of the KintoWallet-admin in test mode
+    function _getChainDeployment(string memory _contractName) internal override returns (address _contract) {
+        if (testMode && keccak256(abi.encode(_contractName)) == keccak256(abi.encode("KintoWallet-admin"))) {
+            return vm.envAddress("KINTO_ADMIN_WALLET");
+        }
+        return super._getChainDeployment(_contractName);
     }
 }

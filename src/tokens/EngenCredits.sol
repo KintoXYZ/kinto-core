@@ -19,6 +19,13 @@ contract EngenCredits is
     ERC20PermitUpgradeable,
     UUPSUpgradeable
 {
+    error TransfersAlreadyEnabled();
+    error BurnsAlreadyEnabled();
+    error LengthMismatch();
+    error MintNotAllowed();
+    error NoTokensToMint();
+    error TransfersNotEnabled();
+
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Engen Credits";
 
@@ -61,7 +68,7 @@ contract EngenCredits is
      * @param _transfersEnabled True if transfers should be enabled
      */
     function setTransfersEnabled(bool _transfersEnabled) public onlyOwner {
-        require(!transfersEnabled, "EC: Transfers Already enabled");
+        if (transfersEnabled) revert TransfersAlreadyEnabled();
         transfersEnabled = _transfersEnabled;
     }
 
@@ -70,7 +77,7 @@ contract EngenCredits is
      * @param _burnsEnabled True if burning should be enabled
      */
     function setBurnsEnabled(bool _burnsEnabled) public onlyOwner {
-        require(!burnsEnabled, "EC: Burns Already enabled");
+        if (burnsEnabled) revert BurnsAlreadyEnabled();
         burnsEnabled = _burnsEnabled;
     }
 
@@ -80,7 +87,7 @@ contract EngenCredits is
      * @param _points The points to be set
      */
     function setPhase1Override(address[] calldata _wallets, uint256[] calldata _points) public onlyOwner {
-        require(_wallets.length == _points.length, "EC: Invalid input");
+        if (_wallets.length != _points.length) revert LengthMismatch();
         for (uint256 i = 0; i < _wallets.length; i++) {
             phase1Override[_wallets[i]] = _points[i];
         }
@@ -92,9 +99,9 @@ contract EngenCredits is
      * @dev Mint points for the Engen user based on their activity
      */
     function mintCredits() public {
-        require(!transfersEnabled && !burnsEnabled, "EC: Mint not allowed after completion");
+        if (transfersEnabled || burnsEnabled) revert MintNotAllowed();
         uint256 points = calculatePoints(msg.sender);
-        require(points > 0 && balanceOf(msg.sender) < points, "EC: No tokens to mint");
+        if (points == 0 || balanceOf(msg.sender) >= points) revert NoTokensToMint();
         _mint(msg.sender, points - balanceOf(msg.sender));
     }
 
@@ -120,11 +127,14 @@ contract EngenCredits is
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override(ERC20Upgradeable) {
         super._beforeTokenTransfer(from, to, amount);
-        require(
-            from == address(0) // mint
-                || (to == address(0) && burnsEnabled) // burn
-                || transfersEnabled,
-            "EC: Transfers not enabled"
-        );
+        if (
+            from != address(0) // mint
+                && (to != address(0) || !burnsEnabled) // burn
+                && !transfersEnabled
+        ) revert TransfersNotEnabled();
     }
+}
+
+contract EngenCreditsV2 is EngenCredits {
+    constructor() EngenCredits() {}
 }

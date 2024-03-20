@@ -10,3 +10,12 @@
 [submodule "lib/account-abstraction"]
 	path = lib/account-abstraction
 	url = https://github.com/KintoXYZ/account-abstraction
+[submodule "lib/openzeppelin-contracts-upgradeable-5.0.1"]
+	path = lib/openzeppelin-contracts-upgradeable-5.0.1
+	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
+[submodule "lib/openzeppelin-contracts-5.0.1"]
+	path = lib/openzeppelin-contracts-5.0.1
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/vectorized/solady

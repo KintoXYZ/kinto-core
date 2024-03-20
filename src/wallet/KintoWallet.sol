@@ -50,6 +50,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
+    event AppKeyCreated(address indexed appKey, address indexed signer);
 
     /* ============ Modifiers ============ */
 
@@ -80,7 +81,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * the implementation by calling `upgradeTo()`
      */
     function initialize(address anOwner, address _recoverer) external virtual initializer onlyFactory {
-        // require(anOwner != _recoverer, 'recoverer and signer cannot be the same');
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
         recoverer = _recoverer;
@@ -107,7 +107,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         override
     {
         _requireFromEntryPoint();
-        require(dest.length == func.length && values.length == dest.length, "KW-eb: wrong array length");
+        if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i]);
         }
@@ -122,8 +122,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param policy new policy
      */
     function setSignerPolicy(uint8 policy) public override onlySelf {
-        require(policy > 0 && policy < 4 && policy != signerPolicy, "KW-sp: invalid policy");
-        require(policy == 1 || owners.length > 1, "invalid policy");
+        if (policy == 0 || policy >= 4 || policy == signerPolicy) revert InvalidPolicy();
+        if (policy != 1 && owners.length <= 1) revert InvalidPolicy();
         emit WalletPolicyChanged(policy, signerPolicy);
         signerPolicy = policy;
     }
@@ -133,7 +133,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
-        require(newSigners[0] == owners[0], "KW-rs: first signer must be the same unless recovery");
+        if (newSigners.length == 0) revert EmptySigners();
+        if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
         _resetSigners(newSigners, policy);
     }
 
@@ -145,7 +146,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param flags whether to allow or disallow the funder
      */
     function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external override onlySelf {
-        require(newWhitelist.length == flags.length, "KW-sfw: invalid array");
+        if (newWhitelist.length != flags.length) revert LengthMismatch();
         for (uint256 i = 0; i < newWhitelist.length; i++) {
             funderWhitelist[newWhitelist[i]] = flags[i];
         }
@@ -173,7 +174,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param flags whether to allow or disallow the app
      */
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external override onlySelf {
-        require(apps.length == flags.length, "KW-apw: invalid array");
+        if (apps.length != flags.length) revert LengthMismatch();
         for (uint256 i = 0; i < apps.length; i++) {
             appWhitelist[apps[i]] = flags[i];
         }
@@ -188,11 +189,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function setAppKey(address app, address signer) external override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
-        require(app != address(0), "KW-apk: invalid address");
-        require(appWhitelist[app], "KW-apk: contract not whitelisted"); // todo: i don't think we need to check this here
-        require(appSigner[app] != signer, "KW-apk: same key");
+        if (app == address(0)) revert InvalidApp();
+        if (!appWhitelist[app]) revert AppNotWhitelisted();
+        if (appSigner[app] == signer) revert InvalidSigner();
         appSigner[app] = signer;
-        // todo: emit event
+        emit AppKeyCreated(app, signer);
     }
 
     /* ============ Recovery Process ============ */
@@ -211,8 +212,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newSigners new signers array
      */
     function completeRecovery(address[] calldata newSigners) external override onlyFactory {
-        require(inRecovery > 0 && block.timestamp > (inRecovery + RECOVERY_TIME), "KW-fr: too early");
-        require(!kintoID.isKYC(owners[0]), "KW-fr: Old KYC must be burned");
+        if (newSigners.length == 0) revert EmptySigners();
+        if (inRecovery == 0) revert RecoveryNotStarted();
+        if (block.timestamp <= (inRecovery + RECOVERY_TIME)) revert RecoveryTimeNotElapsed();
+        if (kintoID.isKYC(owners[0]) || !kintoID.isKYC(newSigners[0])) revert OwnerKYCMustBeBurned();
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
@@ -222,7 +225,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newRecoverer new recoverer address
      */
     function changeRecoverer(address newRecoverer) external override onlyFactory {
-        require(newRecoverer != address(0) && newRecoverer != recoverer, "KW-cr: invalid address");
+        if (newRecoverer == address(0) || newRecoverer == recoverer) revert InvalidRecoverer();
         emit RecovererChanged(newRecoverer, recoverer);
         recoverer = newRecoverer;
     }
@@ -376,26 +379,26 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
-        require(newSigners.length > 0 && newSigners.length <= MAX_SIGNERS, "KW-rs: signers exceed max limit");
-        require(newSigners[0] != address(0) && kintoID.isKYC(newSigners[0]), "KW-rs: KYC Required");
+        if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded();
+        if (newSigners[0] == address(0) || !kintoID.isKYC(newSigners[0])) revert KYCRequired();
 
         // ensure no duplicate signers
         for (uint256 i = 0; i < newSigners.length; i++) {
             for (uint256 j = i + 1; j < newSigners.length; j++) {
-                require(newSigners[i] != newSigners[j], "KW-rs: duplicate signers");
+                if (newSigners[i] == newSigners[j]) revert DuplicateSigner();
             }
         }
 
         // ensure all signers are valid
         for (uint256 i = 0; i < newSigners.length; i++) {
-            require(newSigners[i] != address(0), "KW-rs: invalid signer address");
+            if (newSigners[i] == address(0)) revert InvalidSigner();
         }
 
         emit SignersChanged(owners, newSigners);
         owners = newSigners;
 
         // change policy if needed
-        require(_policy == 1 || newSigners.length > 1, "KW-rs: invalid policy for single signer");
+        if (_policy != 1 && newSigners.length == 1) revert InvalidSingleSignerPolicy();
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         }
@@ -403,17 +406,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _onlySelf() internal view {
         // directly through the account itself (which gets redirected through execute())
-        require(msg.sender == address(this), "KW: only self");
+        if (msg.sender != address(this)) revert OnlySelf();
     }
 
     function _onlyFactory() internal view {
         //directly through the factory
-        require(msg.sender == IKintoEntryPoint(address(_entryPoint)).walletFactory(), "KW: only factory");
+        if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
     }
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
-        require(appWhitelist[appRegistry.getSponsor(dest)] || dest == address(this), "KW: contract not whitelisted");
+        if (!appWhitelist[appRegistry.getSponsor(dest)] && dest != address(this)) revert AppNotWhitelisted();
 
         dest.functionCallWithValue(func, value);
     }
@@ -439,7 +442,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV5 is KintoWallet {
+contract KintoWalletV6 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

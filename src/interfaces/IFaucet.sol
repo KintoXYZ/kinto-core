@@ -4,6 +4,16 @@ pragma solidity ^0.8.18;
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
 
 interface IFaucet {
+    /* ============ Errors ============ */
+    error OnlyOwner();
+    error OnlyFactory();
+    error NotEnoughETH();
+    error FaucetNotActive();
+    error AlreadyClaimed();
+    error SignatureExpired();
+    error InvalidNonce();
+    error InvalidSigner();
+
     /* ============ Structs ============ */
 
     struct SignatureData {

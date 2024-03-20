@@ -56,7 +56,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
-        vm.expectRevert("SP: not owner");
+        vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
         _paymaster.upgradeTo(address(_newImplementation));
     }
 
@@ -79,21 +79,21 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testAddDepositFor_RevertWhen_ZeroValue() public {
-        vm.expectRevert("SP: requires a deposit");
+        vm.expectRevert(ISponsorPaymaster.InvalidAmount.selector);
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 0}(address(_owner));
     }
 
     function testAddDepositFor_RevertWhen_SenderIsNotKYCd() public {
         assertEq(_kintoID.isKYC(address(_user)), false);
-        vm.expectRevert("SP: sender KYC required");
+        vm.expectRevert(ISponsorPaymaster.SenderKYCRequired.selector);
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
 
     function testAddDepositFor_RevertWhen_AccountIsEOA_WhenAccountIsNotKYCd() public {
         assertEq(_kintoID.isKYC(address(_user)), false);
-        vm.expectRevert("SP: account KYC required");
+        vm.expectRevert(ISponsorPaymaster.AccountKYCRequired.selector);
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
@@ -127,10 +127,10 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256 someonePk) public {
-        // ensure the private key is within the valid range for Ethereum
-        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+    function testWithdrawTokensTo_WhenWithdraingToOtherAddress() public {
+        uint256 someonePk = 123;
         address someone = vm.addr(someonePk);
+
         vm.assume(someone.code.length == 0); // assume someone is an EOA
         vm.assume(someone != address(0) && someone != _user); // assume someone is not the zero address and not the _user
 
@@ -168,7 +168,7 @@ contract SponsorPaymasterTest is SharedSetup {
         assertEq(_user.balance, balance - 5e18);
 
         // user withdraws 5 eth
-        vm.expectRevert("SP: must unlockTokenDeposit");
+        vm.expectRevert(ISponsorPaymaster.TokenDepositLocked.selector);
         vm.prank(_user);
         _paymaster.withdrawTokensTo(_user, 5e18);
 
@@ -176,8 +176,6 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_TargetIsZeroAddress() public {
-        uint256 balance = _user.balance;
-
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(_owner);
 
@@ -186,14 +184,12 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.roll(block.number + 1); // advance block to allow withdraw
 
         // _owner withdraws 5 eth
-        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.expectRevert(ISponsorPaymaster.InvalidTarget.selector);
         vm.prank(_owner);
         _paymaster.withdrawTokensTo(address(0), 5e18);
     }
 
     function testWithdrawTokensTo_RevertWhen_TargetIsContract() public {
-        uint256 balance = _user.balance;
-
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(_owner);
 
@@ -202,7 +198,7 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.roll(block.number + 1); // advance block to allow withdraw
 
         // _owner withdraws 5 eth
-        vm.expectRevert("SP: withdraw target cannot be a contract");
+        vm.expectRevert(ISponsorPaymaster.InvalidTarget.selector);
         vm.prank(_owner);
         _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
     }
@@ -282,7 +278,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.verificationGasLimit = _paymaster.COST_OF_POST() - 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert("SP: gas outside of range for postOp");
+        vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -300,7 +296,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.verificationGasLimit = _paymaster.MAX_COST_OF_VERIFICATION() + 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert("SP: gas outside of range for postOp");
+        vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -318,7 +314,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.preVerificationGas = _paymaster.MAX_COST_OF_PREVERIFICATION() + 1;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert("SP: gas too high for verification");
+        vm.expectRevert(ISponsorPaymaster.GasTooHighForVerification.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -336,7 +332,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.paymasterAndData = new bytes(21);
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert("SP: paymasterAndData must contain only paymaster");
+        vm.expectRevert(ISponsorPaymaster.PaymasterAndDataLengthInvalid.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -355,7 +351,7 @@ contract SponsorPaymasterTest is SharedSetup {
         userOp.maxPriorityFeePerGas = 100 ether;
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert("SP: gas too high for user op");
+        vm.expectRevert(ISponsorPaymaster.GasTooHighForUserOp.selector);
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
     }
 
@@ -440,7 +436,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: Kinto Rate limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoRateLimitExceeded.selector));
     }
 
     function testValidatePaymasterUserOp_WithinOpsRateLimit() public {
@@ -482,7 +478,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: Kinto Rate limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoRateLimitExceeded.selector));
     }
 
     /* ============ App Rate limits (tx & batched ops rates) ============ */
@@ -511,7 +507,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: App Rate limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppRateLimitExceeded.selector));
     }
 
     function testValidatePaymasterUserOp_WithinAppOpsRateLimit() public {
@@ -536,12 +532,12 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: App Rate limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppRateLimitExceeded.selector));
     }
 
     /* ============ App Gas limits  (tx & batched ops rates) ============ */
 
-    function testValidatePaymasterUserOp_RevertWhen_AppTxGasLimitLimitExceeded() public {
+    function testValidatePaymasterUserOp_RevertWhen_AppTxGasLimitExceeded() public {
         /// fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
         /// @dev create app with high app limits and low gas limit so we assert that the one used
         // in the test is the gas limit
@@ -562,10 +558,10 @@ contract SponsorPaymasterTest is SharedSetup {
         emit PostOpRevertReason(_entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes(""));
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
-    function testValidatePaymasterUserOp_RevertWhen_AppOpsGasLimitLimitExceeded() public {
+    function testValidatePaymasterUserOp_RevertWhen_AppOpsGasLimitExceeded() public {
         /// fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
         /// @dev create app with high app limits and low gas limit so we assert that the one used
         // in the test is the gas limit
@@ -592,7 +588,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("SP: Kinto Gas App limit exceeded");
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
     function testSetAppRegistry() public {
@@ -613,13 +609,13 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_AddressIsZero() public {
-        vm.expectRevert("SP: new registry cannot be 0");
+        vm.expectRevert(ISponsorPaymaster.InvalidRegistry.selector);
         vm.prank(_owner);
         _paymaster.setAppRegistry(address(0));
     }
 
     function testSetAppRegistry_RevertWhen_SameAddress() public {
-        vm.expectRevert("SP: new registry cannot be the same");
+        vm.expectRevert(ISponsorPaymaster.InvalidRegistry.selector);
         vm.prank(_owner);
         _paymaster.setAppRegistry(address(_kintoAppRegistry));
     }

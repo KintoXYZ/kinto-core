@@ -33,6 +33,9 @@ contract ExecuteBatchTest is SharedSetup {
     }
 
     function testExecuteBatch_RevertWhen_NoPaymasterNorPrefund() public {
+        // remove any balance from the wallet
+        vm.deal(address(_kintoWallet), 0);
+
         // prep batch
         address[] memory targets = new address[](1);
         targets[0] = address(counter);
@@ -130,7 +133,7 @@ contract ExecuteBatchTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
+        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
     }
 
     function testExecuteBatch_RevertWhen_LenghtMismatch() public {
@@ -161,7 +164,7 @@ contract ExecuteBatchTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-eb: wrong array length");
+        assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
     }
 
     function testExecuteBatch_RevertWhen_LenghtMismatch2() public {
@@ -192,6 +195,6 @@ contract ExecuteBatchTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW-eb: wrong array length");
+        assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
     }
 }

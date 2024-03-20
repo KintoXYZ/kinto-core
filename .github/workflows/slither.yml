@@ -11,14 +11,53 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Run Slither
-        uses: crytic/slither-action@v0.3.0
+        uses: crytic/slither-action@dev-foundryup-retry
         id: slither
+        continue-on-error: true
         with:
           node-version: 16
           fail-on: none
           slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
-          
+
+      - name: Slither Comment
+        uses: actions/github-script@v6
+        env:
+          OUTCOME: ${{ steps.slither.outcome }}
+        with:
+          script: |
+            const body = 'Slither analysis failed';
+            const repo = context.repo;
+            const issue_number = context.issue.number || context.payload.pull_request.number;
+
+            // find the existing Slither comment
+            async function findFailureComment() {
+              const comments = await github.rest.issues.listComments({
+                ...repo,
+                issue_number,
+              });
+              return comments.data.find(comment => comment.body.includes(body));
+            }
+
+            // post or delete Slither failure comment
+            const failureComment = await findFailureComment();
+            console.info("OUTCOME", failureComment);
+            if (process.env.OUTCOME == 'failure' && !failureComment) {
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number,
+                body: comment,
+              });
+            }
+            if (process.env.OUTCOME != 'failure' && failureComment) {
+              // if Slither succeeds and there's a previous failure comment, delete it
+              await github.rest.issues.deleteComment({
+                ...repo,
+                comment_id: failureComment.id,
+              });
+            }
+
       - name: Create/update checklist as PR comment
+        if: steps.slither.outcome != 'failure'
         uses: actions/github-script@v6
         env:
           REPORT: ${{ steps.slither.outputs.stdout }}

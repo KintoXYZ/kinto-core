@@ -2,8 +2,21 @@
 pragma solidity ^0.8.18;
 
 import {IKintoWalletFactory} from "./IKintoWalletFactory.sol";
+import {IKintoID} from "./IKintoID.sol";
 
 interface IKintoAppRegistry {
+    /* ============ Errors ============ */
+
+    error KYCRequired(); // KYC Required
+    error AlreadyRegistered(); // App already registered
+    error ParentAlreadyChild(); // Parent contract is already registered as a child
+    error CannotRegisterWallet(); // Wallets can not be registered
+    error OnlyAppDeveloper(); // Only app developer can update metadata
+    error LengthMismatch();
+    error InvalidSponsorSetter(); // "Only developer can set sponsored contracts"
+    error DSAAlreadyEnabled(); // DSA already enabled
+    error OnlyMintingAllowed(); // Only mint transfers are allowed
+
     /* ============ Structs ============ */
 
     struct Metadata {
@@ -55,6 +68,8 @@ interface IKintoAppRegistry {
     function isSponsored(address _app, address _contract) external view returns (bool);
 
     function walletFactory() external view returns (IKintoWalletFactory);
+
+    function kintoID() external view returns (IKintoID);
 
     function tokenIdToApp(uint256 _tokenId) external view returns (address);
 

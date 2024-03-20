@@ -48,7 +48,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
-        require(msg.sender == owner(), "only owner");
+        if (msg.sender != owner()) revert OnlyOwner();
     }
 
     /* ============ Basic Viewers ============ */
@@ -116,6 +116,6 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV4 is KYCViewer {
+contract KYCViewerV5 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }

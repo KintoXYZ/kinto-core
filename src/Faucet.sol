@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IFaucet} from "./interfaces/IFaucet.sol";
 import {IKintoWalletFactory} from "./interfaces/IKintoWalletFactory.sol";
+import {IKintoID} from "./interfaces/IKintoID.sol";
 
 /**
  * @title Faucet
@@ -24,7 +25,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
 
     /* ============ Constants ============ */
 
-    uint256 public constant CLAIM_AMOUNT = 1 ether / 2500;
+    uint256 public constant CLAIM_AMOUNT = 1 ether / 2000;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 
     /* ============ State Variables ============ */
@@ -37,10 +38,13 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
 
+    IKintoID public immutable kintoID;
+
     /* ============ Constructor & Upgrades ============ */
     constructor(address _kintoWalletFactory) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
+        kintoID = IKintoID(walletFactory.kintoID());
     }
 
     /**
@@ -59,7 +63,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override {
         (newImplementation);
-        require(msg.sender == owner(), "only owner");
+        if (msg.sender != owner()) revert OnlyOwner();
     }
 
     /* ============ Claim methods ============ */
@@ -76,7 +80,8 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @param _signatureData Signature data
      */
     function claimKintoETH(IFaucet.SignatureData calldata _signatureData) external onlySignerVerified(_signatureData) {
-        require(msg.sender == address(walletFactory), "Only wallet factory can call this");
+        if (msg.sender != address(walletFactory)) revert OnlyFactory();
+        kintoID.isKYC(_signatureData.signer);
         _privateClaim(_signatureData.signer);
         nonces[_signatureData.signer]++;
     }
@@ -93,7 +98,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Function to start the faucet
      */
     function startFaucet() external payable override onlyOwner {
-        require(address(this).balance >= FAUCET_AMOUNT, "Not enough ETH to start faucet");
+        if (address(this).balance < FAUCET_AMOUNT) revert NotEnoughETH();
         active = true;
     }
 
@@ -105,8 +110,8 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     /* ============ Private functions ============ */
 
     function _privateClaim(address _receiver) private {
-        require(active, "Faucet is not active");
-        require(!claimed[_receiver], "You have already claimed your KintoETH");
+        if (!active) revert FaucetNotActive();
+        if (claimed[_receiver]) revert AlreadyClaimed();
         claimed[_receiver] = true;
         payable(_receiver).transfer(CLAIM_AMOUNT);
         if (address(this).balance < CLAIM_AMOUNT) {
@@ -122,18 +127,18 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @param _signature signature to be recovered.
      */
     modifier onlySignerVerified(IFaucet.SignatureData calldata _signature) {
-        require(block.timestamp < _signature.expiresAt, "Signature has expired");
-        require(nonces[_signature.signer] == _signature.nonce, "Invalid Nonce");
+        if (block.timestamp >= _signature.expiresAt) revert SignatureExpired();
+        if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
 
         bytes32 dataHash = keccak256(
             abi.encode(_signature.signer, address(this), _signature.expiresAt, nonces[_signature.signer], block.chainid)
         ).toEthSignedMessageHash(); // EIP-712 hash
 
-        require(_signature.signer.isValidSignatureNow(dataHash, _signature.signature), "Invalid Signer");
+        if (!_signature.signer.isValidSignatureNow(dataHash, _signature.signature)) revert InvalidSigner();
         _;
     }
 }
 
-contract FaucetV3 is Faucet {
+contract FaucetV7 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }

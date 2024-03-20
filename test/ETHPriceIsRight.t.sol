@@ -67,7 +67,7 @@ contract ETHPriceIsRightTest is Test {
     function test_RevertWhen_CannotEnterGuessAfterTime() public {
         vm.warp(_priceIsRight.END_ENTER_TIMESTAMP() + 1);
 
-        vm.expectRevert("You cannot enter guesses anymore");
+        vm.expectRevert(IETHPriceIsRight.EnteringClosed.selector);
         _priceIsRight.enterGuess(2000 ether);
     }
 }

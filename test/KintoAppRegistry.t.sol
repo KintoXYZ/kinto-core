@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "../src/apps/KintoAppRegistry.sol";
+import "../src/interfaces/IKintoAppRegistry.sol";
 
 import "./SharedSetup.t.sol";
 
@@ -54,7 +55,12 @@ contract KintoAppRegistryTest is SharedSetup {
 
     /* ============ App tests & Viewers ============ */
 
-    function testRegisterApp(string memory name, address parentContract) public {
+    function testRegisterApp() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(7);
 
@@ -107,14 +113,17 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.name, name);
     }
 
-    function testRegisterApp_RevertWhen_ChildrenIsWallet(string memory name, address parentContract) public {
+    function testRegisterApp_RevertWhen_ChildrenIsWallet() public {
+        approveKYC(_kycProvider, _user, _userPk);
+
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(_kintoWallet);
 
         // register app
-        vm.expectRevert("Wallets can not be registered");
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
+        vm.prank(_user);
+        _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits);
     }
 
     function testRegisterApp_RevertWhen_AlreadyRegistered() public {
@@ -128,7 +137,8 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
 
         // try to register again
-        vm.expectRevert("App already registered");
+        vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
@@ -146,11 +156,29 @@ contract KintoAppRegistryTest is SharedSetup {
         // registering app "app2" with parent address 2 should revert
         parentContract = address(2);
         appContracts = new address[](0);
-        vm.expectRevert("Parent contract already registered as a child");
+        vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
+        vm.prank(_owner);
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
     }
 
-    function testUpdateMetadata(string memory name, address parentContract) public {
+    function testRegisterApp_RevertWhen_CallerIsNotKYCd() public {
+        string memory name = "app";
+        address parentContract = address(123);
+        uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
+        address[] memory appContracts = new address[](0);
+
+        // register app
+        vm.expectRevert(IKintoAppRegistry.KYCRequired.selector);
+        vm.prank(_user);
+        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+    }
+
+    function testUpdateMetadata() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
 
@@ -189,7 +217,7 @@ contract KintoAppRegistryTest is SharedSetup {
         // update app
         address[] memory appContracts = new address[](0);
         vm.prank(_user);
-        vm.expectRevert("Only developer can update metadata");
+        vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
         _kintoAppRegistry.updateMetadata(
             "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
@@ -219,7 +247,7 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
-        vm.expectRevert("DSA already enabled");
+        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
@@ -257,7 +285,7 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[1] = true;
 
         vm.prank(_user);
-        vm.expectRevert("Only developer can set sponsored contracts");
+        vm.expectRevert(IKintoAppRegistry.InvalidSponsorSetter.selector);
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
@@ -271,27 +299,34 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[0] = false;
         flags[1] = true;
 
-        vm.expectRevert("Invalid input");
+        vm.expectRevert(IKintoAppRegistry.LengthMismatch.selector);
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
     /* ============ Transfer Test ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {
-        vm.startPrank(_user);
+        approveKYC(_kycProvider, _user, _userPk);
+
         address parentContract = address(_engenCredits);
+
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(8);
+
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
         appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(_user);
         _kintoAppRegistry.registerApp(
             "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
         );
+
         uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(_user, 0);
-        vm.expectRevert("Only mint transfers are allowed");
+        vm.expectRevert(IKintoAppRegistry.OnlyMintingAllowed.selector);
+        vm.prank(_user);
         _kintoAppRegistry.safeTransferFrom(_user, _user2, tokenIdx);
     }
 

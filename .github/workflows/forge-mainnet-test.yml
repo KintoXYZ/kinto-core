@@ -1,0 +1,63 @@
+name: Forge test
+
+on: 
+  workflow_call:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with: 
+          submodules: recursive
+      
+      - uses: ./.github/actions/install
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Check gas snapshots
+        run: forge snapshot --diff
+        env:
+          FORK: false
+
+      - name: Save forge compilation cache
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            cache
+            out
+          key: forge-${{ github.ref_name }}
+  
+  mainnet-test:
+    needs: build
+
+    name: Test (mainnet)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run mainnet tests
+        run: forge test 
+        env:
+          FOUNDRY_FUZZ_RUNS: 100
+          FOUNDRY_EVM_VERSION: shanghai
+          FORK: true
+          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
+          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+          DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}

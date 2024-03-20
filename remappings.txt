@@ -1,5 +1,14 @@
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
+
+lib/openzeppelin-contracts-upgradeable-5.0.1:@openzeppelin/=lib/openzeppelin-contracts-5.0.1
+lib/account-abstraction:@openzeppelin/=lib/openzeppelin-contracts
+
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 @aa/=lib/account-abstraction/contracts/
+
+@openzeppelin-5.0.1/contracts/=lib/openzeppelin-contracts-5.0.1/contracts/
+@openzeppelin-5.0.1/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable-5.0.1/contracts/
+
+@solady/=lib/solady/src/

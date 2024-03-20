@@ -5,6 +5,7 @@ import "@aa/core/EntryPoint.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
+import "../src/bridger/BridgerL2.sol";
 import "../src/viewers/KYCViewer.sol";
 import "../src/wallet/KintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
@@ -13,6 +14,7 @@ import "../src/wallet/KintoWallet.sol";
 import "../src/apps/KintoAppRegistry.sol";
 import "../src/tokens/EngenCredits.sol";
 import "../src/Faucet.sol";
+import "../src/inflators/KintoInflator.sol";
 
 import "../test/helpers/Create2Helper.sol";
 import "../test/helpers/ArtifactsReader.sol";
@@ -50,12 +52,23 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
 
+    // Bridger
+    BridgerL2 public bridgerL2;
+    BridgerL2 public bridgerL2Impl;
+
     // Faucet
     Faucet public faucet;
     Faucet public faucetImpl;
 
+    // Inflator
+    KintoInflator public inflator;
+    KintoInflator public inflatorImpl;
+
     // whether to write addresses to a file or not (and console.log them)
     bool write;
+
+    // whether to log or not
+    bool log;
 
     // if set, will broadcast transactions with this private key
     uint256 privateKey;
@@ -72,28 +85,53 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         EngenCredits engenCredits;
         Faucet faucet;
+        BridgerL2 bridgerL2;
+        KintoInflator inflator;
     }
 
+    // @dev this is used for tests
     function runAndReturnResults(uint256 _privateKey) public returns (DeployedContracts memory contracts) {
         privateKey = _privateKey;
+        write = false;
+        log = false;
+
+        // remove addresses.json file if it exists
+        try vm.removeFile(_getAddressesFile(block.chainid)) {} catch {}
+
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet
+            entryPoint,
+            paymaster,
+            kintoID,
+            wallet,
+            factory,
+            kintoRegistry,
+            viewer,
+            engenCredits,
+            faucet,
+            bridgerL2,
+            inflator
         );
     }
 
     function run() public {
         write = true;
+        log = true;
         _run();
     }
 
     function _run() internal {
-        if (write) console.log("Running on chain ID: ", vm.toString(block.chainid));
-        if (write) console.log("Executing with address", msg.sender);
-        if (write) console.log("-----------------------------------\n");
+        if (log) console.log("Running on chain ID: ", vm.toString(block.chainid));
+        if (log) console.log("Executing with address", msg.sender);
+        if (log) console.log("-----------------------------------\n");
 
         // write addresses to a file
-        if (write) vm.writeFile(_getAddressesFile(), "{\n");
+        if (write) {
+            // create dir if it doesn't exist
+            string memory dir = _getAddressesDir();
+            if (!vm.isDir(dir)) vm.createDir(dir, true);
+            vm.writeFile(_getAddressesFile(), "{\n");
+        }
 
         // deploy KintoID
         (kintoID, kintoIDImpl) = deployKintoID();
@@ -116,21 +154,35 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
 
+        // deploy bridger l2
+        (bridgerL2, bridgerL2Impl) = deployBridgerL2();
+
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
 
+        // deploy Inflator
+        (inflator, inflatorImpl) = deployInflator();
+
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
+
+        // deploy & upgrade KintoID implementation (passing the factory)
+        bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
+        kintoIDImpl = KintoID(_deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true));
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        kintoID.upgradeTo(address(kintoIDImpl));
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
 
     function deployKintoID() public returns (KintoID _kintoID, KintoID _kintoIDImpl) {
-        bytes memory creationCode = type(KintoID).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(""));
-        (address proxy, address implementation) = _deploy("KintoID", creationCode, bytecode);
+        // deploy a dummy KintoID that will be then replaced after the factory has been deployed by the script
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        KintoID dummy = new KintoID{salt: 0}(address(0));
+
+        address proxy = _deployProxy("KintoID", address(dummy), false);
         _kintoID = KintoID(payable(proxy));
-        _kintoIDImpl = KintoID(payable(implementation));
+        _kintoIDImpl = KintoID(dummy);
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kintoID.initialize();
@@ -139,7 +191,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     function deployEntryPoint() public returns (EntryPoint _entryPoint) {
         bytes memory creationCode = type(EntryPoint).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(""));
-        (, address implementation) = _deploy("EntryPoint", creationCode, bytecode);
+        address implementation = _deployImplementation("EntryPoint", creationCode, bytecode, false);
         _entryPoint = EntryPoint(payable(implementation));
     }
 
@@ -155,7 +207,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy factory implementation
         bytes memory creationCode = type(KintoWalletFactory).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(dummy)));
-        (address proxy, address implementation) = _deploy("KintoWalletFactory", creationCode, bytecode);
+        address implementation = _deployImplementation("KintoWalletFactory", creationCode, bytecode, false);
+        address proxy = _deployProxy("KintoWalletFactory", implementation, false);
+
         _walletFactory = KintoWalletFactory(payable(proxy));
         _walletFactoryImpl = KintoWalletFactory(payable(implementation));
 
@@ -163,7 +217,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _walletFactory.initialize(kintoID);
 
         // set wallet factory in EntryPoint
-        if (write) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
+        if (log) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         entryPoint.setWalletFactory(address(_walletFactory));
     }
@@ -172,11 +226,11 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         bytes memory creationCode = type(KintoWallet).creationCode;
         bytes memory bytecode =
             abi.encodePacked(creationCode, abi.encode(address(entryPoint), address(kintoID), address(kintoRegistry)));
-        (, address implementation) = _deploy("KintoWallet", creationCode, bytecode);
+        address implementation = _deployImplementation("KintoWallet", creationCode, bytecode, false);
         _kintoWallet = KintoWallet(payable(implementation));
 
         // set KintoWallet implementation in WalletFactory
-        if (write) console.log("Upgrading wallet factory implementation to: ", address(_kintoWallet));
+        if (log) console.log("Upgrading wallet factory implementation to: ", address(_kintoWallet));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         factory.upgradeAllWalletImplementations(KintoWallet(payable(_kintoWallet)));
     }
@@ -187,7 +241,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     {
         bytes memory creationCode = type(SponsorPaymaster).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
-        (address proxy, address implementation) = _deploy("SponsorPaymaster", creationCode, bytecode);
+        address implementation = _deployImplementation("SponsorPaymaster", creationCode, bytecode, false);
+        address proxy = _deployProxy("SponsorPaymaster", implementation, false);
+
         _sponsorPaymaster = SponsorPaymaster(payable(proxy));
         _sponsorPaymasterImpl = SponsorPaymaster(payable(implementation));
 
@@ -202,7 +258,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     {
         bytes memory creationCode = type(KintoAppRegistry).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
-        (address proxy, address implementation) = _deploy("KintoAppRegistry", creationCode, bytecode);
+        address implementation = _deployImplementation("KintoAppRegistry", creationCode, bytecode, false);
+        address proxy = _deployProxy("KintoAppRegistry", implementation, false);
+
         _kintoRegistry = KintoAppRegistry(payable(proxy));
         _kintoRegistryImpl = KintoAppRegistry(payable(implementation));
 
@@ -214,7 +272,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         bytes memory creationCode = type(KYCViewer).creationCode;
         bytes memory bytecode =
             abi.encodePacked(creationCode, abi.encode(address(factory)), abi.encode(address(faucet)));
-        (address proxy, address implementation) = _deploy("KYCViewer", creationCode, bytecode);
+        address implementation = _deployImplementation("KYCViewer", creationCode, bytecode, false);
+        address proxy = _deployProxy("KYCViewer", implementation, false);
+
         _kycViewer = KYCViewer(payable(proxy));
         _kycViewerImpl = KYCViewer(payable(implementation));
 
@@ -225,7 +285,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     function deployEngenCredits() public returns (EngenCredits _engenCredits, EngenCredits _engenCreditsImpl) {
         bytes memory creationCode = type(EngenCredits).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
-        (address proxy, address implementation) = _deploy("EngenCredits", creationCode, bytecode);
+        address implementation = _deployImplementation("EngenCredits", creationCode, bytecode, false);
+        address proxy = _deployProxy("EngenCredits", implementation, false);
+
         _engenCredits = EngenCredits(payable(proxy));
         _engenCreditsImpl = EngenCredits(payable(implementation));
 
@@ -233,10 +295,25 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _engenCredits.initialize();
     }
 
+    function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {
+        bytes memory creationCode = type(BridgerL2).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
+        address implementation = _deployImplementation("BridgerL2", creationCode, bytecode, false);
+        address proxy = _deployProxy("BridgerL2", implementation, false);
+
+        _bridgerL2 = BridgerL2(payable(proxy));
+        _bridgerL2Impl = BridgerL2(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _bridgerL2.initialize();
+    }
+
     function deployFaucet() public returns (Faucet _faucet, Faucet _faucetImpl) {
         bytes memory creationCode = type(Faucet).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
-        (address proxy, address implementation) = _deploy("Faucet", creationCode, bytecode);
+        address implementation = _deployImplementation("Faucet", creationCode, bytecode, false);
+        address proxy = _deployProxy("Faucet", implementation, false);
+
         _faucet = Faucet(payable(proxy));
         _faucetImpl = Faucet(payable(implementation));
 
@@ -244,10 +321,31 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _faucet.initialize();
     }
 
-    /// @dev deploys proxy contract from deployer
+    function deployInflator() public returns (KintoInflator _inflator, KintoInflator _inflatorImpl) {
+        bytes memory creationCode = type(KintoInflator).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("KintoInflator", creationCode, bytecode, false);
+        address proxy = _deployProxy("KintoInflator", implementation, false);
+
+        _inflator = KintoInflator(payable(proxy));
+        _inflatorImpl = KintoInflator(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _inflator.initialize();
+    }
+
+    /// @dev deploys both proxy and implementation contracts from deployer
     function _deploy(string memory contractName, bytes memory creationCode, bytes memory bytecode)
         internal
         returns (address proxy, address implementation)
+    {
+        implementation = _deployImplementation(contractName, creationCode, bytecode, false);
+        proxy = _deployProxy(contractName, implementation, false);
+    }
+
+    function _deployProxy(string memory contractName, address implementation, bool last)
+        internal
+        returns (address proxy)
     {
         bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
@@ -255,26 +353,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         if (!isWallet && proxy != address(0)) revert("Proxy contract already deployed");
 
-        // (1). deploy implementation
-        implementation = computeAddress(0, abi.encodePacked(creationCode));
-        if (!isContract(implementation)) {
-            // deploy implementation
-            privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-            implementation = Create2.deploy(0, 0, bytecode);
-
-            require(implementation != address(0), "Failed to deploy implementation");
-            if (write) console.log(contractName, "implementation deployed at:", implementation);
-
-            // write address to a file
-            if (write) {
-                vm.writeLine(
-                    _getAddressesFile(),
-                    string.concat('"', contractName, '-impl": "', vm.toString(address(implementation)), '",')
-                );
-            }
-        }
-
-        // (2). deploy Proxy contract
+        // deploy Proxy contract
         if (!isEntryPoint && !isWallet) {
             proxy = computeAddress(
                 0, abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(implementation), ""))
@@ -286,12 +365,46 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
                 proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
             }
 
-            if (write) console.log(contractName, "proxy deployed at:", proxy);
+            if (log) console.log(contractName, "proxy deployed at:", proxy);
 
             // write address to a file
             if (write) {
                 vm.writeLine(
-                    _getAddressesFile(), string.concat('"', contractName, '": "', vm.toString(address(proxy)), '",')
+                    _getAddressesFile(),
+                    string.concat('"', contractName, '": "', vm.toString(address(proxy)), last ? '"' : '",')
+                );
+            }
+        }
+    }
+
+    function _deployImplementation(
+        string memory contractName,
+        bytes memory creationCode,
+        bytes memory bytecode,
+        bool last
+    ) internal returns (address implementation) {
+        bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
+
+        // deploy implementation
+        implementation = computeAddress(0, abi.encodePacked(creationCode));
+        if (!isContract(implementation)) {
+            privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+            implementation = Create2.deploy(0, 0, bytecode);
+
+            require(implementation != address(0), "Failed to deploy implementation");
+            if (log) console.log(contractName, "implementation deployed at:", implementation, false);
+
+            // write address to a file
+            if (write) {
+                vm.writeLine(
+                    _getAddressesFile(),
+                    string.concat(
+                        '"',
+                        contractName,
+                        isEntryPoint ? '": "' : '-impl": "',
+                        vm.toString(address(implementation)),
+                        last ? '"' : '",'
+                    )
                 );
             }
         }

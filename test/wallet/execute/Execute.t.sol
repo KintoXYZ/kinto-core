@@ -22,6 +22,9 @@ contract ExecuteTest is SharedSetup {
     }
 
     function testExecute_RevertWhen_NoPaymasterNorPrefund() public {
+        // remove any balance from the wallet
+        vm.deal(address(_kintoWallet), 0);
+
         // send a transaction to the counter contract through our wallet without a paymaster and without prefunding the wallet
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
@@ -102,7 +105,7 @@ contract ExecuteTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq("KW: contract not whitelisted");
+        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
         assertEq(counter.count(), 0);
     }
 }

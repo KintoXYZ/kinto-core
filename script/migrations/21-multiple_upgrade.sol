@@ -12,6 +12,7 @@ import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
 import "../../test/helpers/UserOp.sol";
+import "./utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -32,6 +33,10 @@ contract KintoWalletV4 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
+}
+
+contract KintoAppRegistryV3 is KintoAppRegistry {
+    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
 
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {

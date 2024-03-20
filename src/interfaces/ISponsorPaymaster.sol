@@ -5,6 +5,24 @@ import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 import {IKintoID} from "./IKintoID.sol";
 
 interface ISponsorPaymaster {
+    /* ============ Errors ============ */
+    error OnlyOwner();
+    error InvalidAmount();
+    error SenderKYCRequired();
+    error AccountKYCRequired();
+    error InvalidTarget();
+    error TokenDepositLocked();
+    error InvalidRegistry();
+    error GasOutsideRangeForPostOp();
+    error GasTooHighForVerification();
+    error PaymasterAndDataLengthInvalid();
+    error GasTooHighForUserOp();
+    error DepositNotLocked();
+    error DepositTooLow();
+    error KintoRateLimitExceeded();
+    error AppRateLimitExceeded();
+    error AppGasLimitExceeded();
+
     /* ============ Structs ============ */
 
     struct RateLimitData {
