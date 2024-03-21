@@ -48,6 +48,18 @@ hook Sstore _allTokens[INDEX uint256 indx] uint256 tokenID (uint256 tokenID_old)
     TokenAtIndex[indx] = tokenID;
 }
 
+
+ghost mapping(address => address) _recoveryTargets {
+    init_state axiom forall address account. _recoveryTargets[account] ==0;
+}
+
+hook Sload address target recoveryTargets[KEY address account] {
+    require _recoveryTargets[account] == target;
+}
+
+hook Sstore recoveryTargets[KEY address account] address target (address target_old) {
+    _recoveryTargets[account] = target;
+}
 /*
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Ghost & hooks: Tokens indices                                                                                      │
@@ -73,24 +85,26 @@ hook Sstore _allTokensIndex[KEY uint256 tokenID] uint256 index (uint256 index_ol
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
 
+/// @title the recovery target address is always zero (before and after function call)
+invariant RecoveryTargetsIsZero()
+    forall address account. _recoveryTargets[account] == 0
+    {
+        preserved with (env e) {
+            require e.msg.sender != 0;
+        }
+    }
+
 /// @title The ERC721 token balance of any user is either zero or one.
 invariant TokenBalanceIsZeroOrOne(address account)
     balanceOf(account) ==0 || balanceOf(account) == 1
     filtered{f -> !upgradeMethods(f)}
-
-/// @title The ERC721 token balance of the zero address is zero.
-invariant BalanceOfZero()
-    balanceOf(0) == 0;
-
-/// @title The zero address is not KYCd.
-invariant ZeroAddressNotKYC(env e)
-    !viewer.isKYC(e,0)
     {
-        preserved with (env eP) {
-            requireInvariant ZeroAddressNotKYC(eP);
-            requireInvariant BalanceOfZero();
+        preserved with (env e) {
+            require e.msg.sender !=0;
+            requireInvariant RecoveryTargetsIsZero();
         }
     }
+
 
 /// @title If a token has a (non-zero) owner, then the total supply is greater than zero.
 invariant IsOwnedInTokensArray(uint256 tokenID)

@@ -66,7 +66,7 @@ rule getAddressInjectivity() {
 
 /// @title Once a wallet is active (timestamp > 0), it never becomes inactive (timestamp = 0).
 rule onceActiveAlwaysActive(address wallet, method f) 
-filtered{f -> !f.isView && f.selector != upgradeToAndCall(address,bytes).selector} {
+filtered{f -> !f.isView && f.selector != sig:upgradeToAndCall(address,bytes).selector} {
     bool isActive_before = isWalletActive(wallet);
         env e;
         require e.block.timestamp > 0;

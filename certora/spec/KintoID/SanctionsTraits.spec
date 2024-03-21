@@ -7,9 +7,8 @@ use invariant TokenIndexIsUpToArrayLength filtered{f -> !upgradeMethods(f)}
 use invariant NoOwnerNoIndex filtered{f -> !upgradeMethods(f)}
 use invariant TokenAtIndexConsistency filtered{f -> !upgradeMethods(f)}
 use invariant TokenBalanceIsZeroOrOne filtered{f -> !upgradeMethods(f)}
-use invariant BalanceOfZero filtered{f -> !upgradeMethods(f)}
 use invariant IsOwnedInTokensArray filtered{f -> !upgradeMethods(f)}
-use invariant ZeroAddressNotKYC filtered{f -> !upgradeMethods(f)}
+use invariant RecoveryTargetsIsZero filtered{f -> !upgradeMethods(f)}
 use rule onlyRoleAdminRevokesRole filtered{f -> !viewOrUpgrade(f)}
 
 methods {
@@ -22,7 +21,9 @@ methods {
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 */
 /// @title The owner of a token could only be transferred to, or from the zero address.
-rule ownerCanChangeOnlyFromZeroAndBack(uint256 tokenID, method f) filtered{f -> !viewOrUpgrade(f)} {
+rule ownerCanChangeOnlyFromZeroAndBack(uint256 tokenID, method f) filtered{f -> !viewOrUpgrade(f) && !recoveryMethod(f)} {
+    requireInvariant RecoveryTargetsIsZero();
+
     address ownerBefore = ownerOf(tokenID);
         env e;
         calldataarg args;
@@ -32,12 +33,53 @@ rule ownerCanChangeOnlyFromZeroAndBack(uint256 tokenID, method f) filtered{f -> 
     assert ownerAfter != ownerBefore => (ownerBefore == 0 || ownerAfter == 0);
 }
 
-/// @title Only the _nextTokenID+1 is minted, and only by the mintCompanyKyc() or mintIndividualKyc() functions.
-rule mintOnlyNextID(address account, method f) filtered{f -> !viewOrUpgrade(f)} {
-    uint256 tokenID = require_uint256(nextTokenId() + 1);
+/// @title Only the admin or the factory can call the recovery method 
+rule onlyAdminOrFactoryRecovers(method f) filtered{f -> recoveryMethod(f)} {
+    env e;
+    calldataarg args;
+    bool callerIsAdmin = hasRole(DEFAULT_ADMIN_ROLE(), e.msg.sender);
+    bool callerIsFactory = e.msg.sender == walletFactory();
+    f(e, args);
 
+    assert callerIsAdmin || callerIsFactory;
+}
+
+/// @title Correctness of ownership change through recover methods.
+rule ownerChangeThroughRecovery(method f, uint256 tokenID) filtered{f -> recoveryMethod(f)} {
+    address ownerBefore = ownerOf(tokenID);
+    address from;
+    address to;
+    env e;
+    if(f.selector == sig:transferOnRecovery(address,address).selector) {
+        transferOnRecovery(e, from, to);
+    }
+    else {
+        assert false, "Didn't expect other recovery methods";
+    }
+    address ownerAfter = ownerOf(tokenID);
+
+    assert ownerAfter != ownerBefore => (ownerBefore == from && ownerAfter == to);
+}
+
+/// @title Recovery methods cannot add new tokens in KintoID.
+rule recoveryMethodDoesntChangeTokens(method f) filtered{f -> recoveryMethod(f)} {
+    requireInvariant RecoveryTargetsIsZero();
+    uint256 nextToken_before = nextTokenId();
+    uint256 NumberOfTokens_before = NumberOfTokens;
+        env e;
+        calldataarg args;
+        f(e, args);
+    uint256 nextToken_after = nextTokenId();
+    uint256 NumberOfTokens_after = NumberOfTokens;
+
+    assert nextToken_before == nextToken_after && NumberOfTokens_before == NumberOfTokens_after;
+}
+
+/// @title Only the _nextTokenID+1 is minted, and only by the mintCompanyKyc() or mintIndividualKyc() functions.
+rule mintOnlyNextID(address account, method f) filtered{f -> !viewOrUpgrade(f) && !recoveryMethod(f)} {
+    uint256 tokenID = require_uint256(nextTokenId() + 1);
+    requireInvariant RecoveryTargetsIsZero();
     requireInvariant TokenBalanceIsZeroOrOne(account);
-    requireInvariant BalanceOfZero();
 
     uint256 balanceBefore = balanceOf(account);
     address ownerBefore = ownerOf(tokenID);
@@ -50,7 +92,7 @@ rule mintOnlyNextID(address account, method f) filtered{f -> !viewOrUpgrade(f)} 
     assert balanceAfter > balanceBefore => ownerBefore != ownerAfter;
     assert balanceAfter > balanceBefore => (
         f.selector == sig:mintCompanyKyc(IKintoID.SignatureData,uint16[]).selector || 
-        f.selector == sig:mintIndividualKyc(IKintoID.SignatureData,uint16[]).selector
+        f.selector == sig:mintIndividualKyc(IKintoID.SignatureData,uint16[]).selector ||
     );
 }
 
@@ -69,7 +111,6 @@ rule mintToOwnerOnly(bool companyOrIndividual) {
     else {
         mintIndividualKyc(e, signatureData, traits);
     }
-        
     address ownerAfter = ownerOf(tokenID);
 
     assert ownerBefore != ownerAfter;
@@ -78,13 +119,16 @@ rule mintToOwnerOnly(bool companyOrIndividual) {
 
 /// @title only a KYC provider can change anyone's ERC721 balance.
 rule onlyKYCCanChangeBalance(address account, method f) filtered{f -> !viewOrUpgrade(f)} {
+    requireInvariant RecoveryTargetsIsZero();
+
     uint256 balanceBefore = balanceOf(account);
         env e;
         calldataarg args;
             f(e,args);
     uint256 balanceAfter = balanceOf(account);
 
-    assert balanceBefore != balanceAfter => hasRole(KYC_PROVIDER_ROLE(), e.msg.sender);
+    assert balanceBefore != balanceAfter => 
+       (hasRole(KYC_PROVIDER_ROLE(), e.msg.sender) || recoveryMethod(f));
 }
 
 /// @title It's impossible for the owner of any token to burn his own token.

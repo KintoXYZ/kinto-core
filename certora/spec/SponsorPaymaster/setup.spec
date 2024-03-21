@@ -78,6 +78,11 @@ hook Sload uint256 balance balances[KEY address user] {
 }
 
 hook Sstore balances[KEY address user] uint256 balance_new (uint256 balance_old) {
+    if(!accessedUser[user] && !excludeFromSum(user)) {
+        accessedUser[user] = true;
+        sumOfUserBalances_init = sumOfUserBalances_init - balance_old;
+        require sumOfUserBalances_init >=0;
+    }
     if(!excludeFromSum(user)) {
         sumOfUserBalances = sumOfUserBalances + balance_new - balance_old;
     }

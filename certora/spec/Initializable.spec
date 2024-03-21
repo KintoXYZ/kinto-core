@@ -3,19 +3,19 @@ definition MAX_VERSION() returns uint8 = max_uint8;
 ghost uint8 initialized {init_state axiom initialized == 0;}
 ghost bool initializing {init_state axiom initializing == false;}
 
-hook Sload uint8 value _initialized STORAGE {
+hook Sload uint8 value _initialized {
     require initialized == value;
 }
 
-hook Sstore _initialized uint8 value STORAGE {
+hook Sstore _initialized uint8 value {
     initialized = value;
 }
 
-hook Sload bool value _initializing STORAGE {
+hook Sload bool value _initializing {
     require initializing == value;
 }
 
-hook Sstore _initializing bool value STORAGE {
+hook Sstore _initializing bool value {
     initializing = value;
 }
 

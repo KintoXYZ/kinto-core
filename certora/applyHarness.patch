@@ -1,5 +1,5 @@
---- ../src/KintoID.sol	2024-03-20 15:32:57.158781204 +0200
-+++ 	2024-03-20 15:33:30.268779146 +0200
+--- ../src/KintoID.sol	2024-03-20 16:31:34.788621130 +0200
++++ 	2024-03-20 18:21:16.480963349 +0200
 @@ -45,7 +45,7 @@
  
      /* ============ State Variables ============ */
@@ -26,8 +26,8 @@
       * @dev Returns whether the account holder is KYCd
       * @param _account account to be checked.
       * @return true if the account has KYC token.
---- ../src/wallet/KintoWalletFactory.sol	2024-03-20 15:32:57.168781202 +0200
-+++ 	2024-03-20 15:33:30.278779146 +0200
+--- ../src/wallet/KintoWalletFactory.sol	2024-03-20 15:44:38.878750817 +0200
++++ 	2024-03-20 18:20:01.660968912 +0200
 @@ -259,7 +259,7 @@
              bytes32(salt),
              keccak256(

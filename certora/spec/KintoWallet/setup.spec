@@ -36,6 +36,7 @@ methods {
 
     /// appRegistry
     function appRegistry.getSponsor(address) external returns (address) envfree;
+    function appRegistry.tokenURI(uint256) external returns (string) => NONDET DELETE;
 }
 
 definition senderIsSelf(env e) returns bool = e.msg.sender == currentContract;
