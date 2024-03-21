@@ -92,7 +92,7 @@ rule mintOnlyNextID(address account, method f) filtered{f -> !viewOrUpgrade(f) &
     assert balanceAfter > balanceBefore => ownerBefore != ownerAfter;
     assert balanceAfter > balanceBefore => (
         f.selector == sig:mintCompanyKyc(IKintoID.SignatureData,uint16[]).selector || 
-        f.selector == sig:mintIndividualKyc(IKintoID.SignatureData,uint16[]).selector ||
+        f.selector == sig:mintIndividualKyc(IKintoID.SignatureData,uint16[]).selector
     );
 }
 
