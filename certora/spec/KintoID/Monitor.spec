@@ -1,24 +1,28 @@
 import "setup.spec";
 use invariant lastMonitoredAtInThePast filtered{f -> !upgradeMethods(f)}
+use invariant RecoveryTargetsIsZero filtered{f -> !upgradeMethods(f)}
 
 /// @title An account which is not a KYC provider cannot make monitor() revert. 
 rule monitorCannotRevertByNonProvider(method f) filtered{f -> !viewOrUpgrade(f)} {
     env e1;
     env e2; calldataarg args;
+    requireInvariant RecoveryTargetsIsZero();
     /// For simplicity, consider a single account and one data.
     address account; address[] accounts = [account];
     IKintoID.MonitorUpdateData data; IKintoID.MonitorUpdateData[][] traits = [[data]];
     
     storage initState = lastStorage;
     bool senderIsProvider = hasRole(KYC_PROVIDER_ROLE(), e2.msg.sender);
-    bool senderIsRoleAdmin = hasRole(getRoleAdmin(KYC_PROVIDER_ROLE()), e2.msg.sender);
+    bool senderIsRoleAdmin = hasRole(getRoleAdmin(KYC_PROVIDER_ROLE()), e2.msg.sender) || hasRole(DEFAULT_ADMIN_ROLE(), e2.msg.sender);
+    bool senderIsFactory = e2.msg.sender == walletFactory();
 
     monitor(e1, accounts, traits) at initState;
 
     f(e2, args) at initState;
     monitor@withrevert(e1, accounts, traits);
 
-    assert !senderIsProvider && !senderIsRoleAdmin => !lastReverted;
+    assert !senderIsProvider && !senderIsRoleAdmin && !senderIsFactory => !lastReverted;
+    assert lastReverted && recoveryMethod(f) => (senderIsFactory || senderIsRoleAdmin);
 }
 
 /// @title The monitor() function is commutative with respect to update data, if the IDs are different (for a single account).  

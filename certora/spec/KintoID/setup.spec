@@ -49,6 +49,18 @@ hook Sstore _kycmetas[KEY address account].sanctionsCount uint8 count (uint8 cou
     _sanctionsCount[account] = count;
 }
 
+ghost mapping(address => address) _recoveryTargets {
+    init_state axiom forall address account. _recoveryTargets[account] ==0;
+}
+
+hook Sload address target recoveryTargets[KEY address account] {
+    require _recoveryTargets[account] == target;
+}
+
+hook Sstore recoveryTargets[KEY address account] address target (address target_old) {
+    _recoveryTargets[account] = target;
+}
+
 function getSanctionsCount(address account) returns uint8 {
     return _sanctionsCount[account];
 }
@@ -72,6 +84,15 @@ definition recoveryMethod(method f) returns bool =
     f.selector == sig:transferOnRecovery(address,address).selector;
 
 definition senderIsSelf(env e) returns bool = e.msg.sender == currentContract;
+
+/// @title the recovery target address is always zero (before and after function call)
+invariant RecoveryTargetsIsZero()
+    forall address account. _recoveryTargets[account] == 0
+    {
+        preserved with (env e) {
+            require e.msg.sender != 0;
+        }
+    }
 
 /// @title lastMonitoredAt() is never in the future.
 invariant lastMonitoredAtInThePast(env e)
