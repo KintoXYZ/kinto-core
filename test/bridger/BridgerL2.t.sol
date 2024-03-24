@@ -119,6 +119,15 @@ contract BridgerL2Test is TestSignature, SharedSetup {
 
     /* ============ Claim Commitment ============ */
 
+    function testUserDeposits() public {
+        address _asset = address(_token);
+        uint256 _amount = 100;
+        assertEq(_bridgerL2.getUserDeposits(address(_kintoWallet))[0], 0);
+        assertEq(_bridgerL2.getUserDeposits(address(_kintoWallet))[1], 0);
+        assertEq(_bridgerL2.getUserDeposits(address(_kintoWallet))[2], 0);
+        assertEq(_bridgerL2.getUserDeposits(address(_kintoWallet))[3], 0);
+    }
+
     function testClaimCommitment() public {
         address _asset = address(_token);
         uint256 _amount = 100;

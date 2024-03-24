@@ -148,7 +148,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      */
     function getUserDeposits(address user) external view override returns (uint256[] memory amounts) {
         address[] memory depositedAssetsO = getDepositedAssets();
-        amounts = new uint256[](depositedAssets.length);
+        amounts = new uint256[](depositedAssetsO.length);
         for (uint256 i = 0; i < depositedAssetsO.length; i++) {
             address currentAsset = depositedAssetsO[i];
             amounts[i] = deposits[user][currentAsset];
@@ -173,6 +173,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V6 is BridgerL2 {
+contract BridgerL2V7 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }

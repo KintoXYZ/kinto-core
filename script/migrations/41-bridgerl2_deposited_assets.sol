@@ -16,10 +16,12 @@ contract KintoMigration41DeployScript is MigrationHelper {
         bytes memory bytecode =
             abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
 
-        _deployImplementationAndUpgrade("BridgerL2", "V6", bytecode);
+        _deployImplementationAndUpgrade("BridgerL2", "V7", bytecode);
 
         // console.log('bridger address', _getChainDeployment("BridgerL2"));
-        // BridgerL2 bridgerL2 = new BridgerL2(_getChainDeployment("BridgerL2"));
+        BridgerL2 bridgerL2 = new BridgerL2(_getChainDeployment("BridgerL2"));
+        uint[] memory result = bridgerL2.getUserDeposits(0x26181Dfc530d96523350e895180b09BAf3d816a0);
+        assertEq(result[0] > 0, true);
         // console.log('owner', OwnableUpgradeable(bridgerL2).owner());
         // address[] memory bridgerL2Assets = new address[](4);
         // bridgerL2Assets[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
