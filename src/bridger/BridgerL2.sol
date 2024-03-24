@@ -51,11 +51,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_walletFactory);
         adminWallet = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
-        depositedAssets = new address[](4);
-        depositedAssets[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
-        depositedAssets[1] = 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee; // sUSDe
-        depositedAssets[2] = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200; // wstETH
-        depositedAssets[3] = 0xC60F14d95B87417BfD17a376276DE15bE7171d31; // weETH
     }
 
     /**
@@ -138,14 +133,24 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /* ============ Viewers ============ */
 
+    function getDepositedAssets() private view returns (address[] memory) {
+        address[] memory dep = new address[](4);
+        dep[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
+        dep[1] = 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee; // sUSDe
+        dep[2] = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200; // wstETH
+        dep[3] = 0xC60F14d95B87417BfD17a376276DE15bE7171d31; // weETH
+        return dep;
+    }
+
     /**
      * @dev Get the total number of deposits from an user address
      * @param user address of the user
      */
     function getUserDeposits(address user) external view override returns (uint256[] memory amounts) {
+        address[] memory depositedAssetsO = getDepositedAssets();
         amounts = new uint256[](depositedAssets.length);
-        for (uint256 i = 0; i < depositedAssets.length; i++) {
-            address currentAsset = depositedAssets[i];
+        for (uint256 i = 0; i < depositedAssetsO.length; i++) {
+            address currentAsset = depositedAssetsO[i];
             amounts[i] = deposits[user][currentAsset];
         }
     }
@@ -154,9 +159,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Get the total number of deposits of all assets
      */
     function getTotalDeposits() external view override returns (uint256[] memory amounts) {
-        amounts = new uint256[](depositedAssets.length);
-        for (uint256 i = 0; i < depositedAssets.length; i++) {
-            address currentAsset = depositedAssets[i];
+        address[] memory depositedAssetsO = getDepositedAssets();
+        amounts = new uint256[](depositedAssetsO.length);
+        for (uint256 i = 0; i < depositedAssetsO.length; i++) {
+            address currentAsset = depositedAssetsO[i];
             amounts[i] = depositTotals[currentAsset];
         }
     }
@@ -167,6 +173,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V5 is BridgerL2 {
+contract BridgerL2V6 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }
