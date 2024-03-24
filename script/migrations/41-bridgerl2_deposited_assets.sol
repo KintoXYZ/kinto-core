@@ -13,10 +13,10 @@ contract KintoMigration41DeployScript is MigrationHelper {
         super.run();
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        bytes memory bytecode =
-            abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
+        // bytes memory bytecode =
+        //     abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
 
-        _deployImplementationAndUpgrade("BridgerL2", "V5", bytecode);
+        // _deployImplementationAndUpgrade("BridgerL2", "V5", bytecode);
 
         console.log('bridger address', _getChainDeployment("BridgerL2"));
         BridgerL2 bridgerL2 = new BridgerL2(_getChainDeployment("BridgerL2"));
