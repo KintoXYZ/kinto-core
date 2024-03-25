@@ -43,11 +43,14 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     bool public override unlocked;
     /// @dev Phase IV assets
     address[] public depositedAssets;
+    /// @dev admin wallet
+    address public immutable adminWallet;
 
     /* ============ Constructor & Upgrades ============ */
     constructor(address _walletFactory) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_walletFactory);
+        adminWallet = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
     }
 
     /**
@@ -154,6 +157,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V3 is BridgerL2 {
+contract BridgerL2V8 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }
