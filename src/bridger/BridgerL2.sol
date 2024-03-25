@@ -68,7 +68,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override onlyAdminWallet {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
     }
 
@@ -82,7 +82,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param amount amount of the asset to receive
      */
     function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
-        if (msg.sender != adminWallet && msg.sender != address(walletFactory)) {
+        if (msg.sender != owner() && msg.sender != address(walletFactory)) {
             revert Unauthorized();
         }
         deposits[walletAddress][assetL2] += amount;
@@ -94,7 +94,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Unlock the commitments
      * Note: Only owner can call this function
      */
-    function unlockCommitments() external override onlyAdminWallet {
+    function unlockCommitments() external override onlyOwner {
         unlocked = true;
     }
 
@@ -103,7 +103,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * Note: Only owner can call this function
      * @param assets array of addresses of the assets
      */
-    function setDepositedAssets(address[] memory assets) external override onlyAdminWallet {
+    function setDepositedAssets(address[] memory assets) external override onlyOwner {
         depositedAssets = assets;
     }
 
@@ -133,24 +133,14 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /* ============ Viewers ============ */
 
-    function getDepositedAssets() private view returns (address[] memory) {
-        address[] memory dep = new address[](4);
-        dep[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
-        dep[1] = 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee; // sUSDe
-        dep[2] = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200; // wstETH
-        dep[3] = 0xC60F14d95B87417BfD17a376276DE15bE7171d31; // weETH
-        return dep;
-    }
-
     /**
      * @dev Get the total number of deposits from an user address
      * @param user address of the user
      */
     function getUserDeposits(address user) external view override returns (uint256[] memory amounts) {
-        address[] memory depositedAssetsO = getDepositedAssets();
-        amounts = new uint256[](depositedAssetsO.length);
-        for (uint256 i = 0; i < depositedAssetsO.length; i++) {
-            address currentAsset = depositedAssetsO[i];
+        amounts = new uint256[](depositedAssets.length);
+        for (uint256 i = 0; i < depositedAssets.length; i++) {
+            address currentAsset = depositedAssets[i];
             amounts[i] = deposits[user][currentAsset];
         }
     }
@@ -159,20 +149,14 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Get the total number of deposits of all assets
      */
     function getTotalDeposits() external view override returns (uint256[] memory amounts) {
-        address[] memory depositedAssetsO = getDepositedAssets();
-        amounts = new uint256[](depositedAssetsO.length);
-        for (uint256 i = 0; i < depositedAssetsO.length; i++) {
-            address currentAsset = depositedAssetsO[i];
+        amounts = new uint256[](depositedAssets.length);
+        for (uint256 i = 0; i < depositedAssets.length; i++) {
+            address currentAsset = depositedAssets[i];
             amounts[i] = depositTotals[currentAsset];
         }
     }
-
-    modifier onlyAdminWallet() {
-        require(msg.sender == adminWallet, "Invalid wallet");
-        _;
-    }
 }
 
-contract BridgerL2V7 is BridgerL2 {
+contract BridgerL2V8 is BridgerL2 {
     constructor(address _walletFactory) BridgerL2(_walletFactory) {}
 }
