@@ -213,6 +213,7 @@ contract Bridger is
         uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
         if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
         if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
+            if (asset == wstETH) IERC20(asset).safeApprove(standardGateway, 0); // wstETH decreases allowance and does not allow non-zero to non-zero approval
             IERC20(asset).safeApprove(standardGateway, type(uint256).max);
         }
         // Bridge to Kinto L2 using standard bridge
@@ -339,6 +340,11 @@ contract Bridger is
         uint256 nonce,
         bytes calldata signature
     ) private {
+        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
+            // If allowance is already set, we don't need to call permit
+            return;
+        }
+
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -346,10 +352,7 @@ contract Bridger is
             r := calldataload(add(signature.offset, 0x00))
             s := calldataload(add(signature.offset, 0x20))
         }
-        if (IERC20(asset).allowance(owner, address(this)) >= amount) {
-            // If allowance is already set, we don't need to call permit
-            return;
-        }
+
         v = uint8(signature[64]); // last byte
 
         if (asset == DAI) {
@@ -470,6 +473,6 @@ contract Bridger is
     }
 }
 
-contract BridgerV3 is Bridger {
+contract BridgerV4 is Bridger {
     constructor(address _l2Vault) Bridger(_l2Vault) {}
 }
