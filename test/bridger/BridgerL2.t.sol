@@ -28,6 +28,13 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     function setUp() public override {
         super.setUp();
         _token = new ERC20("Test", "TST");
+
+        if (fork) {
+            // transfer owner's ownership to _owner
+            vm.prank(_bridgerL2.owner());
+            _bridgerL2.transferOwnership(_owner);
+        }
+
         fundSponsorForApp(_owner, address(_bridgerL2));
         registerApp(_owner, "bridger", address(_bridgerL2));
     }
@@ -122,16 +129,22 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     function testClaimCommitment() public {
         address _asset = address(_token);
         uint256 _amount = 100;
-        vm.startPrank(_owner);
+
         address[] memory _assets = new address[](1);
         _assets[0] = _asset;
         deal(_asset, address(_bridgerL2), _amount);
+
+        vm.startPrank(_owner);
+
         _bridgerL2.setDepositedAssets(_assets);
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
         _bridgerL2.unlockCommitments();
+
         vm.stopPrank();
+
         vm.prank(address(_kintoWallet));
         _bridgerL2.claimCommitment();
+
         assertEq(_bridgerL2.deposits(address(_kintoWallet), _asset), 0);
         assertEq(ERC20(_asset).balanceOf(address(_kintoWallet)), _amount);
     }
