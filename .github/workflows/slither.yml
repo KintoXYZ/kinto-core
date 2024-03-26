@@ -40,12 +40,11 @@ jobs:
 
             // post or delete Slither failure comment
             const failureComment = await findFailureComment();
-            console.info("OUTCOME", failureComment);
             if (process.env.OUTCOME == 'failure' && !failureComment) {
               await github.rest.issues.createComment({
                 ...repo,
                 issue_number,
-                body: comment,
+                body: body,
               });
             }
             if (process.env.OUTCOME != 'failure' && failureComment) {
