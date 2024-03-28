@@ -19,3 +19,6 @@
 [submodule "lib/solady"]
 	path = lib/solady
 	url = https://github.com/vectorized/solady
+[submodule "lib/token-bridge-contracts"]
+	path = lib/token-bridge-contracts
+	url = https://github.com/OffchainLabs/token-bridge-contracts
