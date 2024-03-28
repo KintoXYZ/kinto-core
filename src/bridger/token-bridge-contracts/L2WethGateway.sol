@@ -19,7 +19,7 @@
 pragma solidity ^0.8.0;
 
 import "./L2ArbitrumGateway.sol";
-import "../../libraries/IWETH9.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/IWETH9.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 

@@ -19,21 +19,26 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
-import "../../libraries/AddressAliasHelper.sol";
-import "../../libraries/BytesLib.sol";
-import "../../libraries/ProxyUtil.sol";
 
-import "../IArbToken.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/AddressAliasHelper.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/BytesLib.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/ProxyUtil.sol";
 
-import "../L2ArbitrumMessenger.sol";
-import "../../libraries/gateway/GatewayMessageHandler.sol";
-import "../../libraries/gateway/TokenGateway.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/arbitrum/IArbToken.sol";
+
+import "@token-bridge-contracts/contracts/tokenbridge/arbitrum/L2ArbitrumMessenger.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/gateway/GatewayMessageHandler.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/gateway/TokenGateway.sol";
+
+import "../../interfaces/IKintoWallet.sol";
 
 /**
  * @title Common interface for gatways on Arbitrum messaging to L1.
  */
 abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
     using Address for address;
+
+    address public constant BRIDGER_L2 = 0x26181Dfc530d96523350e895180b09BAf3d816a0;
 
     uint256 public exitNum;
 
@@ -47,6 +52,8 @@ abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
         uint256 _exitNum,
         uint256 _amount
     );
+
+    event InvalidDepositOrigin(address indexed _from, address indexed _to);
 
     modifier onlyCounterpartGateway() override {
         require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(counterpartGateway), "ONLY_COUNTERPART_GATEWAY");
@@ -208,6 +215,13 @@ abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
         override
         onlyCounterpartGateway
     {
+        if (_to != BRIDGER_L2 && !IKintoWallet(_to).isFunderWhitelisted(_from)) {
+            // forcing withdrawal back to the L1
+            triggerWithdrawal(_token, address(this), _from, _amount, "");
+            emit InvalidDepositOrigin(_from, _to);
+            return;
+        }
+
         (bytes memory gatewayData, bytes memory callHookData) = GatewayMessageHandler.parseFromL1GatewayMsg(_data);
 
         if (callHookData.length != 0) {

@@ -21,8 +21,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "./L2ArbitrumGateway.sol";
-import "../StandardArbERC20.sol";
-import "../../libraries/ClonableBeaconProxy.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/arbitrum/StandardArbERC20.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
 
 contract L2ERC20Gateway is L2ArbitrumGateway {
     address public beaconProxyFactory;
