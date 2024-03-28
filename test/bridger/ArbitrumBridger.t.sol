@@ -23,6 +23,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "../../src/interfaces/IKintoWallet.sol";
+import "../../src/interfaces/IKintoWalletFactory.sol";
 
 import {SharedSetup, UserOperation} from "../SharedSetup.t.sol";
 
@@ -33,9 +34,11 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
     address public l2BeaconProxyFactory;
     address public l1Token = makeAddr("l1Token");
     address public l1Weth = makeAddr("l1Weth");
+    address public l2Token;
     address public l2Weth;
+    address public l2CustomToken;
 
-    event InvalidDepositOrigin(address indexed _from, address indexed _to);
+    event DepositSenderNotWhitelisted(address indexed _from, address indexed _to);
 
     function setUp() public override {
         super.setUp();
@@ -60,6 +63,9 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         l2ERC20Gateway.initialize(l1Counterpart, router, l2BeaconProxyFactory);
         l2WethGateway.initialize(l1Counterpart, router, l1Weth, l2Weth);
 
+        l2CustomToken = registerToken(); // register custom token
+        l2Token = l2CustomGateway.calculateL2TokenAddress(l1Token);
+
         // not used here but needed for L2ArbitrumGatewayTest compliance
         address gateway = address(l2CustomGateway);
         assembly {
@@ -67,28 +73,25 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         }
     }
 
-    function testFinalizeInboundTransfer_WhenL2CustomGateway() public {
-        address l2Token = l2CustomGateway.calculateL2TokenAddress(l1Token);
-
-        sender = address(_kintoWallet);
+    function testFinalizeInboundTransfer_WhenL2CustomGateway_WhenReceiverIsKintoWallet_WhenSenderIsWhitelisted()
+        public
+    {
+        sender = address(123);
         receiver = address(_kintoWallet);
 
-        // deposit params
-        bytes memory gatewayData = new bytes(0);
-        bytes memory callHookData = new bytes(0);
-
-        // register custom token
-        address l2CustomToken = registerToken();
-
-        // make sure `sender` is not whitelisted
-        assertFalse(IKintoWallet(receiver).isFunderWhitelisted(sender));
+        // receiver is a Kinto Wallet (walletTs should return > 0)
+        vm.mockCall(
+            address(address(l2CustomGateway.walletFactory())),
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, receiver),
+            abi.encode(1)
+        );
 
         // whitelist `sender` and try again
         whitelistFunder(sender);
 
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(
-            l1Token, sender, receiver, amount, abi.encode(gatewayData, callHookData)
+            l1Token, sender, receiver, amount, abi.encode(new bytes(0), new bytes(0))
         );
 
         // check L2 token has been created
@@ -98,18 +101,20 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         assertEq(ERC20(l2CustomToken).balanceOf(receiver), amount, "Invalid receiver balance");
     }
 
-    function testFinalizeInboundTransfer_WhenL2CustomGateway_WhenInvalidOrigin() public {
-        address l2Token = l2CustomGateway.calculateL2TokenAddress(l1Token);
+    function testFinalizeInboundTransfer_WhenL2CustomGateway_WhenReceiverIsKintoWallet_WhenSenderNotWhitelisted()
+        public
+    {
+        // it should trigger a withdrawal back to L1
 
-        sender = address(_kintoWallet);
+        sender = address(123);
         receiver = address(_kintoWallet);
 
-        // deposit params
-        bytes memory gatewayData = new bytes(0);
-        bytes memory callHookData = new bytes(0);
-
-        // register custom token
-        address l2CustomToken = registerToken();
+        // receiver is a Kinto Wallet (walletTs should return > 0)
+        vm.mockCall(
+            address(address(l2CustomGateway.walletFactory())),
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, receiver),
+            abi.encode(1)
+        );
 
         // make sure `sender` is not whitelisted
         assertFalse(IKintoWallet(receiver).isFunderWhitelisted(sender));
@@ -120,133 +125,65 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
 
         // check that withdrawal is triggered occurs when deposit is halted
         vm.expectEmit(true, true, true, true);
-        emit InvalidDepositOrigin(sender, receiver);
+        emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
         vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(
-            l1Token, sender, receiver, amount, abi.encode(gatewayData, callHookData)
+            l1Token, sender, receiver, amount, abi.encode(new bytes(0), new bytes(0))
         );
     }
 
-    function testFinalizeInboundTransfer_WhenL2ERC20Gateway() public {
-        address l2Token = l2ERC20Gateway.calculateL2TokenAddress(l1Token);
+    function testFinalizeInboundTransfer_WhenL2CustomGateway_WhenReceiverIsNotKintoWallet() public {
+        // it should trigger a withdrawal back to L1
 
-        sender = address(_kintoWallet);
-        receiver = address(_kintoWallet);
+        sender = address(123);
+        receiver = address(456);
 
-        // deposit params
-        bytes memory gatewayData =
-            abi.encode(abi.encode(bytes("Name")), abi.encode(bytes("Symbol")), abi.encode(uint256(18)));
-        bytes memory callHookData = new bytes(0);
-
-        // whitelist `sender` and try again
-        whitelistFunder(sender);
-
-        vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
-        l2ERC20Gateway.finalizeInboundTransfer(l1Token, sender, receiver, amount, abi.encode(gatewayData, callHookData));
-
-        // check L2 token has been created
-        assertTrue(l2Token.code.length > 0, "L2 token is supposed to be created");
-
-        // check tokens have been minted to receiver;
-        assertEq(ERC20(l2Token).balanceOf(receiver), amount, "Invalid receiver balance");
-    }
-
-    function testFinalizeInboundTransfer_WhenL2ERC20Gateway_WhenInvalidOrigin() public {
-        address l2Token = l2ERC20Gateway.calculateL2TokenAddress(l1Token);
-
-        sender = address(_kintoWallet);
-        receiver = address(_kintoWallet);
-
-        // deposit params
-        bytes memory gatewayData =
-            abi.encode(abi.encode(bytes("Name")), abi.encode(bytes("Symbol")), abi.encode(uint256(18)));
-        bytes memory callHookData = new bytes(0);
-
-        // make sure `sender` is not whitelisted
-        assertFalse(IKintoWallet(receiver).isFunderWhitelisted(sender));
+        // receiver is NOT a Kinto Wallet (walletTs should return 0)
+        vm.mockCall(
+            address(address(l2CustomGateway.walletFactory())),
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, receiver),
+            abi.encode(0)
+        );
 
         // check that withdrawal is triggered occurs when deposit is halted
         vm.expectEmit(true, true, true, true);
-        emit WithdrawalInitiated(l1Token, address(l2ERC20Gateway), sender, 0, 0, amount);
+        emit WithdrawalInitiated(l1Token, address(l2CustomGateway), sender, 0, 0, amount);
 
         // check that withdrawal is triggered occurs when deposit is halted
         vm.expectEmit(true, true, true, true);
-        emit InvalidDepositOrigin(sender, receiver);
+        emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
         vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
-        l2ERC20Gateway.finalizeInboundTransfer(l1Token, sender, receiver, amount, abi.encode(gatewayData, callHookData));
-
-        // check L2 token hasn't been created
-        assertEq(l2Token.code.length, 0, "L2 token isn't supposed to be created");
-    }
-
-    function testFinalizeInboundTransfer_WhenL2WethGateway() public {
-        sender = address(_kintoWallet);
-        receiver = address(_kintoWallet);
-
-        // deposit params
-        bytes memory gatewayData = new bytes(0);
-        bytes memory callHookData = new bytes(0);
-
-        // fund gateway
-        vm.deal(address(l2WethGateway), 100 ether);
-
-        // whitelist `sender` and try again
-        whitelistFunder(sender);
-
-        vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
-        l2WethGateway.finalizeInboundTransfer(l1Weth, sender, receiver, amount, abi.encode(gatewayData, callHookData));
-
-        // check tokens have been minted to receiver;
-        assertEq(aeWETH(payable(l2Weth)).balanceOf(receiver), amount, "Invalid receiver balance");
-    }
-
-    function testFinalizeInboundTransfer_WhenL2WethGateway_WhenInvalidOrigin() public {
-        sender = address(_kintoWallet);
-        receiver = address(_kintoWallet);
-
-        // deposit params
-        bytes memory gatewayData = new bytes(0);
-        bytes memory callHookData = new bytes(0);
-
-        // fund gateway
-        vm.deal(address(l2WethGateway), 100 ether);
-
-        // make sure `sender` is not whitelisted
-        assertFalse(IKintoWallet(receiver).isFunderWhitelisted(sender));
-
-        // check that withdrawal is triggered occurs when deposit is halted
-        vm.expectEmit(true, true, true, true);
-        emit WithdrawalInitiated(l1Weth, address(l2WethGateway), sender, 0, 0, amount);
-
-        // check that withdrawal is triggered occurs when deposit is halted
-        vm.expectEmit(true, true, true, true);
-        emit InvalidDepositOrigin(sender, receiver);
-
-        // finalize deposit
-        vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
-        vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
-        l2WethGateway.finalizeInboundTransfer(l1Weth, sender, receiver, amount, abi.encode(gatewayData, callHookData));
+        l2CustomGateway.finalizeInboundTransfer(
+            l1Token, sender, receiver, amount, abi.encode(new bytes(0), new bytes(0))
+        );
     }
 
     // bridger L2 tests
+    function testFinalizeInboundTransfer_WhenL2ERC20Gateway_WhenReceiverIsBridgerL2() public {
+        l2Token = l2ERC20Gateway.calculateL2TokenAddress(l1Token);
 
-    function testFinalizeInboundTransfer_WhenL2ERC20Gateway_WhenDestinationIsBridgerL2() public {
-        address l2Token = l2ERC20Gateway.calculateL2TokenAddress(l1Token);
-
-        sender = address(_kintoWallet);
+        sender = address(123);
         receiver = l2ERC20Gateway.BRIDGER_L2();
+
+        // receiver is not a Kinto Wallet (it's the Bridger L2)
+        vm.mockCall(
+            address(address(l2CustomGateway.walletFactory())),
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, receiver),
+            abi.encode(0)
+        );
 
         // deposit params
         bytes memory gatewayData =
             abi.encode(abi.encode(bytes("Name")), abi.encode(bytes("Symbol")), abi.encode(uint256(18)));
         bytes memory callHookData = new bytes(0);
 
+        // finalize deposit
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2ERC20Gateway.finalizeInboundTransfer(l1Token, sender, receiver, amount, abi.encode(gatewayData, callHookData));
 

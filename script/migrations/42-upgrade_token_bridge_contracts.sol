@@ -35,7 +35,7 @@ contract KintoMigration41DeployScript is MigrationHelper {
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
 
         // executor
-        address executor = 0x09d34B74cd8B1c4394A3cD9630E1Ba027E6ED4F5; // FIXME: this is Caldera that needs to add as executor
+        // address executor = 0x09d34B74cd8B1c4394A3cD9630E1Ba027E6ED4F5; // FIXME: this is Caldera that needs to add as executor
 
         // L2CustomGateway
         bytes memory bytecode = abi.encodePacked(type(L2CustomGateway).creationCode);
