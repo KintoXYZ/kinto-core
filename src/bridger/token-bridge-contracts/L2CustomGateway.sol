@@ -19,7 +19,7 @@
 pragma solidity ^0.8.0;
 
 import "./L2ArbitrumGateway.sol";
-import "../../libraries/gateway/ICustomGateway.sol";
+import "@token-bridge-contracts/contracts/tokenbridge/libraries/gateway/ICustomGateway.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract L2CustomGateway is L2ArbitrumGateway, ICustomGateway {
