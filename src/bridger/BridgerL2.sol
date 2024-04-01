@@ -125,7 +125,8 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
                 deposits[msg.sender][currentAsset] = 0;
-                IERC20(currentAsset).transfer(msg.sender, balance);
+                address l2Asset = _l2Address(currentAsset);
+                IERC20(l2Asset).transfer(msg.sender, balance);
                 emit Claim(msg.sender, currentAsset, balance);
             }
         }
@@ -154,6 +155,18 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             address currentAsset = depositedAssets[i];
             amounts[i] = depositTotals[currentAsset];
         }
+    }
+
+    /* ============ Internals ============ */
+
+    /**
+     * @dev Returns actual L2 token representation address in Kinto
+     */
+    function _l2Address(address _asset) private pure returns (address) {
+        if (_asset == 0x4190A8ABDe37c9A85fAC181037844615BA934711) return 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI
+        if (_asset == 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee) return 0xa75C0f526578595AdB75D13FCea1017AC1b97e48; // sUSDe
+        if (_asset == 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200) return 0xCA47413347D04E0ce1843824C736740f787845e5; // wstETH
+        if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x578395611F459F615D877447Dcc955d7095504cb; // weETH
     }
 }
 
