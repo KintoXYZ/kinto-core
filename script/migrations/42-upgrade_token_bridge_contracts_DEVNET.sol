@@ -15,6 +15,7 @@ interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;
     function execute(address upgrade, bytes memory upgradeCallData) external payable;
     function executeCall(address target, bytes memory targetCallData) external payable;
+    function hasRole(bytes32 role, address account) external view returns (bool);
 }
 
 contract KintoMigration41DeployScript is MigrationHelper {
@@ -23,26 +24,30 @@ contract KintoMigration41DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
+        deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
+        console.log("Running on chain: ", vm.toString(block.chainid));
         console.log("Executing from address", msg.sender);
+        console.log("Deployer is: ", vm.addr(deployerPrivateKey));
 
         TransparentUpgradeableProxy l2CustomGateway =
-            TransparentUpgradeableProxy(payable(0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8));
+            TransparentUpgradeableProxy(payable(0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99)); // devnet
         TransparentUpgradeableProxy l2ERC20Gateway =
-            TransparentUpgradeableProxy(payable(0x87799989341A07F495287B1433eea98398FD73aA));
+            TransparentUpgradeableProxy(payable(0x6A8d32c495df943212B7788114e41103047150a5)); // devnet
         TransparentUpgradeableProxy l2WethGateway =
-            TransparentUpgradeableProxy(payable(0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE));
-        ProxyAdmin proxyAdmin = ProxyAdmin(0x9eC0253E4174a14C0536261888416451A407Bf79);
-        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
+            TransparentUpgradeableProxy(payable(0x79B47F0695608aD8dc90E400a3E123b02eB72D24)); // devnet
+        ProxyAdmin proxyAdmin = ProxyAdmin(0x6fF2194e07E970caFd33A0eae5FEF5c50406bcf8); // devnet
+        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x6B0d3F40DeD9720938DB274f752F1e11532c2640); // devnet
 
-        // executor
-        address executor = 0x09d34B74cd8B1c4394A3cD9630E1Ba027E6ED4F5; // FIXME: this is Caldera that needs to add as executor
+        if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), vm.addr(deployerPrivateKey))) {
+            revert("Sender does not have EXECUTOR_ROLE");
+        }
 
         // L2CustomGateway
         bytes memory bytecode = abi.encodePacked(type(L2CustomGateway).creationCode);
         address impl = _deployImplementation("L2CustomGateway", "V2", bytecode);
         bytes memory upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2CustomGateway, impl);
 
-        vm.broadcast();
+        vm.broadcast(deployerPrivateKey);
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
 
         // L2ERC20Gateway
@@ -50,14 +55,14 @@ contract KintoMigration41DeployScript is MigrationHelper {
         impl = _deployImplementation("L2ERC20Gateway", "V2", bytecode);
         upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2ERC20Gateway, impl);
 
-        vm.broadcast();
+        vm.broadcast(deployerPrivateKey);
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
 
         // L2WethGateway
         bytecode = abi.encodePacked(type(L2WethGateway).creationCode);
         impl = _deployImplementation("L2WethGateway", "V2", bytecode);
         upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2WethGateway, impl);
-        vm.broadcast();
+        vm.broadcast(deployerPrivateKey);
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
     }
 }

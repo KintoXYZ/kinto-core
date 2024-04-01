@@ -31,6 +31,7 @@ import "@token-bridge-contracts/contracts/tokenbridge/libraries/gateway/GatewayM
 import "@token-bridge-contracts/contracts/tokenbridge/libraries/gateway/TokenGateway.sol";
 
 import "../../interfaces/IKintoWallet.sol";
+import "../../interfaces/IKintoWalletFactory.sol";
 
 /**
  * @title Common interface for gatways on Arbitrum messaging to L1.
@@ -39,6 +40,7 @@ abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
     using Address for address;
 
     address public constant BRIDGER_L2 = 0x26181Dfc530d96523350e895180b09BAf3d816a0;
+    IKintoWalletFactory public constant walletFactory = IKintoWalletFactory(0x8a4720488CA32f1223ccFE5A087e250fE3BC5D75);
 
     uint256 public exitNum;
 
@@ -53,7 +55,7 @@ abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
         uint256 _amount
     );
 
-    event InvalidDepositOrigin(address indexed _from, address indexed _to);
+    event DepositSenderNotWhitelisted(address indexed _from, address indexed _to);
 
     modifier onlyCounterpartGateway() override {
         require(msg.sender == AddressAliasHelper.applyL1ToL2Alias(counterpartGateway), "ONLY_COUNTERPART_GATEWAY");
@@ -215,10 +217,11 @@ abstract contract L2ArbitrumGateway is L2ArbitrumMessenger, TokenGateway {
         override
         onlyCounterpartGateway
     {
-        if (_to != BRIDGER_L2 && !IKintoWallet(_to).isFunderWhitelisted(_from)) {
+        bool isKintoWallet = walletFactory.walletTs(_to) > 0;
+        if (_to != BRIDGER_L2 && (!isKintoWallet || !IKintoWallet(_to).isFunderWhitelisted(_from))) {
             // forcing withdrawal back to the L1
             triggerWithdrawal(_token, address(this), _from, _amount, "");
-            emit InvalidDepositOrigin(_from, _to);
+            emit DepositSenderNotWhitelisted(_from, _to);
             return;
         }
 
