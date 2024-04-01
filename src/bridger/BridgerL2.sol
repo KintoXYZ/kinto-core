@@ -125,8 +125,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
                 deposits[msg.sender][currentAsset] = 0;
-                address l2Asset = _l2Address(currentAsset);
-                IERC20(l2Asset).transfer(msg.sender, balance);
+                IERC20(_l2Address(currentAsset)).transfer(msg.sender, balance);
                 emit Claim(msg.sender, currentAsset, balance);
             }
         }
