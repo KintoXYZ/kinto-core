@@ -33,7 +33,7 @@ contract KintoMigration41DeployScript is MigrationHelper {
         ProxyAdmin proxyAdmin = ProxyAdmin(0x9eC0253E4174a14C0536261888416451A407Bf79);
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
 
-        if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), vm.addr(deployerPrivateKey))) {
+        if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
             revert("Sender does not have EXECUTOR_ROLE");
         }
 
