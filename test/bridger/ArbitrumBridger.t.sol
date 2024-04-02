@@ -128,7 +128,16 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
-        vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        if (fork) {
+            vm.mockCall(
+                address(0x0000000000000000000000000000000000000064),
+                abi.encodeWithSelector(ArbSys.sendTxToL1.selector),
+                abi.encode(0)
+            );
+        } else {
+            vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        }
+
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(
             l1Token, sender, receiver, amount, abi.encode(new bytes(0), new bytes(0))
@@ -157,7 +166,16 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
-        vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        if (fork) {
+            vm.mockCall(
+                address(0x0000000000000000000000000000000000000064),
+                abi.encodeWithSelector(ArbSys.sendTxToL1.selector),
+                abi.encode(0)
+            );
+        } else {
+            vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        }
+
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(
             l1Token, sender, receiver, amount, abi.encode(new bytes(0), new bytes(0))
@@ -196,23 +214,23 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
 
     // note: overriding below tests to comply with L2ArbitrumGatewayTest which is inherited here
 
-    function test_finalizeInboundTransfer() public override {
+    function test_finalizeInboundTransfer() public view override {
         console.log("test_finalizeInboundTransfer");
     }
 
-    function test_finalizeInboundTransfer_WithCallHook() public override {
+    function test_finalizeInboundTransfer_WithCallHook() public view override {
         console.log("test_finalizeInboundTransfer_WithCallHook");
     }
 
-    function test_outboundTransfer() public override {
+    function test_outboundTransfer() public view override {
         console.log("test_outboundTransfer");
     }
 
-    function test_outboundTransfer_4Args() public override {
+    function test_outboundTransfer_4Args() public view override {
         console.log("test_outboundTransfer_4Args");
     }
 
-    function test_outboundTransfer_revert_NotExpectedL1Token() public override {
+    function test_outboundTransfer_revert_NotExpectedL1Token() public view override {
         console.log("test_outboundTransfer_revert_NotExpectedL1Token");
     }
 
