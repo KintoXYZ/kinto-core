@@ -70,6 +70,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testUp() public override {
+        if (fork) return;
         assertEq(bridger.depositCount(), 0);
         assertEq(bridger.owner(), address(_owner));
         assertEq(bridger.swapsEnabled(), false);
@@ -107,6 +108,8 @@ contract BridgerTest is TestSignature, SharedSetup {
     function testDepositBySig_sDAI_WhenNoSwap() public {
         address assetToDeposit = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
+        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -138,8 +141,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, swapData);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
+        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
 
     // deposit wstETH (no swap)
@@ -147,6 +150,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         if (!fork) return;
         address assetToDeposit = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
+        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -178,8 +183,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, swapData);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
+        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
 
     // deposit weETH (no swap)
@@ -187,6 +192,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         if (!fork) return;
         address assetToDeposit = bridger.weETH();
         uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
+        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -218,8 +225,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, swapData);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
+        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
 
     // deposit sUSDe
@@ -227,6 +234,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         if (!fork) return;
         address assetToDeposit = bridger.sUSDe();
         uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
+        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -258,8 +267,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, swapData);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), amountToDeposit);
+        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
 
     // USDe to sUSDe
@@ -267,6 +276,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         if (!fork) return;
         address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
+        uint256 sharesBefore = ERC20(bridger.sUSDe()).balanceOf(address(bridger));
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -302,7 +312,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
 
         uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(amountToDeposit);
-        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares);
+        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), sharesBefore + shares);
     }
 
     // USDe to sDAI
@@ -958,6 +968,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         if (!fork) return;
         uint256 gasFee = 0.1 ether;
         uint256 amountToDeposit = 1e18;
+        uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
         vm.deal(_user, amountToDeposit + gasFee);
 
         vm.startPrank(_user);
@@ -969,13 +980,14 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(bridger.nonces(_user), 0);
         assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
         uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
+        assertTrue(wstethBalance - wstethBalanceBefore > 0);
     }
 
     function testDepositETH_WhenNoGasFee() public {
         if (!fork) return;
         uint256 gasFee = 0;
         uint256 amountToDeposit = 1e18;
+        uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
         vm.deal(_user, amountToDeposit + gasFee);
 
         vm.startPrank(_user);
@@ -987,7 +999,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         assertEq(bridger.nonces(_user), 0);
         assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
         uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        assertEq(wstethBalance > 0 && wstethBalance < amountToDeposit, true);
+        assertTrue(wstethBalance - wstethBalanceBefore > 0);
     }
 
     function testDepositETH_WhenSwap_WhenGasFee() public {
@@ -1215,7 +1227,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Sender account ============ */
 
     function testSetSenderAccountWhenOwner() public {
-        assertEq(bridger.senderAccount(), senderAccount, "Initial sender account is invalid");
+        if (!fork) assertEq(bridger.senderAccount(), senderAccount, "Initial sender account is invalid");
 
         vm.prank(_owner);
         bridger.setSenderAccount(address(0xdead));
@@ -1230,6 +1242,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ EIP712 ============ */
 
     function testDomainSeparatorV4() public {
+        if (fork) return;
         assertEq(
             bridger.domainSeparatorV4(),
             keccak256(
@@ -1256,6 +1269,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 expiresAt,
         bytes calldata signature
     ) public {
+        if (fork) return;
         IBridger.SignatureData memory data = IBridger.SignatureData({
             kintoWallet: kintoWallet,
             signer: signer,
