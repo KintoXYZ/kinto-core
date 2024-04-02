@@ -51,8 +51,13 @@ This repository contains all the core smart contracts available at Kinto.
 
 ## Requirements
 
-- Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- Copy .env.sample to .env and fill the values. After you deploy the proxy make sure to fill its address as well.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Yarn or NPM
+
+## Install dependencies
+- Run `yarn install` to install all forge dependencies 
+  - Alternative, you can run `forge install` and then `cd lib/token-bridge-contracts && yarn`
+- Copy `.env.sample` to `.env` and fill the values. After you deploy the proxy make sure to fill its address as well.
 
 ### Enable CREATE2 in a custom chain (only needed in a custom chain)
 
@@ -78,7 +83,7 @@ forge test
 ```
 Alternatively, you run `yarn test`
 
-To run tests on a fork from mainnet you can se the env var `FORK=true`
+To run tests on a fork from mainnet you need to set the env vars `FORK=true` and `FOUNDRY_EVM_VERSION=shanghai`
 ```
 FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv --match-contract BridgerTest
 ```

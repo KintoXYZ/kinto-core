@@ -8,8 +8,10 @@
   },
   "license": "MIT",
   "scripts": {
+    "install": "forge install && cd lib/token-bridge-contracts && yarn",
     "test": "source .env && FORK=false forge test -vvvv",
-    "test-mainnet": "source .env && FORK=true forge test -vvvv",
+    "test-mainnet": "source .env && FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv",
+    "coverage": "forge coverage",
     "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
     "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID",
     "export-eth-mainnet": "source .env && node ./utils/export.js 1"
