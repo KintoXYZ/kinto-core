@@ -826,9 +826,17 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
         if (!fork) return;
+
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
-        deal(address(assetToDeposit), _user, amountToDeposit);
+
+        // disable DAI
+        address[] memory assets = new address[](1);
+        assets[0] = assetToDeposit;
+        bool[] memory flags = new bool[](1);
+        flags[0] = false;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
 
         IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
@@ -861,9 +869,17 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed_2() public {
         if (!fork) return;
+
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
-        deal(address(assetToDeposit), _user, amountToDeposit);
+
+        // disable DAI
+        address[] memory assets = new address[](1);
+        assets[0] = assetToDeposit;
+        bool[] memory flags = new bool[](1);
+        flags[0] = false;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
 
         IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
