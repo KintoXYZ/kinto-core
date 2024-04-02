@@ -9,14 +9,8 @@ import "../../src/bridger/token-bridge-contracts/L2CustomGateway.sol";
 import "../../src/bridger/token-bridge-contracts/L2ERC20Gateway.sol";
 import "../../src/bridger/token-bridge-contracts/L2WethGateway.sol";
 
-import {L2ArbitrumGatewayTest} from "@token-bridge-contracts/test-foundry/L2ArbitrumGateway.t.sol";
-import {L2CustomToken} from "@token-bridge-contracts/test-foundry/L2CustomGateway.t.sol";
-import {StandardArbERC20} from "@token-bridge-contracts/contracts/tokenbridge/arbitrum/StandardArbERC20.sol";
-import {
-    BeaconProxyFactory,
-    ClonableBeaconProxy
-} from "@token-bridge-contracts/contracts/tokenbridge/libraries/ClonableBeaconProxy.sol";
 import {aeWETH} from "@token-bridge-contracts/contracts/tokenbridge/libraries/aeWETH.sol";
+import {ArbSysMock} from "@token-bridge-contracts/contracts/tokenbridge/test/ArbSysMock.sol";
 
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -27,18 +21,37 @@ import "../../src/interfaces/IKintoWalletFactory.sol";
 
 import {SharedSetup, UserOperation} from "../SharedSetup.t.sol";
 
-contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
-    L2CustomGateway l2CustomGateway;
-    L2ERC20Gateway l2ERC20Gateway;
-    L2WethGateway l2WethGateway;
+contract ArbitrumBridgerTest is SharedSetup {
+    L2ArbitrumGateway public l2Gateway;
+    L2CustomGateway public l2CustomGateway;
+    L2ERC20Gateway public l2ERC20Gateway;
+    L2WethGateway public l2WethGateway;
+    ArbSysMock public arbSysMock;
+
     address public l2BeaconProxyFactory;
     address public l1Token = makeAddr("l1Token");
     address public l1Weth = makeAddr("l1Weth");
     address public l2Token;
     address public l2Weth;
     address public l2CustomToken;
+    address public router = makeAddr("router");
+    address public l1Counterpart = makeAddr("l1Counterpart");
 
+    // token transfer params
+    address public receiver = makeAddr("to");
+    address public sender = makeAddr("from");
+    uint256 public amount = 2400;
+
+    // events
     event DepositSenderNotWhitelisted(address indexed _from, address indexed _to);
+    event WithdrawalInitiated(
+        address l1Token,
+        address indexed _from,
+        address indexed _receiver,
+        uint256 indexed _l2ToL1Id,
+        uint256 _exitNum,
+        uint256 _amount
+    );
 
     function setUp() public override {
         super.setUp();
@@ -47,6 +60,8 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         l2CustomGateway = new L2CustomGateway();
         l2ERC20Gateway = new L2ERC20Gateway();
         l2WethGateway = new L2WethGateway();
+        l2Gateway = L2ArbitrumGateway(address(l2CustomGateway));
+        arbSysMock = new ArbSysMock();
 
         // create beacon
         StandardArbERC20 standardArbERC20 = new StandardArbERC20();
@@ -212,28 +227,6 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         assertEq(ERC20(l2Token).balanceOf(receiver), amount, "Invalid receiver balance");
     }
 
-    // note: overriding below tests to comply with L2ArbitrumGatewayTest which is inherited here
-
-    function test_finalizeInboundTransfer() public view override {
-        console.log("test_finalizeInboundTransfer");
-    }
-
-    function test_finalizeInboundTransfer_WithCallHook() public view override {
-        console.log("test_finalizeInboundTransfer_WithCallHook");
-    }
-
-    function test_outboundTransfer() public view override {
-        console.log("test_outboundTransfer");
-    }
-
-    function test_outboundTransfer_4Args() public view override {
-        console.log("test_outboundTransfer_4Args");
-    }
-
-    function test_outboundTransfer_revert_NotExpectedL1Token() public view override {
-        console.log("test_outboundTransfer_revert_NotExpectedL1Token");
-    }
-
     // utils
 
     function whitelistFunder(address _funder) public {
@@ -260,5 +253,11 @@ contract ArbitrumBridgerTest is SharedSetup, L2ArbitrumGatewayTest {
         l2CustomGateway.registerTokenFromL1(l1Tokens, l2Tokens);
 
         return l2Tokens[0];
+    }
+}
+
+contract L2CustomToken is L2GatewayToken {
+    constructor(address _l2CustomGateway, address _l1CustomToken) {
+        L2GatewayToken._initialize("L2 token", "L2", 18, _l2CustomGateway, _l1CustomToken);
     }
 }
