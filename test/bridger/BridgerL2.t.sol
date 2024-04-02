@@ -23,16 +23,26 @@ contract BridgerL2NewUpgrade is BridgerL2 {
 }
 
 contract BridgerL2Test is TestSignature, SharedSetup {
-    ERC20 public _token;
+    address sDAI = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // virtual sDAI
+    address sDAIL2 = 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI L2 representation
 
     function setUp() public override {
         super.setUp();
-        _token = new ERC20("Test", "TST");
 
         if (fork) {
             // transfer owner's ownership to _owner
             vm.prank(_bridgerL2.owner());
             _bridgerL2.transferOwnership(_owner);
+
+            // upgrade Bridger L2 to latest version
+            // TODO: remove upgrade after having actually upgraded the contract on mainnet
+            BridgerL2 _newImpl = new BridgerL2(address(_walletFactory));
+            vm.prank(_owner);
+            _bridgerL2.upgradeTo(address(_newImpl));
+        } else {
+            // add a token implementation to the real sDAI L2 representation address
+            ERC20 token = new ERC20("Test", "TST");
+            vm.etch(sDAIL2, address(token).code);
         }
 
         fundSponsorForApp(_owner, address(_bridgerL2));
@@ -64,7 +74,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     /* ============ Write L2 Deposit ============ */
 
     function testWriteL2Deposit() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
 
         uint256 depositsBefore = _bridgerL2.deposits(address(_kintoWallet), _asset);
@@ -80,7 +90,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     }
 
     function testWriteL2Deposit_WhenMultipleCalls() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
 
         uint256 depositsBefore = _bridgerL2.deposits(address(_kintoWallet), _asset);
@@ -98,7 +108,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     }
 
     function testWriteL2Deposit_RevertWhen_CallerIsNotOwner() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
         vm.expectRevert(IBridgerL2.Unauthorized.selector);
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
@@ -120,12 +130,14 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     /* ============ SetDeposited Assets ============ */
 
     function testSetDepositedAssets() public {
-        vm.startPrank(_owner);
         address[] memory _assets = new address[](2);
-        _assets[0] = address(_token);
+        _assets[0] = sDAI;
         _assets[1] = address(0x46);
+
+        vm.prank(_owner);
         _bridgerL2.setDepositedAssets(_assets);
-        assertEq(_bridgerL2.depositedAssets(0), address(_token));
+
+        assertEq(_bridgerL2.depositedAssets(0), sDAI);
         assertEq(_bridgerL2.depositedAssets(1), address(0x46));
     }
 
@@ -133,6 +145,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         address[] memory _assets = new address[](2);
         _assets[0] = address(0x45);
         _assets[1] = address(0x46);
+
         vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.setDepositedAssets(_assets);
     }
@@ -140,12 +153,12 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     /* ============ Claim Commitment ============ */
 
     function testClaimCommitment() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
 
         address[] memory _assets = new address[](1);
         _assets[0] = _asset;
-        deal(_asset, address(_bridgerL2), _amount);
+        deal(sDAIL2, address(_bridgerL2), _amount);
 
         vm.startPrank(_owner);
 
@@ -159,35 +172,45 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         _bridgerL2.claimCommitment();
 
         assertEq(_bridgerL2.deposits(address(_kintoWallet), _asset), 0);
-        assertEq(ERC20(_asset).balanceOf(address(_kintoWallet)), _amount);
+        assertEq(ERC20(sDAIL2).balanceOf(address(_kintoWallet)), _amount);
     }
 
     function testClaimCommitment_RevertWhen_WalletIsInvalid() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
-        vm.startPrank(_owner);
+
         address[] memory _assets = new address[](1);
         _assets[0] = _asset;
-        deal(_asset, address(_bridgerL2), _amount);
+        deal(sDAIL2, address(_bridgerL2), _amount);
+
+        vm.startPrank(_owner);
+
         _bridgerL2.setDepositedAssets(_assets);
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
         _bridgerL2.unlockCommitments();
+
         vm.stopPrank();
+
         vm.prank(_user);
         vm.expectRevert(IBridgerL2.InvalidWallet.selector);
         _bridgerL2.claimCommitment();
     }
 
     function testClaimCommitment_RevertWhen_NotUnlocked() public {
-        address _asset = address(_token);
+        address _asset = sDAI;
         uint256 _amount = 100;
-        vm.startPrank(_owner);
+
         address[] memory _assets = new address[](1);
         _assets[0] = _asset;
-        deal(_asset, address(_bridgerL2), _amount);
+        deal(sDAIL2, address(_bridgerL2), _amount);
+
+        vm.startPrank(_owner);
+
         _bridgerL2.setDepositedAssets(_assets);
         _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
+
         vm.stopPrank();
+
         vm.prank(address(_kintoWallet));
         vm.expectRevert(IBridgerL2.NotUnlockedYet.selector);
         _bridgerL2.claimCommitment();
@@ -197,12 +220,6 @@ contract BridgerL2Test is TestSignature, SharedSetup {
 
     function testClaimCommitment_WhenRealAsset() public {
         if (!fork) return;
-
-        // upgrade Bridger L2 to latest version
-        // TODO: remove upgrade after having actually upgraded the contract on mainnet
-        BridgerL2 _newImpl = new BridgerL2(address(_walletFactory));
-        vm.prank(_owner);
-        _bridgerL2.upgradeTo(address(_newImpl));
 
         // UI "wrong" assets
         address[] memory UI_assets = new address[](4);
