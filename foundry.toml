@@ -7,7 +7,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 # Adding evm version because of this https://github.com/foundry-rs/foundry/issues/4988
-evm_version = 'shanghai' # EVM version to use during tests
+# evm_version = 'shanghai' # EVM version to use during tests
 
 [rpc_endpoints]
 kinto = "${KINTO_RPC_URL}"
