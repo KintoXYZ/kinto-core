@@ -18,7 +18,7 @@ interface IUpgradeExecutor {
     function hasRole(bytes32 role, address account) external view returns (bool);
 }
 
-contract KintoMigration41DeployScript is MigrationHelper {
+contract KintoMigration42DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
@@ -33,31 +33,33 @@ contract KintoMigration41DeployScript is MigrationHelper {
         ProxyAdmin proxyAdmin = ProxyAdmin(0x9eC0253E4174a14C0536261888416451A407Bf79);
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
 
+        console.log('msg.sender: %s', msg.sender);
         if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
             revert("Sender does not have EXECUTOR_ROLE");
         }
 
         // L2CustomGateway
         bytes memory bytecode = abi.encodePacked(type(L2CustomGateway).creationCode);
-        address impl = _deployImplementation("L2CustomGateway", "V2", bytecode);
+        // address impl = _deployImplementation("L2CustomGateway", "V2", bytecode);
+
+        // L2CustomGatewayV2-impl: 0x8B645011e45bf9fd6627e6D42604A9eEaEBfA9bF deployed
+        address impl = 0x8B645011e45bf9fd6627e6D42604A9eEaEBfA9bF;
         bytes memory upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2CustomGateway, impl);
-
-        vm.broadcast();
+        vm.startBroadcast();
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
+        vm.stopBroadcast();
+        // // L2ERC20Gateway
+        // bytecode = abi.encodePacked(type(L2ERC20Gateway).creationCode);
+        // impl = _deployImplementation("L2ERC20Gateway", "V2", bytecode);
+        // upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2ERC20Gateway, impl);
 
-        // L2ERC20Gateway
-        bytecode = abi.encodePacked(type(L2ERC20Gateway).creationCode);
-        impl = _deployImplementation("L2ERC20Gateway", "V2", bytecode);
-        upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2ERC20Gateway, impl);
+        // upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
 
-        vm.broadcast();
-        upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
-
-        // L2WethGateway
-        bytecode = abi.encodePacked(type(L2WethGateway).creationCode);
-        impl = _deployImplementation("L2WethGateway", "V2", bytecode);
-        upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2WethGateway, impl);
-        vm.broadcast();
-        upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
+        // // L2WethGateway
+        // bytecode = abi.encodePacked(type(L2WethGateway).creationCode);
+        // impl = _deployImplementation("L2WethGateway", "V2", bytecode);
+        // upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, l2WethGateway, impl);
+        // upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
+        // vm.stopBroadcast();
     }
 }

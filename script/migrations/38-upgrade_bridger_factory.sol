@@ -5,7 +5,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/bridger/BridgerL2.sol";
 import "./utils/MigrationHelper.sol";
 
-contract KintoMigration38DeployScript is MigrationHelper {
+contract KintoMigration42DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
