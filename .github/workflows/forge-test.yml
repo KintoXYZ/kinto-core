@@ -99,7 +99,7 @@ jobs:
         run: sudo apt-get install -y lcov
 
       - name: Generate LCOV report
-        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true FOUNDRY_EVM_VERSION=shanghai forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
 
       - name: Upload report to Codecov
         uses: codecov/codecov-action@v3

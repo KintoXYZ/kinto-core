@@ -85,7 +85,7 @@ Alternatively, you run `yarn test`
 
 To run tests on a fork from mainnet you need to set the env vars `FORK=true` and `FOUNDRY_EVM_VERSION=shanghai`
 ```
-FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv --match-contract BridgerTest
+FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv
 ```
 Alternatively, you run `yarn test-mainnet`
 
