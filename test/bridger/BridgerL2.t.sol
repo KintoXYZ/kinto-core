@@ -261,5 +261,49 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         }
     }
 
+    /* ============ Viewers ============ */
+
+    function testGetUserDeposits() public {
+        address[] memory _assets = new address[](2);
+        _assets[0] = address(1);
+        _assets[1] = address(2);
+
+        vm.startPrank(_owner);
+
+        _bridgerL2.setDepositedAssets(_assets);
+        _bridgerL2.writeL2Deposit(address(1), _assets[0], 1 ether);
+        _bridgerL2.writeL2Deposit(address(1), _assets[1], 2 ether);
+        _bridgerL2.writeL2Deposit(address(2), _assets[1], 2 ether);
+
+        vm.stopPrank();
+
+        uint256[] memory amounts = _bridgerL2.getUserDeposits(address(1));
+        assertEq(amounts[0], 1 ether);
+        assertEq(amounts[1], 2 ether);
+
+        amounts = _bridgerL2.getUserDeposits(address(2));
+        assertEq(amounts[0], 0);
+        assertEq(amounts[1], 2 ether);
+    }
+
+    function testGetTotalDeposits() public {
+        address[] memory _assets = new address[](2);
+        _assets[0] = address(1);
+        _assets[1] = address(2);
+
+        vm.startPrank(_owner);
+
+        _bridgerL2.setDepositedAssets(_assets);
+        _bridgerL2.writeL2Deposit(address(1), _assets[0], 1 ether);
+        _bridgerL2.writeL2Deposit(address(1), _assets[1], 2 ether);
+        _bridgerL2.writeL2Deposit(address(2), _assets[1], 2 ether);
+
+        vm.stopPrank();
+
+        uint256[] memory amounts = _bridgerL2.getTotalDeposits();
+        assertEq(amounts[0], 1 ether);
+        assertEq(amounts[1], 4 ether);
+    }
+
     // todo: test everything through user ops because it is what we will use
 }
