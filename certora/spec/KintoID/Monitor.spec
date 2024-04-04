@@ -2,6 +2,20 @@ import "setup.spec";
 use invariant lastMonitoredAtInThePast filtered{f -> !upgradeMethods(f)}
 use invariant RecoveryTargetsIsZero filtered{f -> !upgradeMethods(f)}
 
+/// @title Monitor doesn't change roles
+rule monitorDoesntChangeRoles(bytes32 role, address account) {
+    env e;
+    calldataarg args;
+    bool hasRole_before = hasRole(role, account);
+    bytes32 role_admin_before = getRoleAdmin(role);
+        monitor(e, args);
+    bool hasRole_after = hasRole(role, account);
+    bytes32 role_admin_after = getRoleAdmin(role);
+
+    assert hasRole_before == hasRole_after;
+    assert role_admin_before == role_admin_after;
+}
+
 /// @title An account which is not a KYC provider cannot make monitor() revert. 
 rule monitorCannotRevertByNonProvider(method f) filtered{f -> !viewOrUpgrade(f)} {
     env e1;
@@ -165,9 +179,9 @@ rule monitorEmptyDataSucceeds() {
     env e;
     require e.msg.value == 0; /// Non-payable function
     require hasRole(KYC_PROVIDER_ROLE(), e.msg.sender); /// Sender is KYC provider
-    address[] accounts; require accounts.length == 0;
-    IKintoID.MonitorUpdateData[][] traits; require traits.length == 0;
+    address[] accounts;
+    IKintoID.MonitorUpdateData[][] traits;
 
     monitor@withrevert(e, accounts, traits);
-    assert !lastReverted;
+    assert (traits.length == 0 && accounts.length == 0) => !lastReverted;
 }

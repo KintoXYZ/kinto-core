@@ -1,7 +1,7 @@
 import "setup.spec";
 import "IERC721.spec";
 
-use invariant AdminRoleIsDefaultRole filtered{f -> !upgradeMethods(f)}
+use invariant AdminRoleIsDefaultRole filtered{f -> !upgradeMethods(f) && !monitorMethods(f)}
 use invariant lastMonitoredAtInThePast filtered{f -> !upgradeMethods(f)}
 use invariant TokenIndexIsUpToArrayLength filtered{f -> !upgradeMethods(f)}
 use invariant NoOwnerNoIndex filtered{f -> !upgradeMethods(f)}
@@ -9,7 +9,7 @@ use invariant TokenAtIndexConsistency filtered{f -> !upgradeMethods(f)}
 use invariant TokenBalanceIsZeroOrOne filtered{f -> !upgradeMethods(f)}
 use invariant IsOwnedInTokensArray filtered{f -> !upgradeMethods(f)}
 use invariant RecoveryTargetsIsZero filtered{f -> !upgradeMethods(f)}
-use rule onlyRoleAdminRevokesRole filtered{f -> !viewOrUpgrade(f)}
+use rule onlyRoleAdminRevokesRole filtered{f -> !upgradeMethods(f) && !monitorMethods(f)}
 
 methods {
     function isSanctioned(address, uint16) external returns (bool);
