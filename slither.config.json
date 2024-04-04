@@ -3,5 +3,5 @@
     "exclude_low": true,
     "exclude_medium": true,
     "exclude_high": false,
-    "filter_paths": "^src/"
+    "filter_paths": "(src/bridger/token-bridge-contracts/|script|test|utils|lib)"
 }
