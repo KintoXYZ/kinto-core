@@ -185,6 +185,8 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testDeployContract_RevertWhen_CreateWallet() public {
+        // skip test on fork since we are compiling with EVM_VERSION=shanghai and will revert
+        if (fork) return;
         bytes memory initialize = abi.encodeWithSelector(
             IKintoWallet.initialize.selector,
             fork ? vm.envAddress("DEPLOYER_PUBLIC_KEY") : _owner,
