@@ -51,8 +51,13 @@ This repository contains all the core smart contracts available at Kinto.
 
 ## Requirements
 
-- Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- Copy .env.sample to .env and fill the values. After you deploy the proxy make sure to fill its address as well.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Yarn or NPM
+
+## Install dependencies
+- Run `yarn install` to install all forge dependencies 
+  - Alternative, you can run `forge install` and then `cd lib/token-bridge-contracts && yarn`
+- Copy `.env.sample` to `.env` and fill the values. After you deploy the proxy make sure to fill its address as well.
 
 ### Enable CREATE2 in a custom chain (only needed in a custom chain)
 
@@ -78,9 +83,9 @@ forge test
 ```
 Alternatively, you run `yarn test`
 
-To run tests on a fork from mainnet you can se the env var `FORK=true`
+To run tests on a fork from mainnet you need to set the env vars `FORK=true` and `FOUNDRY_EVM_VERSION=shanghai`
 ```
-FORK=true forge test
+FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv
 ```
 Alternatively, you run `yarn test-mainnet`
 
@@ -109,7 +114,7 @@ Everytime a PR is **merged** into `main` (or there's a push directly to it), for
 To create a complete coverage report we need to run coverage on local + run coverage on mainnet fork and then merge both lcov.info files into one. Finally, we remove the unnecessary files from the report (scripts, tests):
 
 ```
-forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage --ignore-errors category & lcov
+forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
 ```
 
 ## Scripts

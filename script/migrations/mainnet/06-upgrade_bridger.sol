@@ -11,6 +11,10 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
+contract BridgerV3 is Bridger {
+    constructor(address _l2Vault) Bridger(_l2Vault) {}
+}
+
 contract KintoMainnetMigration6DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
 
