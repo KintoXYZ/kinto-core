@@ -33,4 +33,4 @@ rule cannotInitializeIfDisabled() {
 
 invariant initializingIsDisabled()
     initializingDisabled()
-    filtered{f -> f.selector != initialize(address,address,address).selector}
+    filtered{f -> f.selector != sig:initialize(address,address).selector}
