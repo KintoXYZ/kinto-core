@@ -7,6 +7,7 @@ ignore:
   - "src/bridger/token-bridge-contracts/L2CustomGateway.sol"  # ignore src/sample/ folder
   - "src/bridger/token-bridge-contracts/L2ERC20Gateway.sol"   # ignore src/sample/ folder
   - "src/bridger/token-bridge-contracts/L2WethGateway.sol"    # ignore src/sample/ folder
+  - "src/inflators/BundleBulker.sol"                          # ignore src/sample/ folder
 
 comment:
   layout: " diff, flags, files"
