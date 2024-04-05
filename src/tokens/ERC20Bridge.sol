@@ -26,9 +26,7 @@ abstract contract ERC20Bridge is ERC20, ERC20Permit, AccessControl {
      * @dev Uses role-based access control for role assignments. Grants the deploying address the default admin
      * role for role management and assigns the MINTER_ROLE to a specified minter.
      */
-    constructor(string memory name, string memory symbol, address admin, address minter)
-        ERC20(name, symbol)
-    {
+    constructor(string memory name, string memory symbol, address admin, address minter) ERC20(name, symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MINTER_ROLE, minter);
     }
