@@ -7,13 +7,13 @@ import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin-5.0.1/contracts/access/AccessControl.sol";
 
 /**
- * @title Bridgeable ERC20 Token
+ * @title ERC20Bridge
  * @notice Implements an ERC20 token with bridging capabilities for cross-chain asset transfers.
  * Extends OpenZeppelin's ERC20, ERC20Permit, and AccessControl.
  * @dev Introduces `mint` and `burn` functions secured with the `MINTER_ROLE` for bridging processes.
  * Inherits ERC20 functionality, permit mechanism for gasless transactions, and role-based access control.
  */
-abstract contract BridgeERC20Token is ERC20, ERC20Permit, AccessControl {
+abstract contract ERC20Bridge is ERC20, ERC20Permit, AccessControl {
     /// @notice Role hash for addresses that can mint and burn tokens as part of bridging.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
