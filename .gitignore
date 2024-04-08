@@ -15,3 +15,7 @@ out/
 
 # addresses.json on local testnet
 /test/artifacts/31337/addresses.json
+
+# Certora
+.certora_internal/*
+certora/munged/*
