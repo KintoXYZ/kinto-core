@@ -22,4 +22,9 @@ jobs:
     name: Slither analysis
     uses: ./.github/workflows/slither.yml
     secrets: inherit
+
+  certora:
+    name: Certora Verification
+    uses: ./.github/workflows/certora.yml
+    secrets: inherit
   
