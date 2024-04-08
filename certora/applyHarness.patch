@@ -1,0 +1,39 @@
+--- ../src/KintoID.sol	2024-03-20 16:31:34.788621130 +0200
++++ 	2024-03-20 18:21:16.480963349 +0200
+@@ -45,7 +45,7 @@
+ 
+     /* ============ State Variables ============ */
+ 
+-    uint256 private _nextTokenId;
++    uint256 internal _nextTokenId;
+ 
+     // We'll monitor the whole list every single day and update it
+     uint256 public override lastMonitoredAt;
+@@ -335,6 +335,16 @@
+     /* ============ View Functions ============ */
+ 
+     /**
++     * @dev Returns whether the account is sanctioned in a country.
++     * @param _account account to be checked.
++     * @param _countryId country id to be checked.
++     * @return true if the account is sanctioned.
++     */
++    function isSanctioned(address _account, uint16 _countryId) external view returns (bool) {
++        return _kycmetas[_account].sanctions.get(_countryId);
++    }
++
++    /**
+      * @dev Returns whether the account holder is KYCd
+      * @param _account account to be checked.
+      * @return true if the account has KYC token.
+--- ../src/wallet/KintoWalletFactory.sol	2024-03-20 15:44:38.878750817 +0200
++++ 	2024-03-20 18:20:01.660968912 +0200
+@@ -259,7 +259,7 @@
+             bytes32(salt),
+             keccak256(
+                 abi.encodePacked(
+-                    type(SafeBeaconProxy).creationCode,
++                    //type(SafeBeaconProxy).creationCode,
+                     abi.encode(address(beacon), abi.encodeCall(IKintoWallet.initialize, (owner, recoverer)))
+                 )
+             )
