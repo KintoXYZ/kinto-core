@@ -1,0 +1,70 @@
+name: Certora Verification
+
+on:
+  workflow_call:
+
+jobs:
+  kintoID:
+    name: Kinto ID
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - KintoID_SanctionsTraits.conf
+          - KintoID_Monitor1.conf
+          - KintoID_Monitor2.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
+      
+          
+  kintoWallet:
+    name: Kinto Wallet
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - KintoWallet.conf
+          - KintoWalletFactory.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
+
+  sponsorPaymaster:
+    name: Sponsor Paymaster
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - SponsorPaymaster.conf
+          - SponsorPaymaster_additional.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
