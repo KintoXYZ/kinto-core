@@ -4,10 +4,10 @@ ignore:
   - "lib"                                                     # ignore libs/ folder
   - "src/libraries"                                           # ignore src/libraries/ folder since coverage is not yet supported
   - "src/sample"                                              # ignore src/sample/ folder
-  - "src/bridger/token-bridge-contracts/L2CustomGateway.sol"  # ignore src/sample/ folder
-  - "src/bridger/token-bridge-contracts/L2ERC20Gateway.sol"   # ignore src/sample/ folder
-  - "src/bridger/token-bridge-contracts/L2WethGateway.sol"    # ignore src/sample/ folder
-  - "src/inflators/BundleBulker.sol"                          # ignore src/sample/ folder
+  - "src/bridger/token-bridge-contracts/L2CustomGateway.sol"  # ignore L2CustomGateway.sol
+  - "src/bridger/token-bridge-contracts/L2ERC20Gateway.sol"   # ignore L2ERC20Gateway.sol
+  - "src/bridger/token-bridge-contracts/L2WethGateway.sol"    # ignore L2WethGateway.sol
+  - "src/inflators/BundleBulker.sol"                          # ignore BundleBulker.sol
 
 comment:
   layout: " diff, flags, files"
