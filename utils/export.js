@@ -18,12 +18,14 @@ let contracts = {};
 function processSolidityFile(filePath, contractName) {
   const cmd = `forge inspect ${contractName} abi`;
   const result = execSync(cmd).toString();
-  console.log(`Exported: ${contractName} ABI`);
-
   const jsonObject = JSON.parse(result);
   let address = addresses[contractName];
-  if (!address || address.length < 8) console.error(`* Missing address for ${contractName}`);
-  contracts[contractName] = { abi: jsonObject, address: address };
+  if ((!address || address.length < 8) && contractName !== 'KintoWallet') {
+    console.error(`* Missing address for ${contractName}`);
+  } else {
+    console.log(`Exported: ${contractName} ABI`);
+    contracts[contractName] = { abi: jsonObject, address: address };
+  }
 }
 
 /**

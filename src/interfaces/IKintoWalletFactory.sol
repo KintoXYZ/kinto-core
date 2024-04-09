@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {IKintoWallet} from "./IKintoWallet.sol";
 import {IKintoID} from "./IKintoID.sol";
 import {IFaucet} from "./IFaucet.sol";
-import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 interface IKintoWalletFactory {
     /* ============ Errors ============ */
@@ -46,6 +46,8 @@ interface IKintoWalletFactory {
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external;
 
     function sendMoneyToAccount(address target) external payable;
+
+    function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
 
     /* ============ Basic Viewers ============ */
 

@@ -5,14 +5,14 @@ import "@aa/core/EntryPoint.sol";
 
 import "../../src/KintoID.sol";
 import "../../test/helpers/AASetup.sol";
-import "../../test/helpers/KYCSignature.sol";
+import "../../test/helpers/TestSignature.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script creates a Kinto Wallet (smart account) through the factory.
 /// @dev It won't create a new wallet if it already exists.
-contract KintoCreateWalletScript is AASetup, KYCSignature {
+contract KintoCreateWalletScript is AASetup, TestSignature {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;

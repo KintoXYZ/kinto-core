@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "../interfaces/IVestingContract.sol";
-import "@oz/contracts/token/ERC20/IERC20.sol";
-import "@oz/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@oz/contracts/access/Ownable.sol";
-import "@oz/contracts/utils/Address.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 
 /**
  * @title VestingContract - To be deployed on ETH mainnet
@@ -23,10 +23,23 @@ import "@oz/contracts/utils/Address.sol";
  *
  */
 contract VestingContract is Ownable, IVestingContract {
+    /* ============ Events ============ */
     event ERC20Released(address indexed beneficiary, uint256 amount);
 
-    address public immutable override kintoToken;
+    /* ============ Errors ============ */
+    error InLockPeriod();
+    error NotEnoughTokens();
+    error BeneficiaryAlreadyExists();
+    error InvalidAddress();
+    error GrantPeriodEnded();
+    error NothingToRelease();
+    error CantRemoveBeneficiary();
+    error ArrayLengthMistmatch();
+
+    /* ============ State variables============ */
+
     uint256 public constant override LOCK_PERIOD = 365 days;
+    address public immutable override kintoToken;
 
     mapping(address => uint256) private _erc20Released;
     mapping(address => uint256) private _grant;
@@ -35,6 +48,8 @@ contract VestingContract is Ownable, IVestingContract {
 
     uint256 public override totalAllocated;
     uint256 public override totalReleased;
+
+    /* ============ Constructor ============ */
 
     /**
      * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
@@ -59,16 +74,30 @@ contract VestingContract is Ownable, IVestingContract {
         override
         onlyOwner
     {
-        require(durationSeconds >= LOCK_PERIOD, "Vesting needs to at least be 1 year");
-        require(
-            (totalAllocated + grantAmount - totalReleased) <= IERC20(kintoToken).balanceOf(address(this)),
-            "Not enough tokens"
-        );
-        require(_grant[beneficiary] == 0, "Beneficiary already exists");
-        _start[beneficiary] = startTimestamp;
-        _duration[beneficiary] = durationSeconds;
-        _grant[beneficiary] = grantAmount;
-        totalAllocated += grantAmount;
+        _addBeneficiary(beneficiary, grantAmount, startTimestamp, durationSeconds);
+    }
+
+    /**
+     * @dev Add multiple beneficiaries to the vesting wallet. The beneficiaries will receive the tokens according to the
+     * vesting schedule.
+     * @param beneficiaries Addresses of the beneficiaries to whom vested tokens are transferred
+     * @param grantAmounts Amount of tokens to be vested
+     * @param startTimestamps Timestamp at which the vesting schedule begins
+     * @param durationSeconds Duration in seconds of the vesting schedule
+     */
+    function addBeneficiaries(
+        address[] calldata beneficiaries,
+        uint256[] calldata grantAmounts,
+        uint256[] calldata startTimestamps,
+        uint256[] calldata durationSeconds
+    ) external override onlyOwner {
+        if (
+            beneficiaries.length != grantAmounts.length || beneficiaries.length != startTimestamps.length
+                || beneficiaries.length != durationSeconds.length
+        ) revert ArrayLengthMistmatch();
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
+            _addBeneficiary(beneficiaries[i], grantAmounts[i], startTimestamps[i], durationSeconds[i]);
+        }
     }
 
     /**
@@ -78,10 +107,7 @@ contract VestingContract is Ownable, IVestingContract {
      * @param beneficiary Address of the beneficiary to be finished
      */
     function earlyLeave(address beneficiary) external override onlyOwner {
-        require(
-            block.timestamp < _start[beneficiary] + _duration[beneficiary],
-            "Cannot early leave after the period has ended"
-        );
+        if (block.timestamp > _start[beneficiary] + _duration[beneficiary]) revert GrantPeriodEnded();
         uint256 vested = vestedAmount(beneficiary, uint64(block.timestamp));
         uint256 difference = _grant[beneficiary] - vested;
         _grant[beneficiary] = vested;
@@ -96,7 +122,7 @@ contract VestingContract is Ownable, IVestingContract {
      * @param beneficiary Address of the beneficiary to be removed
      */
     function removeBeneficiary(address beneficiary) external override onlyOwner {
-        require(_erc20Released[beneficiary] == 0, "Cannot remove beneficiary with released tokens");
+        if (_erc20Released[beneficiary] != 0) revert CantRemoveBeneficiary();
         totalAllocated -= _grant[beneficiary];
         _grant[beneficiary] = 0;
     }
@@ -123,6 +149,30 @@ contract VestingContract is Ownable, IVestingContract {
     }
 
     /**
+     * @dev Add a new beneficiary to the vesting wallet. The beneficiary will receive the tokens according to the
+     * vesting schedule.
+     * @param beneficiary Address of the beneficiary to whom vested tokens are transferred
+     * @param grantAmount Amount of tokens to be vested
+     * @param startTimestamp Timestamp at which the vesting schedule begins
+     * @param durationSeconds Duration in seconds of the vesting schedule
+     */
+    function _addBeneficiary(address beneficiary, uint256 grantAmount, uint256 startTimestamp, uint256 durationSeconds)
+        private
+    {
+        if (durationSeconds < LOCK_PERIOD) revert InLockPeriod();
+        // revert not enough tokens
+        if ((totalAllocated + grantAmount - totalReleased) > IERC20(kintoToken).balanceOf(address(this))) {
+            revert NotEnoughTokens();
+        }
+        if (beneficiary == address(0)) revert InvalidAddress();
+        if (_grant[beneficiary] != 0) revert BeneficiaryAlreadyExists();
+        _start[beneficiary] = startTimestamp;
+        _duration[beneficiary] = durationSeconds;
+        _grant[beneficiary] = grantAmount;
+        totalAllocated += grantAmount;
+    }
+
+    /**
      * @dev Release the tokens that have already vested.
      * @param _beneficiary Address to claim
      *
@@ -130,7 +180,7 @@ contract VestingContract is Ownable, IVestingContract {
      */
     function _release(address _beneficiary, address _receiver) private {
         uint256 amount = releasable(_beneficiary);
-        require(amount > 0, "Nothing to release");
+        if (amount == 0) revert NothingToRelease();
         _erc20Released[_beneficiary] += amount;
         emit ERC20Released(_beneficiary, amount);
         totalReleased += amount;

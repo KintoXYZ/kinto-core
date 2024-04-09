@@ -4,24 +4,31 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@oz/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+
 import "../../src/tokens/KintoToken.sol";
 import "../../src/tokens/VestingContract.sol";
 import "../../src/sample/Counter.sol";
-import "../SharedSetup.t.sol";
 
-contract KintoTokenTest is SharedSetup {
+contract KintoTokenTest is Test {
     KintoToken _token;
 
-    function setUp() public override {
-        super.setUp();
+    uint256 _ownerPk = 1;
+    address payable _owner = payable(vm.addr(_ownerPk));
+
+    uint256 _userPk = 2;
+    address payable _user = payable(vm.addr(_userPk));
+
+    uint256 _user2Pk = 3;
+    address payable _user2 = payable(vm.addr(_user2Pk));
+
+    function setUp() public {
         vm.startPrank(_owner);
         _token = new KintoToken();
         vm.stopPrank();
     }
 
-    function testUp() public override {
-        super.testUp();
+    function testUp() public {
         assertEq(_token.totalSupply(), _token.SEED_TOKENS());
         assertEq(_token.owner(), _owner);
         assertEq(_token.name(), "Kinto Token");
@@ -78,7 +85,7 @@ contract KintoTokenTest is SharedSetup {
 
     function testMint_RevertWhen_CallerIsOwnerBeforeDeadline() public {
         vm.startPrank(_owner);
-        vm.expectRevert(KintoToken.GovernanceDeadlineNotReached.selector);
+        vm.expectRevert(KintoToken.MaxSupplyExceeded.selector);
         _token.mint(_user, 100);
         vm.stopPrank();
     }
@@ -167,7 +174,7 @@ contract KintoTokenTest is SharedSetup {
     }
 
     function testTransferAfterEnabling() public {
-        vm.warp(_token.deployedAt() + 365 days);
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
         _token.enableTokenTransfers();
         _token.transfer(_user, 100);

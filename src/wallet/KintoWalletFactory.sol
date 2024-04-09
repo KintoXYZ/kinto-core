@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/utils/Create2.sol";
-import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@oz/contracts/access/IAccessControl.sol";
-import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/access/IAccessControl.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
+import "../interfaces/IBridgerL2.sol";
 import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
@@ -53,9 +54,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize(IKintoID _kintoID) external virtual initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        beacon = new UpgradeableBeacon(address(_implAddress), address(this));
+        beacon = new UpgradeableBeacon(address(_implAddress));
         factoryWalletVersion = 1;
         kintoID = _kintoID;
     }
@@ -205,6 +206,20 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 
     /**
+     * @dev Sets the deposit on the L2 to be claimed by the wallet at the end of phase IV
+     * Note: Only owner can call this function
+     * @param walletAddress address of the wallet
+     * @param assetL2 address of the asset on the L2
+     * @param amount amount of the asset to receive
+     */
+    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
+        if (msg.sender != 0xb539019776eF803E89EC062Ad54cA24D1Fdb008a) {
+            revert InvalidSender();
+        }
+        IBridgerL2(0x26181Dfc530d96523350e895180b09BAf3d816a0).writeL2Deposit(walletAddress, assetL2, amount);
+    }
+
+    /**
      * @dev Send money to an account from privileged accounts or from kyc accounts to kyc accounts or contracts.
      * @param target The target address
      */
@@ -213,7 +228,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
         if (!isPrivileged && !kintoID.isKYC(msg.sender)) revert OnlyPrivileged();
-        bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0;
+        bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0
+            || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), target);
         if (!isValidTarget && !isPrivileged) revert InvalidTarget();
         (bool sent,) = target.call{value: msg.value}("");
         if (!sent) revert SendFailed();
@@ -311,6 +327,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV10 is KintoWalletFactory {
+contract KintoWalletFactoryV13 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

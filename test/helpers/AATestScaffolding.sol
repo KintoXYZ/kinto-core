@@ -17,23 +17,16 @@ import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/viewers/KYCViewer.sol";
 import "../../src/Faucet.sol";
+import "../../src/inflators/KintoInflator.sol";
 
 import "../helpers/UUPSProxy.sol";
-import "../helpers/KYCSignature.sol";
+import "../helpers/TestSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 import "../../script/deploy.s.sol";
 
-interface IInitialize {
-    function initialize() external;
-}
-
-interface Upgradeable {
-    function upgradeTo(address newImplementation) external;
-}
-
-abstract contract AATestScaffolding is KYCSignature {
+abstract contract AATestScaffolding is TestSignature {
     DeployerScript.DeployedContracts contracts;
 
     IKintoEntryPoint _entryPoint;
@@ -55,16 +48,8 @@ abstract contract AATestScaffolding is KYCSignature {
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     Faucet _faucet;
-
-    bool fork;
-
-    function setUp() public virtual {
-        try vm.envBool("FORK") returns (bool _fork) {
-            fork = _fork;
-        } catch {
-            fork = false;
-        }
-    }
+    BridgerL2 _bridgerL2;
+    KintoInflator _inflator;
 
     /* ============ convenience methods ============ */
 
@@ -229,22 +214,11 @@ abstract contract AATestScaffolding is KYCSignature {
 
         SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
         vm.prank(_paymaster.owner());
-        if (fork) {
-            Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
-        } else {
-            _paymaster.upgradeToAndCall(address(_paymasterImpl), bytes(""));
-        }
+        _paymaster.upgradeTo(address(_paymasterImpl));
 
         KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
-        if (fork) {
-            vm.startPrank(_kintoAppRegistry.owner());
-            Upgradeable(address(_kintoAppRegistry)).upgradeTo(address(_registryImpl));
-            IInitialize(address(_kintoAppRegistry)).initialize();
-            vm.stopPrank();
-        } else {
-            vm.prank(_kintoAppRegistry.owner());
-            _kintoAppRegistry.upgradeToAndCall(address(_registryImpl), bytes(""));
-        }
+        vm.prank(_kintoAppRegistry.owner());
+        _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
 
     function changeWalletOwner(address _newOwner, address _kycProvider) public {

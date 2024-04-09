@@ -48,11 +48,7 @@ contract SponsorPaymasterTest is SharedSetup {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
 
         vm.prank(_owner);
-        if (fork) {
-            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
-        } else {
-            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
-        }
+        _paymaster.upgradeTo(address(_newImplementation));
 
         _newImplementation = SponsorPaymasterUpgrade(address(_paymaster));
         assertEq(_newImplementation.newFunction(), 1);
@@ -61,11 +57,7 @@ contract SponsorPaymasterTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        if (fork) {
-            Upgradeable(address(_paymaster)).upgradeTo(address(_newImplementation));
-        } else {
-            _paymaster.upgradeToAndCall(address(_newImplementation), bytes(""));
-        }
+        _paymaster.upgradeTo(address(_newImplementation));
     }
 
     /* ============ Deposit & Stake ============ */
@@ -135,10 +127,10 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.stopPrank();
     }
 
-    function testWithdrawTokensTo_WhenWithdraingToOtherAddress(uint256 someonePk) public {
-        // ensure the private key is within the valid range for Ethereum
-        vm.assume(someonePk > 0 && someonePk < SECP256K1_MAX_PRIVATE_KEY);
+    function testWithdrawTokensTo_WhenWithdraingToOtherAddress() public {
+        uint256 someonePk = 123;
         address someone = vm.addr(someonePk);
+
         vm.assume(someone.code.length == 0); // assume someone is an EOA
         vm.assume(someone != address(0) && someone != _user); // assume someone is not the zero address and not the _user
 
@@ -234,7 +226,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
 
@@ -566,7 +558,7 @@ contract SponsorPaymasterTest is SharedSetup {
         emit PostOpRevertReason(_entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes(""));
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoGasAppLimitExceeded.selector));
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
     function testValidatePaymasterUserOp_RevertWhen_AppOpsGasLimitExceeded() public {
@@ -596,7 +588,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.KintoGasAppLimitExceeded.selector));
+        assertRevertReasonEq(abi.encodeWithSelector(ISponsorPaymaster.AppGasLimitExceeded.selector));
     }
 
     function testSetAppRegistry() public {
@@ -612,7 +604,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testSetAppRegistry_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.setAppRegistry(address(123));
     }
 
@@ -641,7 +633,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUserOpMaxCost_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.setUserOpMaxCost(123);
     }
 

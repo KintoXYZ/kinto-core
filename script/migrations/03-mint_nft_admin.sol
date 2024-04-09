@@ -5,13 +5,13 @@ import "../../src/KintoID.sol";
 
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
-import "../../test/helpers/KYCSignature.sol";
+import "../../test/helpers/TestSignature.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract KintoMigration3DeployScript is Create2Helper, KYCSignature, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+contract KintoMigration3DeployScript is Create2Helper, TestSignature, ArtifactsReader {
+    using ECDSAUpgradeable for bytes32;
 
     KintoID _kintoID;
 

@@ -34,10 +34,10 @@ You can read more about our architecture [here](https://docs.kinto.xyz/kinto-the
 
 * Kinto is fully EVM-compatible.
 * To send a transaction, you must have a KintoWallet, and its first signer must hold a Kinto ID. The transaction must be sent to the entry point.
-* Only four contracts can receive direct transactions from EOAs: EntryPoint, SponsorPaymaster, KintoWalletFactory, and Kinto ID.
+* Only five contracts can receive direct transactions from EOAs: EntryPoint, SponsorPaymaster, KintoWalletFactory, Kinto ID and KintoAppRegistry.
 * KintoWallet is fully non-custodial, but there is a way for users to recover their accounts through a week-long recovery process.
 * EOAs can perform calls that don't alter the chain's state without KYC.
-* Users do not need to pay for transactions. Developers will charge users and top the paymaster to cover the applications users send to their contracts.
+* Users do not need to pay for transactions. Developers will charge users and top up the paymaster to cover the applications users send to their contracts.
 * If a user gets added to a sanction list, his NFT will automatically be updated with this information.
 * Kinto core contracts are upgradeable. Upgradeable powers will eventually be handed out to governance.
 
@@ -51,8 +51,13 @@ This repository contains all the core smart contracts available at Kinto.
 
 ## Requirements
 
-- Install [Foundry](https://book.getfoundry.sh/getting-started/installation)
-- Copy .env.sample to .env and fill the values. After you deploy the proxy make sure to fill its address as well.
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Yarn or NPM
+
+## Install dependencies
+- Run `yarn install` to install all forge dependencies 
+  - Alternative, you can run `forge install` and then `cd lib/token-bridge-contracts && yarn`
+- Copy `.env.sample` to `.env` and fill the values. After you deploy the proxy make sure to fill its address as well.
 
 ### Enable CREATE2 in a custom chain (only needed in a custom chain)
 
@@ -78,9 +83,9 @@ forge test
 ```
 Alternatively, you run `yarn test`
 
-To run tests on a fork from mainnet you can se the env var `FORK=true`
+To run tests on a fork from mainnet you need to set the env vars `FORK=true` and `FOUNDRY_EVM_VERSION=shanghai`
 ```
-FORK=true forge test
+FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv
 ```
 Alternatively, you run `yarn test-mainnet`
 
@@ -104,6 +109,13 @@ Everytime a PR is created, the `pull_request.yml` workflow runs which runs the f
 - Slither analysis (for static analysis)
 
 Everytime a PR is **merged** into `main` (or there's a push directly to it), fork from mainnet tests are run.
+
+## Coverage
+To create a complete coverage report we need to run coverage on local + run coverage on mainnet fork and then merge both lcov.info files into one. Finally, we remove the unnecessary files from the report (scripts, tests):
+
+```
+forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+```
 
 ## Scripts
 

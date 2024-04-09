@@ -19,7 +19,7 @@ contract KintoIDV3 is KintoID {
 }
 
 contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _paymaster;
@@ -68,14 +68,14 @@ contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
         vm.stopBroadcast();
         vm.startBroadcast();
         // (3). upgrade paymaster to new implementation
-        Upgradeable(address(_paymaster)).upgradeTo(address(_paymasterImpl));
+        _paymaster.upgradeTo(address(_paymasterImpl));
 
         // sanity check: paymaster's cost of op should be 200_000
         require(_paymaster.COST_OF_POST() == 200_000, "COST_OF_POST should be 200_000");
 
         // (4). upgrade kinto id to new implementation
         // vm.prank(_paymaster.owner());
-        Upgradeable(address(_kintoID)).upgradeTo(address(_kintoIDImpl));
+        _kintoID.upgradeTo(address(_kintoIDImpl));
 
         // sanity check: paymaster's cost of op should be 200_000
         try _kintoID.burn(10) {

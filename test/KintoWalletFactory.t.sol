@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
-import {UpgradeableBeacon} from "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -35,7 +35,7 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 }
 
 contract KintoWalletFactoryTest is SharedSetup {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactoryUpgrade _walletFactoryv2;
@@ -91,11 +91,7 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
         vm.prank(_owner);
-        if (fork) {
-            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
-        } else {
-            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
-        }
+        _walletFactory.upgradeTo(address(_newImplementation));
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
     }
 
@@ -103,13 +99,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.assume(someone != _owner);
         KintoWalletFactoryUpgrade _newImplementation = new KintoWalletFactoryUpgrade(_kintoWalletImpl);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
-        if (fork) {
-            Upgradeable(address(_walletFactory)).upgradeTo(address(_newImplementation));
-        } else {
-            _walletFactory.upgradeToAndCall(address(_newImplementation), bytes(""));
-        }
+        _walletFactory.upgradeTo(address(_newImplementation));
     }
 
     function testUpgradeAllWalletImplementations() public {
@@ -139,7 +131,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
 
         // upgrade all implementations
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _walletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
     }
 
@@ -193,7 +185,13 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testDeployContract_RevertWhen_CreateWallet() public {
-        bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
+        // skip test on fork since we are compiling with EVM_VERSION=shanghai and will revert
+        if (fork) return;
+        bytes memory initialize = abi.encodeWithSelector(
+            IKintoWallet.initialize.selector,
+            fork ? vm.envAddress("DEPLOYER_PUBLIC_KEY") : _owner,
+            fork ? vm.envAddress("LEDGER_ADMIN") : _owner
+        );
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );
@@ -406,6 +404,34 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.prank(_owner);
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user));
         assertEq(address(_user).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsKYCProvider_WhenTargetKYCProvider() public {
+        // make sure target is not KYC'd
+        assertFalse(_kintoID.isKYC(_user2));
+
+        // grant kyc provider role to _user2
+        bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
+        vm.prank(_owner);
+        _kintoID.grantRole(role, _user2);
+
+        // top up _user2
+        vm.deal(_kycProvider, 1e18);
+
+        // send money from _kycProvider to _user2
+        vm.prank(_kycProvider);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
+        assertEq(address(_user2).balance, 1e18);
+    }
+
+    function testSendMoneyToAccount_WhenCallerIsOwner_WhenTargetKYCProvider() public {
+        // make sure target is not KYC'd
+        assertFalse(_kintoID.isKYC(_kycProvider));
+
+        // send money from _owner to _kycProvider
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToAccount{value: 1e18}(address(_kycProvider));
+        assertEq(address(_kycProvider).balance, 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCProvider() public {

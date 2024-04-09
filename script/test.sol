@@ -12,14 +12,14 @@ import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
 
 import "../test/helpers/AASetup.sol";
-import "../test/helpers/KYCSignature.sol";
+import "../test/helpers/TestSignature.sol";
 import "../test/helpers/UserOp.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 // This script is used to test the wallet creation
-contract KintoDeployTestWalletScript is AASetup, KYCSignature {
+contract KintoDeployTestWalletScript is AASetup, TestSignature {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
@@ -65,8 +65,7 @@ contract KintoDeployTestWalletScript is AASetup, KYCSignature {
 }
 
 // This script is used to test the monitor function of the KintoID
-contract KintoMonitoringTest is AASetup, KYCSignature, UserOp {
-    using MessageHashUtils for bytes32;
+contract KintoMonitoringTest is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -96,8 +95,7 @@ contract KintoMonitoringTest is AASetup, KYCSignature, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
-    using MessageHashUtils for bytes32;
+contract KintoDeployTestCounter is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -204,8 +202,7 @@ contract KintoDeployTestCounter is AASetup, KYCSignature, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
-    using MessageHashUtils for bytes32;
+contract KintoDeployETHPriceIsRight is AASetup, TestSignature, UserOp {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -309,5 +306,64 @@ contract KintoDeployETHPriceIsRight is AASetup, KYCSignature, UserOp {
 
         console.log("After UserOp. ETHPriceIsRight guess count", ethpriceisright.guessCount());
         console.log("After UserOp. ETHPriceIsRight avg guess", ethpriceisright.avgGuess());
+    }
+}
+
+// This script is used to test the deployment of a contract through the factory and further interaction with it
+contract SendHanldeOps is AASetup, TestSignature, UserOp {
+    using SignatureChecker for address;
+
+    KintoID _kintoID;
+    EntryPoint _entryPoint;
+    KintoWalletFactory _walletFactory;
+    SponsorPaymaster _sponsorPaymaster;
+    IKintoWallet _newWallet;
+
+    function setUp() public {
+        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
+        console.log("All AA setup is correct");
+    }
+
+    function run() public {
+        KintoWallet kintoWallet = KintoWallet(payable(vm.envAddress("TEST_KINTO_WALLET")));
+        bytes memory bytesOp = vm.envBytes("TEST_BYTESOP");
+        if (bytesOp.length == 0) {
+            console.log("No bytesOp provided");
+            return;
+        }
+
+        uint256 deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
+        address deployerPublicKey = vm.addr(deployerPrivateKey);
+        console.log("Deployer is", vm.addr(deployerPrivateKey));
+
+        // deposit ETH to the wallet contract in the paymaster
+        if (_sponsorPaymaster.balances(address(kintoWallet)) <= 1e14) {
+            vm.broadcast(deployerPrivateKey);
+            _sponsorPaymaster.addDepositFor{value: 5e16}(address(kintoWallet));
+            console.log("Added paymaster balance to wallet", address(kintoWallet));
+        } else {
+            console.log("Wallet already has balance to pay for tx", address(kintoWallet));
+        }
+
+        // send a tx to the counter contract through our wallet
+        uint256 nonce = kintoWallet.getNonce();
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = deployerPrivateKey;
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+
+        userOps[0] = _createUserOperation(
+            block.chainid,
+            address(kintoWallet),
+            address(kintoWallet),
+            0,
+            nonce,
+            privateKeys,
+            bytesOp,
+            address(_sponsorPaymaster)
+        );
+
+        vm.broadcast(deployerPrivateKey);
+        _entryPoint.handleOps(userOps, payable(deployerPublicKey));
     }
 }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../../src/wallet/KintoWalletFactory.sol";
 import "../../../src/paymasters/SponsorPaymaster.sol";
@@ -22,18 +23,17 @@ interface IInitialize {
     function initialize() external;
 }
 
-interface Upgradeable {
-    function upgradeTo(address newImplementation) external;
-}
-
 contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
-    using MessageHashUtils for bytes32;
+    using ECDSAUpgradeable for bytes32;
 
-    bool testMode = vm.envBool("TEST_MODE");
+    bool testMode;
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
     function run() public virtual {
+        try vm.envBool("TEST_MODE") returns (bool _testMode) {
+            testMode = _testMode;
+        } catch {}
         console.log("Running on chain: ", vm.toString(block.chainid));
         console.log("Executing from address", msg.sender);
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -93,7 +93,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             } else {
                 if (_isGethAllowed(proxy)) {
                     vm.broadcast(); // may require LEDGER_ADMIN
-                    Upgradeable(proxy).upgradeTo(_impl);
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
                 } else {
                     try Ownable(proxy).owner() returns (address owner) {
                         if (owner != _getChainDeployment("KintoWallet-admin")) {
@@ -118,10 +118,8 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
                 // todo: ideally, on testMode, we should use the KintoWallet-admin and adjust tests so they use the handleOps
                 try Ownable(proxy).owner() returns (address owner) {
                     vm.prank(owner);
-                    Upgradeable(proxy).upgradeTo(_impl);
-                } catch {
-                    Upgradeable(proxy).upgradeTo(_impl);
-                }
+                    UUPSUpgradeable(proxy).upgradeTo(_impl);
+                } catch {}
             }
         }
     }
@@ -142,7 +140,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
             0,
             IKintoWallet(_from).getNonce(),
             privateKeys,
-            abi.encodeWithSelector(Upgradeable.upgradeTo.selector, address(_newImpl)),
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl)),
             _getChainDeployment("SponsorPaymaster")
         );
 
@@ -216,6 +214,30 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        uint256[] memory privateKeys = new uint256[](1);
+        privateKeys[0] = _signerPk;
+
+        UserOperation[] memory userOps = new UserOperation[](_selectorAndParams.length);
+        uint256 nonce = IKintoWallet(_from).getNonce();
+        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+            userOps[i] = _createUserOperation(
+                block.chainid,
+                _from,
+                _to,
+                0,
+                nonce,
+                privateKeys,
+                _selectorAndParams[i],
+                _getChainDeployment("SponsorPaymaster")
+            );
+            nonce++;
+        }
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+    }
+
     function _fundPaymaster(address _proxy, uint256 _signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         vm.broadcast(_signerPk);
@@ -225,12 +247,13 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
         // contracts allowed to receive EOAs calls
-        address[5] memory GETH_ALLOWED_CONTRACTS = [
+        address[6] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
             _getChainDeployment("KintoWalletFactory"),
             _getChainDeployment("SponsorPaymaster"),
             _getChainDeployment("KintoID"),
-            _getChainDeployment("KintoAppRegistry")
+            _getChainDeployment("KintoAppRegistry"),
+            _getChainDeployment("KintoInflator")
         ];
 
         // check if contract is a geth allowed contract

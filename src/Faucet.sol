@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {SignatureChecker} from "@oz/contracts/utils/cryptography/SignatureChecker.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {IFaucet} from "./interfaces/IFaucet.sol";
 import {IKintoWalletFactory} from "./interfaces/IKintoWalletFactory.sol";
 import {IKintoID} from "./interfaces/IKintoID.sol";
@@ -16,7 +16,7 @@ import {IKintoID} from "./interfaces/IKintoID.sol";
  * @dev The Kinto Faucet gives a bit of ETH to users to pay for gas fees
  */
 contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
-    using MessageHashUtils for bytes32;
+    using ECDSA for bytes32;
     using SignatureChecker for address;
 
     /* ============ Events ============ */
@@ -25,7 +25,7 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
 
     /* ============ Constants ============ */
 
-    uint256 public constant CLAIM_AMOUNT = 1 ether / 2500;
+    uint256 public constant CLAIM_AMOUNT = 1 ether / 2000;
     uint256 public constant FAUCET_AMOUNT = 1 ether;
 
     /* ============ State Variables ============ */
@@ -51,8 +51,9 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
+        _transferOwnership(msg.sender);
     }
 
     /**
@@ -138,6 +139,6 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 }
 
-contract FaucetV6 is Faucet {
+contract FaucetV8 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }

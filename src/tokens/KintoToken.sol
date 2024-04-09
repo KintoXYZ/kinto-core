@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/token/ERC20/ERC20.sol";
-import "@oz/contracts/access/Ownable.sol";
-import "@oz/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@oz/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 /**
  * @title KintoToken - To be deployed on ETH mainnet
@@ -22,6 +22,11 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     error InvalidAddress();
     error TransfersDisabled();
 
+    /// @dev Logs
+    event MiningContractSet(address indexed miningContract, address oldMiningContract);
+    event VestingContractSet(address indexed vestingContract, address oldVestingContract);
+    event TokenTransfersEnabled();
+
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Kinto Token";
     /// @dev EIP-20 token symbol for this token
@@ -33,7 +38,8 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     /// @dev EIP-20 Max token supply ever
     uint256 public constant MAX_CAP_SUPPLY_EVER = 15_000_000e18;
     /// @dev Governance time bomb
-    uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1714489; // May 1st UTC
+    uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1717113600; // May 31st UTC
+
     /// @dev Timestamp of the contract deployment
     uint256 public immutable deployedAt;
 
@@ -57,7 +63,6 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      * @param amount The amount of tokens to mint
      */
     function mint(address to, uint256 amount) public onlyOwner {
-        if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
         if (totalSupply() + amount > getSupplyCap()) revert MaxSupplyExceeded();
         _mint(to, amount);
     }
@@ -69,6 +74,7 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
         if (block.timestamp < GOVERNANCE_RELEASE_DEADLINE) revert GovernanceDeadlineNotReached();
         if (tokenTransfersEnabled) revert TransfersAlreadyEnabled();
         tokenTransfersEnabled = true;
+        emit TokenTransfersEnabled();
     }
 
     /**
@@ -77,6 +83,7 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      */
     function setVestingContract(address _vestingContract) public onlyOwner {
         if (_vestingContract == address(0)) revert InvalidAddress();
+        emit VestingContractSet(_vestingContract, vestingContract);
         vestingContract = _vestingContract;
     }
 
@@ -86,15 +93,16 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
      */
     function setMiningContract(address _miningContract) public onlyOwner {
         if (_miningContract == address(0)) revert InvalidAddress();
+        emit MiningContractSet(_miningContract, miningContract);
         miningContract = _miningContract;
     }
 
     function _update(address from, address to, uint256 amount) internal override(ERC20, ERC20Votes) {
-        super._update(from, to, amount);
         if (
-            from != address(0) && from != address(miningContract) && from != address(vestingContract)
-                && to != address(vestingContract) && !tokenTransfersEnabled
+            !tokenTransfersEnabled && from != address(0) && from != address(miningContract)
+                && from != address(vestingContract) && to != address(vestingContract) && to != address(miningContract)
         ) revert TransfersDisabled();
+        super._update(from, to, amount);
     }
 
     // Need to override this because of the imports

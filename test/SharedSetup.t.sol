@@ -23,6 +23,8 @@ import "../script/deploy.s.sol";
 import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
 contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
+    bool fork = false;
+
     Counter counter;
     uint256[] privateKeys;
     uint256 mainnetFork;
@@ -37,8 +39,10 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
-    function setUp() public virtual override {
-        super.setUp();
+    function setUp() public virtual {
+        try vm.envBool("FORK") returns (bool _fork) {
+            fork = _fork;
+        } catch {}
 
         // give some eth to _owner
         vm.deal(_owner, 1e20);
@@ -67,25 +71,37 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
             _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
             _faucet = Faucet(payable(_getChainDeployment("Faucet")));
+            _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
+            _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
+
+            // grant admin role to _owner on kintoID
+            bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();
+            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            _kintoID.grantRole(role, _owner);
 
             // grant KYC provider role to _kycProvider and _owner on kintoID
-            bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
-            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            role = _kintoID.KYC_PROVIDER_ROLE();
+            vm.prank(_owner);
             _kintoID.grantRole(role, _kycProvider);
-            vm.prank(vm.envAddress("LEDGER_ADMIN"));
+            vm.prank(_owner);
+            _kintoID.grantRole(role, _owner);
+
+            // grant UPGRADER role to _owner on kintoID
+            role = _kintoID.UPGRADER_ROLE();
+            vm.prank(_owner);
             _kintoID.grantRole(role, _owner);
 
             // approve wallet's owner KYC
             approveKYC(_kycProvider, _owner, _ownerPk);
 
-            // transfer ownership of contracts to _owner
-            vm.startPrank(vm.envAddress("LEDGER_ADMIN"));
+            // for geth allowed contracts, transfer ownership from LEDGER to _owner
+            vm.startPrank(_kintoAppRegistry.owner());
             _kintoAppRegistry.transferOwnership(_owner);
             _walletFactory.transferOwnership(_owner);
             _paymaster.transferOwnership(_owner);
             vm.stopPrank();
 
-            // for geth allowed contracts, transfer ownership to _owner
+            // for other contracts, transfer ownership from KintoWallet-admin to _owner
             // TODO: we should actually use the KintoWallet-admin and adjust tests so they use the handleOps
             vm.startPrank(address(_kintoWallet));
             _engenCredits.transferOwnership(_owner);
@@ -98,7 +114,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         } else {
             console.log("Running tests locally");
             contracts = deployer.runAndReturnResults(_ownerPk);
-
             // set contracts
             _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
             _kintoAppRegistry = KintoAppRegistry(contracts.registry);
@@ -109,6 +124,8 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _paymaster = SponsorPaymaster(contracts.paymaster);
             _kycViewer = KYCViewer(contracts.viewer);
             _faucet = Faucet(contracts.faucet);
+            _bridgerL2 = BridgerL2(contracts.bridgerL2);
+            _inflator = KintoInflator(contracts.inflator);
 
             // grant kyc provider role to _kycProvider on kintoID
             bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -144,6 +161,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         vm.label(address(_paymaster), "SponsorPaymaster");
         vm.label(address(_kycViewer), "KYCViewer");
         vm.label(address(_faucet), "Faucet");
+        vm.label(address(_bridgerL2), "BrigerL2");
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);

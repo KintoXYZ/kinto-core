@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@oz/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "../src/interfaces/IFaucet.sol";
 import "../src/Faucet.sol";
@@ -24,7 +24,7 @@ contract FaucetTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2500);
+        assertEq(_faucet.CLAIM_AMOUNT(), 1 ether / 2000);
         assertEq(_faucet.FAUCET_AMOUNT(), 1 ether);
     }
 
@@ -33,7 +33,7 @@ contract FaucetTest is SharedSetup {
     function testUpgradeTo() public {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
         vm.prank(_owner);
-        _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
+        _faucet.upgradeTo(address(_newImpl));
 
         assertEq(FaucetNewUpgrade(payable(address(_faucet))).newFunction(), 1);
     }
@@ -42,11 +42,7 @@ contract FaucetTest is SharedSetup {
         FaucetNewUpgrade _newImpl = new FaucetNewUpgrade(address(_walletFactory));
 
         vm.expectRevert(IFaucet.OnlyOwner.selector);
-        if (fork) {
-            Upgradeable(address(_faucet)).upgradeTo(address(_newImpl));
-        } else {
-            _faucet.upgradeToAndCall(address(_newImpl), bytes(""));
-        }
+        _faucet.upgradeTo(address(_newImpl));
     }
 
     /* ============ Start Faucet tests ============ */
@@ -70,7 +66,7 @@ contract FaucetTest is SharedSetup {
         vm.assume(someone != _faucet.owner());
         vm.deal(someone, 1 ether);
         vm.prank(someone);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, someone));
+        vm.expectRevert("Ownable: caller is not the owner");
         _faucet.startFaucet{value: 1 ether}();
     }
 
@@ -175,7 +171,7 @@ contract FaucetTest is SharedSetup {
         _faucet.startFaucet{value: 1 ether}();
         assertEq(address(_faucet).balance, previousBalance + 1 ether);
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert("Ownable: caller is not the owner");
         _faucet.withdrawAll();
     }
 

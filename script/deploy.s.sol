@@ -2,9 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "@aa/core/EntryPoint.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../src/KintoID.sol";
+import "../src/bridger/BridgerL2.sol";
 import "../src/viewers/KYCViewer.sol";
 import "../src/wallet/KintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
@@ -13,6 +14,7 @@ import "../src/wallet/KintoWallet.sol";
 import "../src/apps/KintoAppRegistry.sol";
 import "../src/tokens/EngenCredits.sol";
 import "../src/Faucet.sol";
+import "../src/inflators/KintoInflator.sol";
 
 import "../test/helpers/Create2Helper.sol";
 import "../test/helpers/ArtifactsReader.sol";
@@ -50,9 +52,17 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
 
+    // Bridger
+    BridgerL2 public bridgerL2;
+    BridgerL2 public bridgerL2Impl;
+
     // Faucet
     Faucet public faucet;
     Faucet public faucetImpl;
+
+    // Inflator
+    KintoInflator public inflator;
+    KintoInflator public inflatorImpl;
 
     // whether to write addresses to a file or not (and console.log them)
     bool write;
@@ -75,16 +85,32 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         EngenCredits engenCredits;
         Faucet faucet;
+        BridgerL2 bridgerL2;
+        KintoInflator inflator;
     }
 
     // @dev this is used for tests
     function runAndReturnResults(uint256 _privateKey) public returns (DeployedContracts memory contracts) {
         privateKey = _privateKey;
-        write = true;
+        write = false;
         log = false;
+
+        // remove addresses.json file if it exists
+        try vm.removeFile(_getAddressesFile(block.chainid)) {} catch {}
+
         _run();
         contracts = DeployedContracts(
-            entryPoint, paymaster, kintoID, wallet, factory, kintoRegistry, viewer, engenCredits, faucet
+            entryPoint,
+            paymaster,
+            kintoID,
+            wallet,
+            factory,
+            kintoRegistry,
+            viewer,
+            engenCredits,
+            faucet,
+            bridgerL2,
+            inflator
         );
     }
 
@@ -100,7 +126,12 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         if (log) console.log("-----------------------------------\n");
 
         // write addresses to a file
-        if (write) vm.writeFile(_getAddressesFile(), "{\n");
+        if (write) {
+            // create dir if it doesn't exist
+            string memory dir = _getAddressesDir();
+            if (!vm.isDir(dir)) vm.createDir(dir, true);
+            vm.writeFile(_getAddressesFile(), "{\n");
+        }
 
         // deploy KintoID
         (kintoID, kintoIDImpl) = deployKintoID();
@@ -123,30 +154,35 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
 
+        // deploy bridger l2
+        (bridgerL2, bridgerL2Impl) = deployBridgerL2();
+
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
+
+        // deploy Inflator
+        (inflator, inflatorImpl) = deployInflator();
 
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
 
-        // set factory on KintoID
+        // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
-        (address implementation) = _deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true);
+        kintoIDImpl = KintoID(_deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        kintoID.upgradeToAndCall(implementation, bytes(""));
+        kintoID.upgradeTo(address(kintoIDImpl));
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
 
     function deployKintoID() public returns (KintoID _kintoID, KintoID _kintoIDImpl) {
-        bytes memory creationCode = type(KintoID).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(0)));
-        address implementation = _deployImplementation("KintoID", creationCode, bytecode, false);
-        address proxy = _deployProxy("KintoID", implementation, false);
-        if (log) console.log("* Disregard KintoID implementation at:", implementation, false);
+        // deploy a dummy KintoID that will be then replaced after the factory has been deployed by the script
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        KintoID dummy = new KintoID{salt: 0}(address(0));
 
+        address proxy = _deployProxy("KintoID", address(dummy), false);
         _kintoID = KintoID(payable(proxy));
-        _kintoIDImpl = KintoID(payable(implementation));
+        _kintoIDImpl = KintoID(dummy);
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kintoID.initialize();
@@ -259,6 +295,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         _engenCredits.initialize();
     }
 
+    function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {
+        bytes memory creationCode = type(BridgerL2).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
+        address implementation = _deployImplementation("BridgerL2", creationCode, bytecode, false);
+        address proxy = _deployProxy("BridgerL2", implementation, false);
+
+        _bridgerL2 = BridgerL2(payable(proxy));
+        _bridgerL2Impl = BridgerL2(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _bridgerL2.initialize();
+    }
+
     function deployFaucet() public returns (Faucet _faucet, Faucet _faucetImpl) {
         bytes memory creationCode = type(Faucet).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
@@ -270,6 +319,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _faucet.initialize();
+    }
+
+    function deployInflator() public returns (KintoInflator _inflator, KintoInflator _inflatorImpl) {
+        bytes memory creationCode = type(KintoInflator).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("KintoInflator", creationCode, bytecode, false);
+        address proxy = _deployProxy("KintoInflator", implementation, false);
+
+        _inflator = KintoInflator(payable(proxy));
+        _inflatorImpl = KintoInflator(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _inflator.initialize();
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer
