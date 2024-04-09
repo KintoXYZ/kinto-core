@@ -4,23 +4,26 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import {IERC20} from "@oz/contracts/token/ERC20/IERC20.sol";
-import "@oz/contracts/utils/cryptography/ECDSA.sol";
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@aa/core/EntryPoint.sol";
+import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
+import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {UserOperation} from "@aa/interfaces/UserOperation.sol";
 
-import "../src/access/AccessRegistry.sol";
-import "../src/access/AccessPoint.sol";
-import "../src/access/workflows/WithdrawWorkflow.sol";
-import "../src/interfaces/IAccessPoint.sol";
-import "../src/interfaces/IKintoEntryPoint.sol";
-import "../src/paymasters/SignaturePaymaster.sol";
+import {AccessRegistry} from "../src/access/AccessRegistry.sol";
+import {AccessPoint} from "../src/access/AccessPoint.sol";
+import {WithdrawWorkflow} from "../src/access/workflows/WithdrawWorkflow.sol";
+import {IAccessPoint} from "../src/interfaces/IAccessPoint.sol";
+import {IAccessRegistry} from "../src/interfaces/IAccessRegistry.sol";
+import {IKintoEntryPoint} from "../src/interfaces/IKintoEntryPoint.sol";
+import {SignaturePaymaster} from "../src/paymasters/SignaturePaymaster.sol";
 
-import "./harness/AccessRegistryHarness.sol";
+import {AccessRegistryHarness} from "./harness/AccessRegistryHarness.sol";
 
-import "./helpers/UserOp.sol";
-import "./helpers/ERC20Mock.sol";
-import "./helpers/UUPSProxy.sol";
+import {UserOp} from "./helpers/UserOp.sol";
+import {ERC20Mock} from "./helpers/ERC20Mock.sol";
+import {UUPSProxy} from "./helpers/UUPSProxy.sol";
 
 contract WithdrawWorkflowTest is UserOp {
     using MessageHashUtils for bytes32;

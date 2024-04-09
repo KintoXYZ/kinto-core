@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../src/interfaces/IKintoEntryPoint.sol";
 import "../../src/interfaces/IKintoID.sol";

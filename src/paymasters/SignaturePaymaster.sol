@@ -4,11 +4,11 @@ pragma solidity ^0.8.18;
 import "@aa/core/BasePaymaster.sol";
 import "@aa/core/UserOperationLib.sol";
 import "@aa/core/UserOperationLib.sol";
-import "@oz/contracts/utils/Address.sol";
-import "@oz/contracts/utils/cryptography/MessageHashUtils.sol";
-import "@oz/contracts/utils/cryptography/ECDSA.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts/utils/Address.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @notice
@@ -33,7 +33,7 @@ contract SignaturePaymaster is BasePaymaster, Initializable, UUPSUpgradeable {
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable(msg.sender) {
+    constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) {
         _disableInitializers();
         verifyingSigner = _verifyingSigner;
     }

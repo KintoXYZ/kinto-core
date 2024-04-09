@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@oz/contracts/utils/Address.sol";
-import "@oz/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@oz/contracts/utils/cryptography/ECDSA.sol";
-import "@oz/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@oz/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@oz/contracts/interfaces/IERC20.sol";
-import "@oz/contracts/utils/Create2.sol";
-import "@oz/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin-5.0.1/contracts/utils/Address.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
+import "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
+import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import "../libraries/ByteSignature.sol";
 import "./AccessPoint.sol";
-import "../proxy/SafeBeaconProxy.sol";
+import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IAccessRegistry.sol";
 
