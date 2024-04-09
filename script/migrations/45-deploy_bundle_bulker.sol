@@ -10,8 +10,6 @@ contract KintoMigration45DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        // FIXME: BundleBulker is NOT upgradeable, are we okay with this?
-
         // deploy BundleBulker
         bytes memory bytecode = abi.encodePacked(type(BundleBulker).creationCode);
         vm.broadcast(deployerPrivateKey);
