@@ -124,7 +124,8 @@ jobs:
 
   coverage:
     needs:
-      - test
+      - test-local
+      - test-mainnet
       #- test-unit
       #- test-internal
       #- test-integration
