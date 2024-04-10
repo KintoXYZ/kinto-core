@@ -137,7 +137,7 @@ jobs:
       #     coverage-file: lcov.info
       #     minimum-coverage: 90
 
-  analyze:
+  slither:
     name: Analyse
     runs-on: ubuntu-latest
     steps:
@@ -199,7 +199,7 @@ jobs:
             const header = '# Slither report'
             const body = process.env.REPORT
             await script({ github, context, header, body })
-  kintoID:
+  certora-kintoID:
     name: Kinto ID
     runs-on: ubuntu-latest
     strategy:
@@ -221,7 +221,7 @@ jobs:
           contractFile: ${{ matrix.contract }}
           certoraKey: ${{ secrets.CERTORAKEY }}
 
-  kintoWallet:
+  certora-kintoWallet:
     name: Kinto Wallet
     runs-on: ubuntu-latest
     strategy:
@@ -242,7 +242,7 @@ jobs:
           contractFile: ${{ matrix.contract }}
           certoraKey: ${{ secrets.CERTORAKEY }}
 
-  sponsorPaymaster:
+  certora-sponsorPaymaster:
     name: Sponsor Paymaster
     runs-on: ubuntu-latest
     strategy:
