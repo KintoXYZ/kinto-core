@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWalletFactory.sol";
+import 'forge-std/console2.sol';
 
 /**
  * @title KintoAppRegistry
@@ -145,6 +146,8 @@ contract KintoAppRegistry is
         uint256[4] calldata appLimits
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
+        console2.log('tokenId:', tokenId);
+        console2.log('ownerOf(tokenId):', ownerOf(tokenId));
         if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
         _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
 
