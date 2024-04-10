@@ -10,3 +10,8 @@ jobs:
     name: Forge mainnet tests
     uses: ./.github/workflows/forge-mainnet-test.yml
     secrets: inherit
+
+  certora:
+    name: Certora Verification
+    uses: ./.github/workflows/certora.yml
+    secrets: inherit

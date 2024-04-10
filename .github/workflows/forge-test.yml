@@ -102,11 +102,13 @@ jobs:
         run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true FOUNDRY_EVM_VERSION=shanghai forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
 
       - name: Upload report to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           directory: .
           fail_ci_if_error: true
           verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          
 
       # - name: Check coverage threshold
       #   uses: terencetcf/github-actions-lcov-minimum-coverage-checker@v1

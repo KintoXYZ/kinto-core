@@ -22,4 +22,4 @@ jobs:
     name: Slither analysis
     uses: ./.github/workflows/slither.yml
     secrets: inherit
-  
+

@@ -1,0 +1,151 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import "@openzeppelin-5.0.1/contracts/utils/Address.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
+
+import "@aa/core/BaseAccount.sol";
+import "@aa/core/UserOperationLib.sol";
+import "@aa/samples/callback/TokenCallbackHandler.sol";
+
+import "../libraries/ByteSignature.sol";
+import "../interfaces/IAccessPoint.sol";
+import "../interfaces/IAccessRegistry.sol";
+
+/**
+ * @title AccessPoint
+ */
+contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackHandler {
+    using UserOperationLib for UserOperation;
+    using MessageHashUtils for bytes32;
+
+    /* ============ State Variables ============ */
+
+    address public owner;
+
+    IAccessRegistry public immutable override registry;
+    IEntryPoint private immutable _entryPoint;
+    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
+
+    /* ============ Modifiers ============ */
+
+    modifier onlyFromEntryPointOrOwner(address target) {
+        _onlyFromEntryPointOrOwner(target);
+        _;
+    }
+
+    // Require the function call went through EntryPoint or owner
+    function _onlyFromEntryPointOrOwner(address target) internal view {
+        // Check that the caller is either the owner or an envoy with permission.
+        if (!(msg.sender == address(entryPoint()) || msg.sender == owner)) {
+            revert ExecutionUnauthorized(owner, msg.sender, target);
+        }
+    }
+
+    /* ============ Constructor & Initializers ============ */
+
+    /// @notice Creates the proxy by fetching the constructor params from the registry, optionally delegate calling
+    /// to a target contract if one is provided.
+    /// @dev The rationale of this approach is to have the proxy's CREATE2 address not depend on any constructor params.
+    constructor(IEntryPoint entryPoint_, IAccessRegistry registry_) {
+        registry = registry_;
+        _entryPoint = entryPoint_;
+
+        _disableInitializers();
+    }
+
+    /**
+     * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
+     * a new implementation of AccessPoint must be deployed with the new EntryPoint address.
+     */
+    function initialize(address owner_) external virtual initializer {
+        owner = owner_;
+    }
+
+    /* ============ View Functions ============ */
+
+    function getNonce() public view virtual override(BaseAccount, IAccessPoint) returns (uint256) {
+        return super.getNonce();
+    }
+
+    // @inheritdoc BaseAccount
+    function entryPoint() public view virtual override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    /* ============ State Change ============ */
+
+    /* ============ Fallback Functions ============ */
+
+    fallback(bytes calldata data) external payable returns (bytes memory) {
+        revert FallbackIsNotAllowed(data);
+    }
+
+    /// @dev Called when `msg.value` is not zero and the call data is empty.
+    receive() external payable {}
+
+    /* ============ External Functions ============ */
+
+    function execute(address target, bytes calldata data)
+        external
+        payable
+        override
+        onlyFromEntryPointOrOwner(target)
+        returns (bytes memory response)
+    {
+        // Delegate call to the target contract, and handle the response.
+        response = _execute(target, data);
+    }
+
+    /* ============ Internal Functions ============ */
+
+    /// @notice Executes a DELEGATECALL to the provided target with the provided data.
+    /// @dev Shared logic between the constructor and the `execute` function.
+    function _execute(address target, bytes memory data) internal returns (bytes memory response) {
+        if (!registry.isWorkflowAllowed(target)) {
+            revert WorkflowUnauthorized(target);
+        }
+        // Check that the target is a contract.
+        if (target.code.length == 0) {
+            revert TargetNotContract(target);
+        }
+
+        // Delegate call to the target contract.
+        bool success;
+        (success, response) = target.delegatecall(data);
+
+        // Log the execution.
+        emit Execute(target, data, response);
+
+        // Check if the call was successful or not.
+        if (!success) {
+            // If there is return data, the delegate call reverted with a reason or a custom error, which we bubble up.
+            if (response.length > 0) {
+                assembly {
+                    // The length of the data is at `response`, while the actual data is at `response + 32`.
+                    let returndata_size := mload(response)
+                    revert(add(response, 32), returndata_size)
+                }
+            } else {
+                revert ExecutionReverted();
+            }
+        }
+    }
+
+    /// @notice Valides that owner signed the user operation
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        virtual
+        override
+        returns (uint256 validationData)
+    {
+        bytes32 hash = userOpHash.toEthSignedMessageHash();
+        if (owner != ECDSA.recover(hash, userOp.signature)) {
+            return SIG_VALIDATION_FAILED;
+        }
+        return SIG_VALIDATION_SUCCESS;
+    }
+}
