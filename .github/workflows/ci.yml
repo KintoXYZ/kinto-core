@@ -1,0 +1,264 @@
+name: CI
+
+permissions:
+  issues: write
+  pull-requests: write
+
+env:
+  FOUNDRY_PROFILE: ci
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: ["*", "**/*"]
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Check formatting
+        run: forge fmt --check
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Check gas snapshots
+        run: forge snapshot --diff
+        env:
+          FORK: false
+
+      - name: Save forge compilation cache
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            cache
+            out
+          key: forge-${{ github.ref_name }}
+
+  test:
+    needs: build
+
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run tests
+        run: forge test -vvv
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FORK: false
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3.16
+        with:
+          summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
+          sortCriteria: avg,max # sort diff rows by criteria
+          sortOrders: desc,asc # and directions
+          ignore: test-foundry/**/* # filter out gas reports from specific paths (test/ is included by default)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}
+
+  coverage:
+    needs:
+      - test
+      #- test-unit
+      #- test-internal
+      #- test-integration
+      #- test-invariant
+      # if: inputs.coverageThreshold != ''
+
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Install LCOV
+        run: sudo apt-get install -y lcov
+
+      - name: Generate LCOV report
+        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true FOUNDRY_EVM_VERSION=shanghai forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+
+      - name: Upload report to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          directory: .
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      # - name: Check coverage threshold
+      #   uses: terencetcf/github-actions-lcov-minimum-coverage-checker@v1
+      #   with:
+      #     coverage-file: lcov.info
+      #     minimum-coverage: 90
+
+  analyze:
+    name: Analyse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Slither
+        uses: crytic/slither-action@dev-foundryup-retry
+        id: slither
+        continue-on-error: true
+        with:
+          node-version: 16
+          fail-on: none
+          slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
+
+      - name: Slither Comment
+        uses: actions/github-script@v6
+        env:
+          OUTCOME: ${{ steps.slither.outcome }}
+        with:
+          script: |
+            const body = 'Slither analysis failed';
+            const repo = context.repo;
+            const issue_number = context.issue.number || context.payload.pull_request.number;
+
+            // find the existing Slither comment
+            async function findFailureComment() {
+              const comments = await github.rest.issues.listComments({
+                ...repo,
+                issue_number,
+              });
+              return comments.data.find(comment => comment.body.includes(body));
+            }
+
+            // post or delete Slither failure comment
+            const failureComment = await findFailureComment();
+            if (process.env.OUTCOME == 'failure' && !failureComment) {
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number,
+                body: body,
+              });
+            }
+            if (process.env.OUTCOME != 'failure' && failureComment) {
+              // if Slither succeeds and there's a previous failure comment, delete it
+              await github.rest.issues.deleteComment({
+                ...repo,
+                comment_id: failureComment.id,
+              });
+            }
+
+      - name: Create/update checklist as PR comment
+        if: steps.slither.outcome != 'failure'
+        uses: actions/github-script@v6
+        env:
+          REPORT: ${{ steps.slither.outputs.stdout }}
+        with:
+          script: |
+            const script = require('.github/scripts/comment')
+            const header = '# Slither report'
+            const body = process.env.REPORT
+            await script({ github, context, header, body })
+  kintoID:
+    name: Kinto ID
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - KintoID_SanctionsTraits.conf
+          - KintoID_Monitor1.conf
+          - KintoID_Monitor2.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
+
+  kintoWallet:
+    name: Kinto Wallet
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - KintoWallet.conf
+          - KintoWalletFactory.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
+
+  sponsorPaymaster:
+    name: Sponsor Paymaster
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        contract:
+          - SponsorPaymaster.conf
+          - SponsorPaymaster_additional.conf
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run verification
+        uses: ./.github/actions/certora-verifier
+        with:
+          contractFile: ${{ matrix.contract }}
+          certoraKey: ${{ secrets.CERTORAKEY }}
