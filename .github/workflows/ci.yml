@@ -235,8 +235,8 @@ jobs:
 
     name: Certora
     runs-on: ubuntu-latest
-    # Run Certora on on main
-    if: github.base_ref == 'main'
+    # Run Certora only on main
+    if: github.ref == 'refs/heads/main'
     strategy:
       fail-fast: false
       max-parallel: 16
