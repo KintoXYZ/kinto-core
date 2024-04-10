@@ -163,7 +163,7 @@ jobs:
       #     minimum-coverage: 90
 
   slither:
-    name: Analyse
+    name: Slither
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
