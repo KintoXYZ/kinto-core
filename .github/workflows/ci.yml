@@ -223,8 +223,8 @@ jobs:
             const header = '# Slither report'
             const body = process.env.REPORT
             await script({ github, context, header, body })
-  certora-kintoID:
-    name: Kinto ID
+  certora:
+    name: Certora
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -234,46 +234,8 @@ jobs:
           - KintoID_SanctionsTraits.conf
           - KintoID_Monitor1.conf
           - KintoID_Monitor2.conf
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Run verification
-        uses: ./.github/actions/certora-verifier
-        with:
-          contractFile: ${{ matrix.contract }}
-          certoraKey: ${{ secrets.CERTORAKEY }}
-
-  certora-kintoWallet:
-    name: Kinto Wallet
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 16
-      matrix:
-        contract:
           - KintoWallet.conf
           - KintoWalletFactory.conf
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Run verification
-        uses: ./.github/actions/certora-verifier
-        with:
-          contractFile: ${{ matrix.contract }}
-          certoraKey: ${{ secrets.CERTORAKEY }}
-
-  certora-sponsorPaymaster:
-    name: Sponsor Paymaster
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 16
-      matrix:
-        contract:
           - SponsorPaymaster.conf
           - SponsorPaymaster_additional.conf
     steps:
