@@ -60,10 +60,10 @@ jobs:
             out
           key: forge-${{ github.ref_name }}
 
-  test:
+  test-local:
     needs: build
 
-    name: Test
+    name: Test Local
     runs-on: ubuntu-latest
 
     steps:
@@ -97,6 +97,30 @@ jobs:
           # delete the comment in case changes no longer impact gas costs
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}
+
+  test-mainnet:
+    needs: build
+
+    name: Test Mainnet
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/install
+
+      - name: Run mainnet tests
+        run: forge test 
+        env:
+          FOUNDRY_FUZZ_RUNS: 100
+          FOUNDRY_EVM_VERSION: shanghai
+          FORK: true
+          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
+          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+          DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
 
   coverage:
     needs:
