@@ -212,6 +212,9 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper(string memory name, address parentContract) public {
+        vm.assume(parentContract != address(0));
+        vm.assume(bytes(name).length > 0);
+
         registerApp(_owner, name, parentContract);
 
         // update app
