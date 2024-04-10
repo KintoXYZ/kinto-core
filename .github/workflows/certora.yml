@@ -1,4 +1,4 @@
-name: Certora Verification
+name: Certora
 
 on:
   workflow_call:

@@ -1,5 +1,3 @@
-name: Pull request
-
 permissions:
   issues: write
   pull-requests: write
