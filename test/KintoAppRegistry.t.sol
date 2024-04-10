@@ -220,7 +220,8 @@ contract KintoAppRegistryTest is SharedSetup {
         // update app
         vm.prank(_user);
         vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
-        _kintoAppRegistry.updateMetadata(name, parentContract, new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)]
+        _kintoAppRegistry.updateMetadata(
+            name, parentContract, new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
     }
 
