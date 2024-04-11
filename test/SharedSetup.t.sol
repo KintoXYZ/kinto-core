@@ -161,7 +161,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         vm.label(address(_paymaster), "SponsorPaymaster");
         vm.label(address(_kycViewer), "KYCViewer");
         vm.label(address(_faucet), "Faucet");
-        vm.label(address(_bridgerL2), "BrigerL2");
+        vm.label(address(_bridgerL2), "BridgerL2");
 
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
