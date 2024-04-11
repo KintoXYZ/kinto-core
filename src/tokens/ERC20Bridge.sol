@@ -2,9 +2,12 @@
 
 pragma solidity ^0.8.18;
 
-import "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@openzeppelin-5.0.1/contracts/access/AccessControl.sol";
+import {ERC20Upgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @title ERC20Bridge
@@ -13,9 +16,23 @@ import "@openzeppelin-5.0.1/contracts/access/AccessControl.sol";
  * @dev Introduces `mint` and `burn` functions secured with the `MINTER_ROLE` for bridging processes.
  * Inherits ERC20 functionality, permit mechanism for gasless transactions, and role-based access control.
  */
-abstract contract ERC20Bridge is ERC20, ERC20Permit, AccessControl {
-    /// @notice Role hash for addresses that can mint and burn tokens as part of bridging.
+contract ERC20Bridge is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20PermitUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable
+{
+    /// @notice Role that can mint and burn tokens as part of bridging.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    /// @notice Role that can upgrade the implementation of the proxy.
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     /**
      * @notice Creates a new token with bridging capabilities.
@@ -26,10 +43,21 @@ abstract contract ERC20Bridge is ERC20, ERC20Permit, AccessControl {
      * @dev Uses role-based access control for role assignments. Grants the deploying address the default admin
      * role for role management and assigns the MINTER_ROLE to a specified minter.
      */
-    constructor(string memory name, string memory symbol, address admin, address minter) ERC20(name, symbol) {
+    function initialize(string memory name, string memory symbol, address admin, address minter, address upgrader)
+        public
+        initializer
+    {
+        __ERC20_init(name, symbol);
+        __ERC20Permit_init(name);
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MINTER_ROLE, minter);
+        _grantRole(UPGRADER_ROLE, upgrader);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /**
      * @notice Mints tokens to `to`, increasing the total supply.
