@@ -82,10 +82,10 @@ contract ERC20BridgeTest is UserOp {
             )
         );
         vm.prank(alice);
-        token.upgradeToAndCall(address(newImpl), bytes(''));
+        token.upgradeToAndCall(address(newImpl), bytes(""));
 
         vm.prank(upgrader);
-        token.upgradeToAndCall(address(newImpl), bytes(''));
+        token.upgradeToAndCall(address(newImpl), bytes(""));
 
         // new function is working
         assertEq(ERC20BridgeHarness(address(token)).answer(), 42);
