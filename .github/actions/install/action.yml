@@ -25,4 +25,4 @@ runs:
       shell: bash
       run: |
         cd lib/token-bridge-contracts
-        npm install
+        yarn
