@@ -9,13 +9,13 @@ import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/uti
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title ERC20Bridge
+ * @title BridgedToken
  * @notice Implements an ERC20 token with bridging capabilities for cross-chain asset transfers.
  * Extends OpenZeppelin's ERC20, ERC20Permit, and AccessControl.
  * @dev Introduces `mint` and `burn` functions secured with the `MINTER_ROLE` for bridging processes.
  * Inherits ERC20 functionality, permit mechanism for gasless transactions, and role-based access control.
  */
-contract ERC20Bridge is
+contract BridgedToken is
     Initializable,
     ERC20Upgradeable,
     ERC20PermitUpgradeable,

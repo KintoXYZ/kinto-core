@@ -3,19 +3,19 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 
-import {ERC20Bridge} from "../../src/tokens/ERC20Bridge.sol";
+import {BridgedToken} from "../../src/tokens/BridgedToken.sol";
 import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 import {UserOp} from "../helpers/UserOp.sol";
-import {ERC20BridgeHarness} from "../harness/ERC20BridgeHarness.sol";
+import {BridgedTokenHarness} from "../harness/BridgedTokenHarness.sol";
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
-contract ERC20BridgeTest is UserOp {
+contract BridgedTokenTest is UserOp {
     address admin;
     address minter;
     address upgrader;
     address alice;
 
-    ERC20Bridge token;
+    BridgedToken token;
 
     function setUp() public {
         admin = createUser("admin");
@@ -23,7 +23,7 @@ contract ERC20BridgeTest is UserOp {
         upgrader = createUser("upgrader");
         alice = createUser("alice");
 
-        token = ERC20Bridge(address(new UUPSProxy(address(new ERC20Bridge()), "")));
+        token = BridgedToken(address(new UUPSProxy(address(new BridgedToken()), "")));
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
     }
 
@@ -74,12 +74,12 @@ contract ERC20BridgeTest is UserOp {
     /* ============ Proxy ============ */
 
     function testUpgradeTo() public {
-        ERC20BridgeHarness newImpl = new ERC20BridgeHarness();
+        BridgedTokenHarness newImpl = new BridgedTokenHarness();
         vm.prank(upgrader);
         token.upgradeToAndCall(address(newImpl), bytes(""));
 
         // new function is working
-        assertEq(ERC20BridgeHarness(address(token)).answer(), 42);
+        assertEq(BridgedTokenHarness(address(token)).answer(), 42);
         // old values kept
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
@@ -90,7 +90,7 @@ contract ERC20BridgeTest is UserOp {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotUpgrader() public {
-        ERC20BridgeHarness newImpl = new ERC20BridgeHarness();
+        BridgedTokenHarness newImpl = new BridgedTokenHarness();
         // Only the upgrader can upgrade the contract
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -104,7 +104,7 @@ contract ERC20BridgeTest is UserOp {
         token.upgradeToAndCall(address(newImpl), bytes(""));
 
         // new function is working
-        assertEq(ERC20BridgeHarness(address(token)).answer(), 42);
+        assertEq(BridgedTokenHarness(address(token)).answer(), 42);
         // old values kept
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
