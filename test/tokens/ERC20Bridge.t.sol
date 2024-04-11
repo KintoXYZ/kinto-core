@@ -55,7 +55,7 @@ contract ERC20BridgeTest is UserOp {
         assertEq(token.balanceOf(alice), 500);
     }
 
-    function testMintUnauthorized() public {
+    function testMint_RevertWhen_NotUnauthorized() public {
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.MINTER_ROLE())
         );
@@ -63,7 +63,7 @@ contract ERC20BridgeTest is UserOp {
         token.mint(alice, 1000);
     }
 
-    function testBurnUnauthorized() public {
+    function testBurn_RevertWhen_NotUnauthorized() public {
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.MINTER_ROLE())
         );
@@ -73,7 +73,23 @@ contract ERC20BridgeTest is UserOp {
 
     /* ============ Proxy ============ */
 
-    function testUpgrade() public {
+    function testUpgradeTo() public {
+        ERC20BridgeHarness newImpl = new ERC20BridgeHarness();
+        vm.prank(upgrader);
+        token.upgradeToAndCall(address(newImpl), bytes(""));
+
+        // new function is working
+        assertEq(ERC20BridgeHarness(address(token)).answer(), 42);
+        // old values kept
+        assertEq(token.totalSupply(), 0);
+        assertEq(token.name(), "Stablecoin");
+        assertEq(token.symbol(), "DAI");
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
+        assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
+    }
+
+    function testUpgradeTo_RevertWhen_CallerIsNotUpgrader() public {
         ERC20BridgeHarness newImpl = new ERC20BridgeHarness();
         // Only the upgrader can upgrade the contract
         vm.expectRevert(
