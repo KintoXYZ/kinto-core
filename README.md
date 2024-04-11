@@ -175,15 +175,7 @@ source .env && forge script script/samples/guesser.s.sol:KintoGuesserScript --rp
 source .env && forge script script/samples/upgrades/upgrade.sol:KintoIDUpgradeScript --rpc-url $KINTO_RPC_URL --broadcast -vvvv
 ```
 
-### Deploying manually other contracts
-
-In order to deploy non upgradeable contracts, use the following command:
-
-```
-forge create --rpc-url $KINTO_RPC_URL --private-key <your_private_key> src/<CONTRACT_NAME>
-```
-
-### Verifying smart contracts on blockscout
+### Verifying smart contracts on Blockscout
 
 On Testnet:
 
