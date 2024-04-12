@@ -2,22 +2,21 @@
   "name": "kinto-core",
   "description": "Kinto Core Contracts",
   "repository": "https://github.com/KintoXYZ/kinto-core.git",
-  "version": "1.0.0",
+  "homepage": "https://github.com/KintoXYZ/kinto-core.git#readme",
+  "version": "0.1.0",
   "devDependencies": {
-    "husky": "^8.0.3"
+    "husky": "^8.0.3",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1"
   },
   "license": "MIT",
   "scripts": {
     "install": "forge install && cd lib/token-bridge-contracts && yarn",
-    "test": "source .env && FORK=false forge test -vvvv",
-    "test-mainnet": "source .env && FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv",
+    "test": "source .env && FORK=false forge test -vvv",
+    "test-mainnet": "source .env && FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvv",
     "coverage": "forge coverage",
     "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
     "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID",
     "export-eth-mainnet": "source .env && node ./utils/export.js 1"
-  },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "ethers": "^6.11.1"
   }
 }
