@@ -61,10 +61,10 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     event L2AllowListInitialized();
 
     error RefundAddressNotAllowed(address to, address excessFeeRefundAddress, address callValueRefundAddress);
-    
+
     /// @dev initialises the `l2AllowList` mapping with the L2's router and gateway contracts
-    /// since they already have dust prevention check  
-    function initializeL2AllowList() onlyDelegated external {
+    /// since they already have dust prevention check
+    function initializeL2AllowList() external onlyDelegated {
         l2AllowList[0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99] = true; // L2 customGateway
         l2AllowList[0xf3AC740Fcc64eEd76dFaE663807749189A332d54] = true; // L2 router
         l2AllowList[0x6A8d32c495df943212B7788114e41103047150a5] = true; // L2 standardGateway
