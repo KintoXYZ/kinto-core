@@ -254,4 +254,13 @@ abstract contract UserOp is Test {
 
         return signature;
     }
+
+    /// @dev Generates a user, labels its address, and funds it with test assets.
+    function createUser(string memory name) internal returns (address payable) {
+        address payable user = payable(makeAddr(name));
+        vm.label(user, name);
+        vm.deal(user, 100e18);
+
+        return user;
+    }
 }
