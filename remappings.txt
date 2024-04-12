@@ -14,3 +14,4 @@ lib/account-abstraction:@openzeppelin/=lib/openzeppelin-contracts
 @solady/=lib/solady/src/
 
 @token-bridge-contracts/=lib/token-bridge-contracts/
+@nitro-contracts/=lib/nitro-contracts/
