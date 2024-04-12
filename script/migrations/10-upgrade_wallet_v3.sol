@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
-
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
