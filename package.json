@@ -5,7 +5,6 @@
   "homepage": "https://github.com/KintoXYZ/kinto-core.git#readme",
   "version": "0.1.0",
   "devDependencies": {
-    "husky": "^8.0.3",
     "dotenv": "^16.4.5",
     "ethers": "^6.11.1"
   },
