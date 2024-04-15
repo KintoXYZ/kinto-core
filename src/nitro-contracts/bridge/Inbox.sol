@@ -13,12 +13,12 @@ import {
     L1Forked,
     NotForked,
     GasLimitTooLarge
-} from "../libraries/Error.sol";
+} from "@nitro-contracts/src/libraries/Error.sol";
 import "./AbsInbox.sol";
-import "./IInbox.sol";
-import "./IBridge.sol";
-import "./IEthBridge.sol";
-import "../libraries/AddressAliasHelper.sol";
+import "@nitro-contracts/src/bridge/IInbox.sol";
+import "@nitro-contracts/src/bridge/IBridge.sol";
+import "@nitro-contracts/src/bridge/IEthBridge.sol";
+import "@nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {
     L2_MSG,
     L1MessageType_L2FundedByL1,
@@ -26,8 +26,8 @@ import {
     L1MessageType_ethDeposit,
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx
-} from "../libraries/MessageTypes.sol";
-import "../precompiles/ArbSys.sol";
+} from "@nitro-contracts/src/libraries/MessageTypes.sol";
+import "@nitro-contracts/src/precompiles/ArbSys.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
@@ -254,7 +254,7 @@ contract Inbox is AbsInbox, IInbox {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         bytes calldata data
-    ) external payable whenNotPaused onlyAllowed returns (uint256) {
+    ) external payable whenNotPaused onlyAllowed whenRefundAddressAllowed(to, excessFeeRefundAddress, callValueRefundAddress) returns (uint256) {
         // gas limit is validated to be within uint64 in unsafeCreateRetryableTicket
         return
             unsafeCreateRetryableTicket(
@@ -279,7 +279,7 @@ contract Inbox is AbsInbox, IInbox {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         bytes calldata data
-    ) external payable whenNotPaused onlyAllowed returns (uint256) {
+    ) external payable whenNotPaused onlyAllowed whenRefundAddressAllowed(to, excessFeeRefundAddress, callValueRefundAddress) returns (uint256) {
         return
             _createRetryableTicket(
                 to,
@@ -304,7 +304,7 @@ contract Inbox is AbsInbox, IInbox {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         bytes calldata data
-    ) public payable whenNotPaused onlyAllowed returns (uint256) {
+    ) public payable whenNotPaused onlyAllowed whenRefundAddressAllowed(to, excessFeeRefundAddress, callValueRefundAddress) returns (uint256) {
         return
             _unsafeCreateRetryableTicket(
                 to,
