@@ -38,131 +38,7 @@ contract InboxTest is AbsInboxTest {
         assertEq((PausableUpgradeable(address(inbox))).paused(), false, "Invalid paused state");
     }
 
-    function test_depositEth_FromEOA() public {
-        uint256 depositAmount = 2 ether;
-
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, depositAmount));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        ethInbox.depositEth{value: depositAmount}();
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance");
-
-        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
-    }
-
-    function test_depositEth_FromContract() public {
-        uint256 depositAmount = 1.2 ether;
-
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount));
-
-        // deposit tokens -> tx.origin != msg.sender
-        vm.prank(user);
-        ethInbox.depositEth{value: depositAmount}();
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance");
-
-        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
-    }
-
-    function test_depositEth_revert_EthTransferFails() public {
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        // deposit too many eth shall fail
-        vm.prank(user);
-        uint256 invalidDepositAmount = 300 ether;
-        vm.expectRevert();
-        ethInbox.depositEth{value: invalidDepositAmount}();
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore, userEthBalanceAfter, "Invalid user token balance");
-
-        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
-    }
-
-    function test_createRetryableTicket_FromEOA() public {
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        uint256 ethToSend = 0.3 ether;
-
-        // retryable params
-        uint256 l2CallValue = 0.1 ether;
-        uint256 maxSubmissionCost = 0.1 ether;
-        uint256 gasLimit = 100_000;
-        uint256 maxFeePerGas = 0.000000002 ether;
-        bytes memory data = abi.encodePacked("some msg");
-
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(
-            0,
-            abi.encodePacked(
-                uint256(uint160(user)),
-                l2CallValue,
-                ethToSend,
-                maxSubmissionCost,
-                uint256(uint160(user)),
-                uint256(uint160(user)),
-                gasLimit,
-                maxFeePerGas,
-                data.length,
-                data
-            )
-        );
-
-        // create retryable -> tx.origin == msg.sender
-        vm.prank(user, user);
-        ethInbox.createRetryableTicket{value: ethToSend}({
-            to: address(user),
-            l2CallValue: l2CallValue,
-            maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: user,
-            callValueRefundAddress: user,
-            gasLimit: gasLimit,
-            maxFeePerGas: maxFeePerGas,
-            data: data
-        });
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance");
-
-        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
-    }
+    // createRetryableTicket tests
 
     function test_createRetryableTicket_FromEOA_WhenToDifferentFromSender() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
@@ -607,6 +483,260 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
     }
 
+    // unsafeCreateRetryableTicket tests
+
+    function test_unsafeCreateRetryableTicket_RevertWhen_ExcessFeeRefundAddressDiffFromSender() public {
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        uint256 ethToSend = 0.3 ether;
+
+        // retryable params
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        bytes memory data = abi.encodePacked("some msg");
+
+        // create retryable -> tx.origin == msg.sender
+        vm.prank(user, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AbsInbox.RefundAddressNotAllowed.selector, address(user), address(123), address(user)
+            )
+        );
+        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
+            to: address(user),
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: address(123),
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: data
+        });
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
+
+        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
+    }
+
+    function test_unsafeCreateRetryableTicket_RevertWhen_CallValueRefundAddressDiffFromSender() public {
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        uint256 ethToSend = 0.3 ether;
+
+        // retryable params
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        bytes memory data = abi.encodePacked("some msg");
+
+        // create retryable -> tx.origin == msg.sender
+        vm.prank(user, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                AbsInbox.RefundAddressNotAllowed.selector, address(user), address(user), address(123)
+            )
+        );
+        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
+            to: address(user),
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: address(123),
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: data
+        });
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
+
+        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
+    }
+
+    function test_unsafeCreateRetryableTicket_RevertWhen_RefundAddressesDiffFromSender() public {
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        uint256 ethToSend = 0.3 ether;
+
+        // retryable params
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        bytes memory data = abi.encodePacked("some msg");
+
+        // create retryable -> tx.origin == msg.sender
+        vm.prank(user, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(AbsInbox.RefundAddressNotAllowed.selector, address(user), address(123), address(456))
+        );
+        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
+            to: address(user),
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: address(123),
+            callValueRefundAddress: address(456),
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: data
+        });
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
+
+        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
+    }
+
+    ////// below tests are taken as is from Inbox.t.sol //////
+
+    function test_depositEth_FromEOA() public {
+        uint256 depositAmount = 2 ether;
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(0, abi.encodePacked(user, depositAmount));
+
+        // deposit tokens -> tx.origin == msg.sender
+        vm.prank(user, user);
+        ethInbox.depositEth{value: depositAmount}();
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance");
+
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_depositEth_FromContract() public {
+        uint256 depositAmount = 1.2 ether;
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount));
+
+        // deposit tokens -> tx.origin != msg.sender
+        vm.prank(user);
+        ethInbox.depositEth{value: depositAmount}();
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance");
+
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_depositEth_revert_EthTransferFails() public {
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // deposit too many eth shall fail
+        vm.prank(user);
+        uint256 invalidDepositAmount = 300 ether;
+        vm.expectRevert();
+        ethInbox.depositEth{value: invalidDepositAmount}();
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceBefore, userEthBalanceAfter, "Invalid user token balance");
+
+        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
+    }
+
+    function test_createRetryableTicket_FromEOA() public {
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        uint256 ethToSend = 0.3 ether;
+
+        // retryable params
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        bytes memory data = abi.encodePacked("some msg");
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(
+            0,
+            abi.encodePacked(
+                uint256(uint160(user)),
+                l2CallValue,
+                ethToSend,
+                maxSubmissionCost,
+                uint256(uint160(user)),
+                uint256(uint160(user)),
+                gasLimit,
+                maxFeePerGas,
+                data.length,
+                data
+            )
+        );
+
+        // create retryable -> tx.origin == msg.sender
+        vm.prank(user, user);
+        ethInbox.createRetryableTicket{value: ethToSend}({
+            to: address(user),
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: data
+        });
+
+        //// checks
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance");
+
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
     function test_createRetryableTicket_FromContract() public {
         address sender = address(new Sender());
         vm.deal(sender, 10 ether);
@@ -642,7 +772,6 @@ contract InboxTest is AbsInboxTest {
         );
 
         // create retryable
-
         vm.prank(sender);
         ethInbox.createRetryableTicket{value: ethToSend}({
             to: sender,
@@ -888,130 +1017,6 @@ contract InboxTest is AbsInboxTest {
         assertEq(userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance");
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
-    }
-
-    function test_unsafeCreateRetryableTicket_RevertWhen_ExcessFeeRefundAddressDiffFromSender() public {
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        uint256 ethToSend = 0.3 ether;
-
-        // retryable params
-        uint256 l2CallValue = 0.1 ether;
-        uint256 maxSubmissionCost = 0.1 ether;
-        uint256 gasLimit = 100_000;
-        uint256 maxFeePerGas = 0.000000002 ether;
-        bytes memory data = abi.encodePacked("some msg");
-
-        // create retryable -> tx.origin == msg.sender
-        vm.prank(user, user);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AbsInbox.RefundAddressNotAllowed.selector, address(user), address(123), address(user)
-            )
-        );
-        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
-            to: address(user),
-            l2CallValue: l2CallValue,
-            maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: address(123),
-            callValueRefundAddress: user,
-            gasLimit: gasLimit,
-            maxFeePerGas: maxFeePerGas,
-            data: data
-        });
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
-
-        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
-    }
-
-    function test_unsafeCreateRetryableTicket_RevertWhen_CallValueRefundAddressDiffFromSender() public {
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        uint256 ethToSend = 0.3 ether;
-
-        // retryable params
-        uint256 l2CallValue = 0.1 ether;
-        uint256 maxSubmissionCost = 0.1 ether;
-        uint256 gasLimit = 100_000;
-        uint256 maxFeePerGas = 0.000000002 ether;
-        bytes memory data = abi.encodePacked("some msg");
-
-        // create retryable -> tx.origin == msg.sender
-        vm.prank(user, user);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                AbsInbox.RefundAddressNotAllowed.selector, address(user), address(user), address(123)
-            )
-        );
-        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
-            to: address(user),
-            l2CallValue: l2CallValue,
-            maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: user,
-            callValueRefundAddress: address(123),
-            gasLimit: gasLimit,
-            maxFeePerGas: maxFeePerGas,
-            data: data
-        });
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
-
-        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
-    }
-
-    function test_unsafeCreateRetryableTicket_RevertWhen_RefundAddressesDiffFromSender() public {
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        uint256 ethToSend = 0.3 ether;
-
-        // retryable params
-        uint256 l2CallValue = 0.1 ether;
-        uint256 maxSubmissionCost = 0.1 ether;
-        uint256 gasLimit = 100_000;
-        uint256 maxFeePerGas = 0.000000002 ether;
-        bytes memory data = abi.encodePacked("some msg");
-
-        // create retryable -> tx.origin == msg.sender
-        vm.prank(user, user);
-        vm.expectRevert(
-            abi.encodeWithSelector(AbsInbox.RefundAddressNotAllowed.selector, address(user), address(123), address(456))
-        );
-        ethInbox.unsafeCreateRetryableTicket{value: ethToSend}({
-            to: address(user),
-            l2CallValue: l2CallValue,
-            maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: address(123),
-            callValueRefundAddress: address(456),
-            gasLimit: gasLimit,
-            maxFeePerGas: maxFeePerGas,
-            data: data
-        });
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter, bridgeEthBalanceBefore, "Invalid bridge token balance");
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceAfter, userEthBalanceBefore, "Invalid user token balance");
-
-        assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
     }
 
     function test_unsafeCreateRetryableTicket_FromContract() public {
