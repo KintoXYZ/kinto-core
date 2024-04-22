@@ -4,6 +4,7 @@ module.exports = async ({ github, context, header, body }) => {
   let issueNumber;
 
   if (context.eventName === 'pull_request') {
+      console.log("Pull Request Event: ", context.payload.pull_request)
       // For pull_request events, the number is directly available
       issueNumber = context.payload.pull_request.number;
       console.log("Pull Request Number: ", issueNumber);
@@ -17,6 +18,7 @@ module.exports = async ({ github, context, header, body }) => {
       });
 
       if (pullRequests.data.length > 0) {
+          console.log("Associated Pull Requests: ", pullRequests.data);
           // If there are open pull requests associated with the push, take the first one
           issueNumber = pullRequests.data[0].number;
           console.log("Associated Pull Request Number: ", issueNumber);
