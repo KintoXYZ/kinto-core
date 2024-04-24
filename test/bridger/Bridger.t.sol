@@ -51,7 +51,6 @@ contract BridgerTest is TestSignature, SharedSetup {
             mainnetFork = vm.createFork(rpc);
             vm.selectFork(mainnetFork);
             assertEq(vm.activeFork(), mainnetFork);
-            console.log("Running tests on fork from mainnet at:", rpc);
 
             bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
 
