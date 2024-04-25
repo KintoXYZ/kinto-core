@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "forge-std/console.sol";
 import "../SharedSetup.t.sol";
 import "../../src/inflators/KintoInflator.sol";
 
@@ -61,10 +60,8 @@ contract InflatorTest is SharedSetup {
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -102,10 +99,8 @@ contract InflatorTest is SharedSetup {
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -140,13 +135,10 @@ contract InflatorTest is SharedSetup {
         bytes memory compressedSimple = _inflator.compressSimple(op);
 
         bytes memory encodedUserOp = abi.encode(op);
-        console.log("decompressed length: %s", encodedUserOp.length);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -181,13 +173,10 @@ contract InflatorTest is SharedSetup {
         bytes memory compressedSimple = _inflator.compressSimple(op);
 
         bytes memory encodedUserOp = abi.encode(op);
-        console.log("decompressed length: %s", encodedUserOp.length);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -226,10 +215,8 @@ contract InflatorTest is SharedSetup {
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -273,10 +260,8 @@ contract InflatorTest is SharedSetup {
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -325,10 +310,8 @@ contract InflatorTest is SharedSetup {
         bytes memory encodedUserOp = abi.encode(op);
 
         uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-        console.log("compression percentage: %s", compressionPercentage);
 
         uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
-        console.log("compression simple percentage: %s", compressionSimplePercentage);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
