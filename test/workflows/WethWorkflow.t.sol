@@ -33,7 +33,6 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     IAccessPoint internal accessPoint;
     WethWorkflow internal wethWorkflow;
 
-
     IWETH internal constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -78,9 +77,7 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     function testDeposit() public {
         if (!fork) vm.skip(true);
         uint256 amount = 1e18;
-        bytes memory data = abi.encodeWithSelector(
-            WethWorkflow.deposit.selector, amount
-        );
+        bytes memory data = abi.encodeWithSelector(WethWorkflow.deposit.selector, amount);
 
         deal(address(accessPoint), amount);
         assertEq(address(accessPoint).balance, amount, "Balance is wrong");
@@ -95,9 +92,7 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     function testWithdraw() public {
         if (!fork) vm.skip(true);
         uint256 amount = 1e18;
-        bytes memory data = abi.encodeWithSelector(
-            WethWorkflow.withdraw.selector, amount
-        );
+        bytes memory data = abi.encodeWithSelector(WethWorkflow.withdraw.selector, amount);
 
         deal(address(WETH), address(accessPoint), amount);
         assertEq(address(accessPoint).balance, 0, "Balance is wrong");

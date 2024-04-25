@@ -37,7 +37,6 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
     SwapWorkflow internal swapWorkflow;
     WethWorkflow internal wethWorkflow;
 
-
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -88,6 +87,29 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
+    function testSwap_RevertWhen_AmountOutTooLow() public {
+        if (!fork) vm.skip(true);
+
+        uint256 amountIn = 1e3 * 1e6;
+        uint256 minAmountOut = amountIn * 1e12;
+        uint256 expectedAmountOut = 999842220668049737510;
+        // block number in which the 0x API data was fetched
+        vm.rollFork(19725885);
+        deploy();
+
+        // Run to regenerate
+        // curl 'https://api.0x.org/swap/v1/quote?buyToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&sellToken=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&sellAmount=1000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-quote.json
+        string memory quote = vm.readFile("./test/data/swap-quote.json");
+        bytes memory swapCallData = quote.readBytes(".data");
+        bytes memory data =
+            abi.encodeWithSelector(SwapWorkflow.fillQuote.selector, USDC, amountIn, DAI, minAmountOut, swapCallData);
+
+        deal(USDC, address(accessPoint), amountIn);
+        vm.expectRevert(abi.encodeWithSelector(SwapWorkflow.AmountOutTooLow.selector, expectedAmountOut, minAmountOut));
+        vm.prank(_user);
+        accessPoint.execute(address(swapWorkflow), data);
+    }
+
     function testSwapERC20() public {
         if (!fork) vm.skip(true);
 
@@ -102,7 +124,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         string memory quote = vm.readFile("./test/data/swap-quote.json");
         bytes memory swapCallData = quote.readBytes(".data");
         bytes memory data = abi.encodeWithSelector(
-            SwapWorkflow.fillQuote.selector, USDC, amountIn, DAI, amountIn * 99 / 100, swapCallData
+            SwapWorkflow.fillQuote.selector, USDC, amountIn, DAI, amountIn * 1e12 * 99 / 100, swapCallData
         );
 
         deal(USDC, address(accessPoint), amountIn);
@@ -129,9 +151,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         // deal ETH
         deal(address(accessPoint), amountIn);
         // wrap ETH to WETH
-        bytes memory data = abi.encodeWithSelector(
-            WethWorkflow.deposit.selector,amountIn 
-        );
+        bytes memory data = abi.encodeWithSelector(WethWorkflow.deposit.selector, amountIn);
         vm.prank(_user);
         accessPoint.execute(address(wethWorkflow), data);
 
