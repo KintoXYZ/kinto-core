@@ -11,19 +11,19 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import {UserOperation} from "@aa/interfaces/UserOperation.sol";
 
-import {AccessRegistry} from "../src/access/AccessRegistry.sol";
-import {AccessPoint} from "../src/access/AccessPoint.sol";
-import {WithdrawWorkflow} from "../src/access/workflows/WithdrawWorkflow.sol";
-import {IAccessPoint} from "../src/interfaces/IAccessPoint.sol";
-import {IAccessRegistry} from "../src/interfaces/IAccessRegistry.sol";
-import {IKintoEntryPoint} from "../src/interfaces/IKintoEntryPoint.sol";
-import {SignaturePaymaster} from "../src/paymasters/SignaturePaymaster.sol";
+import {AccessRegistry} from "../../src/access/AccessRegistry.sol";
+import {AccessPoint} from "../../src/access/AccessPoint.sol";
+import {WithdrawWorkflow} from "../../src/access/workflows/WithdrawWorkflow.sol";
+import {IAccessPoint} from "../../src/interfaces/IAccessPoint.sol";
+import {IAccessRegistry} from "../../src/interfaces/IAccessRegistry.sol";
+import {IKintoEntryPoint} from "../../src/interfaces/IKintoEntryPoint.sol";
+import {SignaturePaymaster} from "../../src/paymasters/SignaturePaymaster.sol";
 
-import {AccessRegistryHarness} from "./harness/AccessRegistryHarness.sol";
+import {AccessRegistryHarness} from "../harness/AccessRegistryHarness.sol";
 
-import {UserOp} from "./helpers/UserOp.sol";
-import {ERC20Mock} from "./helpers/ERC20Mock.sol";
-import {UUPSProxy} from "./helpers/UUPSProxy.sol";
+import {UserOp} from "../helpers/UserOp.sol";
+import {ERC20Mock} from "../helpers/ERC20Mock.sol";
+import {UUPSProxy} from "../helpers/UUPSProxy.sol";
 
 contract WithdrawWorkflowTest is UserOp {
     using MessageHashUtils for bytes32;
