@@ -70,7 +70,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testUp() public override {
-        if (fork) return;
+        if (fork) vm.skip(true);
         assertEq(bridger.depositCount(), 0);
         assertEq(bridger.owner(), address(_owner));
         assertEq(bridger.swapsEnabled(), false);
@@ -147,7 +147,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // deposit wstETH (no swap)
     function testDepositBySig_wstETH_WhenNoSwap() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address assetToDeposit = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
         uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
@@ -189,7 +189,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // deposit weETH (no swap)
     function testDepositBySig_weETH_WhenNoSwap() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address assetToDeposit = bridger.weETH();
         uint256 amountToDeposit = 1e18;
         uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
@@ -231,7 +231,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // deposit sUSDe
     function testDepositBySig_sUSDe_WhenNoSwap() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address assetToDeposit = bridger.sUSDe();
         uint256 amountToDeposit = 1e18;
         uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
@@ -273,7 +273,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // USDe to sUSDe
     function testDepositBySig_WhenUSDeTosUSDe() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
         uint256 sharesBefore = ERC20(bridger.sUSDe()).balanceOf(address(bridger));
@@ -317,7 +317,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // USDe to sDAI
     function testDepositBySig_WhenUSDeTosDAI() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19418477); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -387,7 +387,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // UNI to sUSDe
     function testDepositBySig_WhenSwap_WhenUNITosUSDe() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19412323); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -458,7 +458,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // USDC to sUSDe
     function testDepositBySig_WhenSwap_WhenUSDCTosUSDe() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19408563); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -530,7 +530,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // stETH to sUSDe
     function testDepositBySig_WhenSwap_WhenStETHTosUSDe() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19447098); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -618,7 +618,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // UNI to wstETH
     function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19402329); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -683,7 +683,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     // DAI to wstETH
     function testDepositBySig_WhenSwap_WhenDAItoWstETH() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19402392); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -773,7 +773,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_WhenSwap_WhenInvalidExchangeProxy() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         // enable swaps
         vm.prank(_owner);
@@ -825,7 +825,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
@@ -868,7 +868,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed_2() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
@@ -911,7 +911,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address assetToDeposit = DAI;
         uint256 amountToDeposit = 1000e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
@@ -981,7 +981,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         uint256 gasFee = 0.1 ether;
         uint256 amountToDeposit = 1e18;
         uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
@@ -1000,7 +1000,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositETH_WhenNoGasFee() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         uint256 gasFee = 0;
         uint256 amountToDeposit = 1e18;
         uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
@@ -1019,7 +1019,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositETH_WhenSwap_WhenGasFee() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19402998); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -1051,7 +1051,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testDepositETH_WhenSwap_WhenNoGasFee() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         vm.rollFork(19402998); // block number in which the 0x API data was fetched
         _deployBridger(); // re-deploy the bridger on block
@@ -1147,7 +1147,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ Bridge ============ */
 
     function testBridgeDeposits() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
         address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(asset), address(bridger), amountToDeposit);
@@ -1179,7 +1179,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     function testBridgeDeposits_WhenMultipleTimes() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         // array of allowedAssets
         address[4] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH()];
@@ -1258,7 +1258,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     /* ============ EIP712 ============ */
 
     function testDomainSeparatorV4() public {
-        if (fork) return;
+        if (fork) vm.skip(true);
         assertEq(
             bridger.domainSeparatorV4(),
             keccak256(
@@ -1285,7 +1285,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 expiresAt,
         bytes calldata signature
     ) public {
-        if (fork) return;
+        if (fork) vm.skip(true);
         IBridger.SignatureData memory data = IBridger.SignatureData({
             kintoWallet: kintoWallet,
             signer: signer,

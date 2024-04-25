@@ -50,8 +50,8 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     }
 
     function testUp() public override {
+        if (fork) vm.skip(true);
         assertEq(_bridgerL2.owner(), address(_owner));
-        if (fork) return;
         assertEq(_bridgerL2.depositCount(), 0);
         assertEq(_bridgerL2.unlocked(), false);
     }
@@ -219,7 +219,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
-        if (!fork) return;
+        if (!fork) vm.skip(true);
 
         // UI "wrong" assets
         address[] memory UI_assets = new address[](4);

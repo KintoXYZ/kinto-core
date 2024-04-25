@@ -219,7 +219,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
         uint256 balBefore = address(_owner).balance;
         vm.prank(_owner);
-        _paymaster.withdrawTo(payable(_owner), address(_entryPoint).balance);
+        _paymaster.withdrawTo(payable(_owner), deposited);
 
         assertEq(address(_paymaster).balance, 0);
         assertEq(address(_owner).balance, balBefore + deposited);
