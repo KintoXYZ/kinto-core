@@ -13,7 +13,7 @@ contract SwapWorkflow {
 
     address public immutable exchangeProxy;
 
-    event SwapExecuted(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
+    event SwapExecuted(address indexed tokenIn, uint256 amountIn, address indexed tokenOut, uint256 amountOut);
 
     constructor(address _exchangeProxy) {
         exchangeProxy = _exchangeProxy;
@@ -30,6 +30,6 @@ contract SwapWorkflow {
 
         exchangeProxy.functionCall(swapCallData);
 
-        emit SwapExecuted(tokenIn, tokenOut, amountIn, minAmountOut);
+        emit SwapExecuted(address(tokenIn), amountIn, address(tokenOut), minAmountOut);
     }
 }

@@ -48,16 +48,15 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        if (fork) {
-            string memory rpc = vm.envString("ETHEREUM_RPC_URL");
-            require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
+        if (!fork) vm.skip(true);
 
-            vm.chainId(1);
-            mainnetFork = vm.createFork(rpc);
-            vm.selectFork(mainnetFork);
-            assertEq(vm.activeFork(), mainnetFork);
-            console.log("Running tests on fork from mainnet at:", rpc);
-        }
+        string memory rpc = vm.envString("ETHEREUM_RPC_URL");
+        require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
+
+        vm.chainId(1);
+        mainnetFork = vm.createFork(rpc);
+        vm.selectFork(mainnetFork);
+        assertEq(vm.activeFork(), mainnetFork);
 
         vm.deal(_owner, 100 ether);
 
@@ -97,9 +96,9 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
 
         string memory quote = vm.readFile("./test/data/swap-quote.json");
         bytes memory swapCallData = quote.readBytes(".data");
-        bytes memory data =
-            abi.encodeWithSelector(SwapWorkflow.fillQuote.selector, USDC,
-                                   defaultAmount, DAI, defaultAmount * 99/100,  swapCallData);
+        bytes memory data = abi.encodeWithSelector(
+            SwapWorkflow.fillQuote.selector, USDC, defaultAmount, DAI, defaultAmount * 99 / 100, swapCallData
+        );
 
         deal(USDC, address(accessPoint), defaultAmount);
         vm.prank(_user);
