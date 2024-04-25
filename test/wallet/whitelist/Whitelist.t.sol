@@ -13,9 +13,11 @@ contract WhitelistTest is SharedSetup {
         assertEq(counter.count(), 0);
 
         // create whitelist app user op
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), address(_paymaster)
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
         );
 
         _entryPoint.handleOps(userOps, payable(_owner));
@@ -26,6 +28,46 @@ contract WhitelistTest is SharedSetup {
     function testWhitelistApp_RevertWhen_AlreadyWhitelisted() public {
         //re-register app
         whitelistApp(address(counter), true);
+    }
+
+    function testWhitelistAppRemovesAppKey() public {
+        // deploy an app
+        Counter counter = new Counter();
+
+        // create whitelist app user op
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _whitelistAppOp(
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+
+        assertTrue(_kintoWallet.appWhitelist(address(counter)));
+
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("setAppKey(address,address)", address(counter), _user),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_kintoWallet.appSigner(address(counter)), _user);
+
+        // create remove whitelist app user op
+        flags[0] = false;
+        userOps[0] = _whitelistAppOp(
+            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+
+        assertFalse(_kintoWallet.appWhitelist(address(counter)));
+        assertEq(_kintoWallet.appSigner(address(counter)), address(0));
     }
 
     // function testWhitelist_RevertWhen_AppIsNotRegistered() public {

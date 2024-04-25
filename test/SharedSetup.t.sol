@@ -59,7 +59,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             mainnetFork = vm.createFork(rpc);
             vm.selectFork(mainnetFork);
             assertEq(vm.activeFork(), mainnetFork);
-            console.log("Running tests on fork from mainnet at:", rpc);
 
             // read mainnet contracts from addresses.json
             _entryPoint = IKintoEntryPoint(_getChainDeployment("EntryPoint"));
@@ -112,7 +111,6 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             // change _kintoWallet owner to _owner so we use it on tesets
             changeWalletOwner(_owner, _kycProvider);
         } else {
-            console.log("Running tests locally");
             contracts = deployer.runAndReturnResults(_ownerPk);
             // set contracts
             _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
