@@ -183,6 +183,8 @@ jobs:
 
       - name: Slither Comment
         uses: actions/github-script@v6
+        # Run Slither Comment only for PRs
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         env:
           OUTCOME: ${{ steps.slither.outcome }}
         with:
