@@ -41,4 +41,3 @@ contract WethWorkflow {
         weth.withdraw(amount);
     }
 }
-

@@ -32,7 +32,7 @@ contract SwapWorkflow {
 
     /**
      * @notice Executes a token swap via the 0x protocol using provided swap calldata.
-     * @dev Increases allowance, invokes the swap, and verifies the output. The `swapCallData` should contain all 
+     * @dev Increases allowance, invokes the swap, and verifies the output. The `swapCallData` should contain all
      * necessary data for executing a swap on 0x. It does not verify if the parameters match the `swapCallData`.
      * The slippage set at the `quote` from the 0x API request must be equal to or less than `minAmountOut`.
      * The `takerAddress` must be set to the access point's address in the quote to enable RFQ liquidity.
@@ -73,4 +73,3 @@ contract SwapWorkflow {
         emit SwapExecuted(address(tokenIn), amountIn, address(tokenOut), amountOut);
     }
 }
-
