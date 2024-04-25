@@ -3,8 +3,13 @@ module.exports = async ({ github, context, header, body }) => {
 
   let issueNumber;
 
+  console.log("context.eventName", context.eventName);
   if (context.eventName === 'pull_request') {
       // For pull_request events, the number is directly available
+      if (!context.payload.pull_request) {
+          console.error("No pull request info available in payload");
+          return; // Exit if pull request info is not available
+      }
       issueNumber = context.payload.pull_request.number;
       console.log("Pull Request Number: ", issueNumber);
   } else if (context.eventName === 'push') {
@@ -16,7 +21,7 @@ module.exports = async ({ github, context, header, body }) => {
           head: `${context.repo.owner}:${context.ref.replace('refs/heads/', '')}`
       });
 
-      if (pullRequests.data.length > 0) {
+      if (pullRequests && pullRequests.data && pullRequests.data.length > 0) {
           // If there are open pull requests associated with the push, take the first one
           issueNumber = pullRequests.data[0].number;
           console.log("Associated Pull Request Number: ", issueNumber);
