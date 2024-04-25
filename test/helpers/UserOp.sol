@@ -173,11 +173,14 @@ abstract contract UserOp is Test {
 
     // user ops generators
 
-    function _whitelistAppOp(uint256[] memory pk, address from, uint256 nonce, address app, bool[] memory flags, address _paymaster)
-        internal
-        view
-        returns (UserOperation memory userOp)
-    {
+    function _whitelistAppOp(
+        uint256[] memory pk,
+        address from,
+        uint256 nonce,
+        address app,
+        bool[] memory flags,
+        address _paymaster
+    ) internal view returns (UserOperation memory userOp) {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
         return _createUserOperation(
