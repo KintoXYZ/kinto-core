@@ -15,6 +15,8 @@ contract SwapWorkflow {
 
     event SwapExecuted(address indexed tokenIn, uint256 amountIn, address indexed tokenOut, uint256 amountOut);
 
+    error AmountOutTooLow(uint256 amountOut, uint256 minAmountOut);
+
     constructor(address _exchangeProxy) {
         exchangeProxy = _exchangeProxy;
     }
@@ -25,11 +27,16 @@ contract SwapWorkflow {
         IERC20 tokenOut,
         uint256 minAmountOut,
         bytes calldata swapCallData
-    ) external {
+    ) external returns (uint256 amountOut) {
         tokenIn.safeIncreaseAllowance(exchangeProxy, amountIn);
+
+        uint256 balanceBeforeSwap = tokenOut.balanceOf(address(this));
 
         exchangeProxy.functionCall(swapCallData);
 
-        emit SwapExecuted(address(tokenIn), amountIn, address(tokenOut), minAmountOut);
+        amountOut = tokenOut.balanceOf(address(this)) - balanceBeforeSwap;
+        if (amountOut < minAmountOut) revert AmountOutTooLow(amountOut, minAmountOut);
+
+        emit SwapExecuted(address(tokenIn), amountIn, address(tokenOut), amountOut);
     }
 }
