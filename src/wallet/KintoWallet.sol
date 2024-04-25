@@ -176,6 +176,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external override onlySelf {
         if (apps.length != flags.length) revert LengthMismatch();
         for (uint256 i = 0; i < apps.length; i++) {
+            // Revoke app key if app is removed
+            if (!flags[i] && appSigner[apps[i]] != address(0)) {
+                appSigner[apps[i]] = address(0);
+            }
             appWhitelist[apps[i]] = flags[i];
         }
     }
