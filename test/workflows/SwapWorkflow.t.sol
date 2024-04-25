@@ -128,6 +128,10 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         );
 
         deal(USDC, address(accessPoint), amountIn);
+         vm.expectEmit();
+
+        emit SwapWorkflow.SwapExecuted(USDC, amountIn, DAI, expectedAmountOut);
+
         vm.prank(_user);
         bytes memory response = accessPoint.execute(address(swapWorkflow), data);
         uint256 amountOut = abi.decode(response, (uint256));
