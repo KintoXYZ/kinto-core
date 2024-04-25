@@ -128,7 +128,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         );
 
         deal(USDC, address(accessPoint), amountIn);
-         vm.expectEmit();
+        vm.expectEmit();
 
         emit SwapWorkflow.SwapExecuted(USDC, amountIn, DAI, expectedAmountOut);
 
