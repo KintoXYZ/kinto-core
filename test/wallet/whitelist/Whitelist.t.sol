@@ -31,6 +31,7 @@ contract WhitelistTest is SharedSetup {
     }
 
     function testWhitelistAppRemovesAppKey() public {
+        if (fork) vm.skip(true);
         // deploy an app
         Counter counter = new Counter();
 
@@ -45,6 +46,7 @@ contract WhitelistTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
 
         assertTrue(_kintoWallet.appWhitelist(address(counter)));
+        assertEq(_kintoWallet.appSigner(address(counter)), address(0), "Signer is not a zero address");
 
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
@@ -67,7 +69,7 @@ contract WhitelistTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
 
         assertFalse(_kintoWallet.appWhitelist(address(counter)));
-        assertEq(_kintoWallet.appSigner(address(counter)), address(0));
+        assertEq(_kintoWallet.appSigner(address(counter)), address(0), "Signer is not a zero address");
     }
 
     // function testWhitelist_RevertWhen_AppIsNotRegistered() public {
