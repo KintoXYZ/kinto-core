@@ -173,15 +173,13 @@ abstract contract UserOp is Test {
 
     // user ops generators
 
-    function _whitelistAppOp(uint256[] memory pk, address from, uint256 nonce, address app, address _paymaster)
+    function _whitelistAppOp(uint256[] memory pk, address from, uint256 nonce, address app, bool[] memory flags, address _paymaster)
         internal
         view
         returns (UserOperation memory userOp)
     {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
         return _createUserOperation(
             from,
             from, // target is the wallet itself
