@@ -121,7 +121,6 @@ contract InflatorTest is SharedSetup {
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
 
-
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
 
@@ -152,7 +151,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -187,7 +185,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);

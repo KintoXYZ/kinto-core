@@ -21,7 +21,7 @@ contract KintoIDv2 is KintoID {
 }
 
 contract KintoIDTest is SharedSetup {
-    function testUp() public override view {
+    function testUp() public view override {
         if (fork) assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");

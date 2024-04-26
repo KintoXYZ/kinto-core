@@ -37,7 +37,7 @@ contract DeveloperDeployTest is SharedSetup {
         _initializableCounter.initialize(_user2);
     }
 
-    function testUp() public override view {
+    function testUp() public view override {
         assertEq(address(_owner), _ownableCounter.owner());
         assertEq(_user2, _initializableCounter.owner());
     }
