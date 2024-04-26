@@ -50,6 +50,8 @@ interface IKintoWallet {
 
     function setAppKey(address app, address signer) external;
 
+    function whitelistAppAndSetKey(address app, address signer) external;
+
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
     /* ============ Basic Viewers ============ */

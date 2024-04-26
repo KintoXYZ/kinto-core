@@ -5,7 +5,27 @@ import "forge-std/console.sol";
 import "../../SharedSetup.t.sol";
 
 contract WhitelistTest is SharedSetup {
-    /* ============ Whitelist ============ */
+    function testWhitelistAppAndSetKey() public {
+        if (fork) vm.skip(true);
+        // deploy an app
+        Counter counter = new Counter();
+        assertEq(counter.count(), 0);
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_kintoWallet), // target is the wallet itself
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("whitelistAppAndSetKey(address,address)", address(counter), _user),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+
+        assertTrue(_kintoWallet.appWhitelist(address(counter)));
+        assertEq(_kintoWallet.appSigner(address(counter)), _user);
+    }
 
     function testWhitelistApp() public {
         // deploy an app
