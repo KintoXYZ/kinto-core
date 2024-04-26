@@ -21,7 +21,7 @@ contract KintoIDv2 is KintoID {
 }
 
 contract KintoIDTest is SharedSetup {
-    function testUp() public override {
+    function testUp() public override view {
         if (fork) assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");
@@ -456,7 +456,7 @@ contract KintoIDTest is SharedSetup {
 
     /* ============ Supports Interface tests ============ */
 
-    function testSupportsInterface() public {
+    function testSupportsInterface() public view {
         bytes4 InterfaceERC721Upgradeable = bytes4(keccak256("balanceOf(address)"))
             ^ bytes4(keccak256("ownerOf(uint256)")) ^ bytes4(keccak256("safeTransferFrom(address,address,uint256,bytes)"))
             ^ bytes4(keccak256("safeTransferFrom(address,address,uint256)"))

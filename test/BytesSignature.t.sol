@@ -5,7 +5,7 @@ import "../src/libraries/ByteSignature.sol";
 import {UserOp} from "./helpers/UserOp.sol";
 
 contract ByteSignatureTest is UserOp {
-    function testExtractSingleSignature() public {
+    function testExtractSingleSignature() public pure {
         // dummy signature
         bytes memory signature =
             hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01";
@@ -13,7 +13,7 @@ contract ByteSignatureTest is UserOp {
         assertEq(extracted[0], signature, "The extracted signature does not match the original signature.");
     }
 
-    function testExtractMultipleSignatures() public {
+    function testExtractMultipleSignatures() public pure {
         // create 2 dummy signatures
         bytes memory signature1 =
             hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01";
@@ -26,7 +26,7 @@ contract ByteSignatureTest is UserOp {
         assertEq(extracted[1], signature2, "The second signature does not match the original signature.");
     }
 
-    function testFuzzExtractMultipleSignatures(uint8 numSignatures) public {
+    function testFuzzExtractMultipleSignatures(uint8 numSignatures) public view {
         bytes memory fullSignature;
         bytes[] memory originalSignatures = new bytes[](numSignatures);
 

@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import "./SharedSetup.t.sol";
 
 contract KintoEntryPointTest is SharedSetup {
-    function testUp() public override {
+    function testUp() public override view {
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 

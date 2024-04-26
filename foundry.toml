@@ -4,6 +4,7 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
+ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libraries/Cloneable.sol"]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 # Adding evm version because of this https://github.com/foundry-rs/foundry/issues/4988
@@ -17,3 +18,4 @@ kinto = "${KINTO_RPC_URL}"
 
 [fuzz]
 runs = 16
+

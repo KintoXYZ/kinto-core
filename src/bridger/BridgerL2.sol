@@ -166,6 +166,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         if (_asset == 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee) return 0xa75C0f526578595AdB75D13FCea1017AC1b97e48; // sUSDe
         if (_asset == 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200) return 0xCA47413347D04E0ce1843824C736740f787845e5; // wstETH
         if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x578395611F459F615D877447Dcc955d7095504cb; // weETH
+        return address(0);
     }
 }
 

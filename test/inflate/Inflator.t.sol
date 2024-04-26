@@ -42,7 +42,7 @@ contract InflatorTest is SharedSetup {
 
     /* ============ Compress/Inflate tests ============ */
 
-    function testInflate() public {
+    function testInflate() public view {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -56,12 +56,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -80,7 +74,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenDeployContract() public {
+    function testInflate_WhenDeployContract() public view {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -95,12 +89,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -119,7 +107,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenTargetEqualsSender() public {
+    function testInflate_WhenTargetEqualsSender() public view {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -132,13 +120,7 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
 
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -157,7 +139,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenNoPaymaster() public {
+    function testInflate_WhenNoPaymaster() public view {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -170,13 +152,7 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
 
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -211,12 +187,7 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
-        bytes memory encodedUserOp = abi.encode(op);
 
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -235,7 +206,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenExecuteBatch() public {
+    function testInflate_WhenExecuteBatch() public view {
         // 1. create batched user op
         address[] memory targets = new address[](2);
         targets[0] = address(_kintoWallet);
@@ -256,12 +227,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -280,7 +245,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenCustomGasParams() public {
+    function testInflate_WhenCustomGasParams() public view {
         // 1. create batched user op
         address[] memory targets = new address[](2);
         targets[0] = address(_kintoWallet);
@@ -306,12 +271,6 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
-        bytes memory compressedSimple = _inflator.compressSimple(op);
-        bytes memory encodedUserOp = abi.encode(op);
-
-        uint256 compressionPercentage = 100 - (compressed.length * 100 / encodedUserOp.length);
-
-        uint256 compressionSimplePercentage = 100 - (compressedSimple.length * 100 / encodedUserOp.length);
 
         // 3. decompress (inflate) user op
         UserOperation memory decompressed = _inflator.inflate(compressed);
@@ -330,7 +289,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenSimpleInflate() public {
+    function testInflate_WhenSimpleInflate() public view {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
