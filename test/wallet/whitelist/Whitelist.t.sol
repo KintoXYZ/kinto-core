@@ -5,7 +5,6 @@ import "forge-std/console.sol";
 import "../../SharedSetup.t.sol";
 
 contract WhitelistTest is SharedSetup {
-
     function testWhitelistAppAndSetKey() public {
         if (fork) vm.skip(true);
         // deploy an app
