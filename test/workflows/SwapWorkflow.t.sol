@@ -87,7 +87,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
-    function testUp() override public {
+    function testUp() public override {
         if (fork) vm.skip(true);
         SwapWorkflow workflow = new SwapWorkflow(EXCHANGE_PROXY);
         assertEq(workflow.exchangeProxy(), EXCHANGE_PROXY);
