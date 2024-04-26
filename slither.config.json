@@ -1,4 +1,5 @@
 {
+    "exclude_optimization": true,
     "exclude_informational": true,
     "exclude_low": true,
     "exclude_medium": true,

@@ -334,7 +334,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
     /* ============ Supports Interface tests ============ */
 
-    function testSupportsInterface() public {
+    function testSupportsInterface() public view {
         bytes4 InterfaceERC721Upgradeable = bytes4(keccak256("balanceOf(address)"))
             ^ bytes4(keccak256("ownerOf(uint256)")) ^ bytes4(keccak256("safeTransferFrom(address,address,uint256,bytes)"))
             ^ bytes4(keccak256("safeTransferFrom(address,address,uint256)"))

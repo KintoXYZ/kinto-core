@@ -27,7 +27,7 @@ contract BridgedTokenTest is UserOp {
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
     }
 
-    function testUp() public {
+    function testUp() public view {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");

@@ -47,7 +47,7 @@ contract KYCViewerTest is SharedSetup {
 
     /* ============ Viewer tests ============ */
 
-    function testIsKYC_WhenBothOwnerAndWallet() public {
+    function testIsKYC_WhenBothOwnerAndWallet() public view {
         assertEq(_kycViewer.isKYC(address(_kintoWallet)), _kycViewer.isKYC(_owner));
         assertEq(_kycViewer.isIndividual(address(_kintoWallet)), _kycViewer.isIndividual(_owner));
         assertEq(_kycViewer.isCompany(address(_kintoWallet)), false);
@@ -56,7 +56,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(_kycViewer.isSanctionsSafeIn(address(_kintoWallet), 1), true);
     }
 
-    function testGetUserInfo() public {
+    function testGetUserInfo() public view {
         IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(_owner, payable(address(_kintoWallet)));
 
         // verify properties
@@ -69,7 +69,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.isKYC, _kycViewer.isKYC(_owner));
     }
 
-    function testGetUserInfo_WhenWalletDoesNotExist() public {
+    function testGetUserInfo_WhenWalletDoesNotExist() public view {
         IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(_owner, payable(address(123)));
 
         // verify properties
@@ -82,7 +82,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.isKYC, _kycViewer.isKYC(_owner));
     }
 
-    function testGetUserInfo_WhenAccountDoesNotExist() public {
+    function testGetUserInfo_WhenAccountDoesNotExist() public view {
         IKYCViewer.UserInfo memory userInfo = _kycViewer.getUserInfo(address(111), payable(address(123)));
 
         // verify properties
