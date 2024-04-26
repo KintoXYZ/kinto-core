@@ -74,6 +74,12 @@ contract WethWorkflowTest is UserOp, SharedSetup {
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
+    function testUp() override public {
+        if (fork) vm.skip(true);
+        WethWorkflow wethWorkflow = new WethWorkflow(address(WETH));
+        assertEq(address(wethWorkflow.weth()), address(WETH));
+    }
+
     function testDeposit() public {
         if (!fork) vm.skip(true);
         uint256 amount = 1e18;
