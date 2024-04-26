@@ -263,7 +263,7 @@ filtered{f -> entryPointPriviliged(f)} {
     assert e.msg.sender == entryPoint();
 }
 
-/// @title Only the contract can change the app white list and by calling setAppWhitelist().
+/// @title Only the contract can change the app white list and by calling setAppWhitelist() or whitelistAppAndSetKey().
 rule whichFunctionsChangeWhiteList(address app, method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
@@ -272,7 +272,7 @@ rule whichFunctionsChangeWhiteList(address app, method f) filtered{f -> !f.isVie
     bool isWhiteList_after = appWhitelist(app);
     
     assert isWhiteList_after != isWhiteList_before =>
-        f.selector == sig:whitelistApp(address[],bool[]).selector && senderIsSelf(e);
+        (f.selector == sig:whitelistApp(address[],bool[]).selector || f.selector == sig:whitelistAppAndSetKey(address,address).selector) && senderIsSelf(e);
 }
 
 /// @title Only the contract can change the funder white list and by calling setFunderWhitelist().
@@ -287,7 +287,7 @@ rule whichFunctionsChangeFunderWhiteList(address app, method f) filtered{f -> !f
         f.selector == sig:setFunderWhitelist(address[],bool[]).selector && senderIsSelf(e);
 }
 
-/// @title Only the contract can change the funder whitelist and by calling setAppKey()  or whitelistApp().
+/// @title Only the contract can change the funder whitelist and by calling setAppKey(), whitelistApp(), or whitelistAppAndSetKey().
 rule whichFunctionsChangeAppSigner(address app, method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
@@ -296,6 +296,6 @@ rule whichFunctionsChangeAppSigner(address app, method f) filtered{f -> !f.isVie
     address signer_after = appSigner(app);
     
     assert signer_before != signer_after => 
-        (f.selector == sig:setAppKey(address,address).selector || f.selector == sig:whitelistApp(address[],bool[]).selector) && senderIsSelf(e);
+        (f.selector == sig:setAppKey(address,address).selector || f.selector == sig:whitelistApp(address[],bool[]).selector || f.selector == sig:whitelistAppAndSetKey(address,address).selector) && senderIsSelf(e);
 
 }
