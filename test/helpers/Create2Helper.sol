@@ -5,6 +5,7 @@ import "../../src/KintoID.sol";
 import "../../src/interfaces/IKintoID.sol";
 
 abstract contract Create2Helper {
+    // Create2 address on every chain
     address CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     /// @notice Precompute a contract address deployed via CREATE2
