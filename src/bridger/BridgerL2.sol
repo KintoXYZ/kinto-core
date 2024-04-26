@@ -125,6 +125,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             uint256 balance = deposits[msg.sender][currentAsset];
             if (balance > 0) {
                 deposits[msg.sender][currentAsset] = 0;
+                // slither-disable-next-line unchecked-transfer
                 IERC20(_l2Address(currentAsset)).transfer(msg.sender, balance);
                 emit Claim(msg.sender, currentAsset, balance);
             }
