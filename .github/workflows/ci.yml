@@ -99,7 +99,7 @@ jobs:
           message: ${{ steps.gas_diff.outputs.markdown }}
 
   test-mainnet:
-    needs: build
+    needs: test-local 
 
     name: Test Mainnet
     runs-on: ubuntu-latest

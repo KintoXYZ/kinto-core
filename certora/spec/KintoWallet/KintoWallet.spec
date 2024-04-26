@@ -287,7 +287,7 @@ rule whichFunctionsChangeFunderWhiteList(address app, method f) filtered{f -> !f
         f.selector == sig:setFunderWhitelist(address[],bool[]).selector && senderIsSelf(e);
 }
 
-/// @title Only the contract can change the funder white list and by calling setAppKey().
+/// @title Only the contract can change the funder whitelist and by calling setAppKey()  or whitelistApp().
 rule whichFunctionsChangeAppSigner(address app, method f) filtered{f -> !f.isView} {
     env e;
     calldataarg args;
@@ -296,5 +296,6 @@ rule whichFunctionsChangeAppSigner(address app, method f) filtered{f -> !f.isVie
     address signer_after = appSigner(app);
     
     assert signer_before != signer_after => 
-        f.selector == sig:setAppKey(address,address).selector && senderIsSelf(e);
+        (f.selector == sig:setAppKey(address,address).selector || f.selector == sig:whitelistApp(address[],bool[]).selector) && senderIsSelf(e);
+
 }
