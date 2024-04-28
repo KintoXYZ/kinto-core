@@ -47,6 +47,7 @@ abstract contract AATestScaffolding is TestSignature {
     EngenCredits _engenCredits;
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
+    WalletViewer _walletViewer;
     Faucet _faucet;
     BridgerL2 _bridgerL2;
     KintoInflator _inflator;

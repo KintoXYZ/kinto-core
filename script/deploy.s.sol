@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../src/KintoID.sol";
 import "../src/bridger/BridgerL2.sol";
 import "../src/viewers/KYCViewer.sol";
+import "../src/viewers/WalletViewer.sol";
 import "../src/wallet/KintoWallet.sol";
 import "../src/wallet/KintoWalletFactory.sol";
 import "../src/paymasters/SponsorPaymaster.sol";
@@ -48,6 +49,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     KYCViewer public viewer;
     KYCViewer public viewerImpl;
 
+    // Wallet Viewer
+    WalletViewer public walletViewer;
+    WalletViewer public walletViewerImpl;
+
     // Engen Credits
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
@@ -83,6 +88,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KintoWalletFactory factory;
         KintoAppRegistry registry;
         KYCViewer viewer;
+        WalletViewer walletViewer;
         EngenCredits engenCredits;
         Faucet faucet;
         BridgerL2 bridgerL2;
@@ -107,6 +113,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             factory,
             kintoRegistry,
             viewer,
+            walletViewer,
             engenCredits,
             faucet,
             bridgerL2,
@@ -165,6 +172,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
+
+        // deploy WalletViewer
+        (walletViewer, walletViewerImpl) = deployWalletViewer();
 
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
@@ -280,6 +290,20 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kycViewer.initialize();
+    }
+
+    function deployWalletViewer() public returns (WalletViewer _walletViewer, WalletViewer _walletViewerImpl) {
+        bytes memory creationCode = type(WalletViewer).creationCode;
+        bytes memory bytecode =
+            abi.encodePacked(creationCode, abi.encode(address(factory)), abi.encode(address(kintoRegistry)));
+        address implementation = _deployImplementation("WalletViewer", creationCode, bytecode, false);
+        address proxy = _deployProxy("WalletViewer", implementation, false);
+
+        _walletViewer = WalletViewer(payable(proxy));
+        _walletViewerImpl = WalletViewer(payable(implementation));
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        _walletViewer.initialize();
     }
 
     function deployEngenCredits() public returns (EngenCredits _engenCredits, EngenCredits _engenCreditsImpl) {
