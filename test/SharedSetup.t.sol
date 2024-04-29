@@ -69,6 +69,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _engenCredits = EngenCredits(_getChainDeployment("EngenCredits"));
             _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
             _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
+            _walletViewer = WalletViewer(_getChainDeployment("WalletViewer"));
             _faucet = Faucet(payable(_getChainDeployment("Faucet")));
             _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
             _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
@@ -121,6 +122,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _engenCredits = EngenCredits(contracts.engenCredits);
             _paymaster = SponsorPaymaster(contracts.paymaster);
             _kycViewer = KYCViewer(contracts.viewer);
+            _walletViewer = WalletViewer(contracts.walletViewer);
             _faucet = Faucet(contracts.faucet);
             _bridgerL2 = BridgerL2(contracts.bridgerL2);
             _inflator = KintoInflator(contracts.inflator);
