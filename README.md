@@ -182,3 +182,9 @@ On Testnet:
 ```
 forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-url http://test-explorer.kinto.xyz/api --num-of-optimizations 100000 0xE40C427226D78060062670E341b0d8D8e66d725A ETHPriceIsRight
 ```
+
+On Mainnet:
+
+```
+forge verify-contract 0xA6ddF426008E8b7f1a70237bdEfafB5D928bA72E src/wallet/KintoWallet.sol:WalletV7 --verifier-url https://kinto-mainnet.calderaexplorer.xyz/api --constructor-args $(cast abi-encode "constructor(address,address,address)" "0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb" "0xf369f78E3A0492CC4e96a90dae0728A38498e9c7" "0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b")  --verifier blockscout --compiler-version 0.8.23
+```
