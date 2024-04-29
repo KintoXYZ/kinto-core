@@ -28,17 +28,19 @@ contract KintoMigration45DeployScript is MigrationHelper {
         ProxyAdmin proxyAdmin = ProxyAdmin(0x74C717C01425eb475A5fC55d2A4a9045fC9800df); // L1
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x59B851c8b1643e0735Ec3F2f0e528f3d89c3408a); // L1
 
-        if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
-            revert("Sender does not have EXECUTOR_ROLE");
-        }
-
-        // upgrade Inbox
+        // deploy new Inbox
         uint256 maxDataSize = AbsInbox(address(inbox)).maxDataSize();
         vm.broadcast();
         address impl = address(new Inbox(maxDataSize));
         console.log("InboxV2-impl: ", impl);
-        bytes memory upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, inbox, impl);
 
+        // upgrade Inbox (only from multisig)
+        if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
+            console.log("Sender does not have EXECUTOR_ROLE");
+            return;
+        }
+
+        bytes memory upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, inbox, impl);
         vm.broadcast();
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
 
