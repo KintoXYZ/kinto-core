@@ -90,7 +90,7 @@ contract WethWorkflowTest is UserOp, SharedSetup {
         vm.prank(_user);
         accessPoint.execute(address(wethWorkflow), data);
 
-        // check that WETH is desposited
+        // check that WETH is deposited
         assertEq(IERC20(address(WETH)).balanceOf(address(accessPoint)), amount, "WETH balance is wrong");
         assertEq(address(accessPoint).balance, 0, "Balance is wrong");
     }
