@@ -9,6 +9,8 @@ import "../src/wallet/KintoWalletFactory.sol";
 import "../src/KintoID.sol";
 import "../src/viewers/WalletViewer.sol";
 
+import "../src/interfaces/IWalletViewer.sol";
+
 import "./SharedSetup.t.sol";
 import "./helpers/UUPSProxy.sol";
 
@@ -31,7 +33,8 @@ contract WalletViewerTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        WalletViewerUpgraded _implementationV2 = new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
+        WalletViewerUpgraded _implementationV2 =
+            new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
         vm.prank(_owner);
         _walletViewer.upgradeTo(address(_implementationV2));
         assertEq(WalletViewerUpgraded(address(_walletViewer)).newFunction(), 1);
@@ -39,7 +42,8 @@ contract WalletViewerTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
-        WalletViewerUpgraded _implementationV2 = new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
+        WalletViewerUpgraded _implementationV2 =
+            new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
         vm.expectRevert(IWalletViewer.OnlyOwner.selector);
         vm.prank(someone);
         _walletViewer.upgradeTo(address(_implementationV2));
@@ -47,11 +51,18 @@ contract WalletViewerTest is SharedSetup {
 
     /* ============ Viewer tests ============ */
 
-    function testIsKYC_WhenBothOwnerAndWallet() public view {
+    function testFetchAppAddressesFromIndex() public view {
+        address[50] memory apps = _walletViewer.fetchAppAddresesFromIndex(1);
+        assertEq(_walletViewer.appRegistry().appCount(), 1);
+        assertTrue(apps[0] != address(0));
+        assertTrue(apps[1] == address(0));
     }
 
-    function testGetUserInfo() public view {
-
+    function testFetchUserAppAddressesFromIndex() public view {
+        IWalletViewer.WalletApp[50] memory apps = _walletViewer.fetchUserAppAddressesFromIndex(address(_kintoWallet), 1);
+        assertEq(apps[0].whitelisted, true);
+        assertEq(apps[0].key, address(0));
+        assertEq(apps[1].whitelisted, false);
+        assertEq(apps[1].key, address(0));
     }
-
 }

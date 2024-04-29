@@ -79,6 +79,9 @@ contract WalletViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IWa
         returns (WalletApp[50] memory)
     {
         WalletApp[50] memory _appAddresses;
+        if (walletFactory.walletTs(walletAddress) == 0) {
+            return _appAddresses;
+        }
         for (uint256 i = 0; i < 50; i++) {
             address app = appRegistry.tokenIdToApp(_index + i);
             IKintoWallet wallet = IKintoWallet(walletAddress);
