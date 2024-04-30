@@ -45,17 +45,15 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         );
         address accessRegistryImpl =
             create2("AccessRegistry-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
-        AccessRegistry(accessRegistryImpl).initialize();
         address accessRegistryProxy =
-            create2('AccessRegistry', abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl)));
+            create2("AccessRegistry",
+                    abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, "")));
 
         AccessRegistry registry = AccessRegistry(address(accessRegistryProxy));
         UpgradeableBeacon(beacon).transferOwnership(address(registry));
         address accessPointImpl = create2(
-            'AccessPoint-impl',
-            abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
+            "AccessPoint-impl", abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
         );
-        IAccessPoint(accessPointImpl).initialize(address(registry));
 
         registry.initialize();
         registry.upgradeAll(IAccessPoint(accessPointImpl));
