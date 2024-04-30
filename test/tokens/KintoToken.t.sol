@@ -28,7 +28,7 @@ contract KintoTokenTest is Test {
         vm.stopPrank();
     }
 
-    function testUp() public {
+    function testUp() public view {
         assertEq(_token.totalSupply(), _token.SEED_TOKENS());
         assertEq(_token.owner(), _owner);
         assertEq(_token.name(), "Kinto Token");

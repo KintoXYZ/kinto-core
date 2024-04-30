@@ -191,13 +191,23 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param app app address
      * @param signer signer for the app
      */
-    function setAppKey(address app, address signer) external override onlySelf {
+    function setAppKey(address app, address signer) public override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
         if (app == address(0)) revert InvalidApp();
         if (!appWhitelist[app]) revert AppNotWhitelisted();
         if (appSigner[app] == signer) revert InvalidSigner();
         appSigner[app] = signer;
         emit AppKeyCreated(app, signer);
+    }
+
+    /**
+     * @dev Whitelist an app and set the app key
+     * @param app app address
+     * @param signer signer for the app
+     */
+    function whitelistAppAndSetKey(address app, address signer) external override onlySelf {
+        appWhitelist[app] = true;
+        setAppKey(app, signer);
     }
 
     /* ============ Recovery Process ============ */
@@ -446,7 +456,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV6 is KintoWallet {
+contract KintoWalletV7 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

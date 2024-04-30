@@ -115,6 +115,7 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
 
         // Delegate call to the target contract.
         bool success;
+        // slither-disable-next-line controlled-delegatecall
         (success, response) = target.delegatecall(data);
 
         // Log the execution.

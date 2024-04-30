@@ -20,7 +20,7 @@ contract ETHPriceIsRightTest is Test {
         vm.stopPrank();
     }
 
-    function testUp() public {
+    function testUp() public view {
         assertEq(_priceIsRight.END_ENTER_TIMESTAMP(), 1735689601);
         assertEq(_priceIsRight.guessCount(), 0);
         assertEq(_priceIsRight.avgGuess(), 0);

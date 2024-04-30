@@ -99,7 +99,7 @@ jobs:
           message: ${{ steps.gas_diff.outputs.markdown }}
 
   test-mainnet:
-    needs: build
+    needs: test-local 
 
     name: Test Mainnet
     runs-on: ubuntu-latest
@@ -189,6 +189,8 @@ jobs:
 
       - name: Slither Comment
         uses: actions/github-script@v6
+        # Run Slither Comment only for PRs
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         env:
           OUTCOME: ${{ steps.slither.outcome }}
         with:
@@ -242,7 +244,7 @@ jobs:
     name: Certora
     runs-on: ubuntu-latest
     # Run Certora only on main
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     strategy:
       fail-fast: false
       max-parallel: 16

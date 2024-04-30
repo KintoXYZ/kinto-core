@@ -31,7 +31,7 @@ contract VestingContractTest is Test, Create2Helper {
         vm.stopPrank();
     }
 
-    function testUp() public {
+    function testUp() public view {
         assertEq(_token.balanceOf(address(_vestingContract)), _token.SEED_TOKENS());
         assertEq(_vestingContract.owner(), _owner);
         assertEq(_vestingContract.totalAllocated(), 0);

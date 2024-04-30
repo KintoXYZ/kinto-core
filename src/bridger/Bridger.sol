@@ -374,6 +374,7 @@ contract Bridger is
             amount == 0 || IERC20(asset).allowance(sender, address(this)) < amount
                 || IERC20(asset).balanceOf(sender) < amount
         ) revert InvalidAmount();
+        // slither-disable-next-line arbitrary-send-erc20
         IERC20(asset).safeTransferFrom(sender, address(this), amount);
         deposits[sender][asset] += amount;
     }
@@ -408,6 +409,7 @@ contract Bridger is
         sellToken.safeApprove(spender, amount);
         // Call the encoded swap function call on the contract at `swapTarget`,
         // passing along any ETH attached to this function call to cover protocol fees.
+        // slither-disable-next-line arbitrary-send-eth
         (bool success,) = swapTarget.call{value: gasFee}(swapCallData);
         if (!success) revert SwapCallFailed();
         // Keep the protocol fee refunds given that we are paying for gas
