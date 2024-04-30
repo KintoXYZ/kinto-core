@@ -29,6 +29,10 @@ abstract contract Create2Helper is CommonBase {
         return deploy(0, 0, creationCode);
     }
 
+    function deploy(bytes32 salt, bytes memory creationCode) internal returns (address addr) {
+        return deploy(0, salt, creationCode);
+    }
+
     function deploy(uint256 amount, bytes32 salt, bytes memory creationCode) internal returns (address addr) {
         (bool success, bytes memory returnData) =
             CREATE2_FACTORY.call{value: amount}(abi.encodePacked(salt, creationCode));

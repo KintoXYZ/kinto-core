@@ -53,8 +53,11 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         );
         address accessRegistryImpl =
             create2("AccessRegistry-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+        // salt to get a nice address for the registry
         address accessRegistryProxy = create2(
-            "AccessRegistry", abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, ""))
+            0x8bfc284f7f8858599004b8c4dd784dc4134a9128417ed118d6d482209eb26d31,
+            "AccessRegistry",
+            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, ""))
         );
 
         registry = AccessRegistry(address(accessRegistryProxy));
@@ -76,7 +79,7 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         registry.allowWorkflow(address(swapWorkflow));
     }
 
-    function checkContracts(address deployer) internal override {
+    function checkContracts(address) internal override {
         require(registry.beacon() == beacon, "Beacon is not set properly");
         require(registry.isWorkflowAllowed(address(withdrawWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(wethWorkflow)), "Workflow is not set properly");
