@@ -105,10 +105,23 @@ abstract contract TestSignature is Test {
         returns (bytes memory signature)
     {
         bytes32 domainSeparator;
-        if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("UNI"))) {
+        bytes32 symbol = keccak256(abi.encodePacked(_asset.symbol()));
+        if (symbol == keccak256(abi.encodePacked("UNI"))) {
             bytes32 DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
             domainSeparator =
                 keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(_asset.name())), block.chainid, address(_asset)));
+        } else if (symbol == keccak256(abi.encodePacked("weETH"))) {
+            bytes32 DOMAIN_TYPEHASH =
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+            domainSeparator = keccak256(
+                abi.encode(
+                    DOMAIN_TYPEHASH,
+                    keccak256(bytes("EtherFi wrapped ETH")),
+                    keccak256(bytes("1")),
+                    block.chainid,
+                    address(_asset)
+                )
+            );
         } else {
             // "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract"
             domainSeparator = _asset.DOMAIN_SEPARATOR();
