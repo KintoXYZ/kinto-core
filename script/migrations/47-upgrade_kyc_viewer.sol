@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "../../src/viewers/KYCViewer.sol";
 import "./utils/MigrationHelper.sol";
 
-contract KintoMigration25DeployScript is MigrationHelper {
+contract KintoMigration47DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
