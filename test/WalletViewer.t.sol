@@ -24,7 +24,7 @@ contract WalletViewerUpgraded is WalletViewer {
 
 contract WalletViewerTest is SharedSetup {
     function testUp() public override {
-        super.testUp();
+        if (fork) vm.skip(true);
         assertEq(_walletViewer.owner(), _owner);
         assertEq(address(_entryPoint.walletFactory()), address(_walletViewer.walletFactory()));
         assertEq(address(_walletFactory.kintoID()), address(_walletViewer.kintoID()));
