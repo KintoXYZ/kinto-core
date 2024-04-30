@@ -14,10 +14,10 @@ contract KintoMigration47DeployScript is MigrationHelper {
             type(KYCViewer).creationCode,
             abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
         );
+        address proxy = _getChainDeployment("KYCViewer");
+        console.log("proxy: %s", proxy);
         address implementation = _deployImplementation("KYCViewer", "V6", bytecode);
-        address proxy = _deployProxy("KYCViewer", implementation);
+        _upgradeTo(proxy, implementation, deployerPrivateKey);
 
-        _whitelistApp(proxy, deployerPrivateKey);
-        _initialize(proxy, deployerPrivateKey);
     }
 }
