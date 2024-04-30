@@ -15,6 +15,7 @@ interface IKYCViewer {
         uint256 ownerBalance;
         uint256 walletBalance;
         uint256 walletPolicy;
+        uint256 recoveryTs;
         address[] walletOwners;
         bool claimedFaucet;
         bool hasNFT;
