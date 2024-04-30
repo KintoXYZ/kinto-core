@@ -9,14 +9,15 @@ import {AccessPoint} from "../../src/access/AccessPoint.sol";
 import {IAccessPoint} from "../../src/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "../../src/interfaces/IAccessRegistry.sol";
 
+import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
-import "../../test/helpers/ArtifactsReader.sol";
-import "../../test/helpers/UUPSProxy.sol";
+import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
+import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract DeployAccessProtocolScript is ArtifactsReader, Create2Helper {
+contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
     // Entry Point address is the same on all chains.
     address payable internal constant ENTRY_POINT = payable(0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
 
@@ -49,11 +50,13 @@ contract DeployAccessProtocolScript is ArtifactsReader, Create2Helper {
             beacon = address(new UpgradeableBeacon{salt: 0}(dummyAccessPointImpl, address(deployer)));
         }
         AccessRegistry accessRegistryImpl = new AccessRegistry{salt: 0}(UpgradeableBeacon(beacon));
+        accessRegistryImpl.initialize();
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
 
         AccessRegistry registry = AccessRegistry(address(accessRegistryProxy));
         UpgradeableBeacon(beacon).transferOwnership(address(registry));
         IAccessPoint accessPointImpl = new AccessPoint{salt: 0}(EntryPoint(ENTRY_POINT), registry);
+        accessPointImpl.initialize(address(registry));
 
         registry.initialize();
         registry.upgradeAll(accessPointImpl);
