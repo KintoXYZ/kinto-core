@@ -26,29 +26,20 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         console.log("Deployer is", deployer);
-        console.log("Executing with address", msg.sender);
 
         vm.startBroadcast(deployerPrivateKey);
 
         address accessRegistryAddr = _getChainDeployment("AccessRegistry");
         if (accessRegistryAddr != address(0)) {
-            console.log("Already Access Registry", accessRegistryAddr);
+            console.log("Access Protocol is already deployed:", accessRegistryAddr);
             return;
         }
 
-        address dummyAccessPointImpl =
-            computeAddress(0, abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0))));
-        if (!isContract(dummyAccessPointImpl)) {
-            dummyAccessPointImpl =
-                address(new AccessPoint{salt: 0}(EntryPoint(ENTRY_POINT), IAccessRegistry(address(0))));
-        }
-        address beacon = computeAddress(
-            0,
+        address dummyAccessPointImpl = create2('DummyAccessPointImpl', abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0))));
+        address beacon = create2(
+            'AccessRegistryBeacon',
             abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(dummyAccessPointImpl, address(deployer)))
         );
-        if (!isContract(beacon)) {
-            beacon = address(new UpgradeableBeacon{salt: 0}(dummyAccessPointImpl, address(deployer)));
-        }
         AccessRegistry accessRegistryImpl = new AccessRegistry{salt: 0}(UpgradeableBeacon(beacon));
         accessRegistryImpl.initialize();
         UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
@@ -62,8 +53,5 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         registry.upgradeAll(accessPointImpl);
 
         vm.stopBroadcast();
-
-        // Writes the addresses to a file
-        console.log("Add these addresses to the artifacts file");
     }
 }

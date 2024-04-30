@@ -11,8 +11,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration8DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
-
     KintoAppRegistry _kintoApp;
     KintoAppRegistry _kintoAppImpl;
 
