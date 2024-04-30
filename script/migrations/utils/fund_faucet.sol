@@ -13,7 +13,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract FundFaucetScript is Create2Helper, ArtifactsReader {
-
     function setUp() public {}
 
     // NOTE: this migration must be run from the ledger admin

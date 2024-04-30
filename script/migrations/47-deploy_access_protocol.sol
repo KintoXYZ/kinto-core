@@ -35,22 +35,30 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
             return;
         }
 
-        address dummyAccessPointImpl = create2('DummyAccessPointImpl', abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0))));
+        address dummyAccessPointImpl = create2(
+            "DummyAccessPoint-impl",
+            abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0)))
+        );
         address beacon = create2(
-            'AccessRegistryBeacon',
+            "AccessRegistryBeacon",
             abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(dummyAccessPointImpl, address(deployer)))
         );
-        AccessRegistry accessRegistryImpl = new AccessRegistry{salt: 0}(UpgradeableBeacon(beacon));
-        accessRegistryImpl.initialize();
-        UUPSProxy accessRegistryProxy = new UUPSProxy{salt: 0}(address(accessRegistryImpl), "");
+        address accessRegistryImpl =
+            create2("AccessRegistry-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+        AccessRegistry(accessRegistryImpl).initialize();
+        address accessRegistryProxy =
+            create2('AccessRegistry', abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl)));
 
         AccessRegistry registry = AccessRegistry(address(accessRegistryProxy));
         UpgradeableBeacon(beacon).transferOwnership(address(registry));
-        IAccessPoint accessPointImpl = new AccessPoint{salt: 0}(EntryPoint(ENTRY_POINT), registry);
-        accessPointImpl.initialize(address(registry));
+        address accessPointImpl = create2(
+            'AccessPoint-impl',
+            abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
+        );
+        IAccessPoint(accessPointImpl).initialize(address(registry));
 
         registry.initialize();
-        registry.upgradeAll(accessPointImpl);
+        registry.upgradeAll(IAccessPoint(accessPointImpl));
 
         vm.stopBroadcast();
     }
