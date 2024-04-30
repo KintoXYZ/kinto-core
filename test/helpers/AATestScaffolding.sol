@@ -28,7 +28,6 @@ import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 
 abstract contract AATestScaffolding is TestSignature {
-
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry
