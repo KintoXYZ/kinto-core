@@ -29,6 +29,7 @@ contract WethWorkflow {
      */
     function deposit(uint256 amount) external payable {
         // The deposit is called on the WETH contract using call value to send Ether.
+        // slither-disable-next-line arbitrary-send-eth
         weth.deposit{value: amount}();
     }
 
