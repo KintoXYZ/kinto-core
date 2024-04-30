@@ -33,6 +33,7 @@ contract WalletViewerTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
+        if (!fork) vm.skip(true);
         WalletViewerUpgraded _implementationV2 =
             new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
         vm.prank(_owner);
@@ -41,6 +42,7 @@ contract WalletViewerTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
+        if (!fork) vm.skip(true);
         vm.assume(someone != _owner);
         WalletViewerUpgraded _implementationV2 =
             new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
@@ -52,6 +54,7 @@ contract WalletViewerTest is SharedSetup {
     /* ============ Viewer tests ============ */
 
     function testFetchAppAddressesFromIndex() public view {
+        if (!fork) vm.skip(true);
         address[50] memory apps = _walletViewer.fetchAppAddresesFromIndex(1);
         assertEq(_walletViewer.appRegistry().appCount(), 1);
         assertTrue(apps[0] != address(0));
@@ -59,6 +62,7 @@ contract WalletViewerTest is SharedSetup {
     }
 
     function testFetchUserAppAddressesFromIndex() public view {
+        if (!fork) vm.skip(true);
         IWalletViewer.WalletApp[50] memory apps = _walletViewer.fetchUserAppAddressesFromIndex(address(_kintoWallet), 1);
         assertEq(apps[0].whitelisted, true);
         assertEq(apps[0].key, address(0));
