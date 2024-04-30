@@ -23,6 +23,7 @@ import "../script/deploy.s.sol";
 import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
 contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
+    DeployerScript.DeployedContracts contracts;
     bool fork = false;
 
     Counter counter;

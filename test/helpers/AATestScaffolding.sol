@@ -16,6 +16,8 @@ import "../../src/paymasters/SponsorPaymaster.sol";
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/viewers/KYCViewer.sol";
+import "../../src/viewers/WalletViewer.sol";
+import "../../src/bridger/BridgerL2.sol";
 import "../../src/Faucet.sol";
 import "../../src/inflators/KintoInflator.sol";
 
@@ -24,10 +26,8 @@ import "../helpers/TestSignature.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
-import "../../script/deploy.s.sol";
 
 abstract contract AATestScaffolding is TestSignature {
-    DeployerScript.DeployedContracts contracts;
 
     IKintoEntryPoint _entryPoint;
 
