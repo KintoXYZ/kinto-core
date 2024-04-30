@@ -53,7 +53,7 @@ contract WalletViewerTest is SharedSetup {
 
     /* ============ Viewer tests ============ */
 
-    function testFetchAppAddressesFromIndex() public view {
+    function testFetchAppAddressesFromIndex() public {
         if (fork) vm.skip(true);
         address[50] memory apps = _walletViewer.fetchAppAddresesFromIndex(1);
         assertEq(_walletViewer.appRegistry().appCount(), 1);
@@ -61,7 +61,7 @@ contract WalletViewerTest is SharedSetup {
         assertTrue(apps[1] == address(0));
     }
 
-    function testFetchUserAppAddressesFromIndex() public view {
+    function testFetchUserAppAddressesFromIndex() public {
         if (fork) vm.skip(true);
         IWalletViewer.WalletApp[50] memory apps = _walletViewer.fetchUserAppAddressesFromIndex(address(_kintoWallet), 1);
         assertEq(apps[0].whitelisted, true);
