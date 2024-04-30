@@ -147,6 +147,12 @@ jobs:
 
       - name: Generate LCOV report
         run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true FOUNDRY_EVM_VERSION=shanghai forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        env:
+          FOUNDRY_FUZZ_RUNS: 100
+          KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
+          LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
+          DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
 
       - name: Upload report to Codecov
         uses: codecov/codecov-action@v4

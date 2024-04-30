@@ -1,0 +1,149 @@
+{
+  "chainId": 1,
+  "price": "0.9998422206678837",
+  "grossPrice": "0.9998422206678837",
+  "estimatedPriceImpact": "0.1006",
+  "value": "0",
+  "gasPrice": "39500000000",
+  "gas": "145198",
+  "estimatedGas": "145198",
+  "protocolFee": "0",
+  "minimumProtocolFee": "0",
+  "buyTokenAddress": "0x6b175474e89094c44da98b954eedeac495271d0f",
+  "buyAmount": "999842220667883700000",
+  "grossBuyAmount": "999842220667883700000",
+  "sellTokenAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "sellAmount": "1000000000",
+  "grossSellAmount": "1000000000",
+  "sources": [
+    {
+      "name": "0x",
+      "proportion": "0"
+    },
+    {
+      "name": "Uniswap",
+      "proportion": "0"
+    },
+    {
+      "name": "Uniswap_V2",
+      "proportion": "0"
+    },
+    {
+      "name": "Curve",
+      "proportion": "0"
+    },
+    {
+      "name": "Balancer",
+      "proportion": "0"
+    },
+    {
+      "name": "Balancer_V2",
+      "proportion": "0"
+    },
+    {
+      "name": "BancorV3",
+      "proportion": "0"
+    },
+    {
+      "name": "SushiSwap",
+      "proportion": "0"
+    },
+    {
+      "name": "DODO",
+      "proportion": "0"
+    },
+    {
+      "name": "DODO_V2",
+      "proportion": "0"
+    },
+    {
+      "name": "CryptoCom",
+      "proportion": "0"
+    },
+    {
+      "name": "Lido",
+      "proportion": "0"
+    },
+    {
+      "name": "MakerPsm",
+      "proportion": "0"
+    },
+    {
+      "name": "KyberDMM",
+      "proportion": "0"
+    },
+    {
+      "name": "Uniswap_V3",
+      "proportion": "1"
+    },
+    {
+      "name": "Curve_V2",
+      "proportion": "0"
+    },
+    {
+      "name": "ShibaSwap",
+      "proportion": "0"
+    },
+    {
+      "name": "Synapse",
+      "proportion": "0"
+    },
+    {
+      "name": "Synthetix",
+      "proportion": "0"
+    },
+    {
+      "name": "Aave_V2",
+      "proportion": "0"
+    },
+    {
+      "name": "Compound",
+      "proportion": "0"
+    },
+    {
+      "name": "KyberElastic",
+      "proportion": "0"
+    },
+    {
+      "name": "Maverick_V1",
+      "proportion": "0"
+    },
+    {
+      "name": "PancakeSwap_V3",
+      "proportion": "0"
+    }
+  ],
+  "allowanceTarget": "0xdef1c0ded9bec7f1a1670819833240f027b25eff",
+  "sellTokenToEthRate": "3192.33029",
+  "buyTokenToEthRate": "3195.03807164988409403",
+  "to": "0xdef1c0ded9bec7f1a1670819833240f027b25eff",
+  "data": "0x6af479b20000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000000000000000000000000035a8d79a48837718180000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000869584cd0000000000000000000000003a20293d43fa4f9f0a4362332468849aaeda555800000000000000000000000000000000410f464cf47b91d9312810e069fb6b1f",
+  "decodedUniqueId": "0x410f464cf47b91d9312810e069fb6b1f",
+  "guaranteedPrice": "0.989843798461204863",
+  "orders": [
+    {
+      "type": 0,
+      "source": "Uniswap_V3",
+      "makerToken": "0x6b175474e89094c44da98b954eedeac495271d0f",
+      "takerToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "makerAmount": "999842220667883700000",
+      "takerAmount": "1000000000",
+      "fillData": {
+        "router": "0xe592427a0aece92de3edee1f18e0157c05861564",
+        "path": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f",
+        "gasUsed": 9599,
+        "routerVersion": 1
+      },
+      "fill": {
+        "input": "1000000000",
+        "output": "999842220667883700000",
+        "adjustedOutput": "984799208227342706413",
+        "gas": 119196
+      }
+    }
+  ],
+  "fees": {
+    "zeroExFee": null
+  },
+  "auxiliaryChainData": {}
+}

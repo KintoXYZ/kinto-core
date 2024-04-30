@@ -180,6 +180,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
     }
 
     function testUp() public virtual {
+        if (fork) vm.skip(true);
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
         assertEq(_kintoWallet.getOwnersCount(), 1);
