@@ -11,6 +11,7 @@ import {IAccessRegistry} from "../../src/interfaces/IAccessRegistry.sol";
 import {WithdrawWorkflow} from "../../src/access/workflows/WithdrawWorkflow.sol";
 import {WethWorkflow} from "../../src/access/workflows/WethWorkflow.sol";
 import {SwapWorkflow} from "../../src/access/workflows/SwapWorkflow.sol";
+import {SafeBeaconProxy} from "../../src/proxy/SafeBeaconProxy.sol";
 
 import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
 import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
@@ -69,13 +70,27 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         registry.initialize();
         registry.upgradeAll(IAccessPoint(accessPointImpl));
 
-        withdrawWorkflow = new WithdrawWorkflow();
+        // deploy SafeBeaconProxy just to verify it on chain
+
+        SafeBeaconProxy safeBeaconProxy = new SafeBeaconProxy{salt: bytes32(abi.encodePacked(deployer))}(
+            address(beacon), abi.encodeCall(IAccessPoint.initialize, (deployer))
+        );
+
+        withdrawWorkflow =
+            WithdrawWorkflow(create2("WithdrawWorkflow", abi.encodePacked(type(WithdrawWorkflow).creationCode)));
         registry.allowWorkflow(address(withdrawWorkflow));
 
-        wethWorkflow = new WethWorkflow(getWethByChainId(block.chainid));
+        wethWorkflow = WethWorkflow(
+            create2(
+                "WethWorkflow",
+                abi.encodePacked(type(WethWorkflow).creationCode, abi.encode(getWethByChainId(block.chainid)))
+            )
+        );
         registry.allowWorkflow(address(wethWorkflow));
 
-        swapWorkflow = new SwapWorkflow(EXCHANGE_PROXY);
+        swapWorkflow = SwapWorkflow(
+            create2("SwapWorkflow", abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY)))
+        );
         registry.allowWorkflow(address(swapWorkflow));
     }
 

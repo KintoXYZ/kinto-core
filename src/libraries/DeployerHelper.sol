@@ -62,12 +62,21 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
             address deployed = deploy(salt, creationCodeWithArgs);
             require(deployed == addr, "Deployed and compute addresses do not match");
 
-            string memory json = vm.readFile(_getAddressesFile());
-            string[] memory keys = vm.parseJsonKeys(json, "$");
-            for (uint256 index = 0; index < keys.length; index++) {
-                vm.serializeString(contractName, keys[index], json.readString(string.concat(".", keys[index])));
-            }
-            vm.writeJson(vm.serializeAddress(contractName, contractName, addr), _getAddressesFile());
+            saveContract(contractName, addr);
         }
+    }
+
+    function saveContract(string memory contractName, address addr) internal {
+        string memory path = _getAddressesFile();
+        if (!vm.isFile(path)) {
+            vm.writeFile(path, "{}");
+        }
+
+        string memory json = vm.readFile(path);
+        string[] memory keys = vm.parseJsonKeys(json, "$");
+        for (uint256 index = 0; index < keys.length; index++) {
+            vm.serializeString(contractName, keys[index], json.readString(string.concat(".", keys[index])));
+        }
+        vm.writeJson(vm.serializeAddress(contractName, contractName, addr), path);
     }
 }
