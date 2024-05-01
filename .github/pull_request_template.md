@@ -9,6 +9,7 @@
 - [ ] New feature <!-- (non-breaking change which adds functionality) -->
 - [ ] Breaking change <!-- (would cause existing functionality to not work as expected) -->
 - [ ] Dependency changes
+- [ ] Deployment
 - [ ] Code refactor / cleanup
 - [ ] Documentation or wording changes
 - [ ] Other
