@@ -29,7 +29,7 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
 
     function checkContracts(address deployer) internal virtual;
 
-    function getWethByChainId(uint256 chainid) public returns (address) {
+    function getWethByChainId(uint256 chainid) public view returns (address) {
         // local
         if (chainid == 31337) {
             return 0x4200000000000000000000000000000000000006;

@@ -74,7 +74,7 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         SafeBeaconProxy safeBeaconProxy = new SafeBeaconProxy{salt: bytes32(abi.encodePacked(deployer))}(
             address(beacon), abi.encodeCall(IAccessPoint.initialize, (deployer))
         );
-        console2.log('Deployed SafeBeaconProxy at:', address(safeBeaconProxy));
+        console2.log("Deployed SafeBeaconProxy at: %s", address(safeBeaconProxy));
 
         withdrawWorkflow =
             WithdrawWorkflow(create2("WithdrawWorkflow", abi.encodePacked(type(WithdrawWorkflow).creationCode)));
@@ -94,7 +94,7 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         registry.allowWorkflow(address(swapWorkflow));
     }
 
-    function checkContracts(address) internal override {
+    function checkContracts(address) internal view override {
         require(registry.beacon() == beacon, "Beacon is not set properly");
         require(registry.isWorkflowAllowed(address(withdrawWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(wethWorkflow)), "Workflow is not set properly");
