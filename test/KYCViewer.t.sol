@@ -76,6 +76,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.ownerBalance, _owner.balance);
         assertEq(userInfo.walletBalance, 0);
         assertEq(userInfo.walletPolicy, 0);
+        assertEq(userInfo.recoveryTs, 0);
         assertEq(userInfo.walletOwners.length, 0);
         assertEq(userInfo.claimedFaucet, false);
         assertEq(userInfo.hasNFT, true);
@@ -89,6 +90,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.ownerBalance, 0);
         assertEq(userInfo.walletBalance, 0);
         assertEq(userInfo.walletPolicy, 0);
+        assertEq(userInfo.recoveryTs, 0);
         assertEq(userInfo.walletOwners.length, 0);
         assertEq(userInfo.claimedFaucet, false);
         assertEq(userInfo.hasNFT, false);
