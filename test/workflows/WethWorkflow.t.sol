@@ -74,6 +74,12 @@ contract WethWorkflowTest is UserOp, SharedSetup {
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
+    function testUp() public override {
+        if (fork) vm.skip(true);
+        WethWorkflow wethWorkflow = new WethWorkflow(address(WETH));
+        assertEq(address(wethWorkflow.weth()), address(WETH));
+    }
+
     function testDeposit() public {
         if (!fork) vm.skip(true);
         uint256 amount = 1e18;
@@ -84,7 +90,7 @@ contract WethWorkflowTest is UserOp, SharedSetup {
         vm.prank(_user);
         accessPoint.execute(address(wethWorkflow), data);
 
-        // check that WETH is desposited
+        // check that WETH is deposited
         assertEq(IERC20(address(WETH)).balanceOf(address(accessPoint)), amount, "WETH balance is wrong");
         assertEq(address(accessPoint).balance, 0, "Balance is wrong");
     }
