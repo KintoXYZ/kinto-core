@@ -50,7 +50,7 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         if (chainid == 10) {
             return 0x4200000000000000000000000000000000000006;
         }
-        revert(string.concat("No WETH for address for chainid:", vm.toString(block.chainid)));
+        revert(string.concat("No WETH address for chainid:", vm.toString(block.chainid)));
     }
 
     function create2(string memory contractName, bytes memory creationCodeWithArgs) internal returns (address addr) {
