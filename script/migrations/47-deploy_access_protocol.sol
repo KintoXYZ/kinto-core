@@ -19,7 +19,7 @@ import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
-import "forge-std/console.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
     // Entry Point address is the same on all chains.
@@ -36,7 +36,7 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
     function deployContracts(address deployer) internal override {
         address accessRegistryAddr = _getChainDeployment("AccessRegistry");
         if (accessRegistryAddr != address(0)) {
-            console.log("Access Protocol is already deployed:", accessRegistryAddr);
+            console2.log("Access Protocol is already deployed:", accessRegistryAddr);
             return;
         }
 
@@ -71,10 +71,10 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         registry.upgradeAll(IAccessPoint(accessPointImpl));
 
         // deploy SafeBeaconProxy just to verify it on chain
-
         SafeBeaconProxy safeBeaconProxy = new SafeBeaconProxy{salt: bytes32(abi.encodePacked(deployer))}(
             address(beacon), abi.encodeCall(IAccessPoint.initialize, (deployer))
         );
+        console2.log('Deployed SafeBeaconProxy at:', address(safeBeaconProxy));
 
         withdrawWorkflow =
             WithdrawWorkflow(create2("WithdrawWorkflow", abi.encodePacked(type(WithdrawWorkflow).creationCode)));
