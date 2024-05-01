@@ -66,11 +66,11 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
             address deployed = deploy(salt, creationCodeWithArgs);
             require(deployed == addr, "Deployed and compute addresses do not match");
 
-            saveContract(contractName, addr);
+            saveContractAddress(contractName, addr);
         }
     }
 
-    function saveContract(string memory contractName, address addr) internal {
+    function saveContractAddress(string memory contractName, address addr) internal {
         string memory path = _getAddressesFile();
         if (!vm.isFile(path)) {
             vm.writeFile(path, "{}");
