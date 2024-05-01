@@ -102,7 +102,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             walletOwners: hasWallet ? getWalletOwners(_wallet) : new address[](0),
             claimedFaucet: faucet.claimed(_account),
             hasNFT: IERC721(address(kintoID)).balanceOf(_account) > 0,
-            isKYC: kintoID.isKYC(_account)
+            isKYC: kintoID.isKYC(_account),
+            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0
         });
     }
 
@@ -116,6 +117,6 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV5 is KYCViewer {
+contract KYCViewerV6 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
 }
