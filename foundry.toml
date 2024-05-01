@@ -17,6 +17,7 @@ kinto = "${KINTO_RPC_URL}"
 mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }
 arbitrum = { key = "${ETHERSCAN_ARBITRUM_KEY}" }
 base = { key = "${ETHERSCAN_BASE_KEY}" }
+optimism = { key = "${ETHERSCAN_OPTIMISM_KEY}" }
 
 [fuzz]
 runs = 16

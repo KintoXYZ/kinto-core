@@ -46,6 +46,10 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         if (chainid == 42161) {
             return 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
         }
+        // optimism
+        if (chainid == 10) {
+            return 0x4200000000000000000000000000000000000006;
+        }
         revert(string.concat("No WETH for address for chainid:", vm.toString(block.chainid)));
     }
 
