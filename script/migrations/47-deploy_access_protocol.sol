@@ -74,7 +74,7 @@ contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
         SafeBeaconProxy safeBeaconProxy = new SafeBeaconProxy{salt: bytes32(abi.encodePacked(deployer))}(
             address(beacon), abi.encodeCall(IAccessPoint.initialize, (deployer))
         );
-        console2.log("Deployed SafeBeaconProxy at: %s", address(safeBeaconProxy));
+        console2.log("SafeBeaconProxy at: %s", address(safeBeaconProxy));
 
         withdrawWorkflow =
             WithdrawWorkflow(create2("WithdrawWorkflow", abi.encodePacked(type(WithdrawWorkflow).creationCode)));
