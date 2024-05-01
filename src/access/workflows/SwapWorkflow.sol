@@ -44,12 +44,10 @@ contract SwapWorkflow {
      * @param swapCallData The calldata to be sent to the exchange proxy to execute the swap.
      * @return amountOut The actual amount of `tokenOut` received from the swap.
      */
-    function fillQuote(
-        IERC20 tokenIn,
-        uint256 amountIn,
-        IERC20 tokenOut,
-        bytes calldata swapCallData
-    ) external returns (uint256 amountOut) {
+    function fillQuote(IERC20 tokenIn, uint256 amountIn, IERC20 tokenOut, bytes calldata swapCallData)
+        external
+        returns (uint256 amountOut)
+    {
         // Increase the allowance for the exchangeProxy to handle `amountIn` of `tokenIn`
         tokenIn.safeIncreaseAllowance(exchangeProxy, amountIn);
 
