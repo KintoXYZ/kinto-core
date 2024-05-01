@@ -18,6 +18,5 @@ contract KintoMigration47DeployScript is MigrationHelper {
         console.log("proxy: %s", proxy);
         address implementation = _deployImplementation("KYCViewer", "V6", bytecode);
         _upgradeTo(proxy, implementation, deployerPrivateKey);
-
     }
 }
