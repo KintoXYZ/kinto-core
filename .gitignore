@@ -19,3 +19,7 @@ out/
 # Certora
 .certora_internal/*
 certora/munged/*
+
+# Ignore local chain
+**/31337/**
+
