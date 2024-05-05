@@ -99,9 +99,7 @@ contract SwapWorkflowTest is Test, SharedSetup {
         // curl 'https://api.0x.org/swap/v1/quote?buyToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&sellToken=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&sellAmount=1000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-quote.json
         string memory quote = vm.readFile("./test/data/swap-quote.json");
         bytes memory swapCallData = quote.readBytes(".data");
-        bytes memory data = abi.encodeWithSelector(
-            SwapWorkflow.fillQuote.selector, USDC, amountIn, DAI, amountIn * 1e12 * 99 / 100, swapCallData
-        );
+        bytes memory data = abi.encodeWithSelector(SwapWorkflow.fillQuote.selector, USDC, amountIn, DAI, swapCallData);
 
         deal(USDC, address(accessPoint), amountIn);
 
@@ -137,9 +135,7 @@ contract SwapWorkflowTest is Test, SharedSetup {
         // curl curl 'https://api.0x.org/swap/v1/quote?buyToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&sellToken=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&sellAmount=1000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-weth-quote.json
         string memory quote = vm.readFile("./test/data/swap-weth-quote.json");
         bytes memory swapCallData = quote.readBytes(".data");
-        data = abi.encodeWithSelector(
-            SwapWorkflow.fillQuote.selector, IERC20(WETH), amountIn, DAI, amountIn * 99 / 100, swapCallData
-        );
+        data = abi.encodeWithSelector(SwapWorkflow.fillQuote.selector, IERC20(WETH), amountIn, DAI, swapCallData);
 
         vm.prank(user);
         bytes memory response = accessPoint.execute(address(swapWorkflow), data);
