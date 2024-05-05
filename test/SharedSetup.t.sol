@@ -17,12 +17,13 @@ import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/AATestScaffolding.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 // scripts & migrations
 import "../script/deploy.s.sol";
 import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
-contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
+contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsReader {
     DeployerScript.DeployedContracts contracts;
     bool fork = false;
 
@@ -40,7 +41,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
     event PostOpRevertReason(bytes32 indexed userOpHash, address indexed sender, uint256 nonce, bytes revertReason);
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
-    function setUp() public virtual {
+    function setUp() public virtual override {
         try vm.envBool("FORK") returns (bool _fork) {
             fork = _fork;
         } catch {}
@@ -180,7 +181,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         fundSponsorForApp(_owner, address(counter));
     }
 
-    function testUp() public virtual {
+    function testUp() public virtual override {
         if (fork) vm.skip(true);
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));

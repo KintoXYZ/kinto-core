@@ -17,11 +17,11 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
-import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract AccessRegistryTest is UserOp {
+contract AccessRegistryTest is BaseTest {
     using ECDSA for bytes32;
 
     IKintoEntryPoint entryPoint;
@@ -34,7 +34,7 @@ contract AccessRegistryTest is UserOp {
 
     uint256 internal defaultAmount = 1e3 * 1e18;
 
-    function setUp() public {
+    function setUp() public override {
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
@@ -50,6 +50,8 @@ contract AccessRegistryTest is UserOp {
         vm.prank(_owner);
         accessRegistry.upgradeAll(accessPointImpl);
     }
+
+    function testUp() public override {}
 
     function testAllowWorkflow() public {
         assertEq(accessRegistry.isWorkflowAllowed(workflow), false);

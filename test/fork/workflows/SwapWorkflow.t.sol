@@ -5,8 +5,6 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
-import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
-
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -28,7 +26,7 @@ import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarn
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract SwapWorkflowTest is Test, SharedSetup {
+contract SwapWorkflowTest is Test {
     using MessageHashUtils for bytes32;
     using stdJson for string;
 
@@ -45,9 +43,7 @@ contract SwapWorkflowTest is Test, SharedSetup {
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    function setUp() public override {
-        super.setUp();
-
+    function setUp() public {
         string memory rpc = vm.envString("ETHEREUM_RPC_URL");
         require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 
@@ -83,7 +79,7 @@ contract SwapWorkflowTest is Test, SharedSetup {
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
-    function testUp() public override {
+    function testUp() public {
         SwapWorkflow workflow = new SwapWorkflow(EXCHANGE_PROXY);
         assertEq(workflow.exchangeProxy(), EXCHANGE_PROXY);
     }

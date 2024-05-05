@@ -4,8 +4,6 @@ pragma solidity ^0.8.18;
 
 import {stdJson} from "forge-std/StdJson.sol";
 
-import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
-
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -24,11 +22,11 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
-import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract WethWorkflowTest is UserOp, SharedSetup {
+contract WethWorkflowTest is BaseTest {
     IKintoEntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
@@ -38,18 +36,11 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    function setUp() public override {
-        super.setUp();
-
+    function setUp() public virtual override {
         string memory rpc = vm.envString("ETHEREUM_RPC_URL");
         require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 
-        vm.chainId(1);
-        mainnetFork = vm.createFork(rpc);
-        vm.selectFork(mainnetFork);
-        assertEq(vm.activeFork(), mainnetFork);
-
-        vm.deal(_owner, 100 ether);
+        vm.createSelectFork(rpc);
 
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 

@@ -7,10 +7,10 @@ import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessContro
 import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
 
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
-import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
 
-contract BridgedTokenTest is UserOp {
+contract BridgedTokenTest is BaseTest {
     address admin;
     address minter;
     address upgrader;
@@ -18,7 +18,7 @@ contract BridgedTokenTest is UserOp {
 
     BridgedToken token;
 
-    function setUp() public {
+    function setUp() public override {
         admin = createUser("admin");
         minter = createUser("minter");
         upgrader = createUser("upgrader");
@@ -28,7 +28,7 @@ contract BridgedTokenTest is UserOp {
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
     }
 
-    function testUp() public view {
+    function testUp() public view override {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");

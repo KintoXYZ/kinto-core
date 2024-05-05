@@ -22,10 +22,11 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
 import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract WithdrawWorkflowTest is UserOp {
+contract WithdrawWorkflowTest is BaseTest, UserOp {
     using MessageHashUtils for bytes32;
 
     SignaturePaymaster paymaster;
@@ -40,7 +41,7 @@ contract WithdrawWorkflowTest is UserOp {
 
     uint256 internal defaultAmount = 1e3 * 1e18;
 
-    function setUp() public {
+    function setUp() public override {
         vm.deal(_owner, 100 ether);
         token = new ERC20Mock("Token", "TNK", 18);
 
@@ -66,6 +67,8 @@ contract WithdrawWorkflowTest is UserOp {
 
         deployPaymaster(_owner);
     }
+
+    function testUp() public override {}
 
     function testWithdrawERC20ViaPaymaster() public {
         token.mint(address(accessPoint), defaultAmount);
