@@ -14,3 +14,6 @@ lib/account-abstraction:@openzeppelin/=lib/openzeppelin-contracts
 @solady/=lib/solady/src/
 
 @token-bridge-contracts/=lib/token-bridge-contracts/
+
+@kinto-core/=src/
+@kinto-core-test/=test/

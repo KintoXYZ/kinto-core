@@ -6,17 +6,17 @@ import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 
-import "../src/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
 
-import "../src/wallet/KintoWallet.sol";
-import "../src/sample/Counter.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/sample/Counter.sol";
 
-import "./harness/KintoWalletHarness.sol";
-import "./harness/SponsorPaymasterHarness.sol";
-import "./harness/KintoAppRegistryHarness.sol";
-import "./helpers/UserOp.sol";
-import "./helpers/AATestScaffolding.sol";
-import "./helpers/ArtifactsReader.sol";
+import "@kinto-core-test/harness/KintoWalletHarness.sol";
+import "@kinto-core-test/harness/SponsorPaymasterHarness.sol";
+import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
+import "@kinto-core-test/helpers/UserOp.sol";
+import "@kinto-core-test/helpers/AATestScaffolding.sol";
+import "@kinto-core-test/helpers/ArtifactsReader.sol";
 
 // scripts & migrations
 import "../script/deploy.s.sol";
