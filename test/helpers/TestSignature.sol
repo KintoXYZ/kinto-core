@@ -1,22 +1,17 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import "../../src/KintoID.sol";
-import "../../src/interfaces/IKintoID.sol";
-import "../../src/interfaces/IFaucet.sol";
-import "../../src/interfaces/IBridger.sol";
-
-interface IUSDC {
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function PERMIT_TYPEHASH() external view returns (bytes32);
-}
+import "@kinto-core/KintoID.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/IFaucet.sol";
+import "@kinto-core/interfaces/IBridger.sol";
 
 abstract contract TestSignature is Test {
     using ECDSAUpgradeable for bytes32;

@@ -41,8 +41,6 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        if (!fork) return;
-
         string memory rpc = vm.envString("ETHEREUM_RPC_URL");
         require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 
@@ -76,13 +74,11 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     }
 
     function testUp() public override {
-        if (fork) vm.skip(true);
         WethWorkflow workflow = new WethWorkflow(address(WETH));
         assertEq(address(workflow.weth()), address(WETH));
     }
 
     function testDeposit() public {
-        if (!fork) vm.skip(true);
         uint256 amount = 1e18;
         bytes memory data = abi.encodeWithSelector(WethWorkflow.deposit.selector, amount);
 
@@ -97,7 +93,6 @@ contract WethWorkflowTest is UserOp, SharedSetup {
     }
 
     function testWithdraw() public {
-        if (!fork) vm.skip(true);
         uint256 amount = 1e18;
         bytes memory data = abi.encodeWithSelector(WethWorkflow.withdraw.selector, amount);
 

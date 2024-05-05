@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.18;
 
+import {Test} from "forge-std/Test.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
@@ -24,13 +25,14 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
-import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract SwapWorkflowTest is UserOp, SharedSetup {
+contract SwapWorkflowTest is Test, SharedSetup {
     using MessageHashUtils for bytes32;
     using stdJson for string;
+
+    address payable user = payable(makeAddr("user"));
 
     IKintoEntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
@@ -46,17 +48,10 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        if (!fork) return;
-
         string memory rpc = vm.envString("ETHEREUM_RPC_URL");
         require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 
-        vm.chainId(1);
-        mainnetFork = vm.createFork(rpc);
-        vm.selectFork(mainnetFork);
-        assertEq(vm.activeFork(), mainnetFork);
-
-        vm.deal(_owner, 100 ether);
+        vm.createSelectFork(rpc);
 
         deploy();
 
@@ -77,7 +72,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
 
         accessRegistry.initialize();
         accessRegistry.upgradeAll(accessPointImpl);
-        accessPoint = accessRegistry.deployFor(address(_user));
+        accessPoint = accessRegistry.deployFor(address(user));
         vm.label(address(accessPoint), "accessPoint");
 
         swapWorkflow = new SwapWorkflow(EXCHANGE_PROXY);
@@ -89,14 +84,11 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
     }
 
     function testUp() public override {
-        if (fork) vm.skip(true);
         SwapWorkflow workflow = new SwapWorkflow(EXCHANGE_PROXY);
         assertEq(workflow.exchangeProxy(), EXCHANGE_PROXY);
     }
 
     function testSwapERC20() public {
-        if (!fork) vm.skip(true);
-
         uint256 expectedAmountOut = 999842220668049737510;
         uint256 amountIn = 1e3 * 1e6;
         // block number in which the 0x API data was fetched
@@ -112,11 +104,11 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         );
 
         deal(USDC, address(accessPoint), amountIn);
-        vm.expectEmit();
 
+        vm.expectEmit();
         emit SwapWorkflow.SwapExecuted(USDC, amountIn, DAI, expectedAmountOut);
 
-        vm.prank(_user);
+        vm.prank(user);
         bytes memory response = accessPoint.execute(address(swapWorkflow), data);
         uint256 amountOut = abi.decode(response, (uint256));
 
@@ -127,8 +119,6 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
     }
 
     function testSwapNative() public {
-        if (!fork) vm.skip(true);
-
         uint256 expectedAmountOut = 3151957905853340218861;
         uint256 amountIn = 1e18;
 
@@ -140,7 +130,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
         deal(address(accessPoint), amountIn);
         // wrap ETH to WETH
         bytes memory data = abi.encodeWithSelector(WethWorkflow.deposit.selector, amountIn);
-        vm.prank(_user);
+        vm.prank(user);
         accessPoint.execute(address(wethWorkflow), data);
 
         // Run to regenerate
@@ -151,7 +141,7 @@ contract SwapWorkflowTest is UserOp, SharedSetup {
             SwapWorkflow.fillQuote.selector, IERC20(WETH), amountIn, DAI, amountIn * 99 / 100, swapCallData
         );
 
-        vm.prank(_user);
+        vm.prank(user);
         bytes memory response = accessPoint.execute(address(swapWorkflow), data);
         uint256 amountOut = abi.decode(response, (uint256));
 

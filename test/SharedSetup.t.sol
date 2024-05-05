@@ -110,7 +110,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
             _faucet.transferOwnership(_owner);
             vm.stopPrank();
 
-            // change _kintoWallet owner to _owner so we use it on tesets
+            // change _kintoWallet owner to _owner so we use it on tests
             changeWalletOwner(_owner, _kycProvider);
         } else {
             contracts = deployer.runAndReturnResults(_ownerPk);
