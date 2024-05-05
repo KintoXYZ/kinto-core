@@ -12,6 +12,10 @@ ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libra
 
 [rpc_endpoints]
 kinto = "${KINTO_RPC_URL}"
+mainnet = "${RPC_MAINNET}"
+optimism = "${OPTIMISM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }

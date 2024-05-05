@@ -44,7 +44,7 @@ contract BridgerTest is TestSignature, SharedSetup {
     function setUp() public override {
         super.setUp();
         if (fork) {
-            string memory rpc = vm.envString("ETHEREUM_RPC_URL");
+            string memory rpc = vm.rpcUrl("mainnet");
             require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 
             vm.chainId(1);

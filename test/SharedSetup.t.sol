@@ -52,7 +52,7 @@ contract SharedSetup is UserOp, AATestScaffolding, ArtifactsReader {
         DeployerScript deployer = new DeployerScript();
 
         if (fork) {
-            string memory rpc = vm.envString("KINTO_RPC_URL");
+            string memory rpc = vm.rpcUrl("kinto");
             require(bytes(rpc).length > 0, "KINTO_RPC_URL is not set");
 
             // create fork from mainnet with chain ID 7887
