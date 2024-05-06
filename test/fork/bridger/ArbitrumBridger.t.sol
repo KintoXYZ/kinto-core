@@ -88,6 +88,10 @@ contract ArbitrumBridgerTest is SharedSetup {
         }
     }
 
+    function setUpChain() public virtual override {
+        setUpKintoFork();
+    }
+
     function testFinalizeInboundTransfer_WhenL2CustomGateway_WhenReceiverIsKintoWallet_WhenSenderIsWhitelisted()
         public
     {

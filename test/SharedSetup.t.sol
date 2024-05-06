@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
-
 import "@aa/interfaces/IEntryPoint.sol";
 
 import "@kinto-core/interfaces/IKintoWallet.sol";
@@ -24,11 +21,8 @@ import "../script/deploy.s.sol";
 import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
 abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsReader {
-    DeployerScript.DeployedContracts contracts;
-
     Counter counter;
     uint256[] privateKeys;
-    uint256 mainnetFork;
 
     // events
     event UserOperationRevertReason(
@@ -41,9 +35,6 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
     function setUp() public virtual override {
-        // Deal ETH to _owner
-        vm.deal(_owner, 1e20);
-
         // deploy chain contracts and pick a chain to use
         setUpChain();
 
@@ -54,13 +45,7 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
         privateKeys = new uint256[](1);
         privateKeys[0] = _ownerPk;
 
-        // deploy Counter contract
-        counter = new Counter();
-        assertEq(counter.count(), 0);
-
-        registerApp(_owner, "test", address(counter));
-        whitelistApp(address(counter));
-        fundSponsorForApp(_owner, address(counter));
+        deployCounter();
     }
 
     function setUpChain() public virtual {
@@ -83,11 +68,24 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
         vm.label(address(_bridgerL2), "BridgerL2");
     }
 
+    function deployCounter() public {
+        // deploy Counter contract
+        counter = new Counter();
+        assertEq(counter.count(), 0);
+
+        registerApp(_owner, "test", address(counter));
+        whitelistApp(address(counter));
+        fundSponsorForApp(_owner, address(counter));
+    }
+
     function setUpKintoLocal() public {
+        // Deal ETH to _owner
+        vm.deal(_owner, 1e20);
+
         // deploy contracts using deploy script
         DeployerScript deployer = new DeployerScript();
 
-        contracts = deployer.runAndReturnResults(_ownerPk);
+        DeployerScript.DeployedContracts memory contracts = deployer.runAndReturnResults(_ownerPk);
         // set contracts
         _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
         _kintoAppRegistry = KintoAppRegistry(contracts.registry);
@@ -126,8 +124,11 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
         string memory rpc = vm.rpcUrl("kinto");
         require(bytes(rpc).length > 0, "KINTO_RPC_URL is not set");
 
-        // create Kinto fork with pinned block
+        // create Kinto fork
         vm.createSelectFork(rpc);
+
+        // Deal ETH to _owner
+        vm.deal(_owner, 1e20);
 
         // read mainnet contracts from addresses.json
         _entryPoint = IKintoEntryPoint(_getChainDeployment("EntryPoint"));

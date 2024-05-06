@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.18;
 
 import "@kinto-core/interfaces/IBridger.sol";
@@ -35,7 +34,7 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         registerApp(_owner, "bridger", address(_bridgerL2));
     }
 
-    function testUp() public override view {
+    function testUp() public view override {
         assertEq(_bridgerL2.owner(), address(_owner));
         assertEq(_bridgerL2.depositCount(), 0);
         assertEq(_bridgerL2.unlocked(), false);
