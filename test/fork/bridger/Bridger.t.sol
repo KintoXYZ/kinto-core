@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
-
 import "@kinto-core/interfaces/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
@@ -11,13 +8,14 @@ import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/TestSignature.sol";
 import "@kinto-core-test/helpers/TestSignature.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
-import "@kinto-core-test/SharedSetup.t.sol";
+import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
-contract BridgerTest is TestSignature, SharedSetup {
+contract BridgerTest is TestSignature, BaseTest, ArtifactsReader {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -30,7 +28,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     BridgerHarness internal bridger;
 
     function setUp() public override {
-        super.setUp();
         string memory rpc = vm.rpcUrl("mainnet");
         require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
 

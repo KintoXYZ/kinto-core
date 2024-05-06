@@ -14,13 +14,12 @@ import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/AATestScaffolding.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
-import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
+import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 // scripts & migrations
 import "../script/deploy.s.sol";
-import {KintoMigration29DeployScript} from "../script/migrations/29-multiple_upgrade_3.sol";
 
-abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsReader {
+abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsReader {
     Counter counter;
     uint256[] privateKeys;
 
@@ -35,12 +34,7 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
     event AppKeyCreated(address indexed appKey, address indexed signer);
 
     function setUp() public virtual override {
-        // deploy chain contracts and pick a chain to use
-        setUpChain();
-
-        // label commonly used addresses for better stacktraces
-        labelAddresses();
-
+        super.setUp();
         // all tests will use 1 private key (_ownerPk) unless otherwise specified
         privateKeys = new uint256[](1);
         privateKeys[0] = _ownerPk;
@@ -48,13 +42,13 @@ abstract contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsR
         deployCounter();
     }
 
-    function setUpChain() public virtual {
+    function setUpChain() public virtual override {
         setUpKintoLocal();
     }
 
     function testUp() public virtual override {}
 
-    function labelAddresses() public virtual {
+    function labelAddresses() public virtual override {
         // label addresses
         vm.label(address(_entryPoint), "EntryPoint");
         vm.label(address(_kintoAppRegistry), "KintoAppRegistry");

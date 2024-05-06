@@ -22,11 +22,11 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
-import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
+import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract WethWorkflowTest is BaseTest {
+contract WethWorkflowTest is ForkTest {
     IKintoEntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
@@ -67,6 +67,10 @@ contract WethWorkflowTest is BaseTest {
     function testUp() public override {
         WethWorkflow workflow = new WethWorkflow(address(WETH));
         assertEq(address(workflow.weth()), address(WETH));
+    }
+
+    function setUpChain() public virtual override {
+        setUpEthereumFork();
     }
 
     function testDeposit() public {
