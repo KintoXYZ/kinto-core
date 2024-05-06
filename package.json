@@ -12,7 +12,7 @@
   "scripts": {
     "install": "forge install && cd lib/token-bridge-contracts && yarn",
     "test": "source .env && FORK=false forge test -vvv",
-    "test-mainnet": "source .env && FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvv",
+    "test-mainnet": "source .env && FOUNDRY_PROFILE=fork forge test -vvv",
     "coverage": "forge coverage",
     "export-testnet": "source .env && node ./utils/export.js $TEST_NETWORK_ID",
     "export-mainnet": "source .env && node ./utils/export.js $MAINNET_NETWORK_ID",
