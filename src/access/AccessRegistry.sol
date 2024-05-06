@@ -112,7 +112,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
      * @dev Salt is ignored on purpose. This method is added to provide / compliance with SimpleAccountFactory.
      * https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccountFactory.sol
      */
-    function getAddress(address owner, uint256 salt) external view returns (address) {
+    function getAddress(address owner, uint256) external view returns (address) {
         return getAddress(owner);
     }
 
