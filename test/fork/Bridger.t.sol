@@ -41,6 +41,8 @@ contract BridgerTest is TestSignature, SharedSetup {
         // transfer owner's ownership to _owner
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
     }
 
     function testUp() public override {}
@@ -540,7 +542,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(3623820863464615182336);
         assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
     }
-
 
     // UNI to wstETH
     function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
@@ -1077,5 +1078,4 @@ contract BridgerTest is TestSignature, SharedSetup {
             assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
         }
     }
-
 }

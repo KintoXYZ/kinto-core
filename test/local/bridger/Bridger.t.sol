@@ -43,16 +43,16 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     function setUp() public override {
         super.setUp();
-            // deploy a new Bridger contract
-            _deployBridger();
+        // deploy a new Bridger contract
+        _deployBridger();
 
-            // if running local tests, we want to replace some hardcoded addresses that the bridger uses
-            // with mocked contracts
-            ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
-            vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+        // if running local tests, we want to replace some hardcoded addresses that the bridger uses
+        // with mocked contracts
+        ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
+        vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
     }
 
-    function testUp() public override { }
+    function testUp() public override {}
 
     function _deployBridger() internal {
         BridgerHarness implementation = new BridgerHarness(l2Vault);
@@ -243,7 +243,6 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     /* ============ Bridge ============ */
 
-
     function testBridgeDeposits_RevertWhen_InsufficientGas() public {
         address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
@@ -257,7 +256,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.prank(_owner);
         bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
-
 
     /* ============ Pause ============ */
 
@@ -289,7 +287,6 @@ contract BridgerTest is TestSignature, SharedSetup {
     }
 
     /* ============ Sender account ============ */
-
 
     function testSetSenderAccount_RevertWhen_NotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
