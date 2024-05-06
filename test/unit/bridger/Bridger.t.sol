@@ -50,7 +50,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         // with mocked contracts
         ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
         vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
-
     }
 
     function testUp() public override {}

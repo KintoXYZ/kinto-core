@@ -28,7 +28,7 @@ contract BridgedTokenTest is BaseTest {
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
     }
 
-    function testUp() public override view {
+    function testUp() public view override {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");
