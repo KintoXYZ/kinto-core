@@ -19,6 +19,15 @@ import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IAccessRegistry.sol";
 
+/**
+ * @title Access Registry
+ * @notice This contract serves as a registry for access points, associating each user
+ * with a unique proxy and managing permissions for various workflows.
+ * @dev Manages the lifecycle of access points and their associations with users, ensuring
+ * each user has a unique, non-transferable access point.
+ * Utilizes an UpgradeableBeacon for creating proxies, allowing future upgrades of
+ * the access point implementations.
+ */
 contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, IAccessRegistry {
     /* ============ Constants ============ */
 
@@ -49,19 +58,14 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
         _disableInitializers();
     }
 
-    /**
-     * @dev Upgrade calling `upgradeTo()`
-     */
+    /// @dev initialize the proxy
     function initialize() external virtual initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         factoryVersion = 1;
     }
 
-    /**
-     * @dev Upgrade the wallet implementations using the beacon
-     * @param newImpl The new implementation
-     */
+    /// @inheritdoc IAccessRegistry
     function upgradeAll(IAccessPoint newImpl) external override onlyOwner {
         require(address(newImpl) != address(0) && address(newImpl) != beacon.implementation(), "invalid address");
         factoryVersion++;
@@ -103,6 +107,15 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
         );
     }
 
+    /**
+     * @inheritdoc IAccessRegistry
+     * @dev Salt is ignored on purpose. This method is added to provide / compliance with SimpleAccountFactory.
+     * https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccountFactory.sol
+     */
+    function getAddress(address owner, uint256 salt) external view returns (address) {
+        return getAddress(owner);
+    }
+
     /* ============ State Change ============ */
 
     /// @inheritdoc IAccessRegistry
@@ -125,6 +138,20 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /// @inheritdoc IAccessRegistry
     function deployFor(address user)
+        external
+        override
+        onlyNonAccessPointOwner(user)
+        returns (IAccessPoint accessPoint)
+    {
+        return _deploy(user);
+    }
+
+    /**
+     * @inheritdoc IAccessRegistry
+     * @dev Salt is ignored on purpose. This method is added to provide / compliance with SimpleAccountFactory.
+     * https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccountFactory.sol
+     */
+    function createAccount(address user, uint256)
         external
         override
         onlyNonAccessPointOwner(user)
