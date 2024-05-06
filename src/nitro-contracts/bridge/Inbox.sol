@@ -222,7 +222,6 @@ contract Inbox is AbsInbox, IInbox {
         payable
         whenNotPaused
         onlyAllowed
-        whenRefundAddressAllowed(to, excessFeeRefundAddress, callValueRefundAddress)
         returns (uint256)
     {
         // gas limit is validated to be within uint64 in unsafeCreateRetryableTicket
