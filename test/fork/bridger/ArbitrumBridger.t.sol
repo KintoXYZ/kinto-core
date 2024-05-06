@@ -143,7 +143,11 @@ contract ArbitrumBridgerTest is SharedSetup {
         emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
-        vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        vm.mockCall(
+            address(0x0000000000000000000000000000000000000064),
+            abi.encodeWithSelector(ArbSys.sendTxToL1.selector),
+            abi.encode(0)
+        );
 
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(
@@ -173,7 +177,11 @@ contract ArbitrumBridgerTest is SharedSetup {
         emit DepositSenderNotWhitelisted(sender, receiver);
 
         // finalize deposit
-        vm.etch(0x0000000000000000000000000000000000000064, address(arbSysMock).code);
+        vm.mockCall(
+            address(0x0000000000000000000000000000000000000064),
+            abi.encodeWithSelector(ArbSys.sendTxToL1.selector),
+            abi.encode(0)
+        );
 
         vm.prank(AddressAliasHelper.applyL1ToL2Alias(l1Counterpart));
         l2CustomGateway.finalizeInboundTransfer(

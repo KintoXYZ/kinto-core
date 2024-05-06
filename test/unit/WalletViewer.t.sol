@@ -23,7 +23,7 @@ contract WalletViewerUpgraded is WalletViewer {
 }
 
 contract WalletViewerTest is SharedSetup {
-    function testUp() public override {
+    function testUp() public override view {
         assertEq(_walletViewer.owner(), _owner);
         assertEq(address(_entryPoint.walletFactory()), address(_walletViewer.walletFactory()));
         assertEq(address(_walletFactory.kintoID()), address(_walletViewer.kintoID()));
@@ -50,14 +50,14 @@ contract WalletViewerTest is SharedSetup {
 
     /* ============ Viewer tests ============ */
 
-    function testFetchAppAddressesFromIndex() public {
+    function testFetchAppAddressesFromIndex() public view {
         address[50] memory apps = _walletViewer.fetchAppAddresesFromIndex(1);
         assertEq(_walletViewer.appRegistry().appCount(), 1);
         assertTrue(apps[0] != address(0));
         assertTrue(apps[1] == address(0));
     }
 
-    function testFetchUserAppAddressesFromIndex() public {
+    function testFetchUserAppAddressesFromIndex() public view {
         IWalletViewer.WalletApp[50] memory apps = _walletViewer.fetchUserAppAddressesFromIndex(address(_kintoWallet), 1);
         assertEq(apps[0].whitelisted, true);
         assertEq(apps[0].key, address(0));

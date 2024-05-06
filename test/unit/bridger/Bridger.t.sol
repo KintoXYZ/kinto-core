@@ -295,7 +295,7 @@ contract BridgerTest is TestSignature, SharedSetup {
 
     /* ============ EIP712 ============ */
 
-    function testDomainSeparatorV4() public {
+    function testDomainSeparatorV4() public view {
         assertEq(
             bridger.domainSeparatorV4(),
             keccak256(
@@ -321,7 +321,7 @@ contract BridgerTest is TestSignature, SharedSetup {
         uint256 nonce,
         uint256 expiresAt,
         bytes calldata signature
-    ) public {
+    ) public view {
         IBridger.SignatureData memory data = IBridger.SignatureData({
             kintoWallet: kintoWallet,
             signer: signer,
