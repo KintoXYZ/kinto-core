@@ -217,13 +217,7 @@ contract Inbox is AbsInbox, IInbox {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         bytes calldata data
-    )
-        external
-        payable
-        whenNotPaused
-        onlyAllowed
-        returns (uint256)
-    {
+    ) external payable whenNotPaused onlyAllowed returns (uint256) {
         // gas limit is validated to be within uint64 in unsafeCreateRetryableTicket
         return unsafeCreateRetryableTicket(
             to,

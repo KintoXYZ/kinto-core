@@ -17,7 +17,7 @@ interface IUpgradeExecutor {
     function hasRole(bytes32 role, address account) external view returns (bool);
 }
 
-contract KintoMigration45DeployScript is MigrationHelper {
+contract KintoMigration49DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
