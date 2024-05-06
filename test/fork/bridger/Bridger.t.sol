@@ -9,13 +9,13 @@ import "@kinto-core-test/helpers/TestSignature.sol";
 import "@kinto-core-test/helpers/TestSignature.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
-import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
+import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
-contract BridgerTest is TestSignature, BaseTest, ArtifactsReader {
+contract BridgerTest is TestSignature, ForkTest, ArtifactsReader {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -28,10 +28,7 @@ contract BridgerTest is TestSignature, BaseTest, ArtifactsReader {
     BridgerHarness internal bridger;
 
     function setUp() public override {
-        string memory rpc = vm.rpcUrl("mainnet");
-        require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
-
-        vm.createSelectFork(rpc);
+        super.setUp();
 
         bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
 
@@ -42,7 +39,9 @@ contract BridgerTest is TestSignature, BaseTest, ArtifactsReader {
         vm.deal(_owner, 1e20);
     }
 
-    function testUp() public override {}
+    function setUpChain() public virtual override {
+        setUpEthereumFork();
+    }
 
     function _deployBridger() internal {
         BridgerHarness implementation = new BridgerHarness(l2Vault);

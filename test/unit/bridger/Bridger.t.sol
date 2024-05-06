@@ -52,8 +52,6 @@ contract BridgerTest is TestSignature, SharedSetup {
         vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
     }
 
-    function testUp() public override {}
-
     function _deployBridger() internal {
         BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));

@@ -29,9 +29,9 @@ abstract contract BaseTest is Test {
     address payable internal _verifier = payable(vm.addr(_verifierPk));
     address payable internal _noKyc = payable(vm.addr(_noKycPk));
 
-    function setUp() public virtual;
+    function setUp() public virtual {}
 
-    function testUp() public virtual;
+    function testUp() public virtual {}
 
     /// @dev Generates a user, labels its address, and funds it with test assets.
     function createUser(string memory name) internal returns (address payable) {

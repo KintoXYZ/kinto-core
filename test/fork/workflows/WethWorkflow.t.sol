@@ -25,6 +25,7 @@ import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarn
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 contract WethWorkflowTest is ForkTest {
     IKintoEntryPoint entryPoint;
@@ -37,10 +38,7 @@ contract WethWorkflowTest is ForkTest {
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     function setUp() public virtual override {
-        string memory rpc = vm.envString("ETHEREUM_RPC_URL");
-        require(bytes(rpc).length > 0, "ETHEREUM_RPC_URL is not set");
-
-        vm.createSelectFork(rpc);
+        super.setUp();
 
         entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 

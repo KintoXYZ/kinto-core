@@ -5,7 +5,6 @@ pragma solidity ^0.8.18;
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 abstract contract ForkTest is BaseTest {
-
     function setUp() public virtual override {
         // deploy chain contracts and pick a chain to use
         setUpChain();
@@ -14,7 +13,7 @@ abstract contract ForkTest is BaseTest {
         labelAddresses();
     }
 
-    function setUpChain() public virtual{}
+    function setUpChain() public virtual {}
     function labelAddresses() public virtual {}
 
     function setUpEthereumFork() public {

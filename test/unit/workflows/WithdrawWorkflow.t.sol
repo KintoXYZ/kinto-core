@@ -68,8 +68,6 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
         deployPaymaster(_owner);
     }
 
-    function testUp() public override {}
-
     function testWithdrawERC20ViaPaymaster() public {
         token.mint(address(accessPoint), defaultAmount);
 

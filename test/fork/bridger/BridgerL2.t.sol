@@ -33,8 +33,6 @@ contract BridgerL2Test is TestSignature, SharedSetup {
         setUpKintoFork();
     }
 
-    function testUp() public override {}
-
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
