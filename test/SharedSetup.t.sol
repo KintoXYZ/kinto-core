@@ -56,11 +56,8 @@ contract SharedSetup is BaseTest, UserOp, AATestScaffolding, ArtifactsReader {
             string memory rpc = vm.rpcUrl("kinto");
             require(bytes(rpc).length > 0, "KINTO_RPC_URL is not set");
 
-            // create fork from mainnet with chain ID 7887
-            vm.chainId(7887);
-            mainnetFork = vm.createFork(rpc);
-            vm.selectFork(mainnetFork);
-            assertEq(vm.activeFork(), mainnetFork);
+            // create Kinto fork with pinned block
+            vm.createSelectFork(rpc);
 
             // read mainnet contracts from addresses.json
             _entryPoint = IKintoEntryPoint(_getChainDeployment("EntryPoint"));
