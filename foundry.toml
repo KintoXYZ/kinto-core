@@ -5,7 +5,7 @@ out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
 ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libraries/Cloneable.sol"]
-match-path = 'test/local/**/*.sol'
+match-path = 'test/unit/**/*.sol'
 
 [profile.fork]
 match-path = 'test/fork/**/*.sol'

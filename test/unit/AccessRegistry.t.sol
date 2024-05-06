@@ -51,7 +51,8 @@ contract AccessRegistryTest is BaseTest {
         accessRegistry.upgradeAll(accessPointImpl);
     }
 
-    function testUp() public override {}
+
+    function testUp() public override { }
 
     function testAllowWorkflow() public {
         assertEq(accessRegistry.isWorkflowAllowed(workflow), false);

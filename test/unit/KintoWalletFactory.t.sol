@@ -183,7 +183,11 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testDeployContract_RevertWhen_CreateWallet() public {
-        bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
+        bytes memory initialize = abi.encodeWithSelector(
+            IKintoWallet.initialize.selector,
+            _owner,
+            _owner
+        );
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
         );
