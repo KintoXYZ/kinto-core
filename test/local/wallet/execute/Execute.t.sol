@@ -22,8 +22,6 @@ contract ExecuteTest is SharedSetup {
     }
 
     function testExecute_RevertWhen_NoPaymasterNorPrefund() public {
-        // paymaster have funds on mainnet
-        if (fork) vm.skip(true);
         // remove any balance from the wallet
         vm.deal(address(_kintoWallet), 0);
 

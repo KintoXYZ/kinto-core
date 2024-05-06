@@ -41,7 +41,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUp() public override {
         super.testUp();
-        if (!fork) assertEq(_walletFactory.factoryWalletVersion(), 2);
+        assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
@@ -183,12 +183,10 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testDeployContract_RevertWhen_CreateWallet() public {
-        // skip test on fork since we are compiling with EVM_VERSION=shanghai and will revert
-        if (fork) vm.skip(true);
         bytes memory initialize = abi.encodeWithSelector(
             IKintoWallet.initialize.selector,
-            fork ? vm.envAddress("DEPLOYER_PUBLIC_KEY") : _owner,
-            fork ? vm.envAddress("LEDGER_ADMIN") : _owner
+            _owner,
+            _owner
         );
         bytes memory bytecode = abi.encodePacked(
             type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)

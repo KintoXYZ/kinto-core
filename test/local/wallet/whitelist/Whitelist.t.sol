@@ -6,7 +6,6 @@ import "@kinto-core-test/SharedSetup.t.sol";
 
 contract WhitelistTest is SharedSetup {
     function testWhitelistAppAndSetKey() public {
-        if (fork) vm.skip(true);
         // deploy an app
         Counter counter = new Counter();
         assertEq(counter.count(), 0);
@@ -51,7 +50,6 @@ contract WhitelistTest is SharedSetup {
     }
 
     function testWhitelistAppRemovesAppKey() public {
-        if (fork) vm.skip(true);
         // deploy an app
         Counter counter = new Counter();
 

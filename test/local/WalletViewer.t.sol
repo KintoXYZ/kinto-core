@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
@@ -23,7 +24,6 @@ contract WalletViewerUpgraded is WalletViewer {
 
 contract WalletViewerTest is SharedSetup {
     function testUp() public override {
-        if (fork) vm.skip(true);
         assertEq(_walletViewer.owner(), _owner);
         assertEq(address(_entryPoint.walletFactory()), address(_walletViewer.walletFactory()));
         assertEq(address(_walletFactory.kintoID()), address(_walletViewer.kintoID()));
@@ -32,7 +32,6 @@ contract WalletViewerTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        if (fork) vm.skip(true);
         WalletViewerUpgraded _implementationV2 =
             new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
         vm.prank(_owner);
@@ -41,7 +40,6 @@ contract WalletViewerTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
-        if (fork) vm.skip(true);
         vm.assume(someone != _owner);
         WalletViewerUpgraded _implementationV2 =
             new WalletViewerUpgraded(address(_walletFactory), address(_kintoAppRegistry));
@@ -53,7 +51,6 @@ contract WalletViewerTest is SharedSetup {
     /* ============ Viewer tests ============ */
 
     function testFetchAppAddressesFromIndex() public {
-        if (fork) vm.skip(true);
         address[50] memory apps = _walletViewer.fetchAppAddresesFromIndex(1);
         assertEq(_walletViewer.appRegistry().appCount(), 1);
         assertTrue(apps[0] != address(0));
@@ -61,7 +58,6 @@ contract WalletViewerTest is SharedSetup {
     }
 
     function testFetchUserAppAddressesFromIndex() public {
-        if (fork) vm.skip(true);
         IWalletViewer.WalletApp[50] memory apps = _walletViewer.fetchUserAppAddressesFromIndex(address(_kintoWallet), 1);
         assertEq(apps[0].whitelisted, true);
         assertEq(apps[0].key, address(0));

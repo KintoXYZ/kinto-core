@@ -20,7 +20,6 @@ contract KintoIDv2 is KintoID {
 
 contract KintoIDTest is SharedSetup {
     function testUp() public view override {
-        if (fork) assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");
     }
@@ -52,8 +51,7 @@ contract KintoIDTest is SharedSetup {
     function testAuthorizedCanUpgrade() public {
         assertEq(false, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
 
-        address owner = fork ? vm.envAddress("LEDGER_ADMIN") : _owner;
-        vm.startPrank(owner);
+        vm.startPrank(_owner);
         _kintoID.grantRole(_kintoID.UPGRADER_ROLE(), _upgrader);
         vm.stopPrank();
 
