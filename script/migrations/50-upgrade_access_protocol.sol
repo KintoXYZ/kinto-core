@@ -25,7 +25,7 @@ contract UpgradeAccessProtocolScript is ArtifactsReader, DeployerHelper {
         newImpl =
             create2("AccessRegistryV2-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
 
-        registry.upgradeToAndCall(address(newImpl), bytes(''));
+        registry.upgradeToAndCall(address(newImpl), bytes(""));
     }
 
     function checkContracts(address) internal view override {

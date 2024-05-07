@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.4;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
 
 import {AbsInboxTest, Sender} from "@nitro-contracts/test/foundry/AbsInbox.t.sol";
 import "@nitro-contracts/test/foundry/util/TestUtil.sol";
-import "../../../src/nitro-contracts/bridge/Inbox.sol";
+import "@kinto-core/nitro-contracts/bridge/Inbox.sol";
 import "@nitro-contracts/src/bridge/IInbox.sol";
 import "@nitro-contracts/src/bridge/Bridge.sol";
 import "@nitro-contracts/src/bridge/ISequencerInbox.sol";
@@ -45,7 +45,7 @@ contract InboxTest is AbsInboxTest {
     }
 
     /* solhint-disable func-name-mixedcase */
-    function test_initialize() public {
+    function test_initialize() public view {
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(inbox.sequencerInbox()), seqInbox, "Invalid seqInbox ref");
         assertEq(inbox.allowListEnabled(), false, "Invalid allowListEnabled");
