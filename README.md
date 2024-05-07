@@ -83,11 +83,11 @@ forge test
 ```
 Alternatively, you run `yarn test`
 
-To run tests on a fork from mainnet you need to set the env vars `FORK=true` and `FOUNDRY_EVM_VERSION=shanghai`
+To run tests on a fork from fokr chain you need to set the env vars `FOUNDRY_PROFILE=fork`
 ```
-FORK=true FOUNDRY_EVM_VERSION=shanghai forge test -vvvv
+FOUNDRY_PROFILE=fork forge test -vvv
 ```
-Alternatively, you run `yarn test-mainnet`
+Alternatively, you run `yarn test-fork`
 
 ## Static Analysis
 
@@ -99,7 +99,7 @@ slither --checklist --solc-remaps "$(tr '\n' ' ' < remappings.txt | xargs)" ./sr
 
 ## Continous Integration
 
-We use Github Actions to run tests (both local and fork from mainnet tests) and several other checks.
+We use Github Actions to run tests (both local and fork tests) and several other checks.
 
 Everytime a PR is created, the `pull_request.yml` workflow runs which runs the following actions:
 - Forge format
@@ -108,13 +108,13 @@ Everytime a PR is created, the `pull_request.yml` workflow runs which runs the f
   - Codecov to check for coverage [![codecov](https://codecov.io/gh/KintoXYZ/kinto-core/graph/badge.svg?token=JXQ1EQTRV1)](https://codecov.io/gh/KintoXYZ/kinto-core)
 - Slither analysis (for static analysis)
 
-Everytime a PR is **merged** into `main` (or there's a push directly to it), fork from mainnet tests are run.
+Everytime a PR is **merged** into `main` (or there's a push directly to it), fork tests are run.
 
 ## Coverage
-To create a complete coverage report we need to run coverage on local + run coverage on mainnet fork and then merge both lcov.info files into one. Finally, we remove the unnecessary files from the report (scripts, tests):
+To create a complete coverage report we need to run coverage on local + run coverage on fork and then merge both lcov.info files into one. Finally, we remove the unnecessary files from the report (scripts, tests):
 
 ```
-forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+forge coverage --report lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
 ```
 
 ## Scripts

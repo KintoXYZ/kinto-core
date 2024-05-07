@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-import "forge-std/StdUtils.sol";
-import "forge-std/console.sol";
+import {StdAssertions} from "forge-std/StdAssertions.sol";
+import {StdCheats} from "forge-std/StdCheats.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 import "@aa/core/EntryPoint.sol";
 
-import "../../src/interfaces/IKintoEntryPoint.sol";
+import "@kinto-core/interfaces/IKintoEntryPoint.sol";
 
-import "../../src/KintoID.sol";
-import "../../src/apps/KintoAppRegistry.sol";
-import "../../src/tokens/EngenCredits.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
-import "../../src/wallet/KintoWallet.sol";
-import "../../src/wallet/KintoWalletFactory.sol";
-import "../../src/viewers/KYCViewer.sol";
-import "../../src/viewers/WalletViewer.sol";
-import "../../src/bridger/BridgerL2.sol";
-import "../../src/Faucet.sol";
-import "../../src/inflators/KintoInflator.sol";
+import "@kinto-core/KintoID.sol";
+import "@kinto-core/apps/KintoAppRegistry.sol";
+import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core/viewers/KYCViewer.sol";
+import "@kinto-core/viewers/WalletViewer.sol";
+import "@kinto-core/bridger/BridgerL2.sol";
+import "@kinto-core/Faucet.sol";
+import "@kinto-core/inflators/KintoInflator.sol";
 
-import "../helpers/UUPSProxy.sol";
-import "../helpers/TestSignature.sol";
+import "@kinto-core-test/helpers/UUPSProxy.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 
-abstract contract AATestScaffolding is TestSignature {
+abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats {
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry

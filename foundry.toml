@@ -5,13 +5,18 @@ out = 'out'
 libs = ['lib']
 fs_permissions = [{ access = "read-write", path = "./"}]
 ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libraries/Cloneable.sol"]
+match-path = 'test/unit/**/*.sol'
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
-# Adding evm version because of this https://github.com/foundry-rs/foundry/issues/4988
-# evm_version = 'shanghai' # EVM version to use during tests
+[profile.fork]
+match-path = 'test/fork/**/*.sol'
+evm_version = 'shanghai'
 
 [rpc_endpoints]
 kinto = "${KINTO_RPC_URL}"
+mainnet = "${ETHEREUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }

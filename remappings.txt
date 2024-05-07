@@ -15,3 +15,6 @@ lib/account-abstraction:@openzeppelin/=lib/openzeppelin-contracts
 
 @token-bridge-contracts/=lib/token-bridge-contracts/
 @nitro-contracts/=lib/nitro-contracts/
+
+@kinto-core/=src/
+@kinto-core-test/=test/
