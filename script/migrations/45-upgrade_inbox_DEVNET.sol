@@ -43,8 +43,9 @@ contract KintoMigration45DeployScript is MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         upgradeExecutor.executeCall(address(proxyAdmin), upgradeCallData);
 
-        vm.broadcast(deployerPrivateKey);
-        AbsInbox(address(inbox)).initializeL2AllowList();
+        // function below no longer exists
+        // vm.broadcast(deployerPrivateKey);
+        // AbsInbox(address(inbox)).initializeL2AllowList();
 
         // vm.broadcast(deployerPrivateKey);
         // L1GatewayRouter(0xbEB11D12972C11319fF8742a28D361763f2858a9).outboundTransfer{value: 38674917993600}(

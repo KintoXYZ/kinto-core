@@ -21,7 +21,21 @@ contract InboxTest is AbsInboxTest {
         // init bridge and inbox
         IEthBridge(address(bridge)).initialize(IOwnable(rollup));
         inbox.initialize(bridge, ISequencerInbox(seqInbox));
-        AbsInbox(address(ethInbox)).initializeL2AllowList();
+
+        address[] memory users = new address[](4);
+        users[0] = 0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8; // L2 customGateway
+        users[1] = 0x340487b92808B84c2bd97C87B590EE81267E04a7; // L2 router
+        users[2] = 0x87799989341A07F495287B1433eea98398FD73aA; // L2 standardGateway
+        users[3] = 0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE; // L2 wethGateway
+
+        bool[] memory values = new bool[](4);
+        values[0] = true;
+        values[1] = true;
+        values[2] = true;
+        values[3] = true;
+
+        vm.prank(rollup);
+        Inbox(address(inbox)).setL2AllowList(users, values);
 
         vm.prank(rollup);
         bridge.setDelayedInbox(address(inbox), true);
@@ -97,10 +111,10 @@ contract InboxTest is AbsInboxTest {
 
     function test_createRetryableTicket_WhenAddressAllowed() public {
         address[4] memory allowedAddresses = [
-            0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99,
-            0xf3AC740Fcc64eEd76dFaE663807749189A332d54,
-            0x6A8d32c495df943212B7788114e41103047150a5,
-            0x79B47F0695608aD8dc90E400a3E123b02eB72D24
+            0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8,
+            0x340487b92808B84c2bd97C87B590EE81267E04a7,
+            0x87799989341A07F495287B1433eea98398FD73aA,
+            0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE
         ];
 
         for (uint256 i = 0; i < allowedAddresses.length; i++) {
@@ -163,10 +177,10 @@ contract InboxTest is AbsInboxTest {
 
     function test_createRetryableTicket_WhenAddressAllowed_WhenExcessFeeRefundAddressDiffFromSender() public {
         address[4] memory allowedAddresses = [
-            0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99,
-            0xf3AC740Fcc64eEd76dFaE663807749189A332d54,
-            0x6A8d32c495df943212B7788114e41103047150a5,
-            0x79B47F0695608aD8dc90E400a3E123b02eB72D24
+            0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8,
+            0x340487b92808B84c2bd97C87B590EE81267E04a7,
+            0x87799989341A07F495287B1433eea98398FD73aA,
+            0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE
         ];
 
         for (uint256 i = 0; i < allowedAddresses.length; i++) {
@@ -229,10 +243,10 @@ contract InboxTest is AbsInboxTest {
 
     function test_createRetryableTicket_WhenAddressAllowed_WhenCallValueRefundAddressDiffFromSender() public {
         address[4] memory allowedAddresses = [
-            0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99,
-            0xf3AC740Fcc64eEd76dFaE663807749189A332d54,
-            0x6A8d32c495df943212B7788114e41103047150a5,
-            0x79B47F0695608aD8dc90E400a3E123b02eB72D24
+            0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8,
+            0x340487b92808B84c2bd97C87B590EE81267E04a7,
+            0x87799989341A07F495287B1433eea98398FD73aA,
+            0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE
         ];
 
         for (uint256 i = 0; i < allowedAddresses.length; i++) {
@@ -295,10 +309,10 @@ contract InboxTest is AbsInboxTest {
 
     function test_createRetryableTicket_WhenAddressAllowed_WhenRefundAddressesDiffFromSender() public {
         address[4] memory allowedAddresses = [
-            0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99,
-            0xf3AC740Fcc64eEd76dFaE663807749189A332d54,
-            0x6A8d32c495df943212B7788114e41103047150a5,
-            0x79B47F0695608aD8dc90E400a3E123b02eB72D24
+            0x06FcD8264caF5c28D86eb4630c20004aa1faAaA8,
+            0x340487b92808B84c2bd97C87B590EE81267E04a7,
+            0x87799989341A07F495287B1433eea98398FD73aA,
+            0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE
         ];
 
         for (uint256 i = 0; i < allowedAddresses.length; i++) {
