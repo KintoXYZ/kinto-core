@@ -47,6 +47,11 @@ ethers@^6.11.1:
     tslib "2.4.0"
     ws "8.5.0"
 
+permissionless@^0.1.24:
+  version "0.1.24"
+  resolved "https://registry.yarnpkg.com/permissionless/-/permissionless-0.1.24.tgz#cd0f19c237cda34d76007c4d6542fa96f6625cfe"
+  integrity sha512-StctaoSxNfFzyEF3O7ajTAxWZB5yEjJ3YW7CjF7Ih7/K1xiuETizmIknsePw8zGkqrLnbrqjOkw8vvFMk8xczA==
+
 tslib@2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.4.0.tgz#7cecaa7f073ce680a05847aa77be941098f36dc3"
