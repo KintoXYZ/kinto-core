@@ -5,19 +5,24 @@ import "../interfaces/IInflator.sol";
 
 /**
  * note: forked from https://github.com/daimo-eth/bulk/blob/master/src/BundleBulker.sol
- * only replaces ENTRY_POINT address
+ * only replaces ENTRY_POINT address with an immutable variable
  *
  * Reinflates a compressed, inflatord 4337 bundle, then submits to EntryPoint.
  *
  * Lets anyone register a new inflator.
  */
 contract BundleBulker {
-    address public constant ENTRY_POINT = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    IEntryPoint public immutable entryPoint;
 
     mapping(uint32 => IInflator) public idToInflator;
     mapping(IInflator => uint32) public inflatorToID;
 
     event InflatorRegistered(uint32 id, IInflator inflator);
+
+    constructor(IEntryPoint _entryPoint) {
+        require(address(_entryPoint) != address(0), "Entry point cannot be 0");
+        entryPoint = _entryPoint;
+    }
 
     function registerInflator(uint32 inflatorId, IInflator inflator) public {
         require(inflatorId != 0, "Inflator ID cannot be 0");
@@ -48,6 +53,6 @@ contract BundleBulker {
 
     fallback() external {
         (UserOperation[] memory ops, address payable beneficiary) = inflate(msg.data);
-        IEntryPoint(ENTRY_POINT).handleOps(ops, beneficiary);
+        IEntryPoint(entryPoint).handleOps(ops, beneficiary);
     }
 }

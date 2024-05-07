@@ -10,7 +10,7 @@ import {IInflator} from "../../src/interfaces/IInflator.sol";
 import {PerOpInflator, IOpInflator} from "@alto/src/compression/PerOpInflator.sol";
 import "./utils/MigrationHelper.sol";
 
-contract KintoMigration46DeployScript is MigrationHelper {
+contract KintoMigration51DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
