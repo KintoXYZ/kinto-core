@@ -49,8 +49,6 @@ jobs:
 
       - name: Check gas snapshots
         run: forge snapshot --diff
-        env:
-          FORK: false
 
       - name: Save forge compilation cache
         uses: actions/cache/save@v3
@@ -79,7 +77,6 @@ jobs:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-          FORK: false
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3.16
@@ -98,10 +95,10 @@ jobs:
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}
 
-  test-mainnet:
+  test-fork:
     needs: test-local 
 
-    name: Test Mainnet
+    name: Test Fork
     runs-on: ubuntu-latest
 
     steps:
@@ -111,12 +108,11 @@ jobs:
 
       - uses: ./.github/actions/install
 
-      - name: Run mainnet tests
+      - name: Run fork tests
         run: forge test 
         env:
           FOUNDRY_FUZZ_RUNS: 100
-          FOUNDRY_EVM_VERSION: shanghai
-          FORK: true
+          FOUNDRY_PROFILE: fork
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
           LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
           DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
@@ -125,7 +121,7 @@ jobs:
   coverage:
     needs:
       - test-local
-      - test-mainnet
+      - test-fork
       #- test-unit
       #- test-internal
       #- test-integration
@@ -146,7 +142,7 @@ jobs:
         run: sudo apt-get install -y lcov
 
       - name: Generate LCOV report
-        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FORK=true FOUNDRY_EVM_VERSION=shanghai forge coverage --report lcov && mv lcov.info lcov-mainnet.info && lcov --add lcov-local.info --add lcov-mainnet.info -o lcov.info && rm lcov-local.info && rm lcov-mainnet.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
         env:
           FOUNDRY_FUZZ_RUNS: 100
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
@@ -171,7 +167,7 @@ jobs:
   slither:
     needs:
       - test-local
-      - test-mainnet
+      - test-fork
 
     name: Slither
     runs-on: ubuntu-latest
@@ -239,7 +235,7 @@ jobs:
   certora:
     needs:
       - test-local
-      - test-mainnet
+      - test-fork
 
     name: Certora
     runs-on: ubuntu-latest

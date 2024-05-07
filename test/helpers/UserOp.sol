@@ -2,43 +2,18 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-import "../../src/wallet/KintoWallet.sol";
-import "../../src/wallet/KintoWalletFactory.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
 
 abstract contract UserOp is Test {
-    uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
-
     using ECDSAUpgradeable for bytes32;
 
-    // private keys
-    uint256 _ownerPk = 1;
-    uint256 _secondownerPk = 2;
-    uint256 _userPk = 3;
-    uint256 _user2Pk = 4;
-    uint256 _upgraderPk = 5;
-    uint256 _kycProviderPk = 6;
-    uint256 _recovererPk = 7;
-    uint256 _funderPk = 8;
-    uint256 _verifierPk = 9;
-    uint256 _noKycPk = 10;
-
-    // users
-    address payable _owner = payable(vm.addr(_ownerPk));
-    address payable _secondowner = payable(vm.addr(_secondownerPk));
-    address payable _user = payable(vm.addr(_userPk));
-    address payable _user2 = payable(vm.addr(_user2Pk));
-    address payable _upgrader = payable(vm.addr(_upgraderPk));
-    address payable _kycProvider = payable(vm.addr(_kycProviderPk));
-    address payable _recoverer = payable(vm.addr(_recovererPk));
-    address payable _funder = payable(vm.addr(_funderPk));
-    address payable _verifier = payable(vm.addr(_verifierPk));
-    address payable _noKyc = payable(vm.addr(_noKycPk));
+    uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
     // gas constants
     uint256 constant CALL_GAS_LIMIT = 4_000_000;
@@ -254,14 +229,5 @@ abstract contract UserOp is Test {
         }
 
         return signature;
-    }
-
-    /// @dev Generates a user, labels its address, and funds it with test assets.
-    function createUser(string memory name) internal returns (address payable) {
-        address payable user = payable(makeAddr(name));
-        vm.label(user, name);
-        vm.deal(user, 100e18);
-
-        return user;
     }
 }
