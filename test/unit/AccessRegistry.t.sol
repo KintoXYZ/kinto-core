@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {Create2} from "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
@@ -14,6 +15,7 @@ import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 import {IKintoEntryPoint} from "@kinto-core/interfaces/IKintoEntryPoint.sol";
 import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
+import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
@@ -85,5 +87,29 @@ contract AccessRegistryTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(IAccessRegistry.WorkflowAlreadyDisallowed.selector, workflow));
         vm.prank(_owner);
         accessRegistry.disallowWorkflow(workflow);
+    }
+
+    function testCreateAccount() public {
+        address addr = address(accessRegistry.createAccount(_user, 1234));
+        assertEq(addr, accessRegistry.getAddress(_user, 4321));
+    }
+
+    function testGetAddress() public view {
+        address addr = accessRegistry.getAddress(_user);
+        address addrSalt = accessRegistry.getAddress(_user, 1234);
+
+        address expected = Create2.computeAddress(
+            bytes32(abi.encodePacked(_user)),
+            keccak256(
+                abi.encodePacked(
+                    type(SafeBeaconProxy).creationCode,
+                    abi.encode(address(accessRegistry.beacon()), abi.encodeCall(IAccessPoint.initialize, (_user)))
+                )
+            ),
+            address(accessRegistry)
+        );
+
+        assertEq(addr, addrSalt);
+        assertEq(addr, expected);
     }
 }

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "./IAccessPoint.sol";
-import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {IAccessPoint} from "./IAccessPoint.sol";
+import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /**
- * @title IAccessRegistry
- *  @notice Deploys new proxies via CREATE2 and keeps a registry of owners to proxies. Proxies can only be deployed
- *  once per owner, and they cannot be transferred. The registry also supports installing callbacks, which are used
- *  for extending the functionality of the access point.
+ * @title Access Registry Interface
+ * @notice Manages and deploys new proxy contracts using CREATE2, maintaining a registry linking owners to proxies.
+ * Each owner can only have one proxy, which is non-transferable.
  */
 interface IAccessRegistry {
     /* ============ Errors ============ */
@@ -27,55 +26,72 @@ interface IAccessRegistry {
 
     /* ============ Events ============ */
 
-    /// @notice Emitted when workflow is allowed or dissallowed.
+    /// @notice Emitted when a workflow's allowance status is changed.
     event WorkflowStatusChanged(address indexed workflow, bool indexed status);
 
-    /// @notice Emitted when access point is upgraded.
-    event AccessPointFactoryUpgraded(address indexed beacon, address indexed accessPoint);
+    /// @notice Emitted when the access point factory is upgraded.
+    event AccessPointFactoryUpgraded(address indexed beacon, address indexed newAccessPoint);
 
-    /// @notice Emitted when a new access point is deployed.
+    /// @notice Emitted when a new access point is deployed for a user.
     event DeployAccessPoint(address indexed operator, address indexed owner, IAccessPoint accessPoint);
-
-    /* ============ Structs ============ */
 
     /* ============ View Functions ============ */
 
-    /// @notice
-    function isWorkflowAllowed(address workflow) external view returns (bool);
+    /// @notice Checks if a workflow is currently allowed.
+    /// @param workflow The address of the workflow to check.
+    /// @return status True if the workflow is allowed, false otherwise.
+    function isWorkflowAllowed(address workflow) external view returns (bool status);
 
-    /// @notice Retrieves the accessPoint for the provided user.
-    /// @param user The user address for the query.
+    /// @notice Retrieves the access point associated with a user.
+    /// @param user The user address for which to retrieve the access point.
+    /// @return accessPoint The access point associated with the user.
     function getAccessPoint(address user) external view returns (IAccessPoint accessPoint);
 
     /**
-     * @dev Calculates the counterfactual address of this account as it would be returned by deploy()
-     * @param owner The owner address
-     * @return The address of the account
+     * @notice Calculates the address of a proxy that could be deployed via `deployFor`.
+     * @param owner The owner address for which to calculate the proxy address.
+     * @return The address of the proxy.
      */
     function getAddress(address owner) external view returns (address);
 
+    /**
+     * @notice Calculates the address of a proxy that could be deployed with a specified salt.
+     * @param owner The owner address for which to calculate the proxy address.
+     * @param salt The salt to use in the CREATE2 deployment process.
+     * @return The address of the proxy.
+     */
+    function getAddress(address owner, uint256 salt) external view returns (address);
+
+    /// @notice Retrieves the beacon contract used for proxy upgrades.
+    /// @return The beacon contract used for upgrades.
     function beacon() external view returns (UpgradeableBeacon);
 
+    /// @notice Retrieves the version number of the factory.
+    /// @return The factory version as a uint256.
     function factoryVersion() external view returns (uint256);
 
-    /* ============ State Change ============ */
+    /* ============ State Change Functions ============ */
 
-    /// @notice
+    /// @notice Disallows a specified workflow.
+    /// @param workflow The address of the workflow to disallow.
     function disallowWorkflow(address workflow) external;
 
-    /// @notice
+    /// @notice Allows a specified workflow.
+    /// @param workflow The address of the workflow to allow.
     function allowWorkflow(address workflow) external;
 
-    function upgradeAll(IAccessPoint newImplementationWallet) external;
+    /// @notice Upgrades all deployed access points to a new implementation.
+    /// @param newImplementation The new access point implementation to upgrade to.
+    function upgradeAll(IAccessPoint newImplementation) external;
 
-    /// @notice Deploys a new access point for the provided user.
-    ///
-    /// @dev Emits a {DeployAccessPoint} event.
-    ///
-    /// Requirements:
-    /// - The user must not have a access point already.
-    ///
-    /// @param user The address that will own the access point.
+    /// @notice Deploys a new access point for the specified user.
+    /// @param user The address that will own the new access point.
     /// @return accessPoint The address of the newly deployed access point.
     function deployFor(address user) external returns (IAccessPoint accessPoint);
+
+    /// @notice Creates a new access point account for the specified owner using a salt for deterministic deployment.
+    /// @param owner The address that will own the new access point.
+    /// @param salt The salt to use in the CREATE2 deployment process.
+    /// @return accessPoint The address of the newly created access point account.
+    function createAccount(address owner, uint256 salt) external returns (IAccessPoint accessPoint);
 }
