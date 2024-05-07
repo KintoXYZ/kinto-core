@@ -11,7 +11,8 @@ contract KintoMigration50DeployScript is MigrationHelper {
         super.run();
 
         // deploy BundleBulker
-        bytes memory bytecode = abi.encodePacked(type(BundleBulker).creationCode, abi.encode(_getChainDeployment("EntryPoint")));
+        bytes memory bytecode =
+            abi.encodePacked(type(BundleBulker).creationCode, abi.encode(_getChainDeployment("EntryPoint")));
         vm.broadcast(deployerPrivateKey);
         BundleBulker bundleBulker = BundleBulker(factory.deployContract(msg.sender, 0, bytecode, bytes32(0)));
         console.log("BundleBulker deployed @", address(bundleBulker));
