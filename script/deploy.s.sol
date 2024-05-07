@@ -16,6 +16,7 @@ import "../src/apps/KintoAppRegistry.sol";
 import "../src/tokens/EngenCredits.sol";
 import "../src/Faucet.sol";
 import "../src/inflators/KintoInflator.sol";
+import "../src/inflators/BundleBulker.sol";
 
 import "../test/helpers/Create2Helper.sol";
 import "../test/helpers/ArtifactsReader.sol";
@@ -68,6 +69,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     // Inflator
     KintoInflator public inflator;
     KintoInflator public inflatorImpl;
+
+    // BundleBulker
+    BundleBulker public bundleBulker;
+    BundleBulker public bundleBulkerImpl;
 
     // whether to write addresses to a file or not (and console.log them)
     bool write;
@@ -167,8 +172,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy Faucet
         (faucet, faucetImpl) = deployFaucet();
 
-        // deploy Inflator
+        // deploy BundleBulker & Inflator
         (inflator, inflatorImpl) = deployInflator();
+        (bundleBulker, bundleBulkerImpl) = deployBundleBulker();
 
         // deploy KYCViewer
         (viewer, viewerImpl) = deployKYCViewer();
@@ -356,6 +362,16 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _inflator.initialize();
+    }
+
+    function deployBundleBulker() public returns (BundleBulker _bundleBulker, BundleBulker _bundleBulkerImpl) {
+        bytes memory creationCode = type(BundleBulker).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("BundleBulker", creationCode, bytecode, false);
+        address proxy = _deployProxy("BundleBulker", implementation, false);
+
+        _bundleBulker = BundleBulker(payable(proxy));
+        _bundleBulkerImpl = BundleBulker(payable(implementation));
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer

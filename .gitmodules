@@ -25,3 +25,6 @@
 [submodule "lib/nitro-contracts"]
 	path = lib/nitro-contracts
 	url = https://github.com/OffchainLabs/nitro-contracts
+[submodule "lib/alto"]
+	path = lib/alto
+	url = https://github.com/pimlicolabs/alto.git

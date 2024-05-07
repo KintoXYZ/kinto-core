@@ -179,14 +179,18 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     /// @notice whitelists an app in the KintoWallet
     function _whitelistApp(address _app, uint256 _signerPk, bool _whitelist) internal {
-        address payable _to = payable(_getChainDeployment("KintoWallet-admin"));
+        address payable _wallet = payable(_getChainDeployment("KintoWallet-admin"));
+        _whitelistApp(_app, _wallet, _signerPk, _whitelist);
+    }
+
+    function _whitelistApp(address _app, address _wallet, uint256 _signerPk, bool _whitelist) internal {
         address[] memory apps = new address[](1);
         apps[0] = _app;
 
         bool[] memory flags = new bool[](1);
         flags[0] = _whitelist;
 
-        _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _to, _signerPk);
+        _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _wallet, _wallet, _signerPk);
     }
 
     function _whitelistApp(address _app, uint256 _signerPk) internal {
@@ -194,7 +198,10 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     }
 
     function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, _signerPk);
+    }
+
+    function _handleOps(bytes memory _selectorAndParams, address _from, address _to, uint256 _signerPk) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
@@ -247,13 +254,12 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
     function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
         // contracts allowed to receive EOAs calls
-        address[6] memory GETH_ALLOWED_CONTRACTS = [
+        address[5] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
             _getChainDeployment("KintoWalletFactory"),
             _getChainDeployment("SponsorPaymaster"),
             _getChainDeployment("KintoID"),
-            _getChainDeployment("KintoAppRegistry"),
-            _getChainDeployment("KintoInflator")
+            _getChainDeployment("KintoAppRegistry")
         ];
 
         // check if contract is a geth allowed contract

@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.18;
+
+import "../../src/inflators/KintoInflator.sol";
+import "./utils/MigrationHelper.sol";
+
+contract KintoMigration44DeployScript is MigrationHelper {
+    using ECDSAUpgradeable for bytes32;
+
+    function run() public override {
+        super.run();
+
+        bytes memory bytecode = abi.encodePacked(type(KintoInflator).creationCode);
+        _deployImplementationAndUpgrade("KintoInflator", "V2", bytecode);
+    }
+}
