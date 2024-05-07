@@ -14,18 +14,18 @@ import {
     NotOrigin,
     NotRollupOrOwner,
     RetryableData
-} from "../libraries/Error.sol";
-import "./IInboxBase.sol";
-import "./ISequencerInbox.sol";
-import "./IBridge.sol";
-import "../libraries/AddressAliasHelper.sol";
-import "../libraries/DelegateCallAware.sol";
+} from "@nitro-contracts/src/libraries/Error.sol";
+import "@nitro-contracts/src/bridge/IInboxBase.sol";
+import "@nitro-contracts/src/bridge/ISequencerInbox.sol";
+import "@nitro-contracts/src/bridge/IBridge.sol";
+import "@nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@nitro-contracts/src/libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
     L2MessageType_unsignedContractTx,
     L2MessageType_unsignedEOATx,
     L2_MSG
-} from "../libraries/MessageTypes.sol";
+} from "@nitro-contracts/src/libraries/MessageTypes.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";
@@ -53,8 +53,25 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     /// @inheritdoc IInboxBase
     mapping(address => bool) public isAllowed;
 
+    /// @dev mapping to whitelist contracts that do not need dusting check
+    mapping(address => bool) private l2AllowList;
+
     event AllowListAddressSet(address indexed user, bool val);
     event AllowListEnabledUpdated(bool isEnabled);
+    event L2AllowListAddressSet(address indexed user, bool val);
+    event L2AllowListInitialized();
+
+    error RefundAddressNotAllowed(address to, address excessFeeRefundAddress, address callValueRefundAddress);
+
+    /// @notice add or remove users from l2AllowList
+    function setL2AllowList(address[] memory addresses, bool[] memory values) external onlyRollupOrOwner {
+        require(addresses.length == values.length, "INVALID_INPUT");
+
+        for (uint256 i = 0; i < addresses.length; i++) {
+            l2AllowList[addresses[i]] = values[i];
+            emit L2AllowListAddressSet(addresses[i], values[i]);
+        }
+    }
 
     /// @inheritdoc IInboxBase
     function setAllowList(address[] memory user, bool[] memory val) external onlyRollupOrOwner {
@@ -80,6 +97,16 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     modifier onlyAllowed() {
         // solhint-disable-next-line avoid-tx-origin
         if (allowListEnabled && !isAllowed[tx.origin]) revert NotAllowedOrigin(tx.origin);
+        _;
+    }
+
+    /// @dev this modifier ensures that both `excessFeeRefundAddress` and `callValueRefundAddress` match the msg.sender
+    /// unless the `to` address is whitelisted.
+    /// This check prevents users from dusting others on the L2.
+    modifier whenRefundAddressAllowed(address to, address excessFeeRefundAddress, address callValueRefundAddress) {
+        if (!l2AllowList[to] && (excessFeeRefundAddress != msg.sender || callValueRefundAddress != msg.sender)) {
+            revert RefundAddressNotAllowed(to, excessFeeRefundAddress, callValueRefundAddress);
+        }
         _;
     }
 
