@@ -6,13 +6,13 @@ import "@kinto-core/interfaces/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract BridgerL2Test is TestSignature, SharedSetup {
+contract BridgerL2Test is SignatureHelper, SharedSetup {
     function setUp() public override {
         super.setUp();
         // transfer owner's ownership to _owner

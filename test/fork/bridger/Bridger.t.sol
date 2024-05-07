@@ -5,8 +5,8 @@ import "@kinto-core/interfaces/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
-contract BridgerTest is TestSignature, ForkTest, ArtifactsReader {
+contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -30,13 +30,14 @@ contract BridgerTest is TestSignature, ForkTest, ArtifactsReader {
     function setUp() public override {
         super.setUp();
 
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
         bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
 
         // transfer owner's ownership to _owner
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
-        // give some eth to _owner
-        vm.deal(_owner, 1e20);
     }
 
     function setUpChain() public virtual override {
@@ -44,6 +45,9 @@ contract BridgerTest is TestSignature, ForkTest, ArtifactsReader {
     }
 
     function _deployBridger() internal {
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
         BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));

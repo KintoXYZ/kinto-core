@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
+import {CommonBase} from "forge-std/Base.sol";
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -13,7 +12,7 @@ import "@kinto-core/interfaces/IKintoID.sol";
 import "@kinto-core/interfaces/IFaucet.sol";
 import "@kinto-core/interfaces/IBridger.sol";
 
-abstract contract TestSignature is Test {
+abstract contract SignatureHelper is CommonBase {
     using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 

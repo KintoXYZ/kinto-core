@@ -5,8 +5,8 @@ import "@kinto-core/interfaces/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -19,7 +19,7 @@ contract BridgerL2NewUpgrade is BridgerL2 {
     constructor(address factory) BridgerL2(factory) {}
 }
 
-contract BridgerL2Test is TestSignature, SharedSetup {
+contract BridgerL2Test is SignatureHelper, SharedSetup {
     address sDAI = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // virtual sDAI
     address sDAIL2 = 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI L2 representation
 

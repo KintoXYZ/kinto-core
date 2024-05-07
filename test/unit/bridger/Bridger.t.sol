@@ -8,8 +8,8 @@ import "@kinto-core/interfaces/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
-import "@kinto-core-test/helpers/TestSignature.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
@@ -29,7 +29,7 @@ contract ERC20PermitToken is ERC20, ERC20Permit {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
 }
 
-contract BridgerTest is TestSignature, SharedSetup {
+contract BridgerTest is SignatureHelper, SharedSetup {
     address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
