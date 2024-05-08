@@ -96,7 +96,6 @@ contract AccessRegistryTest is BaseTest {
         assertEq(addr, accessRegistry.getAddress(_user, 4321));
     }
 
-
     function testCreateAccount() public {
         address addr = address(accessRegistry.createAccount(_user, 1234));
         assertEq(addr, accessRegistry.getAddress(_user, 4321));

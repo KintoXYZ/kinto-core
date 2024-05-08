@@ -8,8 +8,9 @@ import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 
 import {console2} from "forge-std/console2.sol";
+import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessProtocolScript is ArtifactsReader, DeployerHelper {
+contract UpgradeAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
     AccessRegistry registry;
     address newImpl;
 

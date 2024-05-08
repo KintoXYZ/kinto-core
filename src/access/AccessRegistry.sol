@@ -128,11 +128,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     }
 
     /// @inheritdoc IAccessRegistry
-    function deployFor(address user)
-        external
-        override
-        returns (IAccessPoint accessPoint)
-    {
+    function deployFor(address user) external override returns (IAccessPoint accessPoint) {
         return _deploy(user);
     }
 
@@ -141,11 +137,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
      * @dev Salt is ignored on purpose. This method is added to provide / compliance with SimpleAccountFactory.
      * https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccountFactory.sol
      */
-    function createAccount(address user, uint256)
-        external
-        override
-        returns (IAccessPoint accessPoint)
-    {
+    function createAccount(address user, uint256) external override returns (IAccessPoint accessPoint) {
         return _deploy(user);
     }
 
