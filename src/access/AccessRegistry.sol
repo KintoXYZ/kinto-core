@@ -42,15 +42,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /* ============ Modifiers ============ */
 
-    /// @notice Check that the user does not have a accessPoint.
-    modifier onlyNonAccessPointOwner(address user) {
-        IAccessPoint accessPoint = _accessPoints[user];
-        if (address(accessPoint) != address(0)) {
-            revert UserHasAccessPoint(user, accessPoint);
-        }
-        _;
-    }
-
     /* ============ Constructor & Upgrades ============ */
     constructor(UpgradeableBeacon beacon_) {
         beacon = beacon_;
@@ -140,7 +131,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     function deployFor(address user)
         external
         override
-        onlyNonAccessPointOwner(user)
         returns (IAccessPoint accessPoint)
     {
         return _deploy(user);
@@ -154,7 +144,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     function createAccount(address user, uint256)
         external
         override
-        onlyNonAccessPointOwner(user)
         returns (IAccessPoint accessPoint)
     {
         return _deploy(user);
@@ -164,6 +153,11 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /// @dev See `deploy`.
     function _deploy(address owner) internal returns (IAccessPoint accessPoint) {
+        address addr = getAddress(owner);
+        if (addr.code.length > 0) {
+            return IAccessPoint(addr);
+        }
+
         // Use the address of the owner as the CREATE2 salt.
         bytes32 salt = bytes32(abi.encodePacked(owner));
 

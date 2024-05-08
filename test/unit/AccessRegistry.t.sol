@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.18;
 
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
@@ -88,6 +87,15 @@ contract AccessRegistryTest is BaseTest {
         vm.prank(_owner);
         accessRegistry.disallowWorkflow(workflow);
     }
+
+    function testCreateAccountDuplicate() public {
+        address addr = address(accessRegistry.createAccount(_user, 1234));
+        assertEq(addr, accessRegistry.getAddress(_user, 4321));
+
+        addr = address(accessRegistry.createAccount(_user, 1234));
+        assertEq(addr, accessRegistry.getAddress(_user, 4321));
+    }
+
 
     function testCreateAccount() public {
         address addr = address(accessRegistry.createAccount(_user, 1234));
