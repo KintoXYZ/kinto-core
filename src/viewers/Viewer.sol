@@ -6,14 +6,12 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {IViewer} from "@kinto-core/interfaces/IViewer.sol";
-
 /**
  * @title Viewer Smart Contract
  * @dev This contract serves as a view-only interface that allows querying token balances for a specified address.
  *      It is upgradeable using the UUPS pattern and is owned by a single owner.
  */
-contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IViewer {
+contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @dev Initializes the contract in a disabled state to prevent its use without proxy.
     constructor() {
         _disableInitializers();
