@@ -21,8 +21,7 @@ contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
             return;
         }
 
-        address viewerImpl =
-            create2("Viewer-impl", abi.encodePacked(type(Viewer).creationCode, ''));
+        address viewerImpl = create2("Viewer-impl", abi.encodePacked(type(Viewer).creationCode, ""));
         // salt to get a nice address for the viewer
         address viewerProxy = create2(
             0xdfaa1b650599cbcc41400113049359311bc10a6411c3cc13cdd1944ff916102e,
@@ -35,6 +34,6 @@ contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
     }
 
     function checkContracts(address) internal view override {
-        require(viewer.getBalances(new address[](0),address(this)).length == 0, "getBalances not working");
+        require(viewer.getBalances(new address[](0), address(this)).length == 0, "getBalances not working");
     }
 }

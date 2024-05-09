@@ -28,7 +28,6 @@ contract ViewerTest is BaseTest {
         token2.mint(_user, 3);
     }
 
-
     function testInitialize() public {
         viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer()), "")));
         viewer.initialize();
