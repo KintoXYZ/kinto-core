@@ -23,7 +23,6 @@ import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol"
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
-import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
