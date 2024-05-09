@@ -10,11 +10,12 @@ import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "@aa/core/BaseAccount.sol";
-import "@aa/samples/callback/TokenCallbackHandler.sol";
+import {BaseAccount} from "@aa-v7/core/BaseAccount.sol";
+import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler.sol";
 
-import "../libraries/ByteSignature.sol";
-import "./AccessPoint.sol";
+import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
+import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
+
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IAccessRegistry.sol";

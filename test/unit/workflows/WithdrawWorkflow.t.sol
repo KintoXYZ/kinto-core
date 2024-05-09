@@ -5,15 +5,14 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "@aa/core/EntryPoint.sol";
-import {UserOperation} from "@aa/interfaces/UserOperation.sol";
+import {EntryPoint} from "@aa-v7/core/EntryPoint.sol";
+import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {IKintoEntryPoint} from "@kinto-core/interfaces/IKintoEntryPoint.sol";
 import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
@@ -27,7 +26,7 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
     using MessageHashUtils for bytes32;
 
     SignaturePaymaster paymaster;
-    IKintoEntryPoint entryPoint;
+    EntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
     WithdrawWorkflow internal withdrawWorkflow;
@@ -42,7 +41,7 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
         vm.deal(_owner, 100 ether);
         token = new ERC20Mock("Token", "TNK", 18);
 
-        entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
+        entryPoint = new EntryPoint{salt: 0}();
 
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
@@ -68,7 +67,7 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
     function testWithdrawERC20ViaPaymaster() public {
         token.mint(address(accessPoint), defaultAmount);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = createUserOperationWithPaymaster(
             block.chainid,
             address(accessPoint),
@@ -100,7 +99,7 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
 
         abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, defaultAmount);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = createUserOperationWithPaymaster(
             block.chainid,
             address(accessPoint),
@@ -155,7 +154,7 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
         uint256 _nonce,
         uint256 _privateKey,
         bytes memory _bytesOp
-    ) internal view returns (UserOperation memory op) {
+    ) internal view returns (PackedUserOperation memory op) {
         op = createUserOperation(
             _chainID,
             _from,
@@ -190,8 +189,8 @@ contract WithdrawWorkflowTest is BaseTest, UserOp {
         uint256 _privateKey,
         bytes memory _bytesOp,
         bytes memory _paymasterAndData
-    ) internal view returns (UserOperation memory op) {
-        op = UserOperation({
+    ) internal view returns (PackedUserOperation memory op) {
+        op = PackedUserOperation({
             sender: _from,
             nonce: _nonce,
             initCode: bytes(""),
