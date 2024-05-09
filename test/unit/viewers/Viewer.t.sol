@@ -3,8 +3,8 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/viewers/Viewer.sol";
 
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
-
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 contract ViewerTest is BaseTest {
@@ -16,7 +16,8 @@ contract ViewerTest is BaseTest {
 
     function setUp() public override {
         // Deploy Viewer contract
-        viewer = new Viewer();
+        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer()), "")));
+        viewer.initialize();
 
         token0 = new ERC20Mock("token0", "TNK0", 18);
         token1 = new ERC20Mock("token1", "TNK1", 18);
@@ -29,10 +30,10 @@ contract ViewerTest is BaseTest {
 
 
     function testInitialize() public {
-        viewer = new Viewer();
-
-        vm.expectRevert("Initializable: contract is already initialized");
+        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer()), "")));
         viewer.initialize();
+
+        assertEq(viewer.owner(), address(this));
     }
 
     /* ============ Viewer tests ============ */

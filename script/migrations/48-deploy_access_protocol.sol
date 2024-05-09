@@ -14,7 +14,6 @@ import {SwapWorkflow} from "../../src/access/workflows/SwapWorkflow.sol";
 import {SafeBeaconProxy} from "../../src/proxy/SafeBeaconProxy.sol";
 
 import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
-import {Create2Helper} from "../../test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 
