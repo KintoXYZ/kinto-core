@@ -61,6 +61,8 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         internal
         returns (address addr)
     {
+        console2.log("keccak256(creationCodeWithArgs)");
+        console2.logBytes32(keccak256(creationCodeWithArgs));
         addr = computeAddress(salt, creationCodeWithArgs);
         if (!isContract(addr)) {
             address deployed = deploy(salt, creationCodeWithArgs);
