@@ -27,6 +27,14 @@ contract ViewerTest is BaseTest {
         token2.mint(_user, 3);
     }
 
+
+    function testInitialize() public {
+        viewer = new Viewer();
+
+        vm.expectRevert("Initializable: contract is already initialized");
+        viewer.initialize();
+    }
+
     /* ============ Viewer tests ============ */
 
     function testGetBalances() public view {
