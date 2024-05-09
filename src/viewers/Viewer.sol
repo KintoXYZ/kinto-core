@@ -40,7 +40,7 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /**
      * @notice Retrieves the ERC20 token balances for a specific target address.
      * @dev This view function allows fetching balances for multiple tokens in a single call,
-            which can save considerable gas over multiple calls.
+     *         which can save considerable gas over multiple calls.
      * @param tokens An array of token addresses to query balances for.
      * @param target The address whose balances will be queried.
      * @return balances An array of balances corresponding to the array of tokens provided.
