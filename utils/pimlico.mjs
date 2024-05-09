@@ -77,12 +77,16 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   if(bytecode.length > 0){
     isAccountDeployed = true;
   }
-  console.log('isAccountDeployed:', isAccountDeployed)sponsoredUserOperation
+  console.log('isAccountDeployed:', isAccountDeployed)
 
   // WethWorkflow
-  const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
+  // const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
   // cast abi-encode "deposit(uint256)" 0.01ether
-  const data = "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
+  // const data = "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
+
+const to = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" // vitalik
+const data = "0x68656c6c6f" // "hello" encoded to utf-8 bytes
+
 
   const callData = encodeFunctionData({
     abi: [
@@ -97,7 +101,7 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
         type: "function",
       },
     ],
-    args: [target, data],
+    args: [to, data],
   });
 
   console.log("Generated callData:", callData);
@@ -106,9 +110,9 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
 
   const userOperation = {
     sender: senderAddress,
-    nonce: 0n,
-    factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
-    factoryData: isAccountDeployed ? undefined: factoryData,
+    nonce: 3n,
+    // factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
+    // factoryData: isAccountDeployed ? undefined: factoryData,
     callData: callData,
     maxFeePerGas: gasPrice.fast.maxFeePerGas,
     maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
