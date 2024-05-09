@@ -1,30 +1,40 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+  ignore = dirty
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+  ignore = dirty
 [submodule "lib/openzeppelin-contracts-upgradeable"]
 	path = lib/openzeppelin-contracts-upgradeable
 	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
+  ignore = dirty
 [submodule "lib/account-abstraction"]
 	path = lib/account-abstraction
 	url = https://github.com/KintoXYZ/account-abstraction
+  ignore = dirty
 [submodule "lib/openzeppelin-contracts-upgradeable-5.0.1"]
 	path = lib/openzeppelin-contracts-upgradeable-5.0.1
 	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
+  ignore = dirty
 [submodule "lib/openzeppelin-contracts-5.0.1"]
 	path = lib/openzeppelin-contracts-5.0.1
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+  ignore = dirty
 [submodule "lib/solady"]
 	path = lib/solady
 	url = https://github.com/vectorized/solady
+  ignore = dirty
 [submodule "lib/token-bridge-contracts"]
 	path = lib/token-bridge-contracts
 	url = https://github.com/OffchainLabs/token-bridge-contracts
+  ignore = dirty
 [submodule "lib/nitro-contracts"]
 	path = lib/nitro-contracts
 	url = https://github.com/OffchainLabs/nitro-contracts
+  ignore = dirty
 [submodule "lib/alto"]
 	path = lib/alto
 	url = https://github.com/pimlicolabs/alto.git
+  ignore = dirty
