@@ -14,7 +14,6 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
@@ -24,7 +23,6 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 contract WithdrawWorkflowTest is BaseTest {
     using MessageHashUtils for bytes32;
 
-    SignaturePaymaster paymaster;
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
     WithdrawWorkflow internal withdrawWorkflow;

@@ -17,7 +17,6 @@ import {SwapWorkflow} from "@kinto-core/access/workflows/SwapWorkflow.sol";
 import {WethWorkflow} from "@kinto-core/access/workflows/WethWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
