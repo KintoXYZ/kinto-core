@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 import {BundleBulker} from "../../src/inflators/BundleBulker.sol";
 
 contract KintoMigration45DeployScript is MigrationHelper {

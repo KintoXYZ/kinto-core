@@ -8,7 +8,7 @@ import {KintoInflator} from "../../src/inflators/KintoInflator.sol";
 import {BundleBulker} from "../../src/inflators/BundleBulker.sol";
 import {IInflator} from "../../src/interfaces/IInflator.sol";
 import {PerOpInflator, IOpInflator} from "@alto/src/compression/PerOpInflator.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration51DeployScript is MigrationHelper {
     function run() public override {

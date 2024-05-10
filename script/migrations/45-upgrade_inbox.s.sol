@@ -7,7 +7,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/nitro-contracts/bridge/AbsInbox.sol";
 import "../../src/nitro-contracts/bridge/Inbox.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 import {L1GatewayRouter} from "@token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 
 interface IUpgradeExecutor {

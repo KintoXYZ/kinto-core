@@ -9,7 +9,7 @@ import "../../src/bridger/token-bridge-contracts//L2CustomGateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2ERC20Gateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2WethGateway.sol";
 
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;

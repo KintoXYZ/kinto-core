@@ -10,7 +10,7 @@ import "../../src/KintoID.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/Faucet.sol";
 
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration29DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;

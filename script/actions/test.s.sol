@@ -3,17 +3,17 @@ pragma solidity ^0.8.18;
 
 import "@aa/core/EntryPoint.sol";
 
-import "../src/KintoID.sol";
-import "../src/interfaces/IKintoID.sol";
-import "../src/sample/Counter.sol";
-import "../src/sample/ETHPriceIsRight.sol";
-import "../src/interfaces/IKintoWallet.sol";
-import "../src/wallet/KintoWalletFactory.sol";
-import "../src/paymasters/SponsorPaymaster.sol";
+import "@kinto-core/KintoID.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/sample/Counter.sol";
+import "@kinto-core/sample/ETHPriceIsRight.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core/paymasters/SponsorPaymaster.sol";
 
-import "../test/helpers/AASetup.sol";
-import "../test/helpers/SignatureHelper.sol";
-import "../test/helpers/UserOp.sol";
+import "@kinto-core-test/helpers/AASetup.sol";
+import "@kinto-core-test/helpers/SignatureHelper.sol";
+import "@kinto-core-test/helpers/UserOp.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";

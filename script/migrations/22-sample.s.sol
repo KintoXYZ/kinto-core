@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWallet.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 // NOTE: this is a sample migration script with the new refactors
 // contract KintoMigration22DeployScript is MigrationHelper {

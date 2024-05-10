@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/interfaces/IFaucet.sol";
-import "../migrations/utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract StartFaucetScript is MigrationHelper {
     function run() public override {

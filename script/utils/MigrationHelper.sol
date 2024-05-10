@@ -4,17 +4,17 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../../../src/wallet/KintoWalletFactory.sol";
-import "../../../src/paymasters/SponsorPaymaster.sol";
-import "../../../src/apps/KintoAppRegistry.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import "@kinto-core/apps/KintoAppRegistry.sol";
 
-import "../../../src/interfaces/ISponsorPaymaster.sol";
-import "../../../src/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
 
-import "../../../test/helpers/Create2Helper.sol";
-import "../../../test/helpers/ArtifactsReader.sol";
-import "../../../test/helpers/UserOp.sol";
-import "../../../test/helpers/UUPSProxy.sol";
+import "@kinto-core-test/helpers/Create2Helper.sol";
+import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import "@kinto-core-test/helpers/UserOp.sol";
+import "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";

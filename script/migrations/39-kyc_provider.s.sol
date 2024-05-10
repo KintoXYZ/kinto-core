@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/KintoID.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration39DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;

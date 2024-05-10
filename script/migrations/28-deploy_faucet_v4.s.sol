@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/Faucet.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core/Faucet.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration28DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;

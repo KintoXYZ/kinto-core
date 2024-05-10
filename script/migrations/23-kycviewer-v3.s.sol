@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/viewers/KYCViewer.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KYCViewerV3 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
