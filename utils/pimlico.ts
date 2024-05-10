@@ -162,6 +162,7 @@ async function callWorkflow(
   console.log(`UserOperation included: /tx/${txHash}`);
 }
 
+// tsx ./utils/pimlico.ts 0x$DEPLOYER_PRIVATE_KEY $PIMLICO_API_KEY $ARBITRUM_RPC_URL
 callWorkflow(process.argv[2], process.argv[3], process.argv[4])
   .then((result) => console.log(result))
   .catch((err) => console.error("Error getting quote:", err));
