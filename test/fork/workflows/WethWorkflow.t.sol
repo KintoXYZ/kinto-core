@@ -8,8 +8,7 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
-import {EntryPoint} from "@aa/core/EntryPoint.sol";
-import {UserOperation} from "@aa/interfaces/UserOperation.sol";
+import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
 import {IWETH9 as IWETH} from "@token-bridge-contracts/contracts/tokenbridge/libraries/IWETH9.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
@@ -17,7 +16,6 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WethWorkflow} from "@kinto-core/access/workflows/WethWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {IKintoEntryPoint} from "@kinto-core/interfaces/IKintoEntryPoint.sol";
 import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
@@ -27,19 +25,17 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 contract WethWorkflowTest is ForkTest {
-    IKintoEntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
     WethWorkflow internal wethWorkflow;
 
+    address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
     IWETH internal constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     function setUp() public virtual override {
         super.setUp();
-
-        entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
 
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
@@ -48,7 +44,7 @@ contract WethWorkflowTest is ForkTest {
 
         accessRegistry = AccessRegistry(address(accessRegistryProxy));
         beacon.transferOwnership(address(accessRegistry));
-        IAccessPoint accessPointImpl = new AccessPoint(entryPoint, accessRegistry);
+        IAccessPoint accessPointImpl = new AccessPoint(IEntryPoint(ENTRY_POINT), accessRegistry);
 
         accessRegistry.initialize();
         accessRegistry.upgradeAll(accessPointImpl);
@@ -57,7 +53,6 @@ contract WethWorkflowTest is ForkTest {
 
         wethWorkflow = new WethWorkflow(address(WETH));
 
-        entryPoint.setWalletFactory(address(accessRegistry));
         accessRegistry.allowWorkflow(address(wethWorkflow));
     }
 
