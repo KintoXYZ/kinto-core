@@ -1,6 +1,7 @@
 {
   "AccessPoint-impl": "0x66fF284bb2eb29B954daD5a13B2A0c3599a502db",
   "AccessPointV2-impl": "0x617d62536444B83Bc600968b2fd5A683470AD3F7",
+  "AccessPointV3-impl": "0xa7a028A65A481a84BFbB19A93BAe54db5E6Fd45D",
   "AccessRegistry": "0xA000000eaA652c7023530b603844471294B811c4",
   "AccessRegistry-impl": "0xdf0e4e75c61d495996Ffd33f56290564A6Bd3B74",
   "AccessRegistryBeacon": "0xfe56e9D6F04D427D557dff1615398632BB7Dd3e6",

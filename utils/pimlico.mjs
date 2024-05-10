@@ -32,6 +32,7 @@ const ACCESS_REGISTRY = "0xA000000eaA652c7023530b603844471294B811c4";
 async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   const publicClient = createPublicClient({
     transport: http(nodeRpcUrl),
+    chain: arbitrum
   });
 
   const bundlerClient = createClient({
@@ -80,12 +81,9 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   console.log('isAccountDeployed:', isAccountDeployed)
 
   // WethWorkflow
-  // const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
+  const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
   // cast abi-encode "deposit(uint256)" 0.01ether
-  // const data = "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
-
-const to = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" // vitalik
-const data = "0x68656c6c6f" // "hello" encoded to utf-8 bytes
+  const data = "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
 
 
   const callData = encodeFunctionData({
@@ -101,7 +99,7 @@ const data = "0x68656c6c6f" // "hello" encoded to utf-8 bytes
         type: "function",
       },
     ],
-    args: [to, data],
+    args: [target, data],
   });
 
   console.log("Generated callData:", callData);
@@ -110,7 +108,7 @@ const data = "0x68656c6c6f" // "hello" encoded to utf-8 bytes
 
   const userOperation = {
     sender: senderAddress,
-    nonce: 3n,
+    nonce: 0n,
     // factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
     // factoryData: isAccountDeployed ? undefined: factoryData,
     callData: callData,

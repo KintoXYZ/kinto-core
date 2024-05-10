@@ -28,7 +28,7 @@ contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
         newImpl = AccessPoint(
             payable(
                 create2(
-                    "AccessPointV2-impl",
+                    "AccessPointV3-impl",
                     abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
                 )
             )
