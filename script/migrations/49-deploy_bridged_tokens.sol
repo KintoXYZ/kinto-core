@@ -107,20 +107,4 @@ contract KintoMigration49DeployScript is MigrationHelper {
 
         checkToken(proxy, name, symbol);
     }
-
-    function saveContractAddress(string memory contractName, address addr) internal {
-        string memory path = _getAddressesFile();
-        string memory dir = _getAddressesDir();
-        if (!vm.isDir(dir)) vm.createDir(dir, true);
-        if (!vm.isFile(path)) {
-            vm.writeFile(path, "{}");
-        }
-
-        string memory json = vm.readFile(path);
-        string[] memory keys = vm.parseJsonKeys(json, "$");
-        for (uint256 index = 0; index < keys.length; index++) {
-            vm.serializeString(contractName, keys[index], json.readString(string.concat(".", keys[index])));
-        }
-        vm.writeJson(vm.serializeAddress(contractName, contractName, addr), path);
-    }
 }
