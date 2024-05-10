@@ -43,7 +43,10 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
     }
 
     /// @dev deploys proxy contract via factory from deployer address
-    function _deployProxy(string memory contractName, address implementation) internal returns (address _proxy) {
+    function _deployProxy(string memory contractName, address implementation, bytes32 salt)
+        internal
+        returns (address _proxy)
+    {
         bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
 
@@ -52,22 +55,35 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         // deploy Proxy contract
         vm.broadcast(deployerPrivateKey);
         bytes memory bytecode = abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(implementation), ""));
-        _proxy = address(UUPSProxy(payable(factory.deployContract(address(0), 0, bytecode, bytes32(0)))));
+        _proxy = address(UUPSProxy(payable(factory.deployContract(address(0), 0, bytecode, salt))));
 
         console.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
     }
 
+    function _deployProxy(string memory contractName, address implementation) internal returns (address _proxy) {
+        return _deployProxy(contractName, implementation, bytes32(0));
+    }
+
     /// @dev deploys implementation contracts via entrypoint from deployer address
     /// @dev if contract is ownable, it will transfer ownership to msg.sender
+    function _deployImplementation(
+        string memory contractName,
+        string memory version,
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal returns (address _impl) {
+        // deploy new implementation via factory
+        vm.broadcast(deployerPrivateKey);
+        _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
+
+        console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
+    }
+
     function _deployImplementation(string memory contractName, string memory version, bytes memory bytecode)
         internal
         returns (address _impl)
     {
-        // deploy new implementation via factory
-        vm.broadcast(deployerPrivateKey);
-        _impl = factory.deployContract(msg.sender, 0, bytecode, bytes32(0));
-
-        console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
+        return _deployImplementation(contractName, version, bytecode, bytes32(0));
     }
 
     /// @notice deploys implementation contracts via factory from deployer address and upgrades them
