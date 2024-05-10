@@ -29,10 +29,14 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const ACCESS_REGISTRY = "0xA000000eaA652c7023530b603844471294B811c4";
 
-async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
+async function callWorkflow(
+  privateKey: string,
+  pimlicoRpcUrl: string,
+  nodeRpcUrl: string
+): Promise<void> {
   const publicClient = createPublicClient({
     transport: http(nodeRpcUrl),
-    chain: arbitrum
+    chain: arbitrum,
   });
 
   const bundlerClient = createClient({
@@ -73,18 +77,18 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   });
   console.log("Calculated sender address:", senderAddress);
 
-  const bytecode = await publicClient.getBytecode({ address: senderAddress })
+  const bytecode = await publicClient.getBytecode({ address: senderAddress });
   let isAccountDeployed = false;
-  if(bytecode.length > 0){
+  if (bytecode.length > 0) {
     isAccountDeployed = true;
   }
-  console.log('isAccountDeployed:', isAccountDeployed)
+  console.log("isAccountDeployed:", isAccountDeployed);
 
   // WethWorkflow
   const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
   // cast abi-encode "deposit(uint256)" 0.01ether
-  const data = "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
-
+  const data =
+    "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
 
   const callData = encodeFunctionData({
     abi: [
@@ -109,8 +113,8 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   const userOperation = {
     sender: senderAddress,
     nonce: 0n,
-    // factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
-    // factoryData: isAccountDeployed ? undefined: factoryData,
+    factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
+    factoryData: isAccountDeployed ? undefined : factoryData,
     callData: callData,
     maxFeePerGas: gasPrice.fast.maxFeePerGas,
     maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
@@ -155,9 +159,7 @@ async function callWorkflow(privateKey, pimlicoRpcUrl, nodeRpcUrl) {
   });
   const txHash = receipt.receipt.transactionHash;
 
-  console.log(
-    `UserOperation included: https://sepolia.etherscan.io/tx/${txHash}`
-  );
+  console.log(`UserOperation included: /tx/${txHash}`);
 }
 
 callWorkflow(process.argv[2], process.argv[3], process.argv[4])
