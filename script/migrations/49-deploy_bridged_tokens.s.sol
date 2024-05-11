@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {BridgedToken} from "../../src/tokens/BridgedToken.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {console2} from "forge-std/console2.sol";
 
 contract KintoMigration49DeployScript is MigrationHelper {
+    using LibString for *;
     using stdJson for string;
 
     uint256 mainnetFork = vm.createSelectFork("mainnet");
@@ -82,10 +85,9 @@ contract KintoMigration49DeployScript is MigrationHelper {
             name = "ENA";
             symbol = "ENA";
         } else {
-            ERC20 token = ERC20(token);
-            name = token.name();
-            symbol = token.symbol();
-            require(token.decimals() == 18, "Decimals must be 18");
+            name = ERC20(token).name();
+            symbol = ERC20(token).symbol();
+            require(ERC20(token).decimals() == 18, "Decimals must be 18");
         }
         console2.log("Deploying BridgedToken for %s", name);
 
@@ -94,9 +96,14 @@ contract KintoMigration49DeployScript is MigrationHelper {
 
         // deploy token
         bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode);
-        bytes32 salt = keccak256(abi.encodePacked(symbol));
-        implementation = _deployImplementation("BridgedToken", "V1", bytecode, salt);
+        implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
+        (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, getSalt(symbol));
+
         proxy = _deployProxy("BridgedToken", implementation, salt);
+
+        assertEq(proxy, expectedAddress);
 
         _whitelistApp(proxy, deployerPrivateKey);
 
@@ -106,5 +113,12 @@ contract KintoMigration49DeployScript is MigrationHelper {
         _handleOps(selectorAndParams, proxy, deployerPrivateKey);
 
         checkToken(proxy, name, symbol);
+    }
+
+    function getSalt(string memory symbol) internal pure returns (string memory) {
+        if (symbol.eqs("DAI")) {
+            return "DA1000";
+        }
+        return "000000";
     }
 }

@@ -16,15 +16,16 @@ import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 
-import "forge-std/Script.sol";
-import "forge-std/console.sol";
+import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
+
+import {Script} from "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
+contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, SaltHelper {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -56,8 +57,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
 
         // deploy Proxy contract
         vm.broadcast(deployerPrivateKey);
-        bytes memory bytecode = abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(implementation), ""));
-        _proxy = address(UUPSProxy(payable(factory.deployContract(address(0), 0, bytecode, salt))));
+        _proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
 
         console.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
     }
@@ -75,6 +75,7 @@ contract MigrationHelper is Create2Helper, ArtifactsReader, UserOp {
         bytes32 salt
     ) internal returns (address _impl) {
         // deploy new implementation via factory
+        console2.log("factory:", address(factory));
         vm.broadcast(deployerPrivateKey);
         _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
 

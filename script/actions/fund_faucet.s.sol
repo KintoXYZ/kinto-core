@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../../src/wallet/KintoWalletFactory.sol";
-import "../../../src/wallet/KintoWallet.sol";
-import "../../../src/paymasters/SponsorPaymaster.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/paymasters/SponsorPaymaster.sol";
 
-import "../../../test/helpers/Create2Helper.sol";
-import "../../../test/helpers/ArtifactsReader.sol";
-import "../../../test/helpers/UUPSProxy.sol";
+import "@kinto-core-test/helpers/Create2Helper.sol";
+import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
