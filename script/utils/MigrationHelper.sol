@@ -77,7 +77,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         // deploy new implementation via factory
         console2.log("factory:", address(factory));
         vm.broadcast(deployerPrivateKey);
-        _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
+        _impl = deploy(salt, bytecode);
 
         console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
     }

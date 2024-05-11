@@ -105,12 +105,7 @@ contract KintoMigration49DeployScript is MigrationHelper {
 
         assertEq(proxy, expectedAddress);
 
-        _whitelistApp(proxy, deployerPrivateKey);
-
-        // initialize
-        bytes memory selectorAndParams =
-            abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, minter, upgrader);
-        _handleOps(selectorAndParams, proxy, deployerPrivateKey);
+        new InitBridgedToken(BridgedToken(proxy), name, symbol, admin, minter, upgrader);
 
         checkToken(proxy, name, symbol);
     }
@@ -148,5 +143,12 @@ contract KintoMigration49DeployScript is MigrationHelper {
             return "5DA100";
         }
         return "000000";
+    }
+}
+
+contract InitBridgedToken {
+    constructor (BridgedToken token, string memory name, string memory symbol, address admin, address minter, address upgrader) {
+        token.initialize(name, symbol, admin, minter, upgrader);
+        selfdestruct(payable(msg.sender));
     }
 }
