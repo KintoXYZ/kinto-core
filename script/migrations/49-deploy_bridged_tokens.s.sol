@@ -116,8 +116,36 @@ contract KintoMigration49DeployScript is MigrationHelper {
     }
 
     function getSalt(string memory symbol) internal pure returns (string memory) {
+        // https://en.wikipedia.org/wiki/Leet
+        if (symbol.eqs("USDe")) {
+            return "05De00";
+        }
+        if (symbol.eqs("sUSDe")) {
+            return "505De0";
+        }
+        if (symbol.eqs("wstETH")) {
+            return "057E70";
+        }
+        if (symbol.eqs("weETH")) {
+            return "0eE700";
+        }
+        if (symbol.eqs("wUSDM")) {
+            return "005011";
+        }
+        if (symbol.eqs("ENA")) {
+            return "E04000";
+        }
+        if (symbol.eqs("eETH")) {
+            return "eE7000";
+        }
+        if (symbol.eqs("EIGEN")) {
+            return "E16E00";
+        }
         if (symbol.eqs("DAI")) {
             return "DA1000";
+        }
+        if (symbol.eqs("sDAI")) {
+            return "5DA100";
         }
         return "000000";
     }
