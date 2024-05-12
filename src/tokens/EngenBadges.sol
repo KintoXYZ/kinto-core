@@ -26,17 +26,16 @@ contract EngenBadges is
     /**
      * @dev Initializes the contract with a specific URI for metadata and sets up roles.
      * @param uri The base URI for the ERC1155 token metadata.
-    * @param initialAdmin The address to set as the initial admin.
      */
-    function initialize(string memory uri, address initialAdmin) external initializer {
+    function initialize(string memory uri) external initializer {
         __ERC1155_init(uri);
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
         // Set up roles for the provided admin address
-        _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
-        _grantRole(MINTER_ROLE, initialAdmin);
-        _grantRole(UPGRADER_ROLE, initialAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(UPGRADER_ROLE, msg.sender);
     }
 
     /**

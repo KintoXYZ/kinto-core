@@ -30,8 +30,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
         _handleOps(
             abi.encodeWithSelector(
                 IEngenBadges.initialize.selector, 
-                "http://kinto.xyz/api/v1/get-badge-nft/", 
-                _getChainDeployment("KintoWallet-admin")
+                "http://kinto.xyz/api/v1/get-badge-nft/"
             ),
             address(proxy),
             deployerPrivateKey

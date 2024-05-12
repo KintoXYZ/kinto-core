@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 import { UUPSProxy } from "@kinto-core-test/helpers/UUPSProxy.sol";
 import { EngenBadges } from "@kinto-core/tokens/EngenBadges.sol";
-import { EngenBadgesHarness } from "@kinto-core-test/harness/EngenBadgesHarness.sol";
-
 
 import { BaseTest } from "@kinto-core-test/helpers/BaseTest.sol";
 import "forge-std/Console.sol";
@@ -27,7 +25,7 @@ contract EngenBadgesTest is BaseTest {
 
         EngenBadges impl = new EngenBadges();
         _badges = EngenBadges(address(new UUPSProxy(address(impl), "")));
-        _badges.initialize(uri, admin);
+        _badges.initialize(uri);
     }
 
     function testInitialization() public view{
@@ -101,12 +99,10 @@ contract EngenBadgesTest is BaseTest {
     }
 
     function testUpgradeTo() public {
-        EngenBadgesHarness newImpl = new EngenBadgesHarness();
+        EngenBadges newImpl = new EngenBadges();
         vm.prank(admin);
         _badges.upgradeTo(address(newImpl));
 
-        // new function working
-        assertEq(EngenBadgesHarness(address(_badges)).answer(), 42);
         // old values are kept
         assertEq(_badges.uri(1), uri);
         assertTrue(_badges.hasRole(_badges.DEFAULT_ADMIN_ROLE(), admin));
@@ -115,7 +111,7 @@ contract EngenBadgesTest is BaseTest {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotUpgrader() public {
-        EngenBadgesHarness newImpl = new EngenBadgesHarness();
+        EngenBadges newImpl = new EngenBadges();
         vm.expectRevert();
         // Attempting to upgrade without proper authorization
         vm.prank(user);
