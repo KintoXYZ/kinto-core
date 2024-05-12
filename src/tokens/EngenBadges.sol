@@ -28,7 +28,7 @@ contract EngenBadges is
      * @param uri The base URI for the ERC1155 token metadata.
     * @param initialAdmin The address to set as the initial admin.
      */
-    function initialize(string memory uri, address initialAdmin) public initializer {
+    function initialize(string memory uri, address initialAdmin) external initializer {
         __ERC1155_init(uri);
         __AccessControl_init();
         __UUPSUpgradeable_init();
@@ -58,7 +58,7 @@ contract EngenBadges is
      * @param recipients List of recipient addresses.
      * @param ids List of lists of token IDs. Each element of `ids` corresponds to a list of tokens to mint for the corresponding address in `recipients`.
      */
-    function mintBadgesBatch(address[] memory recipients, uint256[][] memory ids) public onlyRole(MINTER_ROLE) {
+    function mintBadgesBatch(address[] memory recipients, uint256[][] memory ids) external onlyRole(MINTER_ROLE) {
         require(recipients.length == ids.length, "EngenBadges: Mismatched input lengths.");
         require(recipients.length <= 100, "EngenBadges: Cannot mint to more than 100 addresses at a time.");
 
