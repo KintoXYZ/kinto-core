@@ -19,7 +19,7 @@ contract EngenGovernance is Governor, GovernorCountingSimple, GovernorVotes, Gov
     constructor(IVotes _token)
         Governor("EngenGovernance")
         GovernorVotes(_token)
-        GovernorVotesQuorumFraction(10)
+        GovernorVotesQuorumFraction(20)
     {}
 
     /**
