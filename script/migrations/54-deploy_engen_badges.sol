@@ -18,8 +18,9 @@ contract KintoMigration54DeployScript is MigrationHelper {
             console.log("EngenBadges already deployed", engenBadgesAddr);
             return;
         }
-        
-        bytes memory bytecode = abi.encodePacked(type(EngenBadges).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
+
+        bytes memory bytecode =
+            abi.encodePacked(type(EngenBadges).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         address implementation = _deployImplementation("EngenBadges", "V1", bytecode);
         address proxy = _deployProxy("EngenBadges", implementation);
 
@@ -28,10 +29,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
 
         //UserOp initialize with parameters
         _handleOps(
-            abi.encodeWithSelector(
-                IEngenBadges.initialize.selector, 
-                "http://kinto.xyz/api/v1/get-badge-nft/"
-            ),
+            abi.encodeWithSelector(IEngenBadges.initialize.selector, "http://kinto.xyz/api/v1/get-badge-nft/"),
             address(proxy),
             deployerPrivateKey
         );
@@ -53,6 +51,5 @@ contract KintoMigration54DeployScript is MigrationHelper {
             deployerPrivateKey
         );
         */
-
     }
 }

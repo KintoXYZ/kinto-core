@@ -7,11 +7,10 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import { UUPSProxy } from "@kinto-core-test/helpers/UUPSProxy.sol";
-import { EngenBadges } from "@kinto-core/tokens/EngenBadges.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {EngenBadges} from "@kinto-core/tokens/EngenBadges.sol";
 
-import { BaseTest } from "@kinto-core-test/helpers/BaseTest.sol";
-import "forge-std/Console.sol";
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 contract EngenBadgesTest is BaseTest {
     EngenBadges _badges;
@@ -28,7 +27,7 @@ contract EngenBadgesTest is BaseTest {
         _badges.initialize(uri);
     }
 
-    function testInitialization() public view{
+    function testInitialization() public view {
         assertEq(_badges.uri(1), uri);
         assertTrue(_badges.hasRole(_badges.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(_badges.hasRole(_badges.MINTER_ROLE(), admin));
@@ -61,11 +60,11 @@ contract EngenBadgesTest is BaseTest {
         address[] memory recipients = new address[](100);
         uint256[][] memory ids = new uint256[][](100);
 
-        for(uint i = 0; i < 100; i++) {
+        for (uint256 i = 0; i < 100; i++) {
             recipients[i] = address(uint160(0xABCDE + i));
         }
 
-        for(uint i = 0; i < 100; i++) {
+        for (uint256 i = 0; i < 100; i++) {
             ids[i] = new uint256[](2);
             ids[i][0] = 1;
             ids[i][1] = 2;
@@ -74,7 +73,7 @@ contract EngenBadgesTest is BaseTest {
         vm.prank(admin);
         _badges.mintBadgesBatch(recipients, ids);
 
-        for(uint i = 0; i < 100; i++) {
+        for (uint256 i = 0; i < 100; i++) {
             assertEq(_badges.balanceOf(recipients[i], 1), 1);
             assertEq(_badges.balanceOf(recipients[i], 2), 1);
         }
@@ -84,11 +83,11 @@ contract EngenBadgesTest is BaseTest {
         address[] memory recipients = new address[](101);
         uint256[][] memory ids = new uint256[][](101);
 
-        for(uint i = 0; i < 101; i++) {
+        for (uint256 i = 0; i < 101; i++) {
             recipients[i] = address(uint160(0xABCDE + i));
         }
 
-        for(uint i = 0; i < 101; i++) {
+        for (uint256 i = 0; i < 101; i++) {
             ids[i] = new uint256[](2);
             ids[i][0] = 1;
             ids[i][1] = 2;
@@ -115,6 +114,6 @@ contract EngenBadgesTest is BaseTest {
         vm.expectRevert();
         // Attempting to upgrade without proper authorization
         vm.prank(user);
-        _badges.upgradeToAndCall(address(newImpl), bytes(""));
+        _badges.upgradeTo(address(newImpl));
     }
 }

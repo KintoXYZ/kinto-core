@@ -46,7 +46,7 @@ contract EngenBadges is
     function mintBadges(address to, uint256[] memory ids) public onlyRole(MINTER_ROLE) {
         uint256[] memory amounts = new uint256[](ids.length);
         for (uint256 i = 0; i < ids.length; i++) {
-            amounts[i] = 1;  // Set the mint amount for each badge to exactly one.
+            amounts[i] = 1; // Set the mint amount for each badge to exactly one.
         }
         _mintBatch(to, ids, amounts, "");
     }
@@ -86,7 +86,3 @@ contract EngenBadges is
         return super.supportsInterface(interfaceId);
     }
 }
-
-
-
-
