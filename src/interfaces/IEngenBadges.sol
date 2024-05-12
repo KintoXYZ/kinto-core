@@ -9,9 +9,8 @@ interface IEngenBadges {
     /**
      * @dev Initializes the contract with a specific URI for metadata and sets up roles.
      * @param uri The base URI for the ERC1155 token metadata.
-     * @param initialAdmin The address to set as the initial admin.
      */
-    function initialize(string calldata uri, address initialAdmin) external;
+    function initialize(string calldata uri) external;
 
     /**
      * @dev Mints badges to a specified address with each ID only being minted once.
