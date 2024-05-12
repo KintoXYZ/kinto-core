@@ -35,7 +35,7 @@ contract EngenCredits is
     bool public transfersEnabled;
     bool public burnsEnabled;
 
-    mapping(address => uint256) public phase1Override;
+    mapping(address => uint256) public earnedCredits;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -59,7 +59,7 @@ contract EngenCredits is
      * @param to The address of the user to mint tokens for
      * @param amount The amount of tokens to mint
      */
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 
@@ -67,7 +67,7 @@ contract EngenCredits is
      * @dev Enable transfers of Engen tokens
      * @param _transfersEnabled True if transfers should be enabled
      */
-    function setTransfersEnabled(bool _transfersEnabled) public onlyOwner {
+    function setTransfersEnabled(bool _transfersEnabled) external onlyOwner {
         if (transfersEnabled) revert TransfersAlreadyEnabled();
         transfersEnabled = _transfersEnabled;
     }
@@ -76,20 +76,20 @@ contract EngenCredits is
      * @dev Enable burning of Engen tokens
      * @param _burnsEnabled True if burning should be enabled
      */
-    function setBurnsEnabled(bool _burnsEnabled) public onlyOwner {
+    function setBurnsEnabled(bool _burnsEnabled) external onlyOwner {
         if (burnsEnabled) revert BurnsAlreadyEnabled();
         burnsEnabled = _burnsEnabled;
     }
 
     /**
-     * @dev Set the phase 1 override for the user based on the time they joined
-     * @param _wallets The wallet addresses of the users to override
-     * @param _points The points to be set
+     * @dev Set the engen credits that a wallet has earned
+     * @param _wallets The wallet addresses of the users
+     * @param _points The credits earned by each user
      */
-    function setPhase1Override(address[] calldata _wallets, uint256[] calldata _points) public onlyOwner {
+    function setCredits(address[] calldata _wallets, uint256[] calldata _points) external onlyOwner {
         if (_wallets.length != _points.length) revert LengthMismatch();
         for (uint256 i = 0; i < _wallets.length; i++) {
-            phase1Override[_wallets[i]] = _points[i];
+            earnedCredits[_wallets[i]] = _points[i];
         }
     }
 
@@ -97,28 +97,12 @@ contract EngenCredits is
 
     /**
      * @dev Mint points for the Engen user based on their activity
-     */
-    function mintCredits() public {
+    */
+    function mintCredits() external {
         if (transfersEnabled || burnsEnabled) revert MintNotAllowed();
-        uint256 points = calculatePoints(msg.sender);
+        uint256 points = earnedCredits[msg.sender];
         if (points == 0 || balanceOf(msg.sender) >= points) revert NoTokensToMint();
         _mint(msg.sender, points - balanceOf(msg.sender));
-    }
-
-    // ======= Phase Points ==================
-
-    /**
-     * @dev Calculates the points for the user from each phae in Engen
-     * @param _wallet The wallet address of the user
-     */
-    function calculatePoints(address _wallet) public view returns (uint256) {
-        uint256 points = 0;
-        // Phase 1
-        points = phase1Override[_wallet] > 0 ? phase1Override[_wallet] : 5;
-        // Phase 2
-        points += 5 + IKintoWallet(_wallet).signerPolicy() * 5;
-        // TODO: Phase 3 & 4
-        return points;
     }
 
     // ======= Private Functions ==================
