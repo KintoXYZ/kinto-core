@@ -38,7 +38,7 @@ contract EngenBadgesTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
-    function testInitialization() public view{
+    function testInitialization() public view {
         assertEq(_engenBadges.uri(1), _uri);
         assertTrue(_engenBadges.hasRole(_engenBadges.DEFAULT_ADMIN_ROLE(), address(_kintoWallet)));
         assertTrue(_engenBadges.hasRole(_engenBadges.MINTER_ROLE(), address(_kintoWallet)));
@@ -95,7 +95,7 @@ contract EngenBadgesTest is SharedSetup {
             abi.encodeWithSignature("mintBadges(address,uint256[])", alice, ids),
             address(_paymaster)
         );
-        
+
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq(EngenBadges.NoTokenIDsProvided.selector);
@@ -163,7 +163,7 @@ contract EngenBadgesTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq(EngenBadges.MintToManyAddresses.selector);
     }
-    
+
     function testMintBatchRecipients_RevertWhen_NoIds() public {
         uint256 elements = 0;
         address[] memory recipients = new address[](elements);
@@ -187,13 +187,13 @@ contract EngenBadgesTest is SharedSetup {
     function testMintBatchRecipients_RevertWhen_Missmatch() public {
         uint256 elements = 10;
         address[] memory recipients = new address[](elements);
-        uint256[][] memory ids = new uint256[][](elements+1);
+        uint256[][] memory ids = new uint256[][](elements + 1);
 
         for (uint256 i = 0; i < elements; i++) {
             recipients[i] = address(uint160(0xABCDE + i));
         }
 
-        for (uint256 i = 0; i < elements+1; i++) {
+        for (uint256 i = 0; i < elements + 1; i++) {
             ids[i] = new uint256[](2);
             ids[i][0] = 1;
             ids[i][1] = 2;
@@ -219,7 +219,6 @@ contract EngenBadgesTest is SharedSetup {
         vm.prank(address(_kintoWallet));
         _engenBadges.upgradeTo(address(newImpl));
 
-
         EngenBadgesUpgrade _engenBadgeUpgrade = EngenBadgesUpgrade(address(_engenBadges));
 
         // new function is available
@@ -242,7 +241,7 @@ contract EngenBadgesTest is SharedSetup {
         );
 
         vm.prank(alice);
-        vm.expectRevert(err);       
-         _engenBadges.upgradeTo(address(newImpl));
+        vm.expectRevert(err);
+        _engenBadges.upgradeTo(address(newImpl));
     }
 }
