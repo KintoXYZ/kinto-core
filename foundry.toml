@@ -7,6 +7,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libraries/Cloneable.sol",
 "lib/nitro-contracts/test/foundry/AbsInbox.t.sol", "lib/token-bridge-contracts/contracts/tokenbridge/libraries/gateway/GatewayRouter.sol"]
 match-path = 'test/unit/**/*.sol'
+solc_version = "0.8.24"
 
 [profile.fork]
 match-path = 'test/fork/**/*.sol'

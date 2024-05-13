@@ -10,11 +10,12 @@ import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "@aa/core/BaseAccount.sol";
-import "@aa/samples/callback/TokenCallbackHandler.sol";
+import {BaseAccount} from "@aa-v7/core/BaseAccount.sol";
+import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler.sol";
 
-import "../libraries/ByteSignature.sol";
-import "./AccessPoint.sol";
+import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
+import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
+
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IAccessRegistry.sol";
@@ -41,15 +42,6 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     mapping(address => bool) internal _workflows;
 
     /* ============ Modifiers ============ */
-
-    /// @notice Check that the user does not have a accessPoint.
-    modifier onlyNonAccessPointOwner(address user) {
-        IAccessPoint accessPoint = _accessPoints[user];
-        if (address(accessPoint) != address(0)) {
-            revert UserHasAccessPoint(user, accessPoint);
-        }
-        _;
-    }
 
     /* ============ Constructor & Upgrades ============ */
     constructor(UpgradeableBeacon beacon_) {
@@ -137,12 +129,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     }
 
     /// @inheritdoc IAccessRegistry
-    function deployFor(address user)
-        external
-        override
-        onlyNonAccessPointOwner(user)
-        returns (IAccessPoint accessPoint)
-    {
+    function deployFor(address user) external override returns (IAccessPoint accessPoint) {
         return _deploy(user);
     }
 
@@ -151,12 +138,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
      * @dev Salt is ignored on purpose. This method is added to provide / compliance with SimpleAccountFactory.
      * https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccountFactory.sol
      */
-    function createAccount(address user, uint256)
-        external
-        override
-        onlyNonAccessPointOwner(user)
-        returns (IAccessPoint accessPoint)
-    {
+    function createAccount(address user, uint256) external override returns (IAccessPoint accessPoint) {
         return _deploy(user);
     }
 
@@ -164,6 +146,11 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
     /// @dev See `deploy`.
     function _deploy(address owner) internal returns (IAccessPoint accessPoint) {
+        address addr = getAddress(owner);
+        if (addr.code.length > 0) {
+            return IAccessPoint(addr);
+        }
+
         // Use the address of the owner as the CREATE2 salt.
         bytes32 salt = bytes32(abi.encodePacked(owner));
 

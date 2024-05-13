@@ -17,12 +17,12 @@ import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 
-import "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract DeployAccessProtocolScript is ArtifactsReader, DeployerHelper {
+contract DeployAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
     // Entry Point address is the same on all chains.
-    address payable internal constant ENTRY_POINT = payable(0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
+    address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
     // Exchange Proxy address is the same on all chains.
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
