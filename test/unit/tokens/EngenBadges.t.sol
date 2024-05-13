@@ -244,4 +244,14 @@ contract EngenBadgesTest is SharedSetup {
         vm.expectRevert(err);
         _engenBadges.upgradeTo(address(newImpl));
     }
+
+    function testSupportsInterface() public view {
+        bytes4 InterfaceERC1155Upgradeable = bytes4(keccak256("balanceOf(address,uint256)"))
+            ^ bytes4(keccak256("balanceOfBatch(address[],uint256[])"))
+            ^ bytes4(keccak256("setApprovalForAll(address,bool)")) ^ bytes4(keccak256("isApprovedForAll(address,address)"))
+            ^ bytes4(keccak256("safeTransferFrom(address,address,uint256,uint256,bytes)"))
+            ^ bytes4(keccak256("safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)"));
+
+        assertTrue(_engenBadges.supportsInterface(InterfaceERC1155Upgradeable));
+    }
 }
