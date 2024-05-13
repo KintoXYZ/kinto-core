@@ -14,6 +14,7 @@ import "../src/paymasters/SponsorPaymaster.sol";
 import "../src/wallet/KintoWallet.sol";
 import "../src/apps/KintoAppRegistry.sol";
 import "../src/tokens/EngenCredits.sol";
+import "../src/tokens/EngenBadges.sol";
 import "../src/Faucet.sol";
 import "../src/inflators/KintoInflator.sol";
 import "../src/inflators/BundleBulker.sol";
@@ -58,6 +59,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
 
+    // Engen Badges
+    EngenBadges public engenBadges;
+    EngenBadges public engenBadgesImpl;
+
     // Bridger
     BridgerL2 public bridgerL2;
     BridgerL2 public bridgerL2Impl;
@@ -95,6 +100,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         WalletViewer walletViewer;
         EngenCredits engenCredits;
+        EngenBadges engenBadges;
         Faucet faucet;
         BridgerL2 bridgerL2;
         KintoInflator inflator;
@@ -120,6 +126,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             viewer,
             walletViewer,
             engenCredits,
+            engenBadges,
             faucet,
             bridgerL2,
             inflator
@@ -165,6 +172,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
+
+        // deploy EngenBadges
+        (engenBadges, engenBadgesImpl) = deployEngenBadges();
 
         // deploy bridger l2
         (bridgerL2, bridgerL2Impl) = deployBridgerL2();
@@ -323,6 +333,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _engenCredits.initialize();
+    }
+
+    function deployEngenBadges() public returns (EngenBadges _engenBadges, EngenBadges _engenBadgesImpl) {
+        bytes memory creationCode = type(EngenBadges).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("EngenBadges", creationCode, bytecode, false);
+        address proxy = _deployProxy("EngenBadges", implementation, false);
+
+        _engenBadges = EngenBadges(payable(proxy));
+        _engenBadgesImpl = EngenBadges(payable(implementation));
+
+        //privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        //_engenBadges.initialize("https://api.example.com/metadata/");
     }
 
     function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {

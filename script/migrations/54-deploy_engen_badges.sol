@@ -2,7 +2,6 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core/tokens/EngenBadges.sol";
-import "@kinto-core/interfaces/IEngenBadges.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "./utils/MigrationHelper.sol";
 
@@ -29,7 +28,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
 
         //UserOp initialize with parameters
         _handleOps(
-            abi.encodeWithSelector(IEngenBadges.initialize.selector, "http://kinto.xyz/api/v1/get-badge-nft/"),
+            abi.encodeWithSelector(EngenBadges.initialize.selector, "http://kinto.xyz/api/v1/get-badge-nft/"),
             address(proxy),
             deployerPrivateKey
         );
@@ -43,7 +42,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
         
         _handleOps(
             abi.encodeWithSelector(
-                IEngenBadges.mintBadges.selector,
+                EngenBadges.mintBadges.selector,
                 _getChainDeployment("KintoWallet-admin"),
                 ids
             ), 

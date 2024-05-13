@@ -21,6 +21,10 @@ contract EngenBadges is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
+    error NoTokenIDsProvided();
+    error MismatchedInputLengths();
+    error MintToManyAddresses();
+
     /* ============ Constructor & Initializers ============ */
 
     /**
@@ -44,6 +48,7 @@ contract EngenBadges is
      * @param ids An array of token IDs to mint.
      */
     function mintBadges(address to, uint256[] memory ids) public onlyRole(MINTER_ROLE) {
+        if (ids.length == 0) revert NoTokenIDsProvided();
         uint256[] memory amounts = new uint256[](ids.length);
         for (uint256 i = 0; i < ids.length; i++) {
             amounts[i] = 1; // Set the mint amount for each badge to exactly one.
@@ -58,8 +63,9 @@ contract EngenBadges is
      * @param ids List of lists of token IDs. Each element of `ids` corresponds to a list of tokens to mint for the corresponding address in `recipients`.
      */
     function mintBadgesBatch(address[] memory recipients, uint256[][] memory ids) external onlyRole(MINTER_ROLE) {
-        require(recipients.length == ids.length, "EngenBadges: Mismatched input lengths.");
-        require(recipients.length <= 100, "EngenBadges: Cannot mint to more than 100 addresses at a time.");
+        if (recipients.length != ids.length) revert MismatchedInputLengths();
+        if (recipients.length > 100) revert MintToManyAddresses();
+        if (ids.length == 0) revert NoTokenIDsProvided();
 
         for (uint256 i = 0; i < recipients.length; i++) {
             mintBadges(recipients[i], ids[i]);
