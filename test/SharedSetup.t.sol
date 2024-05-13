@@ -172,7 +172,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         // TODO: we should actually use the KintoWallet-admin and adjust tests so they use the handleOps
         vm.startPrank(address(_kintoWallet));
         _engenCredits.transferOwnership(_owner);
-        _engenBadges.transferOwnership(_owner);
         _kycViewer.transferOwnership(_owner);
         _faucet.transferOwnership(_owner);
         vm.stopPrank();
