@@ -34,7 +34,7 @@ contract KintoMigration49DeployScript is MigrationHelper {
     ];
 
     // KINTO_WALLET will be the admin, minter and upgrader of every BridgedToken
-    address kintoWallet = vm.envAddress("KINTO_WALLET");
+    address kintoWallet = vm.envAddress("ADMIN_KINTO_WALLET");
     address admin = kintoWallet;
     address minter = admin;
     address upgrader = admin;
