@@ -6,7 +6,9 @@
   "version": "0.1.0",
   "devDependencies": {
     "dotenv": "^16.4.5",
-    "ethers": "^6.11.1"
+    "ethers": "^6.11.1",
+    "permissionless": "^0.1.24",
+    "viem": "^2.10.1"
   },
   "license": "MIT",
   "scripts": {

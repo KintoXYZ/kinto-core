@@ -3,6 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 
 abstract contract BaseTest is Test {
     // private keys

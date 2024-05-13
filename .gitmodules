@@ -38,3 +38,7 @@
 	path = lib/alto
 	url = https://github.com/pimlicolabs/alto.git
   ignore = dirty
+[submodule "lib/account-abstraction-0.7.0"]
+	path = lib/account-abstraction-0.7.0
+	url = https://github.com/eth-infinitism/account-abstraction
+  ignore = dirty

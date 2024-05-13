@@ -8,8 +8,9 @@ import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 
 import {console2} from "forge-std/console2.sol";
+import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessProtocolScript is ArtifactsReader, DeployerHelper {
+contract UpgradeAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
     AccessRegistry registry;
     address newImpl;
 
@@ -23,7 +24,7 @@ contract UpgradeAccessProtocolScript is ArtifactsReader, DeployerHelper {
         address beacon = _getChainDeployment("AccessRegistryBeacon");
 
         newImpl =
-            create2("AccessRegistryV2-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+            create2("AccessRegistryV3-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
 
         registry.upgradeToAndCall(address(newImpl), bytes(""));
     }
