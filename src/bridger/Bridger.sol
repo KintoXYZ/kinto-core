@@ -38,6 +38,7 @@ contract Bridger is
     PausableUpgradeable,
     IBridger
 {
+    using Address for address;
     using SignatureChecker for address;
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
@@ -300,29 +301,31 @@ contract Bridger is
     ) private returns (uint256 amountBought) {
         amountBought = amount;
         if (inputAsset != finalAsset) {
-            if (inputAsset == ETH && finalAsset == wstETH) {
-                amountBought = _stakeEthToWstEth(amount);
-            } else {
-                if (inputAsset == ETH) {
-                    WETH.deposit{value: amount}();
-                    inputAsset = address(WETH);
-                }
-                amountBought = amount;
-                if (finalAsset != inputAsset) {
-                    amountBought = _fillQuote(
-                        amount,
-                        IERC20(inputAsset),
-                        // if sUSDE, swap to USDe & then stake
-                        IERC20(finalAsset == sUSDe ? USDe : finalAsset),
-                        swapCallData,
-                        minReceive
-                    );
-                }
-            }
+            return amount;
+        }
 
-            if (finalAsset == sUSDe) {
-                amountBought = _stakeUSDe(USDe, amountBought);
-            }
+        if (inputAsset == ETH && finalAsset == wstETH) {
+            return _stakeEthToWstEth(amount);
+        }
+
+        if (inputAsset == ETH) {
+            WETH.deposit{value: amount}();
+            inputAsset = address(WETH);
+        }
+
+        if (finalAsset != inputAsset) {
+            amountBought = _fillQuote(
+                amount,
+                IERC20(inputAsset),
+                // if sUSDE, swap to USDe & then stake
+                IERC20(finalAsset == sUSDe ? USDe : finalAsset),
+                swapCallData,
+                minReceive
+            );
+        }
+
+        if (finalAsset == sUSDe) {
+            amountBought = _stakeUSDe(USDe, amountBought);
         }
     }
 

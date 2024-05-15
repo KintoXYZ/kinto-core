@@ -14,6 +14,14 @@ import "forge-std/Test.sol";
 contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
 
+    // Exchange Proxy address is the same on all chains.
+    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant DAI = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant SUSDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant WSTETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+
     function setUp() public {}
 
     function run() public {
@@ -31,7 +39,7 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test {
             return;
         }
 
-        Bridger _implementation = new Bridger(bridgerAddressL2);
+        Bridger _implementation = new Bridger(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
         UUPSProxy _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");

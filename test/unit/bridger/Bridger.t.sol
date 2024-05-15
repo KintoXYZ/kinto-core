@@ -87,7 +87,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
             bridger,
@@ -113,7 +112,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
+        bridger.depositBySig(permitSignature, sigdata, bytes(""));
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
@@ -124,7 +123,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 1e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
 
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
             bridger,
@@ -139,7 +137,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.expectRevert(IBridger.OnlyOwner.selector);
         vm.prank(_user);
-        bridger.depositBySig(bytes(""), sigdata, swapData);
+        bridger.depositBySig(bytes(""), sigdata, bytes(""));
     }
 
     function testDepositBySig_RevertWhen_AmountIsZero() public {
@@ -147,7 +145,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 0;
         deal(address(assetToDeposit), _user, amountToDeposit);
 
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
             bridger,
@@ -172,7 +169,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         );
         vm.expectRevert(IBridger.InvalidAmount.selector);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
+        bridger.depositBySig(permitSignature, sigdata, bytes(""));
     }
 
     /* ============ Bridger ETH Deposit ============ */
@@ -183,7 +180,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.startPrank(_owner);
         vm.expectRevert(IBridger.InvalidAsset.selector);
         bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, address(1), 1, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+            kintoWalletL2, address(1), 1, bytes("")
+
         );
         vm.stopPrank();
     }
@@ -195,7 +193,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         address wsteth = bridger.wstETH();
         vm.expectRevert(IBridger.InvalidAmount.selector);
         bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, wsteth, 1, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
+            kintoWalletL2, wsteth, 1,bytes("") 
         );
         vm.stopPrank();
     }
