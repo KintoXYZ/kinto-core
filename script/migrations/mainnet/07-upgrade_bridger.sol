@@ -34,9 +34,9 @@ contract KintoMainnetMigration7DeployScript is Create2Helper, ArtifactsReader, T
         }
         address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
 
-        // Deploy BridgerV4 implementation
+        // Deploy Bridger implementation
         vm.broadcast();
-        BridgerV4 _newImplementation = new BridgerV4(bridgerAddressL2);
+        Bridger _newImplementation = new Bridger(bridgerAddressL2);
 
         // NOTE: upgrade not broadcast since it needs to happen via SAFE
         // Bridger(payable(bridgerAddress)).upgradeTo(address(_newImplementation));

@@ -28,12 +28,12 @@ interface IsUSDe is IERC20 {
 
 interface IL1GatewayRouter {
     function outboundTransfer(
-        address _token,
-        address _to,
-        uint256 _amount,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        bytes calldata _data
+        address token,
+        address to,
+        uint256 amount,
+        uint256 maxGas,
+        uint256 gasPriceBid,
+        bytes calldata data
     ) external payable;
 }
 
@@ -44,8 +44,9 @@ interface IBridger {
     error SignatureExpired();
     error InvalidNonce();
     error InvalidSigner();
-    error InvalidAsset();
-    error InvalidAmount();
+    error InvalidInputAsset(address asset);
+    error InvalidFinalAsset(address asset);
+    error InvalidAmount(uint256 amount);
     error InvalidAssets();
     error SwapsDisabled();
     error NotEnoughEthToBridge();
@@ -85,43 +86,33 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(address _kintoWallet, address _finalAsset, uint256 _minReceive, SwapData calldata _swapData)
+    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, SwapData calldata swapData)
         external
         payable;
 
     function depositBySig(
-        bytes calldata _permitSignature,
-        IBridger.SignatureData calldata _signatureData,
-        IBridger.SwapData calldata _swapData
+        bytes calldata permitSignature,
+        IBridger.SignatureData calldata signatureData,
+        IBridger.SwapData calldata swapData
     ) external payable;
 
-    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
-        external
-        payable;
-
-    function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
-
-    function setSwapsEnabled(bool _swapsEnabled) external;
+    function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
 
     function pause() external;
 
     function unpause() external;
 
-    function setSenderAccount(address _senderAccount) external;
+    function setSenderAccount(address senderAccount) external;
 
-    /* ============ Basic Viewers ============ */
+    /* ============ View ============ */
 
-    function deposits(address _account, address _asset) external view returns (uint256);
-
-    function nonces(address _account) external view returns (uint256);
+    function nonces(address account) external view returns (uint256);
 
     function domainSeparator() external view returns (bytes32);
 
     function allowedAssets(address) external view returns (bool);
 
-    function swapsEnabled() external view returns (bool);
-
-    function depositCount() external view returns (uint256);
+    function finalAllowedAssets(address) external view returns (bool);
 
     function l2Vault() external view returns (address);
 

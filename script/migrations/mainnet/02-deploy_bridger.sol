@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, Test {
+contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
 
     function setUp() public {}
@@ -31,13 +31,6 @@ contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, T
             return;
         }
 
-        address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
-        if (bridgerAddressL2 == address(0)) {
-            console.log("Not deployed bridger L2", bridgerAddressL2);
-            return;
-        }
-
-        // Deploy Engen Credits implementation
         Bridger _implementation = new Bridger(bridgerAddressL2);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
