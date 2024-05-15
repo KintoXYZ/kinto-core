@@ -59,11 +59,9 @@ contract Bridger is
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public immutable WETH;
     address public immutable DAI;
-    address public immutable sDAI;
     address public immutable USDe;
     address public immutable sUSDe;
     address public immutable wstETH;
-    address public immutable weETH;
 
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
@@ -76,11 +74,17 @@ contract Bridger is
 
     /// @dev Mapping of input assets that are allowed
     mapping(address => bool) public override allowedAssets;
-    /// @dev Mapping of final assets that are allowed
-    mapping(address => bool) public override finalAllowedAssets;
+    /// @dev DEPRECATED
+    mapping(address => mapping(address => uint256)) public override deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
+    /// @dev Count of deposits
+    uint256 public depositCount;
+    /// @dev DEPRECATED
+    bool public swapsEnabled;
+    /// @dev Mapping of final assets that are allowed
+    mapping(address => bool) public override finalAllowedAssets;
 
     /* ============ Modifiers ============ */
     modifier onlyPrivileged() {
@@ -98,11 +102,9 @@ contract Bridger is
         address _exchangeProxy,
         address weth,
         address dai,
-        address sDai,
         address usde,
         address sUsde,
-        address wstEth,
-        address weEth
+        address wstEth
     ) {
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
@@ -111,11 +113,9 @@ contract Bridger is
 
         WETH = IWETH(weth);
         DAI = dai;
-        sDAI = sDai;
         USDe = usde;
         sUSDe = sUSDe;
         wstETH = wstEth;
-        weETH = weEth;
     }
 
     /**
@@ -166,71 +166,71 @@ contract Bridger is
 
     /**
      * @dev Deposit the specified amount of tokens in to the Kinto L2
-     * @param signatureData Struct with all the required information to deposit via signature
+     * @param depositData Struct with all the required information to deposit via signature
      * @param permitSignature, Signature to be recovered to allow the spender to spend the tokens
      */
     function depositBySig(
         bytes calldata permitSignature,
-        IBridger.SignatureData calldata signatureData,
-        IBridger.SwapData calldata swapData
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(signatureData) {
-        if (!finalAllowedAssets[signatureData.finalAsset]) {
-            revert InvalidFinalAsset(signatureData.finalAsset);
-        }
+        IBridger.SignatureData calldata depositData,
+        bytes calldata swapCallData
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+        _checkFinalAsset(depositData.finalAsset);
 
-        if (signatureData.inputAsset != signatureData.finalAsset && !allowedAssets[signatureData.inputAsset]) {
-            revert InvalidInputAsset(signatureData.inputAsset);
+        if (depositData.inputAsset != depositData.finalAsset && !allowedAssets[depositData.inputAsset]) {
+            revert InvalidInputAsset(depositData.inputAsset);
         }
 
         if (
-            signatureData.amount == 0
-                || IERC20(signatureData.inputAsset).allowance(signatureData.signer, address(this))
-                    < signatureData.amount
-                || IERC20(signatureData.inputAsset).balanceOf(signatureData.signer) < signatureData.amount
-        ) revert InvalidAmount(signatureData.amount);
+            depositData.amount == 0
+                || IERC20(depositData.inputAsset).allowance(depositData.signer, address(this)) < depositData.amount
+                || IERC20(depositData.inputAsset).balanceOf(depositData.signer) < depositData.amount
+        ) revert InvalidAmount(depositData.amount);
 
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(signatureData.inputAsset).safeTransferFrom(signatureData.signer, address(this), signatureData.amount);
+        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
 
         _permit(
-            signatureData.signer,
-            signatureData.inputAsset,
-            signatureData.amount,
-            signatureData.expiresAt,
-            ERC20Permit(signatureData.inputAsset).nonces(signatureData.signer),
+            depositData.signer,
+            depositData.inputAsset,
+            depositData.amount,
+            depositData.expiresAt,
+            ERC20Permit(depositData.inputAsset).nonces(depositData.signer),
             permitSignature
         );
 
-        _swap(
-            signatureData.signer,
-            signatureData.kintoWallet,
-            signatureData.inputAsset,
-            signatureData.finalAsset,
-            signatureData.amount,
-            signatureData.minReceive,
-            swapData
+        uint256 amountBought = _swap(
+            depositData.kintoWallet,
+            depositData.inputAsset,
+            depositData.finalAsset,
+            depositData.amount,
+            depositData.minReceive,
+            swapCallData
         );
 
-        nonces[signatureData.signer]++;
+        nonces[depositData.signer]++;
+
+        emit Bridged(depositData.signer, depositData.kintoWallet, depositData.inputAsset, depositData.amount, depositData.finalAsset, amountBought);
     }
 
     /**
      * @dev Deposit the specified amount of ETH in to the Kinto L2 as finalAsset
      * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
      * @param finalAsset Asset to depositInto
-     * @param swapData Struct with all the required information to swap the tokens
+     * @param swapCallData Struct with all the required information to swap the tokens
      */
     function depositETH(
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,
-        IBridger.SwapData calldata swapData
+        bytes calldata swapCallData
     ) external payable override whenNotPaused nonReentrant {
-        if (!finalAllowedAssets[finalAsset]) {
-            revert InvalidFinalAsset(finalAsset);
-        }
+        _checkFinalAsset(finalAsset);
+
         if (msg.value < 0.1 ether) revert InvalidAmount(msg.value);
-        _swap(msg.sender, kintoWallet, ETH, finalAsset, msg.value, minReceive, swapData);
+
+        uint256 amountBought = _swap(kintoWallet, ETH, finalAsset, msg.value, minReceive, swapCallData);
+
+        emit Bridged(msg.sender, kintoWallet, ETH, msg.value, finalAsset, amountBought);
     }
 
     /**
@@ -277,62 +277,56 @@ contract Bridger is
         }
     }
 
+    /**
+     * @dev Whitelist the final assets that can be deposited
+     * @param _assets array of addresses of the assets to be whitelisted
+     */
+    function whitelistFinalAssets(address[] calldata _assets, bool[] calldata _flags) external override onlyOwner {
+        if (_assets.length != _flags.length) revert InvalidAssets();
+        for (uint256 i = 0; i < _assets.length; i++) {
+            finalAllowedAssets[_assets[i]] = _flags[i];
+        }
+    }
+
     /* ============ Private Functions ============ */
 
     function _swap(
-        address _sender,
         address kintoWallet,
         address inputAsset,
         address finalAsset,
         uint256 amount,
         uint256 minReceive,
-        SwapData calldata swapData
-    ) private {
-        uint256 amountBought = amount;
+        bytes calldata swapCallData
+    ) private returns (uint256 amountBought) {
+        amountBought = amount;
         if (inputAsset != finalAsset) {
             if (inputAsset == ETH && finalAsset == wstETH) {
-                amountBought = _swapETHtoWstETH(amount);
+                amountBought = _stakeEthToWstEth(amount);
             } else {
                 if (inputAsset == ETH) {
-                    amount = amount - swapData.gasFee;
                     WETH.deposit{value: amount}();
                     inputAsset = address(WETH);
                 }
-                amountBought = _executeSwap(inputAsset, finalAsset, amount, minReceive, swapData);
+                amountBought = amount;
+                if (finalAsset != inputAsset) {
+                    amountBought = _fillQuote(
+                        amount,
+                        IERC20(inputAsset),
+                        // if sUSDE, swap to USDe & then stake
+                        IERC20(finalAsset == sUSDe ? USDe : finalAsset),
+                        swapCallData,
+                        minReceive
+                    );
+                }
             }
 
             if (finalAsset == sUSDe) {
                 amountBought = _stakeUSDe(USDe, amountBought);
             }
         }
-
-        emit Bridged(_sender, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }
 
-    function _executeSwap(
-        address inputAsset,
-        address finalAsset,
-        uint256 amount,
-        uint256 minReceive,
-        SwapData calldata swapData
-    ) private returns (uint256 amountBought) {
-        amountBought = amount;
-        if (finalAsset == sUSDe) finalAsset = USDe; // if sUSDE, swap to USDe & then stake
-        if (finalAsset != inputAsset) {
-            amountBought = _fillQuote(
-                amount,
-                swapData.gasFee,
-                IERC20(inputAsset),
-                IERC20(finalAsset),
-                payable(swapData.spender),
-                payable(swapData.swapTarget),
-                swapData.swapCallData,
-                minReceive
-            );
-        }
-    }
-
-    function _swapETHtoWstETH(uint256 amount) private returns (uint256 amountBought) {
+    function _stakeEthToWstEth(uint256 amount) private returns (uint256 amountBought) {
         // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
         (bool sent,) = wstETH.call{value: amount}("");
@@ -389,40 +383,37 @@ contract Bridger is
      * @dev Swaps ERC20->ERC20 tokens held by this contract using a 0x-API quote.
      */
     function _fillQuote(
-        uint256 amount,
-        uint256 gasFee,
+        uint256 amountIn,
         // The `sellTokenAddress` field from the API response.
         IERC20 sellToken,
         // The `buyTokenAddress` field from the API response.
         IERC20 buyToken,
-        // The `allowanceTarget` field from the API response.
-        address spender,
-        // The `to` field from the API response.
-        address payable swapTarget,
         // The `data` field from the API response.
         bytes calldata swapCallData,
         // Slippage protection
         uint256 minReceive
     ) private returns (uint256) {
-        // Checks that the swapTarget is actually the address of 0x ExchangeProxy
-        if (swapTarget != exchangeProxy) revert OnlyExchangeProxy();
-        if (gasFee >= 0.05 ether) revert GasFeeTooHigh();
+        // Increase the allowance for the exchangeProxy to handle `amountIn` of `sellToken`
+        sellToken.safeIncreaseAllowance(exchangeProxy, amountIn);
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
-        // Give `spender` an allowance to spend this tx's `sellToken`.
-        sellToken.safeApprove(spender, amount);
-        // Call the encoded swap function call on the contract at `swapTarget`,
-        // passing along any ETH attached to this function call to cover protocol fees.
-        // slither-disable-next-line arbitrary-send-eth
-        (bool success,) = swapTarget.call{value: gasFee}(swapCallData);
-        if (!success) revert SwapCallFailed();
+        // Perform the swap call to the exchange proxy.
+        exchangeProxy.functionCall(swapCallData);
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
-        if (boughtAmount < minReceive) revert SlippageError();
+
+        if (boughtAmount < minReceive) revert SlippageError(boughtAmount, minReceive);
+
         return boughtAmount;
+    }
+
+    function _checkFinalAsset(address finalAsset) internal {
+        if (!finalAllowedAssets[finalAsset]) {
+            revert InvalidFinalAsset(finalAsset);
+        }
     }
 
     /* ============ Signature Recovery ============ */
@@ -454,20 +445,20 @@ contract Bridger is
         );
     }
 
-    function _hashSignatureData(SignatureData calldata signatureData) internal pure returns (bytes32) {
+    function _hashSignatureData(SignatureData calldata depositData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 keccak256(
                     "SignatureData(address kintoWallet,address signer,address inputAsset,uint256 amount,uint256 minReceive,address finalAsset,uint256 nonce,uint256 expiresAt)"
                 ),
-                signatureData.kintoWallet,
-                signatureData.signer,
-                signatureData.inputAsset,
-                signatureData.amount,
-                signatureData.minReceive,
-                signatureData.finalAsset,
-                signatureData.nonce,
-                signatureData.expiresAt
+                depositData.kintoWallet,
+                depositData.signer,
+                depositData.inputAsset,
+                depositData.amount,
+                depositData.minReceive,
+                depositData.finalAsset,
+                depositData.nonce,
+                depositData.expiresAt
             )
         );
     }

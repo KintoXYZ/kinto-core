@@ -52,7 +52,7 @@ interface IBridger {
     error NotEnoughEthToBridge();
     error GasFeeTooHigh();
     error SwapCallFailed();
-    error SlippageError();
+    error SlippageError(uint256 boughtAmount, uint256 minReceive);
     error OnlyExchangeProxy();
 
     /* ============ Structs ============ */
@@ -69,13 +69,6 @@ interface IBridger {
         bytes signature;
     }
 
-    struct SwapData {
-        address spender;
-        address swapTarget;
-        bytes swapCallData;
-        uint256 gasFee;
-    }
-
     struct Permit {
         address owner;
         address spender;
@@ -86,14 +79,14 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, SwapData calldata swapData)
+    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
         external
         payable;
 
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
-        IBridger.SwapData calldata swapData
+        bytes calldata swapCallData
     ) external payable;
 
     function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
