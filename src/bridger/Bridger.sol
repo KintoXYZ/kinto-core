@@ -233,6 +233,16 @@ contract Bridger is
 
         uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
 
+        // Bridge the final amount to Kinto
+        bridgeVault.bridge(
+            kintoWallet,
+            amountBought,
+            bridgeData.msgGasLimit,
+            bridgeData.connector,
+            bridgeData.execPayload,
+            bridgeData.options
+        );
+
         emit Bridged(msg.sender, kintoWallet, ETH, msg.value, finalAsset, amountBought);
     }
 
@@ -319,7 +329,7 @@ contract Bridger is
         // Bridge the final amount to Kinto
         bridgeVault.bridge(
             kintoWallet,
-            amount,
+            amountBought,
             bridgeData.msgGasLimit,
             bridgeData.connector,
             bridgeData.execPayload,
