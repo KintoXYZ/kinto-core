@@ -47,11 +47,8 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
 
-        emptyBridgerData = IBridger.BridgeData({
-       msgGasLimit: 0,
-        connector:address(0),
-        execPayload: bytes(''),
-        options:bytes('')}); 
+        emptyBridgerData =
+            IBridger.BridgeData({msgGasLimit: 0, connector: address(0), execPayload: bytes(""), options: bytes("")});
     }
 
     function setUpChain() public virtual override {
@@ -866,9 +863,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
-                                                   bridger.wstETH(), 1e17,
-                                                   bytes(""), emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""), emptyBridgerData);
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -882,9 +877,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
-                                                   bridger.wstETH(), 1e17,
-                                                   bytes(""), emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""), emptyBridgerData);
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -910,9 +903,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         // uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI,
-                                                   3695201885067717640192, data,
-                                                  emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data, emptyBridgerData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
@@ -938,9 +929,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI,
-                                                   3695201885067717640192, data,
-                                                  emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data, emptyBridgerData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);

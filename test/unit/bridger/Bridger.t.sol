@@ -4,6 +4,10 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
@@ -11,11 +15,8 @@ import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
+import "@kinto-core-test/mock/BridgeMock.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
-
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
 contract ERC20PermitToken is ERC20, ERC20Permit {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
@@ -48,7 +49,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
 
         // deploy a new Bridger contract
-        BridgerHarness implementation = new BridgerHarness(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        BridgerHarness implementation =
+            new BridgerHarness(address(new BridgeMock()), EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -62,11 +64,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         bridger.whitelistFinalAssets(assets, flags);
 
-        emptyBridgerData = IBridger.BridgeData({
-       msgGasLimit: 0,
-        connector:address(0),
-        execPayload: bytes(''),
-        options:bytes('')}); 
+        emptyBridgerData =
+            IBridger.BridgeData({msgGasLimit: 0, connector: address(0), execPayload: bytes(""), options: bytes("")});
     }
 
     /* ============ Bridger Deposit ============ */
@@ -175,8 +174,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(1), 1,
-                                                   bytes(""), emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(1), 1, bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 
@@ -185,9 +183,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(sDAI),
-                                                   1, bytes(""),
-                                                   emptyBridgerData);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(sDAI), 1, bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 

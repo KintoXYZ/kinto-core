@@ -102,7 +102,15 @@ contract Bridger is
      * @dev Initializes the contract by setting the exchange proxy address.
      * @param exchange The address of the exchange proxy to be used for token swaps.
      */
-    constructor(address bridge, address exchange, address weth, address dai, address usde, address sUsde, address wstEth) {
+    constructor(
+        address bridge,
+        address exchange,
+        address weth,
+        address dai,
+        address usde,
+        address sUsde,
+        address wstEth
+    ) {
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
 
@@ -212,16 +220,13 @@ contract Bridger is
      * @param finalAsset Asset to depositInto
      * @param swapCallData Struct with all the required information to swap the tokens
      */
-    function depositETH(address kintoWallet, address finalAsset, uint256
-                        minReceive, bytes calldata swapCallData,
-                        BridgeData calldata bridgeData
-                       )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-    {
+    function depositETH(
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable override whenNotPaused nonReentrant {
         _checkFinalAsset(finalAsset);
 
         if (msg.value == 0) revert InvalidAmount(msg.value);
@@ -312,7 +317,14 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        // bridgeVault.bridge(kintoWallet, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options);
+        bridgeVault.bridge(
+            kintoWallet,
+            amount,
+            bridgeData.msgGasLimit,
+            bridgeData.connector,
+            bridgeData.execPayload,
+            bridgeData.options
+        );
 
         emit Bridged(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }

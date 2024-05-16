@@ -11,10 +11,7 @@ interface IBridge {
         bytes calldata options_
     ) external payable;
 
-    function receiveInbound(
-        uint32 siblingChainSlug_,
-        bytes memory payload_
-    ) external payable;
+    function receiveInbound(uint32 siblingChainSlug_, bytes memory payload_) external payable;
 
     function retry(address connector_, bytes32 messageId_) external;
 }

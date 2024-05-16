@@ -104,11 +104,13 @@ interface IBridger {
         BridgeData calldata bridgeData
     ) external;
 
-    function depositETH(address kintoWallet, address finalAsset, uint256
-                        minReceive, bytes calldata swapCallData,
-                        BridgeData calldata bridgeData)
-        external
-        payable;
+    function depositETH(
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable;
 
     function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
 
