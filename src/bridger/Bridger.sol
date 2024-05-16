@@ -15,7 +15,8 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IL1GatewayRouter, IWETH, IDAI, IsUSDe} from "@kinto-core/interfaces/IBridger.sol";
+import {IBridger, IL1GatewayRouter, IWETH, IDAI, IsUSDe} from
+"@kinto-core/interfaces/bridger/IBridger.sol";
 
 /**
  * @title Bridger - To be deployed on ETH mainnet.
@@ -299,6 +300,8 @@ contract Bridger is
         IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
 
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
+
+        // Bridge the final amount to Kinto
 
         emit Bridged(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }

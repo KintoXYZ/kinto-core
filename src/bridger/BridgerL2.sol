@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../interfaces/IBridgerL2.sol";
+import "../interfaces/bridger/IBridgerL2.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
