@@ -175,20 +175,13 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData
     ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+        if (depositData.amount == 0) revert InvalidAmount(0);
+
         _checkFinalAsset(depositData.finalAsset);
 
         if (depositData.inputAsset != depositData.finalAsset && !allowedAssets[depositData.inputAsset]) {
             revert InvalidInputAsset(depositData.inputAsset);
         }
-
-        if (
-            depositData.amount == 0
-                || IERC20(depositData.inputAsset).allowance(depositData.signer, address(this)) < depositData.amount
-                || IERC20(depositData.inputAsset).balanceOf(depositData.signer) < depositData.amount
-        ) revert InvalidAmount(depositData.amount);
-
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
 
         _permit(
             depositData.signer,
@@ -198,6 +191,9 @@ contract Bridger is
             ERC20Permit(depositData.inputAsset).nonces(depositData.signer),
             permitSignature
         );
+
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
 
         uint256 amountBought = _swap(
             depositData.inputAsset,
@@ -331,7 +327,7 @@ contract Bridger is
         // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
         (bool sent,) = wstETH.call{value: amount}("");
-        if (!sent) revert InvalidAmount(amount);
+        if (!sent) revert FailedToStakeEth();
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
     }
 

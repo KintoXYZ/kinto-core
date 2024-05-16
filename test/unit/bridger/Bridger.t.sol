@@ -30,7 +30,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant senderAccount = address(100);
     address internal constant l2Vault = address(99);
-    ERC20PermitToken internal sDAI;
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
@@ -40,21 +39,26 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     BridgerHarness internal bridger;
 
+    ERC20PermitToken internal sDAI;
+
     function setUp() public override {
         super.setUp();
-        // deploy a new Bridger contract
-        _deployBridger();
-
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
-    }
 
-    function _deployBridger() internal {
+        // deploy a new Bridger contract
         BridgerHarness implementation = new BridgerHarness(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
         vm.prank(_owner);
         bridger.initialize(senderAccount);
+
+        address[] memory assets = new address[](1);
+        assets[0] = address(sDAI);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(_owner);
+        bridger.whitelistFinalAssets(assets, flags);
     }
 
     /* ============ Bridger Deposit ============ */
@@ -65,6 +69,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 1e18;
         uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
         deal(assetToDeposit, _user, amountToDeposit);
+
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
@@ -78,6 +83,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             _userPk,
             block.timestamp + 1000
         );
+
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
                 _user,
@@ -91,8 +97,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         );
 
         uint256 nonce = bridger.nonces(_user);
+
         vm.prank(_owner);
+
         bridger.depositBySig(permitSignature, sigdata, bytes(""));
+
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
@@ -146,7 +155,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             _userPk,
             ERC20Permit(assetToDeposit)
         );
-        vm.expectRevert(IBridger.InvalidAmount.selector);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, bytes(""));
     }
@@ -157,7 +166,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
-        vm.expectRevert(IBridger.InvalidInputAsset.selector);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
         bridger.depositETH{value: amountToDeposit}(
             kintoWalletL2, address(1), 1, bytes("")
 
@@ -169,10 +178,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 0.05 ether;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
-        address wsteth = bridger.wstETH();
-        vm.expectRevert(IBridger.InvalidAmount.selector);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
         bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, wsteth, 1,bytes("") 
+            kintoWalletL2, address(sDAI), 1,bytes("") 
         );
         vm.stopPrank();
     }

@@ -845,7 +845,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             _userPk,
             ERC20Permit(assetToDeposit)
         );
-        vm.expectRevert(IBridger.InvalidAmount.selector);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, bytes(""));
     }
@@ -939,29 +939,4 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         assertEq(address(bridger).balance, balanceBefore); // there's no ETH since it was swapped
         assertApproxEqRel(ERC20(sDAI).balanceOf(address(bridger)), 3695201885067717640192, 0.01e18); // 1%
     }
-
-    function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
-        uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        vm.expectRevert(IBridger.InvalidInputAsset.selector);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, address(1), 1,bytes("") 
-        );
-        vm.stopPrank();
-    }
-
-    function testDepositETH_RevertWhen_AmountIsLessThanAllowed() public {
-        uint256 amountToDeposit = 0.05 ether;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        address wsteth = bridger.wstETH();
-        vm.expectRevert(IBridger.InvalidAmount.selector);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, wsteth, 1,bytes("") 
-        );
-        vm.stopPrank();
-    }
-
-    /* ============ Bridge ============ */
 }
