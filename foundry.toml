@@ -7,6 +7,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libraries/Cloneable.sol",
 "lib/nitro-contracts/test/foundry/AbsInbox.t.sol", "lib/token-bridge-contracts/contracts/tokenbridge/libraries/gateway/GatewayRouter.sol"]
 match-path = 'test/unit/**/*.sol'
+ffi = true
 solc_version = "0.8.24"
 
 [profile.fork]
@@ -19,6 +20,7 @@ mainnet = "${ETHEREUM_RPC_URL}"
 optimism = "${OPTIMISM_RPC_URL}"
 base = "${BASE_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
+kinto_devnet = "${TEST_KINTO_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }

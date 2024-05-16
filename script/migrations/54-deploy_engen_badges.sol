@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/tokens/EngenBadges.sol";
 import "../../test/helpers/ArtifactsReader.sol";
-import "./utils/MigrationHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration54DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;

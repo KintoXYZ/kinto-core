@@ -17,7 +17,7 @@ import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 // scripts & migrations
-import "../script/deploy.s.sol";
+import "@kinto-core-script/actions/deploy.s.sol";
 
 abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsReader {
     Counter counter;
