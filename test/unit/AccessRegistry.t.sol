@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.18;
 
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa-v7/core/EntryPoint.sol";
 import {Create2} from "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
@@ -12,8 +11,6 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {IKintoEntryPoint} from "@kinto-core/interfaces/IKintoEntryPoint.sol";
-import {SignaturePaymaster} from "@kinto-core/paymasters/SignaturePaymaster.sol";
 import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
@@ -25,7 +22,7 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 contract AccessRegistryTest is BaseTest {
     using ECDSA for bytes32;
 
-    IKintoEntryPoint entryPoint;
+    EntryPoint entryPoint;
     AccessRegistry internal accessRegistry;
     address internal workflow = address(0xdead);
 
@@ -35,7 +32,7 @@ contract AccessRegistryTest is BaseTest {
     uint256 internal defaultAmount = 1e3 * 1e18;
 
     function setUp() public override {
-        entryPoint = IKintoEntryPoint(address(new EntryPoint{salt: 0}()));
+        entryPoint = new EntryPoint{salt: 0}();
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
         IAccessRegistry accessRegistryImpl = new AccessRegistryHarness(beacon);
@@ -85,6 +82,14 @@ contract AccessRegistryTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(IAccessRegistry.WorkflowAlreadyDisallowed.selector, workflow));
         vm.prank(_owner);
         accessRegistry.disallowWorkflow(workflow);
+    }
+
+    function testCreateAccountDuplicate() public {
+        address addr = address(accessRegistry.createAccount(_user, 1234));
+        assertEq(addr, accessRegistry.getAddress(_user, 4321));
+
+        addr = address(accessRegistry.createAccount(_user, 1234));
+        assertEq(addr, accessRegistry.getAddress(_user, 4321));
     }
 
     function testCreateAccount() public {

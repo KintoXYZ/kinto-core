@@ -7,19 +7,22 @@ import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 
-import "@aa/core/BaseAccount.sol";
-import "@aa/core/UserOperationLib.sol";
-import "@aa/samples/callback/TokenCallbackHandler.sol";
+import {BaseAccount} from "@aa-v7/core/BaseAccount.sol";
+import {UserOperationLib} from "@aa-v7/core/UserOperationLib.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa-v7/core/Helpers.sol";
+import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
+import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler.sol";
 
-import "../libraries/ByteSignature.sol";
-import "../interfaces/IAccessPoint.sol";
-import "../interfaces/IAccessRegistry.sol";
+import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
+import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
+import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 
 /**
  * @title AccessPoint
  */
 contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackHandler {
-    using UserOperationLib for UserOperation;
+    using UserOperationLib for PackedUserOperation;
     using MessageHashUtils for bytes32;
 
     /* ============ State Variables ============ */
@@ -28,7 +31,6 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
 
     IAccessRegistry public immutable override registry;
     IEntryPoint private immutable _entryPoint;
-    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
     /* ============ Modifiers ============ */
 
@@ -137,7 +139,7 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
     }
 
     /// @notice Valides that owner signed the user operation
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
