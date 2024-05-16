@@ -219,6 +219,17 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         assertEq(bridger.allowedAssets(asset), true);
     }
 
+    function testWhitelistFinalAsset() public {
+        address asset = address(768);
+        address[] memory assets = new address[](1);
+        assets[0] = asset;
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        vm.prank(_owner);
+        bridger.whitelistFinalAssets(assets, flags);
+        assertEq(bridger.finalAllowedAssets(asset), true);
+    }
+
     function testWhitelistAsset_RevertWhen_CallerIsNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         bridger.whitelistAssets(new address[](1), new bool[](1));
