@@ -25,6 +25,9 @@ contract EngenBadges is
     error MismatchedInputLengths();
     error MintToManyAddresses();
 
+    string public constant name = "Engen Badges";
+    string public constant symbol = "ENGB";
+
     /* ============ Constructor & Initializers ============ */
 
     /**

@@ -12,7 +12,7 @@ contract EngenBadgesUpgrade is EngenBadges {
 }
 
 contract EngenBadgesTest is SharedSetup {
-    string _uri = "https://api.example.com/metadata/";
+    string _uri = "https://kinto.xyz/api/v1/get-badge-nft/{id}";
     address alice;
 
     function setUp() public override {
@@ -39,6 +39,8 @@ contract EngenBadgesTest is SharedSetup {
     }
 
     function testInitialization() public view {
+        assertEq(_engenBadges.name(), "Engen Badges");
+        assertEq(_engenBadges.symbol(), "ENGB");
         assertEq(_engenBadges.uri(1), _uri);
         assertTrue(_engenBadges.hasRole(_engenBadges.DEFAULT_ADMIN_ROLE(), address(_kintoWallet)));
         assertTrue(_engenBadges.hasRole(_engenBadges.MINTER_ROLE(), address(_kintoWallet)));

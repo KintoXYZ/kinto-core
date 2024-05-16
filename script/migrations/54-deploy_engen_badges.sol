@@ -28,7 +28,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
 
         //UserOp initialize with parameters
         _handleOps(
-            abi.encodeWithSelector(EngenBadges.initialize.selector, "http://kinto.xyz/api/v1/get-badge-nft/"),
+            abi.encodeWithSelector(EngenBadges.initialize.selector, "https://kinto.xyz/api/v1/get-badge-nft/{id}"),
             address(proxy),
             deployerPrivateKey
         );
