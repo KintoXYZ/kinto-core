@@ -80,15 +80,24 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
-        external
-        payable;
-
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData
-    ) external payable;
+    ) external;
+
+    function depositERC20(
+        address inputAsset,
+        uint256 amount,
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData
+    ) external;
+
+    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
+        external
+        payable;
 
     function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
 

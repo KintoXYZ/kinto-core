@@ -313,7 +313,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDe since it was swapped
@@ -441,7 +441,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDC since it was swapped
@@ -702,7 +702,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         vm.expectRevert(IBridger.OnlyExchangeProxy.selector);
         vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""));
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
@@ -858,9 +858,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, bridger.wstETH(), 1e17,bytes("") 
-        );
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""));
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -874,9 +872,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, bridger.wstETH(), 1e17,bytes("") 
-        );
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""));
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -902,9 +898,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         // uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
-                                                   sDAI,
-                                                   3695201885067717640192, data);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
@@ -930,9 +924,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
-                                                   sDAI,
-                                                   3695201885067717640192, data);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);

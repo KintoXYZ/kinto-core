@@ -7,7 +7,7 @@ import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UUPSProxy.sol";
 
-import {Constants} from '@kinto-core-script/migrations/mainnet/const.sol';
+import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";

@@ -99,14 +99,7 @@ contract Bridger is
      * @dev Initializes the contract by setting the exchange proxy address.
      * @param _exchangeProxy The address of the exchange proxy to be used for token swaps.
      */
-    constructor(
-        address _exchangeProxy,
-        address weth,
-        address dai,
-        address usde,
-        address sUsde,
-        address wstEth
-    ) {
+    constructor(address _exchangeProxy, address weth, address dai, address usde, address sUsde, address wstEth) {
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
 
@@ -168,44 +161,42 @@ contract Bridger is
     /**
      * @dev Deposit the specified amount of tokens in to the Kinto L2
      * @param depositData Struct with all the required information to deposit via signature
-     * @param permitSignature, Signature to be recovered to allow the spender to spend the tokens
+     * @param permitSig Signature to be recovered to allow the spender to spend the tokens
      */
     function depositBySig(
-        bytes calldata permitSignature,
+        bytes calldata permitSig,
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
-        if (depositData.amount == 0) revert InvalidAmount(0);
-
-        _checkFinalAsset(depositData.finalAsset);
-
-        if (depositData.inputAsset != depositData.finalAsset && !allowedAssets[depositData.inputAsset]) {
-            revert InvalidInputAsset(depositData.inputAsset);
-        }
-
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
         _permit(
             depositData.signer,
             depositData.inputAsset,
             depositData.amount,
             depositData.expiresAt,
             ERC20Permit(depositData.inputAsset).nonces(depositData.signer),
-            permitSignature
+            permitSig
         );
 
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
-
-        uint256 amountBought = _swap(
+        _deposit(
+            depositData.signer,
             depositData.inputAsset,
-            depositData.finalAsset,
             depositData.amount,
+            depositData.kintoWallet,
+            depositData.finalAsset,
             depositData.minReceive,
             swapCallData
         );
+    }
 
-        nonces[depositData.signer]++;
-
-        emit Bridged(depositData.signer, depositData.kintoWallet, depositData.inputAsset, depositData.amount, depositData.finalAsset, amountBought);
+    function depositERC20(
+        address inputAsset,
+        uint256 amount,
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData
+    ) external override whenNotPaused nonReentrant {
+        _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData);
     }
 
     /**
@@ -214,12 +205,13 @@ contract Bridger is
      * @param finalAsset Asset to depositInto
      * @param swapCallData Struct with all the required information to swap the tokens
      */
-    function depositETH(
-        address kintoWallet,
-        address finalAsset,
-        uint256 minReceive,
-        bytes calldata swapCallData
-    ) external payable override whenNotPaused nonReentrant {
+    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+    {
         _checkFinalAsset(finalAsset);
 
         if (msg.value < 0.1 ether) revert InvalidAmount(msg.value);
@@ -285,6 +277,31 @@ contract Bridger is
     }
 
     /* ============ Private Functions ============ */
+
+    function _deposit(
+        address user,
+        address inputAsset,
+        uint256 amount,
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData
+    ) internal {
+        if (amount == 0) revert InvalidAmount(0);
+
+        _checkFinalAsset(finalAsset);
+
+        if (inputAsset != finalAsset && !allowedAssets[inputAsset]) {
+            revert InvalidInputAsset(inputAsset);
+        }
+
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
+
+        uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
+
+        emit Bridged(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
+    }
 
     function _swap(
         address inputAsset,
@@ -417,14 +434,16 @@ contract Bridger is
 
     /**
      * @dev Check that the signature is valid and it has not used yet
-     * @param _signature signature to be recovered.
+     * @param args Signature data.
      */
-    modifier onlySignerVerified(IBridger.SignatureData calldata _signature) {
-        if (block.timestamp > _signature.expiresAt) revert SignatureExpired();
-        if (nonces[_signature.signer] != _signature.nonce) revert InvalidNonce();
+    modifier onlySignerVerified(IBridger.SignatureData calldata args) {
+        if (block.timestamp > args.expiresAt) revert SignatureExpired();
+        if (nonces[args.signer] != args.nonce) revert InvalidNonce();
 
-        bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(_signature));
-        if (!_signature.signer.isValidSignatureNow(digest, _signature.signature)) revert InvalidSigner();
+        bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(args));
+        if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner();
+
+        nonces[args.signer]++;
         _;
     }
 

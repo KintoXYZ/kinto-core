@@ -167,10 +167,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, address(1), 1, bytes("")
-
-        );
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(1), 1, bytes(""));
         vm.stopPrank();
     }
 
@@ -179,9 +176,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, address(sDAI), 1,bytes("") 
-        );
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(sDAI), 1, bytes(""));
         vm.stopPrank();
     }
 
