@@ -30,6 +30,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant senderAccount = address(100);
     address internal constant l2Vault = address(99);
+    address internal constant BRIDGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
@@ -38,6 +39,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address internal constant weETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     BridgerHarness internal bridger;
+    IBridger.BridgeData internal emptyBridgerData;
 
     ERC20PermitToken internal sDAI;
 
@@ -46,7 +48,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
 
         // deploy a new Bridger contract
-        BridgerHarness implementation = new BridgerHarness(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        BridgerHarness implementation = new BridgerHarness(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -59,6 +61,12 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         flags[0] = true;
         vm.prank(_owner);
         bridger.whitelistFinalAssets(assets, flags);
+
+        emptyBridgerData = IBridger.BridgeData({
+       msgGasLimit: 0,
+        connector:address(0),
+        execPayload: bytes(''),
+        options:bytes('')}); 
     }
 
     /* ============ Bridger Deposit ============ */
@@ -100,7 +108,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.prank(_owner);
 
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
@@ -125,7 +133,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.expectRevert(IBridger.OnlyOwner.selector);
         vm.prank(_user);
-        bridger.depositBySig(bytes(""), sigdata, bytes(""));
+        bridger.depositBySig(bytes(""), sigdata, bytes(""), emptyBridgerData);
     }
 
     function testDepositBySig_RevertWhen_AmountIsZero() public {
@@ -157,7 +165,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         );
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
     }
 
     /* ============ Bridger ETH Deposit ============ */
@@ -167,16 +175,19 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(1), 1, bytes(""));
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(1), 1,
+                                                   bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 
-    function testDepositETH_RevertWhen_AmountIsLessThanAllowed() public {
-        uint256 amountToDeposit = 0.05 ether;
+    function testDepositETH_RevertWhen_AmountIsZero() public {
+        uint256 amountToDeposit = 0;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(sDAI), 1, bytes(""));
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, address(sDAI),
+                                                   1, bytes(""),
+                                                   emptyBridgerData);
         vm.stopPrank();
     }
 

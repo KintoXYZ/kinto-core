@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import {Bridger} from "../../src/bridger/Bridger.sol";
 
 contract BridgerHarness is Bridger {
-    constructor(address _exchangeProxy, address weth, address dai, address usde, address sUsde, address wstEth)
-        Bridger(_exchangeProxy, weth, dai, usde, sUsde, wstEth)
+    constructor(address bridge, address _exchangeProxy, address weth, address dai, address usde, address sUsde, address wstEth)
+        Bridger(bridge, _exchangeProxy, weth, dai, usde, sUsde, wstEth)
     {}
 
     function domainSeparatorV4() external view returns (bytes32) {

@@ -78,12 +78,20 @@ interface IBridger {
         uint256 deadline;
     }
 
+    struct BridgeData {
+        uint256 msgGasLimit;
+        address connector;
+        bytes execPayload;
+        bytes options;
+    }
+
     /* ============ State Change ============ */
 
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) external;
 
     function depositERC20(
@@ -92,10 +100,13 @@ interface IBridger {
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) external;
 
-    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
+    function depositETH(address kintoWallet, address finalAsset, uint256
+                        minReceive, bytes calldata swapCallData,
+                        BridgeData calldata bridgeData)
         external
         payable;
 
@@ -123,5 +134,5 @@ interface IBridger {
 
     function senderAccount() external view returns (address);
 
-    function exchangeProxy() external view returns (address);
+    function swapRouter() external view returns (address);
 }

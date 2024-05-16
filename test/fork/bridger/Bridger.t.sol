@@ -24,6 +24,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address internal constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant senderAccount = address(100);
+    address internal constant BRIDGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
@@ -32,6 +33,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address internal constant weETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     BridgerHarness internal bridger;
+    IBridger.BridgeData internal emptyBridgerData;
 
     function setUp() public override {
         super.setUp();
@@ -44,6 +46,12 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // transfer owner's ownership to _owner
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
+
+        emptyBridgerData = IBridger.BridgeData({
+       msgGasLimit: 0,
+        connector:address(0),
+        execPayload: bytes(''),
+        options:bytes('')}); 
     }
 
     function setUpChain() public virtual override {
@@ -54,7 +62,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness implementation = new BridgerHarness(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        BridgerHarness implementation = new BridgerHarness(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -97,7 +105,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
@@ -135,7 +143,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
@@ -173,7 +181,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
@@ -211,7 +219,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
@@ -250,7 +258,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         assertEq(bridger.nonces(_user), nonce + 1);
 
         uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(amountToDeposit);
@@ -313,7 +321,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDe since it was swapped
@@ -375,7 +383,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no UNI since it was swapped
@@ -441,7 +449,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDC since it was swapped
@@ -507,7 +515,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no stETH since it was swapped
@@ -568,7 +576,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no UNI since it was swapped
@@ -629,7 +637,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             hex"415565b00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000ca653edf7a7b00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000002537573686953776170000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000cab3150c6cd1000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000000004dd62cf256000000000000000000000000ad01c20d5886137e056775af56915de824c8fce5000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000001687c5412ac490ac6edc10f35363988b";
 
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data);
+        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no DAI since it was swapped
@@ -655,7 +663,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         vm.expectRevert(IBridger.OnlyOwner.selector);
         vm.prank(_user);
-        bridger.depositBySig(bytes(""), sigdata, bytes(""));
+        bridger.depositBySig(bytes(""), sigdata, bytes(""), emptyBridgerData);
     }
 
     function testDepositBySig_WhenSwap_WhenInvalidExchangeProxy() public {
@@ -702,7 +710,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         vm.expectRevert(IBridger.OnlyExchangeProxy.selector);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
     }
 
     function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
@@ -741,7 +749,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidInputAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 
@@ -781,7 +789,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidInputAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 
@@ -814,7 +822,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         vm.prank(_owner);
         vm.expectRevert(IBridger.InvalidInputAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
         vm.stopPrank();
     }
 
@@ -847,7 +855,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
     }
 
     /* ============ Bridger ETH Deposit ============ */
@@ -858,7 +866,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""));
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
+                                                   bridger.wstETH(), 1e17,
+                                                   bytes(""), emptyBridgerData);
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -872,7 +882,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_user, amountToDeposit);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.wstETH(), 1e17, bytes(""));
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2,
+                                                   bridger.wstETH(), 1e17,
+                                                   bytes(""), emptyBridgerData);
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
@@ -898,7 +910,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         // uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI,
+                                                   3695201885067717640192, data,
+                                                  emptyBridgerData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
@@ -924,7 +938,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI, 3695201885067717640192, data);
+        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, sDAI,
+                                                   3695201885067717640192, data,
+                                                  emptyBridgerData);
         vm.stopPrank();
 
         assertEq(_user.balance, 0);

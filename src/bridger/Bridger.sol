@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IL1GatewayRouter, IWETH, IDAI, IsUSDe} from
-"@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IL1GatewayRouter, IWETH, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
 /**
  * @title Bridger - To be deployed on ETH mainnet.
@@ -68,7 +68,9 @@ contract Bridger is
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
-    address public immutable exchangeProxy;
+    address public immutable swapRouter;
+    /// @notice Superbridge's vault address
+    IBridge public immutable bridgeVault;
 
     /* ============ State Variables ============ */
 
@@ -98,13 +100,14 @@ contract Bridger is
 
     /**
      * @dev Initializes the contract by setting the exchange proxy address.
-     * @param _exchangeProxy The address of the exchange proxy to be used for token swaps.
+     * @param exchange The address of the exchange proxy to be used for token swaps.
      */
-    constructor(address _exchangeProxy, address weth, address dai, address usde, address sUsde, address wstEth) {
+    constructor(address bridge, address exchange, address weth, address dai, address usde, address sUsde, address wstEth) {
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
 
-        exchangeProxy = _exchangeProxy;
+        swapRouter = exchange;
+        bridgeVault = IBridge(bridge);
 
         WETH = IWETH(weth);
         DAI = dai;
@@ -167,7 +170,8 @@ contract Bridger is
     function depositBySig(
         bytes calldata permitSig,
         IBridger.SignatureData calldata depositData,
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
         _permit(
             depositData.signer,
@@ -185,7 +189,8 @@ contract Bridger is
             depositData.kintoWallet,
             depositData.finalAsset,
             depositData.minReceive,
-            swapCallData
+            swapCallData,
+            bridgeData
         );
     }
 
@@ -195,9 +200,10 @@ contract Bridger is
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) external override whenNotPaused nonReentrant {
-        _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData);
+        _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
     /**
@@ -206,7 +212,10 @@ contract Bridger is
      * @param finalAsset Asset to depositInto
      * @param swapCallData Struct with all the required information to swap the tokens
      */
-    function depositETH(address kintoWallet, address finalAsset, uint256 minReceive, bytes calldata swapCallData)
+    function depositETH(address kintoWallet, address finalAsset, uint256
+                        minReceive, bytes calldata swapCallData,
+                        BridgeData calldata bridgeData
+                       )
         external
         payable
         override
@@ -215,7 +224,7 @@ contract Bridger is
     {
         _checkFinalAsset(finalAsset);
 
-        if (msg.value < 0.1 ether) revert InvalidAmount(msg.value);
+        if (msg.value == 0) revert InvalidAmount(msg.value);
 
         uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
 
@@ -286,7 +295,8 @@ contract Bridger is
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,
-        bytes calldata swapCallData
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) internal {
         if (amount == 0) revert InvalidAmount(0);
 
@@ -302,6 +312,7 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
+        // bridgeVault.bridge(kintoWallet, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options);
 
         emit Bridged(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }
@@ -410,14 +421,14 @@ contract Bridger is
         // Slippage protection
         uint256 minReceive
     ) private returns (uint256) {
-        // Increase the allowance for the exchangeProxy to handle `amountIn` of `sellToken`
-        sellToken.safeIncreaseAllowance(exchangeProxy, amountIn);
+        // Increase the allowance for the swapRouter to handle `amountIn` of `sellToken`
+        sellToken.safeIncreaseAllowance(swapRouter, amountIn);
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Perform the swap call to the exchange proxy.
-        exchangeProxy.functionCall(swapCallData);
+        swapRouter.functionCall(swapCallData);
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
