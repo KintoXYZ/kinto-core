@@ -7,20 +7,16 @@ import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UUPSProxy.sol";
 
+import {Constants} from '@kinto-core-script/migrations/mainnet/const.sol';
+
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test {
+contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants {
     Bridger _bridger;
 
     // Exchange Proxy address is the same on all chains.
-    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant DAI = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant SUSDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant WSTETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     function setUp() public {}
 

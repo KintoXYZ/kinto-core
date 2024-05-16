@@ -91,6 +91,8 @@ interface IBridger {
 
     function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
 
+    function whitelistFinalAssets(address[] calldata assets, bool[] calldata flags) external;
+
     function pause() external;
 
     function unpause() external;

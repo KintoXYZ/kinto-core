@@ -76,14 +76,14 @@ contract Bridger is
     /// @dev Mapping of input assets that are allowed
     mapping(address => bool) public override allowedAssets;
     /// @dev DEPRECATED
-    mapping(address => mapping(address => uint256)) public override deposits;
+    mapping(address => mapping(address => uint256)) private deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
     mapping(address => uint256) public override nonces;
     /// @dev Count of deposits
     uint256 public depositCount;
     /// @dev DEPRECATED
-    bool public swapsEnabled;
+    bool private swapsEnabled;
     /// @dev Mapping of final assets that are allowed
     mapping(address => bool) public override finalAllowedAssets;
 
@@ -115,7 +115,7 @@ contract Bridger is
         WETH = IWETH(weth);
         DAI = dai;
         USDe = usde;
-        sUSDe = sUSDe;
+        sUSDe = sUsde;
         wstETH = wstEth;
     }
 
@@ -200,7 +200,6 @@ contract Bridger is
         );
 
         uint256 amountBought = _swap(
-            depositData.kintoWallet,
             depositData.inputAsset,
             depositData.finalAsset,
             depositData.amount,
@@ -229,7 +228,7 @@ contract Bridger is
 
         if (msg.value < 0.1 ether) revert InvalidAmount(msg.value);
 
-        uint256 amountBought = _swap(kintoWallet, ETH, finalAsset, msg.value, minReceive, swapCallData);
+        uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
 
         emit Bridged(msg.sender, kintoWallet, ETH, msg.value, finalAsset, amountBought);
     }
@@ -292,7 +291,6 @@ contract Bridger is
     /* ============ Private Functions ============ */
 
     function _swap(
-        address kintoWallet,
         address inputAsset,
         address finalAsset,
         uint256 amount,
@@ -413,7 +411,7 @@ contract Bridger is
         return boughtAmount;
     }
 
-    function _checkFinalAsset(address finalAsset) internal {
+    function _checkFinalAsset(address finalAsset) internal view {
         if (!finalAllowedAssets[finalAsset]) {
             revert InvalidFinalAsset(finalAsset);
         }

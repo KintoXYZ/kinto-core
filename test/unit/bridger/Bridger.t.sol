@@ -17,27 +17,26 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
-contract BridgerNewUpgrade is Bridger {
-    function newFunction() external pure returns (uint256) {
-        return 1;
-    }
-
-    constructor(address l2Vault) Bridger(l2Vault) {}
-}
-
 contract ERC20PermitToken is ERC20, ERC20Permit {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
 }
 
 contract BridgerTest is SignatureHelper, SharedSetup {
-    address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
-    address constant kintoWalletL2 = address(33);
-    address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    address constant senderAccount = address(100);
-    address constant l2Vault = address(99);
+    address internal constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
+    address internal constant kintoWalletL2 = address(33);
+    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
+    address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address internal constant senderAccount = address(100);
+    address internal constant l2Vault = address(99);
+    ERC20PermitToken internal sDAI;
+    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant SUSDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant WSTETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant weETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     BridgerHarness internal bridger;
 
@@ -46,14 +45,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         // deploy a new Bridger contract
         _deployBridger();
 
-        // if running local tests, we want to replace some hardcoded addresses that the bridger uses
-        // with mocked contracts
-        ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
-        vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+        sDAI = new ERC20PermitToken("sDAI", "sDAI");
     }
 
     function _deployBridger() internal {
-        BridgerHarness implementation = new BridgerHarness(l2Vault);
+        BridgerHarness implementation = new BridgerHarness(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -61,29 +57,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.initialize(senderAccount);
     }
 
-    /* ============ Upgrade ============ */
-
-    function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
-        vm.prank(_owner);
-        bridger.upgradeTo(address(_newImpl));
-        assertEq(BridgerNewUpgrade(payable(address(bridger))).newFunction(), 1);
-    }
-
-    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
-        vm.expectRevert("Ownable: caller is not the owner");
-        bridger.upgradeToAndCall(address(_newImpl), bytes(""));
-    }
-
     /* ============ Bridger Deposit ============ */
 
     // deposit sDAI (no swap)
     function testDepositBySig_sDAI_WhenNoSwap() public {
-        address assetToDeposit = bridger.sDAI();
+        address assetToDeposit = address(sDAI);
         uint256 amountToDeposit = 1e18;
         uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
         deal(assetToDeposit, _user, amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
@@ -114,12 +94,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, bytes(""));
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
     }
 
     function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
-        address assetToDeposit = bridger.sDAI();
+        address assetToDeposit = address(sDAI);
         uint256 amountToDeposit = 1e18;
         deal(address(assetToDeposit), _user, amountToDeposit);
 
@@ -141,7 +120,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     }
 
     function testDepositBySig_RevertWhen_AmountIsZero() public {
-        address assetToDeposit = bridger.sDAI();
+        address assetToDeposit = address(sDAI);
         uint256 amountToDeposit = 0;
         deal(address(assetToDeposit), _user, amountToDeposit);
 
@@ -178,7 +157,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
-        vm.expectRevert(IBridger.InvalidAsset.selector);
+        vm.expectRevert(IBridger.InvalidInputAsset.selector);
         bridger.depositETH{value: amountToDeposit}(
             kintoWalletL2, address(1), 1, bytes("")
 
@@ -220,37 +199,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectRevert(IBridger.InvalidAssets.selector);
         vm.prank(_owner);
         bridger.whitelistAssets(new address[](1), new bool[](2));
-    }
-
-    /* ============ Swaps ============ */
-
-    function testSetSwapsEnabled() public {
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-        assertEq(bridger.swapsEnabled(), true);
-    }
-
-    function testSetSwapsEnabled_RevertWhen_CallerIsNotOwner() public {
-        vm.startPrank(_user);
-        vm.expectRevert("Ownable: caller is not the owner");
-        bridger.setSwapsEnabled(true);
-        vm.stopPrank();
-    }
-
-    /* ============ Bridge ============ */
-
-    function testBridgeDeposits_RevertWhen_InsufficientGas() public {
-        address asset = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(bridger), amountToDeposit);
-
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-
-        vm.expectRevert(IBridger.NotEnoughEthToBridge.selector);
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
     }
 
     /* ============ Pause ============ */

@@ -11,11 +11,9 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract BridgerV2 is Bridger {
-    constructor(address _l2Vault) Bridger(_l2Vault) {}
-}
+import {Constants} from '@kinto-core-script/migrations/mainnet/const.sol';
 
-contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, Test {
+contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test, Constants {
     Bridger _bridger;
 
     function setUp() public {}
@@ -29,19 +27,22 @@ contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, T
         // If not using ledger, replace
         console.log("Executing with address", msg.sender);
         vm.startBroadcast();
+
         address bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
             return;
         }
-        address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
 
-        // Deploy Engen Credits implementation
-        BridgerV2 _newIimplementation = new BridgerV2(bridgerAddressL2);
-        // wrap in ABI to support easier calls
-        _bridger = Bridger(payable(bridgerAddress));
-        _bridger.upgradeTo(address(_newIimplementation));
+        Bridger newImpl = new Bridger(EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+
         vm.stopBroadcast();
+
+        _bridger = Bridger(payable(bridgerAddress));
+        // NOTE: upgrade not broadcast since it needs to happen via SAFE
+        _bridger.upgradeTo(address(newImpl));
+        // prank
+        Bridger(payable(bridgerAddress)).upgradeTo(address(newImpl));
 
         // Checks
         assertEq(_bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
@@ -50,6 +51,6 @@ contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, T
 
         // Writes the addresses to a file
         console.log("Add these addresses to the artifacts mainnet file");
-        console.log(string.concat('"BridgerV2-impl": "', vm.toString(address(_newIimplementation)), '"'));
+        console.log(string.concat('"Bridger-impl": "', vm.toString(address(newImpl)), '"'));
     }
 }
