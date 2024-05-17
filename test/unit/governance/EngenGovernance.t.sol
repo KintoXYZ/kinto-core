@@ -95,15 +95,15 @@ contract EngenGovernanceTest is SharedSetup {
         internal
         returns (UserOperation[] memory, uint256)
     {
-        uint256 amountToMint = credits;
-
-        // set points
-        uint256[] memory points = new uint256[](1);
-        points[0] = amountToMint;
-        address[] memory addresses = new address[](1);
-        addresses[0] = address(_kintoWallet);
-        vm.prank(_owner);
-        _engenCredits.setCredits(addresses, points);
+        {
+            // set points
+            uint256[] memory points = new uint256[](1);
+            points[0] = credits;
+            address[] memory addresses = new address[](1);
+            addresses[0] = address(_kintoWallet);
+            vm.prank(_owner);
+            _engenCredits.setCredits(addresses, points);
+        }
 
         // mint credit
         UserOperation[] memory userOps = new UserOperation[](2);
@@ -134,9 +134,6 @@ contract EngenGovernanceTest is SharedSetup {
             address(_paymaster)
         );
 
-        uint256 hashProposal =
-            _engenGovernance.hashProposal(targets, values, data, keccak256(bytes(proposalDescription)));
-
-        return (userOps, hashProposal);
+        return (userOps, _engenGovernance.hashProposal(targets, values, data, keccak256(bytes(proposalDescription))));
     }
 }
