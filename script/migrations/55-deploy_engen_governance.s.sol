@@ -35,11 +35,10 @@ contract KintoMigration55DeployScript is MigrationHelper {
             keccak256(bytes(EngenCredits(proxy).CLOCK_MODE())) == keccak256(bytes("mode=timestamp")),
             "credits did not upgrade"
         );
-        vm.broadcast(deployerPrivateKey); // requires ledger admin
+        vm.broadcast(deployerPrivateKey);
         KintoAppRegistry registry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         registry.registerApp(
             "EngenGovernance", address(governance), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]
         );
-        require(false, "Migration script completed successfully");
     }
 }
