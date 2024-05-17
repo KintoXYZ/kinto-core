@@ -100,6 +100,7 @@ contract Bridger is
      * @param exchange The address of the exchange proxy to be used for token swaps.
      */
     constructor(
+        address vault,
         address bridge,
         address exchange,
         address weth,
@@ -111,6 +112,7 @@ contract Bridger is
         _disableInitializers();
         domainSeparator = _domainSeparatorV4();
 
+        l2Vault = vault;
         swapRouter = exchange;
         bridgeGateway = IBridge(bridge);
 

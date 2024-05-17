@@ -23,27 +23,23 @@ contract ERC20PermitToken is ERC20, ERC20Permit {
 }
 
 contract BridgerTest is SignatureHelper, SharedSetup {
-    address internal constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
-    address internal constant kintoWallet = address(33);
-    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address internal constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    address internal constant SENDER_ACCOUNT = address(100);
-    address internal constant CONNECTOR = address(1000);
-    address internal constant l2Vault = address(99);
-    address internal constant BRIDGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant USDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant SUSDE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant WSTETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant weETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant DAI = address(1);
+    address internal constant SENDER_ACCOUNT = address(5);
+    address internal constant CONNECTOR = address(6);
+    address internal constant L2_VAULT = address(7);
+    address internal constant BRIDGE = address(8);
+    address internal constant ROUTER = address(9);
+    address internal constant wETH = address(10);
+    address internal constant USDe = address(11);
+    address internal constant sUSDe = address(12);
+    address internal constant wstETH = address(13);
 
     bytes internal constant EXEC_PAYLOAD = bytes("EXEC_PAYLOAD");
     bytes internal constant OPTIONS = bytes("OPTIONS ");
 
     uint256 internal constant MSG_GAS_LIMIT = 1e6;
+
+    address internal kintoWallet;
 
     BridgerHarness internal bridger;
     IBridger.BridgeData internal mockBridgerData;
@@ -53,13 +49,16 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     function setUp() public override {
         super.setUp();
+
+        kintoWallet = address(1);
+
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
 
         bridgeMock = new BridgeMock();
 
         // deploy a new Bridger contract
         BridgerHarness implementation =
-            new BridgerHarness(address(bridgeMock), EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+            new BridgerHarness(L2_VAULT, address(bridgeMock), ROUTER, wETH, DAI, USDe, sUSDe, wstETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -204,6 +203,27 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
         bridger.depositETH{value: amountToDeposit}(kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
         vm.stopPrank();
+    }
+
+    /* ============ Bridge Deposits ============ */
+
+    function testBridgeDeposits() public {
+        uint256 amountToDeposit = 1e18;
+        deal(address(sDAI), address(bridger), amountToDeposit);
+
+        vm.prank(_owner);
+        vm.expectCall(
+            address(bridgeMock),
+            abi.encodeCall(
+                bridgeMock.bridge, (L2_VAULT, amountToDeposit, MSG_GAS_LIMIT, CONNECTOR, EXEC_PAYLOAD, OPTIONS)
+            )
+        );
+        bridger.bridgeDeposits(address(sDAI), mockBridgerData);
+    }
+
+    function testBridgeDeposits_RevertWhen_NotOwner() public {
+        vm.expectRevert(IBridger.OnlyOwner.selector);
+        bridger.bridgeDeposits(address(sDAI), mockBridgerData);
     }
 
     /* ============ Whitelist ============ */

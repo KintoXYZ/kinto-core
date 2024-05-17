@@ -24,6 +24,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address internal constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     address internal constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant senderAccount = address(100);
+    address internal constant L2_VAULT = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant BRIDGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant WETH = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
@@ -59,7 +60,8 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness implementation = new BridgerHarness(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        BridgerHarness implementation =
+            new BridgerHarness(L2_VAULT, BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 

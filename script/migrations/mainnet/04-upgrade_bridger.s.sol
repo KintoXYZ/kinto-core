@@ -34,7 +34,7 @@ contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test, Constants
             return;
         }
 
-        Bridger newImpl = new Bridger(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        Bridger newImpl = new Bridger(L2_VAULT, BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
 
         vm.stopBroadcast();
 

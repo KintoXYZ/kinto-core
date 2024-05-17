@@ -35,7 +35,7 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants 
             return;
         }
 
-        Bridger _implementation = new Bridger(BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        Bridger _implementation = new Bridger(L2_VAULT, BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
         UUPSProxy _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");
