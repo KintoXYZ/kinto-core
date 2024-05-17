@@ -101,19 +101,19 @@ contract EngenCredits is
     /**
      * @dev Get the past votes of a user. Always hardcoded to credits earned
      * @param account The address of the user
-     * @param timepoint The timepoint to get the votes at
+     * hparam timepoint The timepoint to get the votes at
      * @return The number of votes the user had at the timepoint
      */
-    function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
+    function getPastVotes(address account, uint256 /* timepoint */ ) external view returns (uint256) {
         return earnedCredits[account];
     }
 
     /**
      * @dev Get the total supply of votes at a timepoint. Always hardcoded to total credits
-     * @param timepoint The timepoint to get the votes at
+     * hparam timepoint The timepoint to get the votes at
      * @return The total number of votes at the timepoint
      */
-    function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
+    function getPastTotalSupply(uint256 /* timepoint */ ) external view returns (uint256) {
         return totalCredits;
     }
 
@@ -137,7 +137,7 @@ contract EngenCredits is
 
     /**
      * @dev Mint points for the Engen user based on their activity
-    */
+     */
     function mintCredits() external {
         if (transfersEnabled || burnsEnabled) revert MintNotAllowed();
         uint256 points = earnedCredits[msg.sender];

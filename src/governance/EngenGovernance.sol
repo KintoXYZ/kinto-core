@@ -16,31 +16,27 @@ import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
  *      Chosen for simplicity, as it does not require a timelock.
  */
 contract EngenGovernance is Governor, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction {
-    constructor(IVotes _token)
-        Governor("EngenGovernance")
-        GovernorVotes(_token)
-        GovernorVotesQuorumFraction(15)
-    {}
+    constructor(IVotes _token) Governor("EngenGovernance") GovernorVotes(_token) GovernorVotesQuorumFraction(15) {}
 
     /**
      * @dev Returns the delay period for voting.
      */
     function votingDelay() public pure override returns (uint256) {
-      return 1 days;
+        return 1 days;
     }
 
     /**
      * @dev Returns the voting period.
      */
     function votingPeriod() public pure override returns (uint256) {
-      return 3 weeks;
+        return 3 weeks;
     }
 
     /**
      * @dev Returns the threshold needed to create a proposal
      */
     function proposalThreshold() public pure override returns (uint256) {
-      return 5e18;
+        return 5e18;
     }
 
     // The following functions are overrides required by Solidity.
