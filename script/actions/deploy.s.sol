@@ -18,7 +18,7 @@ import "@kinto-core/tokens/EngenBadges.sol";
 import "@kinto-core/Faucet.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
 import "@kinto-core/inflators/BundleBulker.sol";
-
+import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -79,6 +79,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     BundleBulker public bundleBulker;
     BundleBulker public bundleBulkerImpl;
 
+    // Engen Governance
+    EngenGovernance public engenGovernance;
+
     // whether to write addresses to a file or not (and console.log them)
     bool write;
 
@@ -104,6 +107,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         Faucet faucet;
         BridgerL2 bridgerL2;
         KintoInflator inflator;
+        EngenGovernance engenGovernance;
     }
 
     // @dev this is used for tests
@@ -129,7 +133,8 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             engenBadges,
             faucet,
             bridgerL2,
-            inflator
+            inflator,
+            engenGovernance
         );
     }
 
@@ -191,6 +196,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy WalletViewer
         (walletViewer, walletViewerImpl) = deployWalletViewer();
+
+        // depploy governance
+        (engenGovernance) = deployGovernance();
 
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
@@ -395,6 +403,14 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         _bundleBulker = BundleBulker(payable(proxy));
         _bundleBulkerImpl = BundleBulker(payable(implementation));
+    }
+
+    function deployGovernance() public returns (EngenGovernance _governance) {
+        // deploy governance
+        bytes memory creationCode = type(EngenGovernance).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(engenCredits)));
+        address implementation = _deployImplementation("EngenGovernance", creationCode, bytecode, true);
+        _governance = EngenGovernance(payable(implementation));
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer

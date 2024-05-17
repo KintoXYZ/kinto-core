@@ -61,6 +61,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.label(address(_kycViewer), "KYCViewer");
         vm.label(address(_faucet), "Faucet");
         vm.label(address(_bridgerL2), "BridgerL2");
+        vm.label(address(_engenGovernance), "EngenGovernance");
     }
 
     function deployCounter() public {
@@ -95,6 +96,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _faucet = Faucet(contracts.faucet);
         _bridgerL2 = BridgerL2(contracts.bridgerL2);
         _inflator = KintoInflator(contracts.inflator);
+        _engenGovernance = EngenGovernance(contracts.engenGovernance);
 
         // grant kyc provider role to _kycProvider on kintoID
         bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -140,6 +142,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _faucet = Faucet(payable(_getChainDeployment("Faucet")));
         _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
         _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
+        _engenGovernance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
 
         // grant admin role to _owner on kintoID
         bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();
