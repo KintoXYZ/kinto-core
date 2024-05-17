@@ -26,17 +26,6 @@ interface IsUSDe is IERC20 {
     function deposit(uint256 amount, address recipient) external returns (uint256);
 }
 
-interface IL1GatewayRouter {
-    function outboundTransfer(
-        address token,
-        address to,
-        uint256 amount,
-        uint256 maxGas,
-        uint256 gasPriceBid,
-        bytes calldata data
-    ) external payable;
-}
-
 interface IBridger {
     /* ============ Errors ============ */
     error OnlySender();

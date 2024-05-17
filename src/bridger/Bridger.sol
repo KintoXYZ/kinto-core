@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IL1GatewayRouter, IWETH, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IWETH, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
 /**
@@ -55,9 +55,6 @@ contract Bridger is
     );
 
     /* ============ Constants & Immutables ============ */
-    IL1GatewayRouter public constant L1GatewayRouter = IL1GatewayRouter(0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60);
-    address public constant standardGateway = 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
-
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public immutable WETH;
     address public immutable DAI;
@@ -70,7 +67,7 @@ contract Bridger is
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
     /// @notice Superbridge's vault address
-    IBridge public immutable bridgeVault;
+    IBridge public immutable bridgeGateway;
 
     /* ============ State Variables ============ */
 
@@ -115,7 +112,7 @@ contract Bridger is
         domainSeparator = _domainSeparatorV4();
 
         swapRouter = exchange;
-        bridgeVault = IBridge(bridge);
+        bridgeGateway = IBridge(bridge);
 
         WETH = IWETH(weth);
         DAI = dai;
@@ -234,7 +231,8 @@ contract Bridger is
         uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        bridgeVault.bridge(
+        IERC20(finalAsset).safeIncreaseAllowance(address(bridgeGateway), amountBought);
+        bridgeGateway.bridge(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,
@@ -247,33 +245,24 @@ contract Bridger is
     }
 
     /**
-     * @dev Bridges deposits in bulk every hour to the L2
+     * @dev Bridges deposits in bulk Kinto
      */
-    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
-        external
-        payable
-        onlyPrivileged
-    {
+    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable onlyPrivileged {
         // Approve the gateway to get the tokens
-        uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
-        if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
-        if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
-            if (asset == wstETH) IERC20(asset).safeApprove(standardGateway, 0); // wstETH decreases allowance and does not allow non-zero to non-zero approval
-            IERC20(asset).safeApprove(standardGateway, type(uint256).max);
+        if (IERC20(asset).allowance(address(this), address(bridgeGateway)) < type(uint256).max) {
+            if (asset == wstETH) {
+                IERC20(asset).safeApprove(address(bridgeGateway), 0);
+            } // wstETH decreases allowance and does not allow non-zero to non-zero approval
+            IERC20(asset).safeApprove(address(bridgeGateway), type(uint256).max);
         }
-        // Bridge to Kinto L2 using standard bridge
-        // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
-        L1GatewayRouter.outboundTransfer{value: gasCost}(
-            asset, //token
-            l2Vault, // Account to be credited with the tokens in L2
-            IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
-            maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
-            gasPriceBid, // Gas price for the execution in L2
-            abi.encode(
-                maxSubmissionCost, // Max gas deducted from user's L2 balance to cover base submission fee. Usually 0
-                bytes(""), // bytes extraData hook
-                gasCost // Total gas deducted from user’s L2 balance
-            )
+        // Bridge to Kinto L2 using Superbridge
+        bridgeGateway.bridge(
+            l2Vault,
+            IERC20(asset).balanceOf(address(this)),
+            bridgeData.msgGasLimit,
+            bridgeData.connector,
+            bridgeData.execPayload,
+            bridgeData.options
         );
     }
 
@@ -327,7 +316,7 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        bridgeVault.bridge(
+        bridgeGateway.bridge(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,
