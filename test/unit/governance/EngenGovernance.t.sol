@@ -91,7 +91,7 @@ contract EngenGovernanceTest is SharedSetup {
 
     /* ============ Aux Function ============ */
 
-    function mintCreditsAndcreateProposal(uint256 credits, string memory description)
+    function mintCreditsAndcreateProposal(uint256 credits, string memory proposalDescription)
         internal
         returns (UserOperation[] memory, uint256)
     {
@@ -115,8 +115,6 @@ contract EngenGovernanceTest is SharedSetup {
             abi.encodeWithSignature("mintCredits()"),
             address(_paymaster)
         );
-
-        string memory proposalDescription = "First ENIP Proposal";
 
         address[] memory targets = new address[](1);
         targets[0] = address(_counter);

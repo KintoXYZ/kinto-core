@@ -159,6 +159,6 @@ contract EngenCredits is
     }
 }
 
-contract EngenCreditsV2 is EngenCredits {
+contract EngenCreditsV3 is EngenCredits {
     constructor() EngenCredits() {}
 }
