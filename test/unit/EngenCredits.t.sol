@@ -185,8 +185,8 @@ contract EngenCreditsTest is SharedSetup {
 
     /* ============ Phase Override tests ============ */
 
-    function testSetPhase1Override() public {
-        assertEq(_engenCredits.phase1Override(address(_kintoWallet)), 0);
+    function testSetEarnedCredits() public {
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 0);
 
         uint256[] memory points = new uint256[](1);
         points[0] = 10;
@@ -194,12 +194,12 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        _engenCredits.setPhase1Override(addresses, points);
+        _engenCredits.setCredits(addresses, points);
 
-        assertEq(_engenCredits.phase1Override(address(_kintoWallet)), 10);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 10);
     }
 
-    function testSetPhase1Override_RevertWhen_LengthMismatch() public {
+    function testSetEarnedCredits_RevertWhen_LengthMismatch() public {
         uint256[] memory points = new uint256[](2);
         points[0] = 10;
         points[1] = 10;
@@ -209,16 +209,23 @@ contract EngenCreditsTest is SharedSetup {
 
         vm.prank(_owner);
         vm.expectRevert(EngenCredits.LengthMismatch.selector);
-        _engenCredits.setPhase1Override(addresses, points);
+        _engenCredits.setCredits(addresses, points);
     }
 
     /* ============ Mint Credits tests ============ */
 
     function testMintCredits() public {
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
 
         whitelistApp(address(_engenCredits));
+
+        // set points
+        uint256[] memory points = new uint256[](1);
+        points[0] = 10;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWallet);
+        vm.prank(_owner);
+        _engenCredits.setCredits(addresses, points);
 
         // mint credit
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -232,22 +239,22 @@ contract EngenCreditsTest is SharedSetup {
         );
 
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 10);
     }
 
     function testMintCredits_whenOverride() public {
         whitelistApp(address(_engenCredits));
 
-        // set phase override
+        // set points
         uint256[] memory points = new uint256[](1);
         points[0] = 10;
         address[] memory addresses = new address[](1);
         addresses[0] = address(_kintoWallet);
         vm.prank(_owner);
-        _engenCredits.setPhase1Override(addresses, points);
+        _engenCredits.setCredits(addresses, points);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 20);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 10);
 
         // mint credits
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -260,14 +267,21 @@ contract EngenCreditsTest is SharedSetup {
             address(_paymaster)
         );
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 20);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 10);
     }
 
     function testMintCredits_WhenCalledTwice() public {
         whitelistApp(address(_engenCredits));
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 0);
+
+        vm.prank(_owner);
+        uint256[] memory points = new uint256[](1);
+        points[0] = 15;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWallet);
+        _engenCredits.setCredits(addresses, points);
 
         // mint creidts
         UserOperation[] memory userOps = new UserOperation[](1);
