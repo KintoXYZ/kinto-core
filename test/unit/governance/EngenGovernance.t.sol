@@ -4,47 +4,49 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/sample/Counter.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract EngenGovernanceTest is SharedSetup {
+
+    address public _counter;
+
     function setUp() public override {
         super.setUp();
-        fundSponsorForApp(_owner, address(_engenCredits));
         registerApp(_owner, "engen credits", address(_engenCredits));
+        registerApp(_owner, "engen governance", address(_engenGovernance));
+        fundSponsorForApp(_owner, address(_engenCredits));
+        fundSponsorForApp(_owner, address(_engenGovernance));
+        _counter = address(new Counter());
+        whitelistApp(address(_engenCredits));
+        whitelistApp(address(_engenGovernance));
     }
 
     function testUp() public override {
         super.testUp();
-        assertEq(_engenCredits.totalSupply(), 0);
-        assertEq(_engenCredits.owner(), _owner);
-        assertEq(_engenCredits.transfersEnabled(), false);
-        assertEq(_engenCredits.burnsEnabled(), false);
+        assertEq(_engenGovernance.votingDelay(), 1 days);
+        assertEq(_engenGovernance.votingPeriod(), 3 weeks);
+        assertEq(_engenGovernance.proposalThreshold(), 5e18);
+        assertEq(_engenGovernance.quorum(block.number), 0); // no tokens minted
     }
 
-    /* ============ Set Transfer Enabled tests ============ */
+    /* ============ Create Proposal tests ============ */
 
-
-    /* ============ Set Burns Enabled tests ============ */
-
-
-    /* ============ Mint Credits tests ============ */
-
-    function testMintCredits() public {
+    function testCreateProposal() public {
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-
-        whitelistApp(address(_engenCredits));
+        uint amountToMint = 5e18;
 
         // set points
         uint256[] memory points = new uint256[](1);
-        points[0] = 10;
+        points[0] = amountToMint;
         address[] memory addresses = new address[](1);
         addresses[0] = address(_kintoWallet);
         vm.prank(_owner);
         _engenCredits.setCredits(addresses, points);
 
         // mint credit
-        UserOperation[] memory userOps = new UserOperation[](1);
+        UserOperation[] memory userOps = new UserOperation[](2);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
@@ -54,8 +56,95 @@ contract EngenGovernanceTest is SharedSetup {
             address(_paymaster)
         );
 
+        string memory proposalDescription = "First ENIP Proposal";
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(_counter);
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("increment()");
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        userOps[1] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenGovernance),
+            _kintoWallet.getNonce() + 1,
+            privateKeys,
+            abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                data,
+                proposalDescription
+            ),
+            address(_paymaster)
+        );
+
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 10);
+
+        uint256 hashProposal = _engenGovernance.hashProposal(targets, values, data, keccak256(bytes(proposalDescription)));
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), amountToMint);
+        console.log("hashProposal: ", hashProposal);
+        assert(_engenGovernance.state(hashProposal) == IGovernor.ProposalState.Pending);
+        vm.warp(block.timestamp + 1 days + 1 seconds);
+        assert(_engenGovernance.state(hashProposal) == IGovernor.ProposalState.Active);
+    }
+
+    function testCreateProposal_RevertWhen_WhenNotENoughCredits() public {
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
+        uint amountToMint = 2e18;
+
+        // set points
+        uint256[] memory points = new uint256[](1);
+        points[0] = amountToMint;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWallet);
+        vm.prank(_owner);
+        _engenCredits.setCredits(addresses, points);
+
+        // mint credit
+        UserOperation[] memory userOps = new UserOperation[](2);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenCredits),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("mintCredits()"),
+            address(_paymaster)
+        );
+
+        string memory proposalDescription = "First ENIP Proposal";
+
+        address[] memory targets = new address[](1);
+        targets[0] = address(_counter);
+        bytes[] memory data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("increment()");
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+
+        userOps[1] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenGovernance),
+            _kintoWallet.getNonce() + 1,
+            privateKeys,
+            abi.encodeWithSignature(
+                "propose(address[],uint256[],bytes[],string)",
+                targets,
+                values,
+                data,
+                proposalDescription
+            ),
+            address(_paymaster)
+        );
+
+        vm.expectEmit(true, true, true, false);
+        emit UserOperationRevertReason(
+            _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
+        );
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq("Governor: proposer votes below proposal threshold");
+
     }
 
 }

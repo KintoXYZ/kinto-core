@@ -36,6 +36,7 @@ contract EngenCredits is
     bool public burnsEnabled;
 
     mapping(address => uint256) public earnedCredits;
+    uint256 public totalCredits;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -89,8 +90,47 @@ contract EngenCredits is
     function setCredits(address[] calldata _wallets, uint256[] calldata _points) external onlyOwner {
         if (_wallets.length != _points.length) revert LengthMismatch();
         for (uint256 i = 0; i < _wallets.length; i++) {
+            totalCredits -= earnedCredits[_wallets[i]];
             earnedCredits[_wallets[i]] = _points[i];
+            totalCredits += _points[i];
         }
+    }
+
+    // ======= Votes Functions ==================
+
+    /**
+     * @dev Get the past votes of a user. Always hardcoded to credits earned
+     * @param account The address of the user
+     * @param timepoint The timepoint to get the votes at
+     * @return The number of votes the user had at the timepoint
+     */
+    function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
+        return earnedCredits[account];
+    }
+
+    /**
+     * @dev Get the total supply of votes at a timepoint. Always hardcoded to total credits
+     * @param timepoint The timepoint to get the votes at
+     * @return The total number of votes at the timepoint
+     */
+    function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
+        return totalCredits;
+    }
+
+    /**
+     * @dev Get the clock for the votes
+     * @return The current timepoint
+     */
+    function clock() external view returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    /**
+     * @dev Get the clock mode for the votes. Always hardcoded to timestamp
+     * @return The clock mode
+     */
+    function CLOCK_MODE() external pure returns (string memory) {
+        return "mode=timestamp";
     }
 
     // ======= User Functions ==================
