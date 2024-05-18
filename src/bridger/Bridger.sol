@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../interfaces/IBridger.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -14,6 +13,9 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
+
+import "@kinto-core/interfaces/bridger/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridge.sol";
 
 /**
  * @title Bridger - To be deployed on ETH mainnet.
@@ -51,7 +53,7 @@ contract Bridger is
         uint256 depositCount
     );
 
-    /* ============ Constants ============ */
+    /* ============ Constants & Immutables ============ */
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -61,13 +63,12 @@ contract Bridger is
     address public constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
 
-    IL1GatewayRouter public constant L1GatewayRouter = IL1GatewayRouter(0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60);
-    address public constant standardGateway = 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
-
-    /* ============ State Variables ============ */
+    IBridge public immutable bridgeGateway;
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
     address public immutable exchangeProxy;
+
+    /* ============ State Variables ============ */
     address public override senderAccount;
 
     /// @dev Mapping of input assets that are allowed
@@ -89,10 +90,13 @@ contract Bridger is
     }
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _l2Vault) {
+    constructor(address _l2Vault, address bridge) {
         _disableInitializers();
+
         domainSeparator = _domainSeparatorV4();
         l2Vault = _l2Vault;
+        bridgeGateway = IBridge(bridge);
+
         exchangeProxy = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     }
 
@@ -201,34 +205,24 @@ contract Bridger is
     }
 
     /**
-     * @dev Bridges deposits in bulk every hour to the L2
+     * @dev Bridges deposits to Kinto
      */
-    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
-        external
-        payable
-        override
-        onlyPrivileged
-    {
+    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable onlyPrivileged {
         // Approve the gateway to get the tokens
-        uint256 gasCost = (maxGas * gasPriceBid) + maxSubmissionCost;
-        if (address(this).balance + msg.value < gasCost) revert NotEnoughEthToBridge();
-        if (IERC20(asset).allowance(address(this), standardGateway) < type(uint256).max) {
-            if (asset == wstETH) IERC20(asset).safeApprove(standardGateway, 0); // wstETH decreases allowance and does not allow non-zero to non-zero approval
-            IERC20(asset).safeApprove(standardGateway, type(uint256).max);
+        if (IERC20(asset).allowance(address(this), address(bridgeGateway)) < type(uint256).max) {
+            if (asset == wstETH) {
+                IERC20(asset).safeApprove(address(bridgeGateway), 0);
+            } // wstETH decreases allowance and does not allow non-zero to non-zero approval
+            IERC20(asset).safeApprove(address(bridgeGateway), type(uint256).max);
         }
-        // Bridge to Kinto L2 using standard bridge
-        // https://github.com/OffchainLabs/arbitrum-sdk/blob/a0c71474569cd6d7331d262f2fd969af953f24ae/src/lib/assetBridger/erc20Bridger.ts#L592C1-L596C10
-        L1GatewayRouter.outboundTransfer{value: gasCost}(
-            asset, //token
-            l2Vault, // Account to be credited with the tokens in L2
-            IERC20(asset).balanceOf(address(this)), // Amount of tokens to bridge
-            maxGas, // Max gas deducted from user’s L2 balance to cover the execution in L2
-            gasPriceBid, // Gas price for the execution in L2
-            abi.encode(
-                maxSubmissionCost, // Max gas deducted from user's L2 balance to cover base submission fee. Usually 0
-                bytes(""), // bytes extraData hook
-                gasCost // Total gas deducted from user’s L2 balance
-            )
+        // Bridge to Kinto L2 using Superbridge
+        bridgeGateway.bridge(
+            l2Vault,
+            IERC20(asset).balanceOf(address(this)),
+            bridgeData.msgGasLimit,
+            bridgeData.connector,
+            bridgeData.execPayload,
+            bridgeData.options
         );
     }
 
@@ -473,8 +467,4 @@ contract Bridger is
             )
         );
     }
-}
-
-contract BridgerV4 is Bridger {
-    constructor(address _l2Vault) Bridger(_l2Vault) {}
 }

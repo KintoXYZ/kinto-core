@@ -13,6 +13,7 @@ import "forge-std/Test.sol";
 
 contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, Test {
     Bridger _bridger;
+    address public constant bridge = 0x7870D5398DB488c669B406fBE57b8d05b6A35e42;
 
     function setUp() public {}
 
@@ -38,7 +39,7 @@ contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, T
         }
 
         // Deploy Engen Credits implementation
-        Bridger _implementation = new Bridger(bridgerAddressL2);
+        Bridger _implementation = new Bridger(bridgerAddressL2, bridge);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
         UUPSProxy _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");

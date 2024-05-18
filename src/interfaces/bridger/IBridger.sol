@@ -48,7 +48,6 @@ interface IBridger {
     error InvalidAmount();
     error InvalidAssets();
     error SwapsDisabled();
-    error NotEnoughEthToBridge();
     error GasFeeTooHigh();
     error SwapCallFailed();
     error SlippageError();
@@ -83,6 +82,13 @@ interface IBridger {
         uint256 deadline;
     }
 
+    struct BridgeData {
+        uint256 msgGasLimit;
+        address connector;
+        bytes execPayload;
+        bytes options;
+    }
+
     /* ============ State Change ============ */
 
     function depositETH(address _kintoWallet, address _finalAsset, uint256 _minReceive, SwapData calldata _swapData)
@@ -95,9 +101,7 @@ interface IBridger {
         IBridger.SwapData calldata _swapData
     ) external payable;
 
-    function bridgeDeposits(address asset, uint256 maxGas, uint256 gasPriceBid, uint256 maxSubmissionCost)
-        external
-        payable;
+    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable;
 
     function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
 

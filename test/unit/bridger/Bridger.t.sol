@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@kinto-core/interfaces/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -22,7 +22,7 @@ contract BridgerNewUpgrade is Bridger {
         return 1;
     }
 
-    constructor(address l2Vault) Bridger(l2Vault) {}
+    constructor(address l2Vault, address bridge) Bridger(l2Vault, bridge) {}
 }
 
 contract ERC20PermitToken is ERC20, ERC20Permit {
@@ -39,7 +39,10 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
+    address internal bridge = makeAddr("bridge");
+
     BridgerHarness internal bridger;
+    IBridger.BridgeData internal emptyBridgerData;
 
     function setUp() public override {
         super.setUp();
@@ -50,10 +53,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         // with mocked contracts
         ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
         vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+
+        emptyBridgerData =
+            IBridger.BridgeData({msgGasLimit: 0, connector: address(0), execPayload: bytes(""), options: bytes("")});
     }
 
     function _deployBridger() internal {
-        BridgerHarness implementation = new BridgerHarness(l2Vault);
+        BridgerHarness implementation = new BridgerHarness(l2Vault, bridge);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -64,14 +70,14 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault, bridge);
         vm.prank(_owner);
         bridger.upgradeTo(address(_newImpl));
         assertEq(BridgerNewUpgrade(payable(address(bridger))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault, bridge);
         vm.expectRevert("Ownable: caller is not the owner");
         bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }
@@ -239,21 +245,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Bridge ============ */
-
-    function testBridgeDeposits_RevertWhen_InsufficientGas() public {
-        address asset = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(bridger), amountToDeposit);
-
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-
-        vm.expectRevert(IBridger.NotEnoughEthToBridge.selector);
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
-    }
+    /* ============ bridgeDeposits ============ */
 
     /* ============ Pause ============ */
 

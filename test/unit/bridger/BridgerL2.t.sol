@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@kinto-core/interfaces/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";

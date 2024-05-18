@@ -11,7 +11,7 @@ import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/Upgradeabl
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
 import "../interfaces/IKintoID.sol";
-import "../interfaces/IBridgerL2.sol";
+import "../interfaces/bridger/IBridgerL2.sol";
 import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
