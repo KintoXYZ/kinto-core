@@ -25,8 +25,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
-    address internal bridge = makeAddr("bridge");
-
     BridgerHarness internal bridger;
     IBridger.BridgeData internal emptyBridgerData;
 
@@ -58,7 +56,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness implementation = new BridgerHarness(l2Vault, bridge);
+        BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 

@@ -22,7 +22,7 @@ contract BridgerNewUpgrade is Bridger {
         return 1;
     }
 
-    constructor(address l2Vault, address bridge) Bridger(l2Vault, bridge) {}
+    constructor(address l2Vault) Bridger(l2Vault) {}
 }
 
 contract ERC20PermitToken is ERC20, ERC20Permit {
@@ -38,8 +38,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
-
-    address internal bridge = makeAddr("bridge");
 
     BridgerHarness internal bridger;
     IBridger.BridgeData internal emptyBridgerData;
@@ -64,7 +62,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     }
 
     function _deployBridger() internal {
-        BridgerHarness implementation = new BridgerHarness(l2Vault, bridge);
+        BridgerHarness implementation = new BridgerHarness(l2Vault);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -75,14 +73,14 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault, bridge);
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.prank(_owner);
         bridger.upgradeTo(address(_newImpl));
         assertEq(BridgerNewUpgrade(payable(address(bridger))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault, bridge);
+        BridgerNewUpgrade _newImpl = new BridgerNewUpgrade(l2Vault);
         vm.expectRevert("Ownable: caller is not the owner");
         bridger.upgradeToAndCall(address(_newImpl), bytes(""));
     }

@@ -63,7 +63,6 @@ contract Bridger is
     address public constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
 
-    IBridge public immutable bridgeGateway;
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
     address public immutable exchangeProxy;
@@ -90,12 +89,11 @@ contract Bridger is
     }
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _l2Vault, address bridge) {
+    constructor(address _l2Vault) {
         _disableInitializers();
 
         domainSeparator = _domainSeparatorV4();
         l2Vault = _l2Vault;
-        bridgeGateway = IBridge(bridge);
 
         exchangeProxy = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     }
@@ -209,11 +207,11 @@ contract Bridger is
      */
     function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable onlyPrivileged {
         // Approve the gateway to get the tokens
-        if (IERC20(asset).allowance(address(this), address(bridgeGateway)) < type(uint256).max) {
+        if (IERC20(asset).allowance(address(this), bridgeData.vault) < type(uint256).max) {
             if (asset == wstETH) {
-                IERC20(asset).safeApprove(address(bridgeGateway), 0);
+                IERC20(asset).safeApprove(bridgeData.vault, 0);
             } // wstETH decreases allowance and does not allow non-zero to non-zero approval
-            IERC20(asset).safeApprove(address(bridgeGateway), type(uint256).max);
+            IERC20(asset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge to Kinto L2 using Superbridge
         IBridge(bridgeData.vault).bridge(
