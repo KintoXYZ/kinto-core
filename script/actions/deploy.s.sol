@@ -304,8 +304,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
         bytes memory creationCode = type(KYCViewer).creationCode;
-        bytes memory bytecode =
-            abi.encodePacked(creationCode, abi.encode(address(factory)), abi.encode(address(faucet)));
+        bytes memory bytecode = abi.encodePacked(
+            creationCode, abi.encode(address(factory)), abi.encode(address(faucet)), abi.encode(address(engenCredits))
+        );
         address implementation = _deployImplementation("KYCViewer", creationCode, bytecode, false);
         address proxy = _deployProxy("KYCViewer", implementation, false);
 

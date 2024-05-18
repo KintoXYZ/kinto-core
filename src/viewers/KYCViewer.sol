@@ -5,11 +5,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
 import "../interfaces/IFaucet.sol";
+import "../interfaces/IEngenCredits.sol";
 import "forge-std/console.sol";
 
 /**
@@ -23,13 +25,15 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     IKintoWalletFactory public immutable override walletFactory;
     IKintoID public immutable override kintoID;
     IFaucet public immutable override faucet;
+    IEngenCredits public immutable override engenCredits;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _kintoWalletFactory, address _faucet) {
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
         kintoID = walletFactory.kintoID();
         faucet = IFaucet(_faucet);
+        engenCredits = IEngenCredits(_engenCredits);
     }
 
     /**
@@ -102,6 +106,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             walletOwners: hasWallet ? getWalletOwners(_wallet) : new address[](0),
             claimedFaucet: faucet.claimed(_account),
             hasNFT: IERC721(address(kintoID)).balanceOf(_account) > 0,
+            engenCreditsEarned: engenCredits.earnedCredits(_wallet),
+            engenCreditsClaimed: IERC20(address(engenCredits)).balanceOf(_wallet),
             isKYC: kintoID.isKYC(_account),
             recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0
         });
@@ -117,6 +123,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV6 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
+contract KYCViewerV8 is KYCViewer {
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+    {}
 }

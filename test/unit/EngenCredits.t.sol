@@ -3,6 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/interfaces/IEngenCredits.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
@@ -67,7 +68,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
 
-        vm.expectRevert(EngenCredits.TransfersAlreadyEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
     }
@@ -106,7 +107,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
 
-        vm.expectRevert(EngenCredits.BurnsAlreadyEnabled.selector);
+        vm.expectRevert(IEngenCredits.BurnsAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
     }
@@ -145,7 +146,7 @@ contract EngenCreditsTest is SharedSetup {
     function testTransfer_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersNotEnabled.selector);
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -153,7 +154,7 @@ contract EngenCreditsTest is SharedSetup {
     function testBurn_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersNotEnabled.selector);
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -208,7 +209,7 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        vm.expectRevert(EngenCredits.LengthMismatch.selector);
+        vm.expectRevert(IEngenCredits.LengthMismatch.selector);
         _engenCredits.setCredits(addresses, points);
     }
 
@@ -313,7 +314,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.NoTokensToMint.selector);
+        assertRevertReasonEq(IEngenCredits.NoTokensToMint.selector);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
     }
@@ -341,7 +342,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
+        assertRevertReasonEq(IEngenCredits.MintNotAllowed.selector);
     }
 
     function testMintCredits_RevertWhen_BurnsEnabled() public {
@@ -367,6 +368,6 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
+        assertRevertReasonEq(IEngenCredits.MintNotAllowed.selector);
     }
 }

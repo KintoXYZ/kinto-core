@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "../interfaces/IEngenCredits.sol";
 
 import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
 
@@ -17,26 +18,20 @@ contract EngenCredits is
     ERC20BurnableUpgradeable,
     OwnableUpgradeable,
     ERC20PermitUpgradeable,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    IEngenCredits
 {
-    error TransfersAlreadyEnabled();
-    error BurnsAlreadyEnabled();
-    error LengthMismatch();
-    error MintNotAllowed();
-    error NoTokensToMint();
-    error TransfersNotEnabled();
-
     /// @dev EIP-20 token name for this token
     string private constant _NAME = "Engen Credits";
 
     /// @dev EIP-20 token symbol for this token
     string private constant _SYMBOL = "ENGEN";
 
-    bool public transfersEnabled;
-    bool public burnsEnabled;
+    bool public override transfersEnabled;
+    bool public override burnsEnabled;
 
-    mapping(address => uint256) public earnedCredits;
-    uint256 public totalCredits;
+    mapping(address => uint256) public override earnedCredits;
+    uint256 public override totalCredits;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -60,7 +55,7 @@ contract EngenCredits is
      * @param to The address of the user to mint tokens for
      * @param amount The amount of tokens to mint
      */
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external override onlyOwner {
         _mint(to, amount);
     }
 
@@ -68,7 +63,7 @@ contract EngenCredits is
      * @dev Enable transfers of Engen tokens
      * @param _transfersEnabled True if transfers should be enabled
      */
-    function setTransfersEnabled(bool _transfersEnabled) external onlyOwner {
+    function setTransfersEnabled(bool _transfersEnabled) external override onlyOwner {
         if (transfersEnabled) revert TransfersAlreadyEnabled();
         transfersEnabled = _transfersEnabled;
     }
@@ -77,7 +72,7 @@ contract EngenCredits is
      * @dev Enable burning of Engen tokens
      * @param _burnsEnabled True if burning should be enabled
      */
-    function setBurnsEnabled(bool _burnsEnabled) external onlyOwner {
+    function setBurnsEnabled(bool _burnsEnabled) external override onlyOwner {
         if (burnsEnabled) revert BurnsAlreadyEnabled();
         burnsEnabled = _burnsEnabled;
     }
@@ -87,7 +82,7 @@ contract EngenCredits is
      * @param _wallets The wallet addresses of the users
      * @param _points The credits earned by each user
      */
-    function setCredits(address[] calldata _wallets, uint256[] calldata _points) external onlyOwner {
+    function setCredits(address[] calldata _wallets, uint256[] calldata _points) external override onlyOwner {
         if (_wallets.length != _points.length) revert LengthMismatch();
         for (uint256 i = 0; i < _wallets.length; i++) {
             totalCredits -= earnedCredits[_wallets[i]];
@@ -104,7 +99,7 @@ contract EngenCredits is
      * hparam timepoint The timepoint to get the votes at
      * @return The number of votes the user had at the timepoint
      */
-    function getPastVotes(address account, uint256 /* timepoint */ ) external view returns (uint256) {
+    function getPastVotes(address account, uint256 /* timepoint */ ) external view override returns (uint256) {
         return earnedCredits[account];
     }
 
@@ -113,7 +108,7 @@ contract EngenCredits is
      * hparam timepoint The timepoint to get the votes at
      * @return The total number of votes at the timepoint
      */
-    function getPastTotalSupply(uint256 /* timepoint */ ) external view returns (uint256) {
+    function getPastTotalSupply(uint256 /* timepoint */ ) external view override returns (uint256) {
         return totalCredits;
     }
 
@@ -121,7 +116,7 @@ contract EngenCredits is
      * @dev Get the clock for the votes
      * @return The current timepoint
      */
-    function clock() external view returns (uint48) {
+    function clock() external view override returns (uint48) {
         return uint48(block.timestamp);
     }
 
@@ -129,7 +124,7 @@ contract EngenCredits is
      * @dev Get the clock mode for the votes. Always hardcoded to timestamp
      * @return The clock mode
      */
-    function CLOCK_MODE() external pure returns (string memory) {
+    function CLOCK_MODE() external pure override returns (string memory) {
         return "mode=timestamp";
     }
 
@@ -138,7 +133,7 @@ contract EngenCredits is
     /**
      * @dev Mint points for the Engen user based on their activity
      */
-    function mintCredits() external {
+    function mintCredits() external override {
         if (transfersEnabled || burnsEnabled) revert MintNotAllowed();
         uint256 points = earnedCredits[msg.sender];
         if (points == 0 || balanceOf(msg.sender) >= points) revert NoTokensToMint();
