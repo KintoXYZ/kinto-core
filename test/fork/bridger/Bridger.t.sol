@@ -41,8 +41,13 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
 
-        emptyBridgerData =
-            IBridger.BridgeData({msgGasLimit: 0, connector: address(0), execPayload: bytes(""), options: bytes("")});
+        emptyBridgerData = IBridger.BridgeData({
+            vault: address(0),
+            msgGasLimit: 0,
+            connector: address(0),
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 
     function setUpChain() public virtual override {

@@ -54,8 +54,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
         vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
 
-        emptyBridgerData =
-            IBridger.BridgeData({msgGasLimit: 0, connector: address(0), execPayload: bytes(""), options: bytes("")});
+        emptyBridgerData = IBridger.BridgeData({
+            vault: address(0),
+            msgGasLimit: 0,
+            connector: address(0),
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 
     function _deployBridger() internal {

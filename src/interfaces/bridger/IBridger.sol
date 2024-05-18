@@ -83,6 +83,7 @@ interface IBridger {
     }
 
     struct BridgeData {
+        address vault;
         uint256 msgGasLimit;
         address connector;
         bytes execPayload;

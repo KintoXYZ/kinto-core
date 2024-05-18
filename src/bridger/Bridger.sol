@@ -216,7 +216,7 @@ contract Bridger is
             IERC20(asset).safeApprove(address(bridgeGateway), type(uint256).max);
         }
         // Bridge to Kinto L2 using Superbridge
-        bridgeGateway.bridge(
+        IBridge(bridgeData.vault).bridge(
             l2Vault,
             IERC20(asset).balanceOf(address(this)),
             bridgeData.msgGasLimit,
