@@ -23,16 +23,16 @@ contract ERC20PermitToken is ERC20, ERC20Permit {
 }
 
 contract BridgerTest is SignatureHelper, SharedSetup {
-    address internal constant DAI = address(1);
-    address internal constant SENDER_ACCOUNT = address(5);
-    address internal constant CONNECTOR = address(6);
-    address internal constant L2_VAULT = address(7);
-    address internal constant BRIDGE = address(8);
-    address internal constant ROUTER = address(9);
-    address internal constant wETH = address(10);
-    address internal constant USDe = address(11);
-    address internal constant sUSDe = address(12);
-    address internal constant wstETH = address(13);
+    address internal dai;
+    address internal senderAccount;
+    address internal connector;
+    address internal l2Vault;
+    address internal bridge;
+    address internal router;
+    address internal wEth;
+    address internal usde;
+    address internal sUsde;
+    address internal wstEth;
 
     bytes internal constant EXEC_PAYLOAD = bytes("EXEC_PAYLOAD");
     bytes internal constant OPTIONS = bytes("OPTIONS ");
@@ -50,7 +50,17 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        kintoWallet = address(1);
+        kintoWallet = makeAddr("wallet");
+        dai = makeAddr("dai");
+        senderAccount = makeAddr("sender");
+        connector = makeAddr("connector");
+        l2Vault = makeAddr("l2Vault");
+        bridge = makeAddr("bridge");
+        router = makeAddr("router");
+        wEth = makeAddr("weth");
+        usde = makeAddr("usde");
+        sUsde = makeAddr("susde");
+        wstEth = makeAddr("wsteth");
 
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
 
@@ -58,12 +68,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         // deploy a new Bridger contract
         BridgerHarness implementation =
-            new BridgerHarness(L2_VAULT, address(bridgeMock), ROUTER, wETH, DAI, USDe, sUSDe, wstETH);
+            new BridgerHarness(l2Vault, address(bridgeMock), router, wEth, dai, usde, sUsde, wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
+        vm.label(address(bridger), 'bridger');
 
         vm.prank(_owner);
-        bridger.initialize(SENDER_ACCOUNT);
+        bridger.initialize(senderAccount);
 
         address[] memory assets = new address[](1);
         assets[0] = address(sDAI);
@@ -74,13 +85,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         mockBridgerData = IBridger.BridgeData({
             msgGasLimit: MSG_GAS_LIMIT,
-            connector: CONNECTOR,
+            connector: connector,
             execPayload: EXEC_PAYLOAD,
             options: OPTIONS
         });
     }
 
-    /* ============ Bridger Deposit ============ */
+    /* ============ depositBySig ============ */
 
     // deposit sDAI (no swap)
     function testDepositBySig_sDAI_WhenNoSwap() public {
@@ -122,7 +133,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectCall(
             address(bridgeMock),
             abi.encodeCall(
-                bridgeMock.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, CONNECTOR, EXEC_PAYLOAD, OPTIONS)
+                bridgeMock.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
@@ -185,7 +196,31 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
     }
 
-    /* ============ Bridger ETH Deposit ============ */
+    /* ============ depositERC20 ============ */
+
+    function testDepositERC20() public {
+        uint256 amountToDeposit = 1e18;
+        deal(address(sDAI), _user, amountToDeposit);
+
+        vm.prank(_user);
+        sDAI.approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        vm.expectCall(
+            address(bridgeMock),
+            abi.encodeCall(
+                bridgeMock.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+            )
+        );
+        bridger.depositERC20(
+            address(sDAI), amountToDeposit, kintoWallet, address(sDAI), amountToDeposit, bytes(""), mockBridgerData
+        );
+
+        assertEq(sDAI.balanceOf(_user), 0);
+        assertEq(sDAI.balanceOf(address(bridger)), amountToDeposit);
+    }
+
+    /* ============ depositETH ============ */
 
     function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
         uint256 amountToDeposit = 1e18;
@@ -205,7 +240,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Bridge Deposits ============ */
+    /* ============ bridgeDeposits ============ */
 
     function testBridgeDeposits() public {
         uint256 amountToDeposit = 1e18;
@@ -215,7 +250,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectCall(
             address(bridgeMock),
             abi.encodeCall(
-                bridgeMock.bridge, (L2_VAULT, amountToDeposit, MSG_GAS_LIMIT, CONNECTOR, EXEC_PAYLOAD, OPTIONS)
+                bridgeMock.bridge, (l2Vault, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
         bridger.bridgeDeposits(address(sDAI), mockBridgerData);
