@@ -4,12 +4,15 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
 import "../interfaces/IKintoWallet.sol";
+import "../interfaces/IEngenCredits.sol";
+import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
@@ -136,6 +139,21 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newSigners.length == 0) revert EmptySigners();
         if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
         _resetSigners(newSigners, policy);
+    }
+
+    /* ============ Engen Claim Simplification ============ */
+
+    function claimEngen(
+        uint8 firstVote,
+        uint8 secondVote,
+        uint8 thirdVote
+    ) external override onlySelf {
+        IEngenCredits(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).mintCredits();
+        EngenGovernance engenGovernance = EngenGovernance(payable(0x27926a991BB0193Bf5b679bdb6Cb3d3B6581084E));
+        // TODO: hardcode proposal ids when created
+        engenGovernance.castVote(0, firstVote);
+        engenGovernance.castVote(1, secondVote);
+        engenGovernance.castVote(1, thirdVote);
     }
 
     /* ============ Whitelist Management ============ */
@@ -290,9 +308,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
                 // if using an app key, no calls to wallet are allowed
-                return (target != address(this) && (!batch || _verifyBatch(app, userOp.callData, true)))
-                    ? SIG_VALIDATION_SUCCESS
-                    : SIG_VALIDATION_FAILED;
+                bytes4 selector = bytes4(userOp.callData[:4]);
+                // todo: remove the selector part after engen is done
+                return (
+                    (target != address(this) || selector == IKintoWallet.claimEngen.selector)
+                        && (!batch || _verifyBatch(app, userOp.callData, true))
+                ) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
             }
         }
 
