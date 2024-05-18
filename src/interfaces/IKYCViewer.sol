@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "./IKintoID.sol";
 import "./IKintoWalletFactory.sol";
 import "./IFaucet.sol";
+import "./IEngenCredits.sol";
 
 interface IKYCViewer {
     /* ============ Errors ============ */
@@ -16,6 +17,8 @@ interface IKYCViewer {
         uint256 walletBalance;
         uint256 walletPolicy;
         uint256 recoveryTs;
+        uint256 engenCreditsEarned;
+        uint256 engenCreditsClaimed;
         address[] walletOwners;
         bool claimedFaucet;
         bool hasNFT;
@@ -47,4 +50,6 @@ interface IKYCViewer {
     function walletFactory() external view returns (IKintoWalletFactory);
 
     function faucet() external view returns (IFaucet);
+
+    function engenCredits() external view returns (IEngenCredits);
 }
