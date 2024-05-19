@@ -1100,7 +1100,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         for (uint256 i = 0; i < allowedAssets.length; i++) {
             address asset = allowedAssets[i];
             uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
-            uint256 amount = 1e18;
+            uint256 amount = balanceBefore;
 
             vm.prank(_owner);
             bridger.bridgeDeposits{value: 1 ether}(asset, amount, brideData[asset]);
