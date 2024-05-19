@@ -1033,7 +1033,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         deal(address(asset), address(bridger), amountToDeposit);
 
         vm.prank(_owner);
-        bridger.bridgeDeposits(asset, emptyBridgerData);
+        bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
 
         assertEq(bridger.deposits(_user, asset), 0);
         assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
@@ -1052,7 +1052,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             deal(address(asset), address(bridger), amountToDeposit);
 
             vm.prank(_owner);
-            bridger.bridgeDeposits(asset, emptyBridgerData);
+            bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
 
             assertEq(bridger.deposits(_user, asset), 0);
             assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
@@ -1060,7 +1060,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             // 2nd time
 
             vm.prank(_owner);
-            bridger.bridgeDeposits(asset, emptyBridgerData);
+            bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
 
             assertEq(bridger.deposits(_user, asset), 0);
             assertEq(ERC20(asset).balanceOf(address(bridger)), 0);

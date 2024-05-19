@@ -205,7 +205,11 @@ contract Bridger is
     /**
      * @dev Bridges deposits to Kinto
      */
-    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable onlyPrivileged {
+    function bridgeDeposits(address asset, uint256 amount, BridgeData calldata bridgeData)
+        external
+        payable
+        onlyPrivileged
+    {
         // Approve the gateway to get the tokens
         if (IERC20(asset).allowance(address(this), bridgeData.vault) < type(uint256).max) {
             if (asset == wstETH) {
@@ -215,12 +219,7 @@ contract Bridger is
         }
         // Bridge to Kinto L2 using Superbridge
         IBridge(bridgeData.vault).bridge(
-            l2Vault,
-            IERC20(asset).balanceOf(address(this)),
-            bridgeData.msgGasLimit,
-            bridgeData.connector,
-            bridgeData.execPayload,
-            bridgeData.options
+            l2Vault, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
         );
     }
 

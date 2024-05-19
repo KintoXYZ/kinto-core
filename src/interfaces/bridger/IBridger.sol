@@ -102,7 +102,7 @@ interface IBridger {
         IBridger.SwapData calldata _swapData
     ) external payable;
 
-    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable;
+    function bridgeDeposits(address asset, uint256 amount, BridgeData calldata bridgeData) external payable;
 
     function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
 
