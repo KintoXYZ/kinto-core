@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
 import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
+import {BridgedToken as BT6} from "@kinto-core/tokens/6DecimalBridgedToken.sol";
 
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
@@ -35,6 +36,13 @@ contract BridgedTokenTest is BaseTest {
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
+    }
+
+    /* ============ 6 decimal token ============ */
+    function testTokenDecimals() public {
+        BT6 token6 = BT6(address(new UUPSProxy(address(new BT6()), "")));
+        token6.initialize("USDC", "USDC", admin, minter, upgrader);
+        assertEq(token6.decimals(), 6);
     }
 
     /* ============ Minter ============ */
