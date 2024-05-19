@@ -9,7 +9,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract KintoMigration58DeployScript is MigrationHelper {
+contract KintoMigration59DeployScript is MigrationHelper {
     using LibString for *;
     using stdJson for string;
 
@@ -17,7 +17,7 @@ contract KintoMigration58DeployScript is MigrationHelper {
     uint256 kintoFork = vm.createSelectFork("kinto");
 
     // list of tokens we want to deploy as BridgedToken
-    address USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
+    address WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
 
     // KINTO_WALLET will be the admin, minter and upgrader of every BridgedToken
     address kintoWallet = vm.envAddress("ADMIN_KINTO_WALLET");
@@ -32,12 +32,12 @@ contract KintoMigration58DeployScript is MigrationHelper {
     }
 
     function deployContracts() internal {
-        (string memory symbol, address bridgedToken, address impl) = deployBridgedToken(USDC);
+        (string memory symbol, address bridgedToken, address impl) = deployBridgedToken(WETH);
 
         console2.log("%s implementation deployed @%s", symbol, impl);
         console2.log("%s deployed @%s", symbol, bridgedToken);
 
-        saveContractAddress(string.concat(symbol, "V2", "-impl"), impl);
+        saveContractAddress(string.concat(symbol, "-impl"), impl);
         saveContractAddress(symbol, bridgedToken);
     }
 
@@ -47,7 +47,8 @@ contract KintoMigration58DeployScript is MigrationHelper {
         require(
             keccak256(abi.encodePacked(bridgedToken.symbol())) == keccak256(abi.encodePacked(symbol)), "Symbol mismatch"
         );
-        require(bridgedToken.decimals() == 6, "Decimals mismatch");
+        // assert name is symbol is WETH
+        require(bridgedToken.decimals() == 18, "Decimals mismatch");
         require(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), admin), "Admin role not set");
         require(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), minter), "Minter role not set");
         require(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), upgrader), "Upgrader role not set");
@@ -63,15 +64,31 @@ contract KintoMigration58DeployScript is MigrationHelper {
         vm.selectFork(mainnetFork);
         string memory name = ERC20(token).name();
         symbol = ERC20(token).symbol();
+        uint8 decimals = ERC20(token).decimals();
         console2.log("Deploying BridgedToken for %s", name);
 
         // switch back to Kinto fork
         vm.selectFork(kintoFork);
 
         // deploy token
-        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(6));
-        proxy = _getChainDeployment("USDC");
-        implementation = _deployImplementationAndUpgrade("USDC", "V2", bytecode);
+        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
+        implementation = _deployImplementation("BridgedToken", "V1", bytecode, 0);
+
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
+        (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "0E7000");
+
+        proxy = _deployProxy("BridgedToken", implementation, salt);
+
+        console2.log("Proxy deployed @%s", proxy);
+        console2.log("Expected address: %s", expectedAddress);
+        assertEq(proxy, expectedAddress);
+
+        _whitelistApp(proxy, deployerPrivateKey);
+
+        // initialize
+        bytes memory selectorAndParams =
+            abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, minter, upgrader);
+        _handleOps(selectorAndParams, proxy, deployerPrivateKey);
 
         checkToken(proxy, name, symbol);
     }
