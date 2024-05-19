@@ -37,7 +37,7 @@ contract KintoMigration58DeployScript is MigrationHelper {
         console2.log("%s implementation deployed @%s", symbol, impl);
         console2.log("%s deployed @%s", symbol, bridgedToken);
 
-        saveContractAddress(string.concat(symbol, "-impl"), impl);
+        saveContractAddress(string.concat(symbol, "V2", "-impl"), impl);
         saveContractAddress(symbol, bridgedToken);
     }
 
