@@ -16,12 +16,13 @@ import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
-    address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address constant wstEth = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
@@ -62,6 +63,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         vm.prank(_owner);
         bridger.initialize(senderAccount);
+    }
+
+    function upgradeBridger() internal {
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
+        BridgerHarness newImpl = new BridgerHarness(l2Vault);
+        vm.prank(bridger.owner());
+        bridger.upgradeTo(address(newImpl));
     }
 
     /* ============ Bridger Deposit ============ */
@@ -1026,18 +1036,26 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     /* ============ bridgeDeposits ============ */
 
     function testBridgeDeposits() public {
-        // TODO: Fix the test
-        vm.skip(true);
-        address asset = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(bridger), amountToDeposit);
+        upgradeBridger();
+
+        address asset = wstEth;
+        uint256 amountToDeposit = ERC20(asset).balanceOf(address(bridger));
+
+
+        IBridger.BridgeData memory bridgerData = IBridger.BridgeData({
+            vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
+            msgGasLimit: 500_000,
+            connector: 0x83C6d6597891Ad48cF5e0BA901De55120C37C6bE,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
 
         vm.prank(_owner);
-        bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
+        bridger.bridgeDeposits{value: 1 ether}(asset, amountToDeposit, bridgerData);
 
-        assertEq(bridger.deposits(_user, asset), 0);
         assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
     }
+
 
     function testBridgeDeposits_WhenMultipleTimes() public {
         // TODO: Fix the test

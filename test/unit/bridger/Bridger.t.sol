@@ -250,6 +250,15 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     /* ============ bridgeDeposits ============ */
 
+    function testBridgeDeposits_RevertsWhen_NotOwner() public {
+        address asset = bridger.sDAI();
+        uint256 amountToDeposit = 1e18;
+        deal(address(asset), address(bridger), amountToDeposit);
+
+        vm.expectRevert(IBridger.OnlyOwner.selector);
+        bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
+    }
+
     /* ============ Pause ============ */
 
     function testPauseWhenOwner() public {
