@@ -9,7 +9,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract KintoMigration57DeployScript is MigrationHelper {
+contract KintoMigration58DeployScript is MigrationHelper {
     using LibString for *;
     using stdJson for string;
 
@@ -69,24 +69,11 @@ contract KintoMigration57DeployScript is MigrationHelper {
         vm.selectFork(kintoFork);
 
         // deploy token
-        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode);
-        implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(6));
+        // implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
 
-        bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
-        (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "05DC00");
-
-        proxy = _deployProxy("BridgedToken", implementation, salt);
-
-        console2.log("Proxy deployed @%s", proxy);
-        console2.log("Expected address: %s", expectedAddress);
-        assertEq(proxy, expectedAddress);
-
-        _whitelistApp(proxy, deployerPrivateKey);
-
-        // initialize
-        bytes memory selectorAndParams =
-            abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, minter, upgrader);
-        _handleOps(selectorAndParams, proxy, deployerPrivateKey);
+        proxy = _getChainDeployment("USDC");
+        implementation = _deployImplementationAndUpgrade("USDC", "V2", bytecode);
 
         checkToken(proxy, name, symbol);
     }
