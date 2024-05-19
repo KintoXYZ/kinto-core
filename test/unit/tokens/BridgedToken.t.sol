@@ -5,7 +5,6 @@ pragma solidity ^0.8.18;
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
 import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
-
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
@@ -24,7 +23,7 @@ contract BridgedTokenTest is BaseTest {
         upgrader = createUser("upgrader");
         alice = createUser("alice");
 
-        token = BridgedToken(address(new UUPSProxy(address(new BridgedToken()), "")));
+        token = BridgedToken(address(new UUPSProxy(address(new BridgedToken(18)), "")));
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
     }
 
@@ -35,6 +34,13 @@ contract BridgedTokenTest is BaseTest {
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
+    }
+
+    /* ============ 6 decimal token ============ */
+    function testTokenDecimals() public {
+        BridgedToken token6 = BridgedToken(address(new UUPSProxy(address(new BridgedToken(6)), "")));
+        token6.initialize("USDC", "USDC", admin, minter, upgrader);
+        assertEq(token6.decimals(), 6);
     }
 
     /* ============ Minter ============ */
@@ -75,7 +81,7 @@ contract BridgedTokenTest is BaseTest {
     /* ============ Proxy ============ */
 
     function testUpgradeTo() public {
-        BridgedTokenHarness newImpl = new BridgedTokenHarness();
+        BridgedTokenHarness newImpl = new BridgedTokenHarness(18);
         vm.prank(upgrader);
         token.upgradeToAndCall(address(newImpl), bytes(""));
 
@@ -91,7 +97,7 @@ contract BridgedTokenTest is BaseTest {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotUpgrader() public {
-        BridgedTokenHarness newImpl = new BridgedTokenHarness();
+        BridgedTokenHarness newImpl = new BridgedTokenHarness(18);
         // Only the upgrader can upgrade the contract
         vm.expectRevert(
             abi.encodeWithSelector(

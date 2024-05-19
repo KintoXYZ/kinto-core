@@ -2,6 +2,8 @@
 pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable as UUPSUpgradeable5} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
@@ -145,22 +147,28 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
 
     // utils for doing actions through EntryPoint
 
+    function _upgradeTo(address _proxy, address _newImpl, address _sponsorPaymaster, uint256 _signerPk) internal {
+        _upgradeTo(_proxy, _newImpl, _sponsorPaymaster, _signerPk);
+    }
+
     function _upgradeTo(address _proxy, address _newImpl, uint256 _signerPk) internal {
         // prep upgradeTo user op
         address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
+        // if UUPS contract has UPGRADE_INTERFACE_VERSION set to 5.0.0, we use upgradeToAndCall
+        bytes memory bytesOp = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl));
+        try UUPSUpgradeable5(_proxy).UPGRADE_INTERFACE_VERSION() returns (string memory _version) {
+            if (keccak256(abi.encode(_version)) == keccak256(abi.encode("5.0.0"))) {
+                bytesOp =
+                    abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes(""));
+            }
+        } catch {}
+
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
-            block.chainid,
-            _from,
-            _proxy,
-            0,
-            IKintoWallet(_from).getNonce(),
-            privateKeys,
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl)),
-            _getChainDeployment("SponsorPaymaster")
+            block.chainid, _from, _proxy, 0, IKintoWallet(_from).getNonce(), privateKeys, bytesOp, address(0)
         );
 
         vm.broadcast(_signerPk);
