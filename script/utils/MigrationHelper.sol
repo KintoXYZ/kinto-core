@@ -225,10 +225,20 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
     }
 
     function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, _signerPk);
+        _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, address(0), _signerPk);
     }
 
     function _handleOps(bytes memory _selectorAndParams, address _from, address _to, uint256 _signerPk) internal {
+        _handleOps(_selectorAndParams, _from, _to, address(0), _signerPk);
+    }
+
+    function _handleOps(
+        bytes memory _selectorAndParams,
+        address _from,
+        address _to,
+        address _sponsorPaymaster,
+        uint256 _signerPk
+    ) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
@@ -241,7 +251,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
             IKintoWallet(_from).getNonce(),
             privateKeys,
             _selectorAndParams,
-            _getChainDeployment("SponsorPaymaster")
+            _sponsorPaymaster
         );
 
         vm.broadcast(deployerPrivateKey);
