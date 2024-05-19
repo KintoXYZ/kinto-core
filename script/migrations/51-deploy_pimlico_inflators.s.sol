@@ -7,7 +7,7 @@ import {Faucet} from "../../src/Faucet.sol";
 import {KintoInflator} from "../../src/inflators/KintoInflator.sol";
 import {BundleBulker} from "../../src/inflators/BundleBulker.sol";
 import {IInflator} from "../../src/interfaces/IInflator.sol";
-import {PerOpInflator, IOpInflator} from "@alto/src/compression/PerOpInflator.sol";
+import {PerOpInflator, IOpInflator} from "@alto/src/Compression/PerOpInflator.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration51DeployScript is MigrationHelper {
