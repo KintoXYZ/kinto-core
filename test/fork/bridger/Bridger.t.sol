@@ -21,13 +21,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    address constant wstEth = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address constant ENA = 0x57e114B691Db790C35207b2e685D4A43181e6061;
 
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
     BridgerHarness internal bridger;
     IBridger.BridgeData internal emptyBridgerData;
+
+    mapping(address => IBridger.BridgeData) internal brideData;
 
     function setUp() public override {
         super.setUp();
@@ -44,6 +46,46 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             vault: address(0),
             msgGasLimit: 0,
             connector: address(0),
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.wstETH()] = IBridger.BridgeData({
+            vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
+            msgGasLimit: 500_000,
+            connector: 0x83C6d6597891Ad48cF5e0BA901De55120C37C6bE,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.weETH()] = IBridger.BridgeData({
+            vault: 0xeB66259d2eBC3ed1d3a98148f6298927d8A36397,
+            msgGasLimit: 500_000,
+            connector: 0xE2c2291B80BFC8Bd0e4fc8Af196Ae5fc9136aeE0,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.sDAI()] = IBridger.BridgeData({
+            vault: 0x5B8Ae1C9c5970e2637Cf3Af431acAAebEf7aFb85,
+            msgGasLimit: 500_000,
+            connector: 0xF5992B6A0dEa32dCF6BE7bfAf762A4D94f139Ea7,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.sUSDe()] = IBridger.BridgeData({
+            vault: 0x43b718Aa5e678b08615CA984cbe25f690B085b32,
+            msgGasLimit: 500_000,
+            connector: 0xE274dB6b891159547FbDC18b07412EE7F4B8d767,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[ENA] = IBridger.BridgeData({
+            vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
+            msgGasLimit: 500_000,
+            connector: 0x266abd77Da7F877cdf93c0dd5782cC61Fa29ac96,
             execPayload: bytes(""),
             options: bytes("")
         });
@@ -70,7 +112,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_owner, 1e20);
 
         BridgerHarness newImpl = new BridgerHarness(l2Vault);
-        vm.prank(bridger.owner());
+        vm.prank(_owner);
         bridger.upgradeTo(address(newImpl));
     }
 
@@ -1038,50 +1080,32 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
     function testBridgeDeposits() public {
         upgradeBridger();
 
-        address asset = wstEth;
-        uint256 amountToDeposit = ERC20(asset).balanceOf(address(bridger));
+        address asset = bridger.wstETH();
+        uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
 
+        vm.prank(bridger.senderAccount());
+        bridger.bridgeDeposits{value: 1 ether}(asset, amountToDeposit, brideData[asset]);
 
-        IBridger.BridgeData memory bridgerData = IBridger.BridgeData({
-            vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
-            msgGasLimit: 500_000,
-            connector: 0x83C6d6597891Ad48cF5e0BA901De55120C37C6bE,
-            execPayload: bytes(""),
-            options: bytes("")
-        });
-
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: 1 ether}(asset, amountToDeposit, bridgerData);
-
-        assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+        assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amountToDeposit);
     }
 
+    function testBridgeDepositsAllAssets() public {
+        upgradeBridger();
 
-    function testBridgeDeposits_WhenMultipleTimes() public {
-        // TODO: Fix the test
-        vm.skip(true);
         // array of allowedAssets
-        address[4] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH()];
+        address[5] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH(), ENA];
 
-        uint256 amountToDeposit = 1e18;
         // for each allowed asset, deposit 1e18 2 times
         for (uint256 i = 0; i < allowedAssets.length; i++) {
             address asset = allowedAssets[i];
-            deal(address(asset), address(bridger), amountToDeposit);
+            uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
+            uint256 amount = 1e18;
 
             vm.prank(_owner);
-            bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
+            bridger.bridgeDeposits{value: 1 ether}(asset, amount, brideData[asset]);
 
-            assertEq(bridger.deposits(_user, asset), 0);
-            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
-
-            // 2nd time
-
-            vm.prank(_owner);
-            bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
-
-            assertEq(bridger.deposits(_user, asset), 0);
-            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+            assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amount);
         }
     }
 }

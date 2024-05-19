@@ -53,6 +53,8 @@ contract Bridger is
         uint256 depositCount
     );
 
+    event AssetBridged(address indexed asset, uint256 indexed amount);
+
     /* ============ Constants & Immutables ============ */
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     IWETH public constant WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
@@ -221,6 +223,8 @@ contract Bridger is
         IBridge(bridgeData.vault).bridge{value: msg.value}(
             l2Vault, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
         );
+
+        emit AssetBridged(asset, amount);
     }
 
     /* ============ Privileged Admin methods ============ */
