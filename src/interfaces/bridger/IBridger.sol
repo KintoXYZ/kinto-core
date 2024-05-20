@@ -42,7 +42,6 @@ interface IBridger {
     error SwapCallFailed();
     error FailedToStakeEth();
     error SlippageError(uint256 boughtAmount, uint256 minReceive);
-    error OnlyExchangeProxy();
 
     /* ============ Structs ============ */
 

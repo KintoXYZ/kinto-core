@@ -31,7 +31,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address internal router;
     address internal wEth;
     address internal usde;
-    address internal sUsde;
     address internal wstEth;
 
     bytes internal constant EXEC_PAYLOAD = bytes("EXEC_PAYLOAD");
@@ -46,6 +45,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     IBridge internal vault;
 
     ERC20PermitToken internal sDAI;
+    ERC20PermitToken internal sUSDe;
     IBridger.BridgeData internal emptyBridgerData;
 
     function setUp() public override {
@@ -60,15 +60,15 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         router = makeAddr("router");
         wEth = makeAddr("weth");
         usde = makeAddr("usde");
-        sUsde = makeAddr("susde");
         wstEth = makeAddr("wsteth");
 
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
+        sUSDe = new ERC20PermitToken("sUSDe", "sUSDe");
 
         vault = new BridgeMock();
 
         // deploy a new Bridger contract
-        BridgerHarness implementation = new BridgerHarness(l2Vault, router, wEth, dai, usde, sUsde, wstEth);
+        BridgerHarness implementation = new BridgerHarness(l2Vault, router, wEth, dai, usde, address(sUSDe), wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
         vm.label(address(bridger), "bridger");
@@ -76,10 +76,12 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         bridger.initialize(senderAccount);
 
-        address[] memory assets = new address[](1);
+        address[] memory assets = new address[](2);
         assets[0] = address(sDAI);
-        bool[] memory flags = new bool[](1);
+        assets[1] = address(sUSDe);
+        bool[] memory flags = new bool[](2);
         flags[0] = true;
+        flags[1] = true;
         vm.prank(_owner);
         bridger.whitelistFinalAssets(assets, flags);
 
@@ -195,6 +197,78 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
+    }
+
+    function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
+        address assetToDeposit = address(sDAI);
+        uint256 amountToDeposit = 1000e18;
+
+        address[] memory assets = new address[](1);
+        assets[0] = assetToDeposit;
+        bool[] memory flags = new bool[](1);
+        flags[0] = false;
+        vm.prank(_owner);
+        bridger.whitelistAssets(assets, flags);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWallet,
+            bridger,
+            _user,
+            assetToDeposit,
+            bridger.sUSDe(),
+            amountToDeposit,
+            1,
+            _userPk,
+            block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidInputAsset.selector, assetToDeposit));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
+        vm.stopPrank();
+    }
+
+    function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
+        address assetToDeposit = address(sDAI);
+        uint256 amountToDeposit = 1000e18;
+        deal(address(assetToDeposit), _user, amountToDeposit);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWallet,
+            bridger,
+            _user,
+            assetToDeposit,
+            address(1),
+            amountToDeposit,
+            amountToDeposit,
+            _userPk,
+            block.timestamp + 1000
+        );
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
+        vm.stopPrank();
     }
 
     /* ============ depositERC20 ============ */
