@@ -3,6 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/interfaces/IEngenCredits.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
@@ -67,7 +68,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
 
-        vm.expectRevert(EngenCredits.TransfersAlreadyEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setTransfersEnabled(true);
     }
@@ -106,7 +107,7 @@ contract EngenCreditsTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
 
-        vm.expectRevert(EngenCredits.BurnsAlreadyEnabled.selector);
+        vm.expectRevert(IEngenCredits.BurnsAlreadyEnabled.selector);
         vm.prank(_owner);
         _engenCredits.setBurnsEnabled(true);
     }
@@ -145,7 +146,7 @@ contract EngenCreditsTest is SharedSetup {
     function testTransfer_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersNotEnabled.selector);
         _engenCredits.transfer(_user2, 100);
         vm.stopPrank();
     }
@@ -153,7 +154,7 @@ contract EngenCreditsTest is SharedSetup {
     function testBurn_RevertWhen_CallerIsAnyone() public {
         vm.startPrank(_owner);
         _engenCredits.mint(_owner, 100);
-        vm.expectRevert(EngenCredits.TransfersNotEnabled.selector);
+        vm.expectRevert(IEngenCredits.TransfersNotEnabled.selector);
         _engenCredits.burn(100);
         vm.stopPrank();
     }
@@ -185,8 +186,8 @@ contract EngenCreditsTest is SharedSetup {
 
     /* ============ Phase Override tests ============ */
 
-    function testSetPhase1Override() public {
-        assertEq(_engenCredits.phase1Override(address(_kintoWallet)), 0);
+    function testSetEarnedCredits() public {
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 0);
 
         uint256[] memory points = new uint256[](1);
         points[0] = 10;
@@ -194,12 +195,12 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        _engenCredits.setPhase1Override(addresses, points);
+        _engenCredits.setCredits(addresses, points);
 
-        assertEq(_engenCredits.phase1Override(address(_kintoWallet)), 10);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 10);
     }
 
-    function testSetPhase1Override_RevertWhen_LengthMismatch() public {
+    function testSetEarnedCredits_RevertWhen_LengthMismatch() public {
         uint256[] memory points = new uint256[](2);
         points[0] = 10;
         points[1] = 10;
@@ -208,17 +209,24 @@ contract EngenCreditsTest is SharedSetup {
         addresses[0] = address(_kintoWallet);
 
         vm.prank(_owner);
-        vm.expectRevert(EngenCredits.LengthMismatch.selector);
-        _engenCredits.setPhase1Override(addresses, points);
+        vm.expectRevert(IEngenCredits.LengthMismatch.selector);
+        _engenCredits.setCredits(addresses, points);
     }
 
     /* ============ Mint Credits tests ============ */
 
     function testMintCredits() public {
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
 
         whitelistApp(address(_engenCredits));
+
+        // set points
+        uint256[] memory points = new uint256[](1);
+        points[0] = 10;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWallet);
+        vm.prank(_owner);
+        _engenCredits.setCredits(addresses, points);
 
         // mint credit
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -232,22 +240,22 @@ contract EngenCreditsTest is SharedSetup {
         );
 
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 10);
     }
 
     function testMintCredits_whenOverride() public {
         whitelistApp(address(_engenCredits));
 
-        // set phase override
+        // set points
         uint256[] memory points = new uint256[](1);
         points[0] = 10;
         address[] memory addresses = new address[](1);
         addresses[0] = address(_kintoWallet);
         vm.prank(_owner);
-        _engenCredits.setPhase1Override(addresses, points);
+        _engenCredits.setCredits(addresses, points);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 20);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 10);
 
         // mint credits
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -260,14 +268,21 @@ contract EngenCreditsTest is SharedSetup {
             address(_paymaster)
         );
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 20);
+        assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 10);
     }
 
     function testMintCredits_WhenCalledTwice() public {
         whitelistApp(address(_engenCredits));
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        assertEq(_engenCredits.calculatePoints(address(_kintoWallet)), 15);
+        assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 0);
+
+        vm.prank(_owner);
+        uint256[] memory points = new uint256[](1);
+        points[0] = 15;
+        address[] memory addresses = new address[](1);
+        addresses[0] = address(_kintoWallet);
+        _engenCredits.setCredits(addresses, points);
 
         // mint creidts
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -299,7 +314,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.NoTokensToMint.selector);
+        assertRevertReasonEq(IEngenCredits.NoTokensToMint.selector);
 
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 15);
     }
@@ -327,7 +342,7 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
+        assertRevertReasonEq(IEngenCredits.MintNotAllowed.selector);
     }
 
     function testMintCredits_RevertWhen_BurnsEnabled() public {
@@ -353,6 +368,6 @@ contract EngenCreditsTest is SharedSetup {
         );
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenCredits.MintNotAllowed.selector);
+        assertRevertReasonEq(IEngenCredits.MintNotAllowed.selector);
     }
 }

@@ -14,7 +14,7 @@ import "forge-std/Test.sol";
 import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
 
 contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test, Constants {
-    Bridger _bridger;
+    Bridger bridger;
 
     function setUp() public {}
 
@@ -34,23 +34,23 @@ contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test, Constants
             return;
         }
 
-        Bridger newImpl = new Bridger(L2_VAULT, BRIDGE, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
-
+        // Deploy implementation
+        Bridger newImpl = new Bridger(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         vm.stopBroadcast();
 
-        _bridger = Bridger(payable(bridgerAddress));
+        bridger = Bridger(payable(bridgerAddress));
         // NOTE: upgrade not broadcast since it needs to happen via SAFE
-        _bridger.upgradeTo(address(newImpl));
+        bridger.upgradeTo(address(newImpl));
         // prank
         Bridger(payable(bridgerAddress)).upgradeTo(address(newImpl));
 
         // Checks
-        assertEq(_bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
-        assertEq(_bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
-        assertEq(_bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
+        assertEq(bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
+        assertEq(bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
+        assertEq(bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
 
         // Writes the addresses to a file
         console.log("Add these addresses to the artifacts mainnet file");
-        console.log(string.concat('"Bridger-impl": "', vm.toString(address(newImpl)), '"'));
+        console.log(string.concat('"BridgerV5-impl": "', vm.toString(address(newImpl)), '"'));
     }
 }

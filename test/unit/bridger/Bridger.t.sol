@@ -43,9 +43,10 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     BridgerHarness internal bridger;
     IBridger.BridgeData internal mockBridgerData;
-    IBridge internal bridgeMock;
+    IBridge internal vault;
 
     ERC20PermitToken internal sDAI;
+    IBridger.BridgeData internal emptyBridgerData;
 
     function setUp() public override {
         super.setUp();
@@ -64,11 +65,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
 
-        bridgeMock = new BridgeMock();
+        vault = new BridgeMock();
 
         // deploy a new Bridger contract
         BridgerHarness implementation =
-            new BridgerHarness(l2Vault, address(bridgeMock), router, wEth, dai, usde, sUsde, wstEth);
+            new BridgerHarness(l2Vault, router, wEth, dai, usde, sUsde, wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
         vm.label(address(bridger), 'bridger');
@@ -84,6 +85,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.whitelistFinalAssets(assets, flags);
 
         mockBridgerData = IBridger.BridgeData({
+            vault: address(vault),
             msgGasLimit: MSG_GAS_LIMIT,
             connector: connector,
             execPayload: EXEC_PAYLOAD,
@@ -131,9 +133,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
 
         vm.expectCall(
-            address(bridgeMock),
+            address(vault),
             abi.encodeCall(
-                bridgeMock.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+                vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
@@ -207,9 +209,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.prank(_user);
         vm.expectCall(
-            address(bridgeMock),
+            address(vault),
             abi.encodeCall(
-                bridgeMock.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+                vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
         bridger.depositERC20(
@@ -238,27 +240,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
         bridger.depositETH{value: amountToDeposit}(kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
         vm.stopPrank();
-    }
-
-    /* ============ bridgeDeposits ============ */
-
-    function testBridgeDeposits() public {
-        uint256 amountToDeposit = 1e18;
-        deal(address(sDAI), address(bridger), amountToDeposit);
-
-        vm.prank(_owner);
-        vm.expectCall(
-            address(bridgeMock),
-            abi.encodeCall(
-                bridgeMock.bridge, (l2Vault, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
-            )
-        );
-        bridger.bridgeDeposits(address(sDAI), mockBridgerData);
-    }
-
-    function testBridgeDeposits_RevertWhen_NotOwner() public {
-        vm.expectRevert(IBridger.OnlyOwner.selector);
-        bridger.bridgeDeposits(address(sDAI), mockBridgerData);
     }
 
     /* ============ Whitelist ============ */

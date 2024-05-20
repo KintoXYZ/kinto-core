@@ -56,10 +56,12 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.label(address(_walletFactory), "KintoWalletFactory");
         vm.label(address(_kintoWallet), "KintoWallet");
         vm.label(address(_engenCredits), "EngenCredits");
+        vm.label(address(_engenBadges), "EngenBadges");
         vm.label(address(_paymaster), "SponsorPaymaster");
         vm.label(address(_kycViewer), "KYCViewer");
         vm.label(address(_faucet), "Faucet");
         vm.label(address(_bridgerL2), "BridgerL2");
+        vm.label(address(_engenGovernance), "EngenGovernance");
     }
 
     function deployCounter() public {
@@ -87,12 +89,14 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _walletFactory = KintoWalletFactory(contracts.factory);
         _kintoWallet = IKintoWallet(contracts.wallet);
         _engenCredits = EngenCredits(contracts.engenCredits);
+        _engenBadges = EngenBadges(contracts.engenBadges);
         _paymaster = SponsorPaymaster(contracts.paymaster);
         _kycViewer = KYCViewer(contracts.viewer);
         _walletViewer = WalletViewer(contracts.walletViewer);
         _faucet = Faucet(contracts.faucet);
         _bridgerL2 = BridgerL2(contracts.bridgerL2);
         _inflator = KintoInflator(contracts.inflator);
+        _engenGovernance = EngenGovernance(contracts.engenGovernance);
 
         // grant kyc provider role to _kycProvider on kintoID
         bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
@@ -131,12 +135,14 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _walletFactory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
         _kintoWallet = IKintoWallet(_getChainDeployment("KintoWallet-admin"));
         _engenCredits = EngenCredits(_getChainDeployment("EngenCredits"));
+        _engenBadges = EngenBadges(_getChainDeployment("EngenBadges"));
         _paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
         _walletViewer = WalletViewer(_getChainDeployment("WalletViewer"));
         _faucet = Faucet(payable(_getChainDeployment("Faucet")));
         _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
         _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
+        _engenGovernance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
 
         // grant admin role to _owner on kintoID
         bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();

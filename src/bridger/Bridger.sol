@@ -15,8 +15,8 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IWETH, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
-import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
+import "@kinto-core/interfaces/bridger/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridge.sol";
 
 /**
  * @title Bridger - To be deployed on ETH mainnet.
@@ -61,16 +61,15 @@ contract Bridger is
     address public immutable USDe;
     address public immutable sUSDe;
     address public immutable wstETH;
+    address public immutable weETH;
+    address public immutable sDAI;
 
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
-    /// @notice Superbridge's vault address
-    IBridge public immutable bridgeGateway;
 
     /* ============ State Variables ============ */
-
     address public override senderAccount;
 
     /// @dev Mapping of input assets that are allowed
@@ -109,8 +108,8 @@ contract Bridger is
         address wstEth
     ) {
         _disableInitializers();
-        domainSeparator = _domainSeparatorV4();
 
+        domainSeparator = _domainSeparatorV4();
         l2Vault = vault;
         swapRouter = exchange;
 
@@ -231,8 +230,8 @@ contract Bridger is
         uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        IERC20(finalAsset).safeIncreaseAllowance(address(bridgeGateway), amountBought);
-        bridgeGateway.bridge(
+        IERC20(finalAsset).safeIncreaseAllowance(bridgeData.vault, amountBought);
+        IBridge(bridgeData.vault).bridge(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,
@@ -242,28 +241,6 @@ contract Bridger is
         );
 
         emit Bridged(msg.sender, kintoWallet, ETH, msg.value, finalAsset, amountBought);
-    }
-
-    /**
-     * @dev Bridges deposits in bulk Kinto
-     */
-    function bridgeDeposits(address asset, BridgeData calldata bridgeData) external payable onlyPrivileged {
-        // Approve the gateway to get the tokens
-        if (IERC20(asset).allowance(address(this), address(bridgeGateway)) < type(uint256).max) {
-            if (asset == wstETH) {
-                IERC20(asset).safeApprove(address(bridgeGateway), 0);
-            } // wstETH decreases allowance and does not allow non-zero to non-zero approval
-            IERC20(asset).safeApprove(address(bridgeGateway), type(uint256).max);
-        }
-        // Bridge to Kinto L2 using Superbridge
-        bridgeGateway.bridge(
-            l2Vault,
-            IERC20(asset).balanceOf(address(this)),
-            bridgeData.msgGasLimit,
-            bridgeData.connector,
-            bridgeData.execPayload,
-            bridgeData.options
-        );
     }
 
     /* ============ Privileged Functions ============ */
@@ -316,7 +293,7 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        bridgeGateway.bridge(
+        IBridge(bridgeData.vault).bridge(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,

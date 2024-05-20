@@ -23,6 +23,8 @@ contract BridgedToken is
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
+    uint8 private immutable _decimals;
+
     /// @notice Role that can mint and burn tokens as part of bridging.
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -30,8 +32,9 @@ contract BridgedToken is
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(uint8 decimals_) {
         _disableInitializers();
+        _decimals = decimals_;
     }
 
     /**
@@ -55,6 +58,10 @@ contract BridgedToken is
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MINTER_ROLE, minter);
         _grantRole(UPGRADER_ROLE, upgrader);
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
     }
 
     /**

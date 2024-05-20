@@ -14,10 +14,11 @@ import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/tokens/EngenBadges.sol";
 import "@kinto-core/Faucet.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
 import "@kinto-core/inflators/BundleBulker.sol";
-
+import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -58,6 +59,10 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     EngenCredits public engenCredits;
     EngenCredits public engenCreditsImpl;
 
+    // Engen Badges
+    EngenBadges public engenBadges;
+    EngenBadges public engenBadgesImpl;
+
     // Bridger
     BridgerL2 public bridgerL2;
     BridgerL2 public bridgerL2Impl;
@@ -73,6 +78,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
     // BundleBulker
     BundleBulker public bundleBulker;
     BundleBulker public bundleBulkerImpl;
+
+    // Engen Governance
+    EngenGovernance public engenGovernance;
 
     // whether to write addresses to a file or not (and console.log them)
     bool write;
@@ -95,9 +103,11 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         KYCViewer viewer;
         WalletViewer walletViewer;
         EngenCredits engenCredits;
+        EngenBadges engenBadges;
         Faucet faucet;
         BridgerL2 bridgerL2;
         KintoInflator inflator;
+        EngenGovernance engenGovernance;
     }
 
     // @dev this is used for tests
@@ -120,9 +130,11 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
             viewer,
             walletViewer,
             engenCredits,
+            engenBadges,
             faucet,
             bridgerL2,
-            inflator
+            inflator,
+            engenGovernance
         );
     }
 
@@ -166,6 +178,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy EngenCredits
         (engenCredits, engenCreditsImpl) = deployEngenCredits();
 
+        // deploy EngenBadges
+        (engenBadges, engenBadgesImpl) = deployEngenBadges();
+
         // deploy bridger l2
         (bridgerL2, bridgerL2Impl) = deployBridgerL2();
 
@@ -181,6 +196,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         // deploy WalletViewer
         (walletViewer, walletViewerImpl) = deployWalletViewer();
+
+        // depploy governance
+        (engenGovernance) = deployGovernance();
 
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory)));
@@ -286,8 +304,9 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
         bytes memory creationCode = type(KYCViewer).creationCode;
-        bytes memory bytecode =
-            abi.encodePacked(creationCode, abi.encode(address(factory)), abi.encode(address(faucet)));
+        bytes memory bytecode = abi.encodePacked(
+            creationCode, abi.encode(address(factory)), abi.encode(address(faucet)), abi.encode(address(engenCredits))
+        );
         address implementation = _deployImplementation("KYCViewer", creationCode, bytecode, false);
         address proxy = _deployProxy("KYCViewer", implementation, false);
 
@@ -323,6 +342,19 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _engenCredits.initialize();
+    }
+
+    function deployEngenBadges() public returns (EngenBadges _engenBadges, EngenBadges _engenBadgesImpl) {
+        bytes memory creationCode = type(EngenBadges).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        address implementation = _deployImplementation("EngenBadges", creationCode, bytecode, false);
+        address proxy = _deployProxy("EngenBadges", implementation, false);
+
+        _engenBadges = EngenBadges(payable(proxy));
+        _engenBadgesImpl = EngenBadges(payable(implementation));
+
+        //privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        //_engenBadges.initialize("https://api.example.com/metadata/");
     }
 
     function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {
@@ -372,6 +404,14 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
 
         _bundleBulker = BundleBulker(payable(proxy));
         _bundleBulkerImpl = BundleBulker(payable(implementation));
+    }
+
+    function deployGovernance() public returns (EngenGovernance _governance) {
+        // deploy governance
+        bytes memory creationCode = type(EngenGovernance).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(engenCredits)));
+        address implementation = _deployImplementation("EngenGovernance", creationCode, bytecode, true);
+        _governance = EngenGovernance(payable(implementation));
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer

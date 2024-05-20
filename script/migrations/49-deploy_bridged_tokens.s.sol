@@ -19,7 +19,7 @@ contract KintoMigration49DeployScript is MigrationHelper {
     address[] public bridgedTokens;
 
     // list of tokens we want to deploy as BridgedToken
-    address[11] mainnetTokens = [
+    address[10] mainnetTokens = [
         // 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, // USDC (TBD if Circle token or Bridged Token)
         0x6B175474E89094C44Da98b954EedeAC495271d0F, // DAI
         0x83F20F44975D03b1b09e64809B757c47f942BEeA, // sDAI

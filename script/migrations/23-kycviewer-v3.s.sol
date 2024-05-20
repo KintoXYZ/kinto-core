@@ -5,7 +5,9 @@ import "../../src/viewers/KYCViewer.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KYCViewerV3 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, _faucet) {}
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+    {}
 }
 
 contract KintoMigration23DeployScript is MigrationHelper {
@@ -17,7 +19,11 @@ contract KintoMigration23DeployScript is MigrationHelper {
         // generate bytecode for KYCViewer
         bytes memory bytecode = abi.encodePacked(
             type(KYCViewerV3).creationCode,
-            abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
+            abi.encode(
+                _getChainDeployment("KintoWalletFactory"),
+                _getChainDeployment("Faucet"),
+                _getChainDeployment("EngenCredits")
+            )
         );
 
         // upgrade KYCViewer to V3

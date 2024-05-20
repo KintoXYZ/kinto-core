@@ -18,7 +18,9 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KYCViewerV2 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet) KYCViewer(_kintoWalletFactory, address(0)) {}
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
+        KYCViewer(_kintoWalletFactory, address(0), address(0))
+    {}
 }
 
 contract KintoWalletFactoryV7 is KintoWalletFactory {

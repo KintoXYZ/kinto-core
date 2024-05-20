@@ -6,14 +6,13 @@ import {Bridger} from "../../src/bridger/Bridger.sol";
 contract BridgerHarness is Bridger {
     constructor(
         address vault,
-        address bridge,
         address router,
         address weth,
         address dai,
         address usde,
         address sUsde,
         address wstEth
-    ) Bridger(vault, bridge, router, weth, dai, usde, sUsde, wstEth) {}
+    ) Bridger(vault, router, weth, dai, usde, sUsde, wstEth) {}
 
     function domainSeparatorV4() external view returns (bytes32) {
         return _domainSeparatorV4();

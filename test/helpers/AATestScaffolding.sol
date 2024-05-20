@@ -6,12 +6,14 @@ import {StdCheats} from "forge-std/StdCheats.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 import "@aa/core/EntryPoint.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "@kinto-core/interfaces/IKintoEntryPoint.sol";
 
 import "@kinto-core/KintoID.sol";
 import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/tokens/EngenCredits.sol";
+import "@kinto-core/tokens/EngenBadges.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
@@ -20,6 +22,7 @@ import "@kinto-core/viewers/WalletViewer.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 import "@kinto-core/Faucet.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
+import "@kinto-core/governance/EngenGovernance.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -44,12 +47,15 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
 
     // Others
     EngenCredits _engenCredits;
+    EngenBadges _engenBadges;
     SponsorPaymaster _paymaster;
     KYCViewer _kycViewer;
     WalletViewer _walletViewer;
     Faucet _faucet;
     BridgerL2 _bridgerL2;
     KintoInflator _inflator;
+    TimelockController _engenTimelock;
+    EngenGovernance _engenGovernance;
 
     /* ============ convenience methods ============ */
 
