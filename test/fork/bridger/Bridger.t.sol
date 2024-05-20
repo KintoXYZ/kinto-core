@@ -148,18 +148,24 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     // deposit wstETH (no swap)
     function testDepositBySig_wstETH_WhenNoSwap() public {
-        address assetToDeposit = bridger.wstETH();
+        upgradeBridger();
+
+        address asset = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        deal(assetToDeposit, _user, amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
+        uint256 bridgerBalanceBefore = ERC20(asset).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(asset).balanceOf(address(data.vault));
+        deal(asset, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(asset).balanceOf(_user), amountToDeposit);
 
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
             bridger,
             _user,
-            assetToDeposit,
-            assetToDeposit,
+            asset,
+            asset,
             amountToDeposit,
             amountToDeposit,
             _userPk,
@@ -167,21 +173,19 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                _user, address(bridger), amountToDeposit, ERC20Permit(asset).nonces(_user), block.timestamp + 1000
             ),
             _userPk,
-            ERC20Permit(assetToDeposit)
+            ERC20Permit(asset)
         );
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, bytes(""), data);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
+
+        assertEq(ERC20(asset).balanceOf(address(bridger)), bridgerBalanceBefore);
+        assertEq(ERC20(asset).balanceOf(address(data.vault)), vaultBalanceBefore + amountToDeposit);
     }
 
     // USDe to sUSDe
@@ -294,7 +298,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 amountToDeposit = 1e18;
         IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
         uint256 balanceBefore = ERC20(bridger.wstETH()).balanceOf(data.vault);
-        vm.deal(_user, amountToDeposit);
+        vm.deal(_user, amountToDeposit + data.gasFee);
 
         vm.startPrank(_user);
         bridger.depositETH{value: amountToDeposit + data.gasFee}(

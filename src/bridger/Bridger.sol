@@ -296,6 +296,7 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
+        IERC20(finalAsset).safeIncreaseAllowance(bridgeData.vault, amountBought);
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
