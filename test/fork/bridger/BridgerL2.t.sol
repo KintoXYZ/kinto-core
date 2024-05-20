@@ -45,10 +45,10 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
         // L2 representations
         address[] memory L2_assets = new address[](4);
-        L2_assets[0] = 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI
-        L2_assets[1] = 0xa75C0f526578595AdB75D13FCea1017AC1b97e48; // sUSDe
-        L2_assets[2] = 0xCA47413347D04E0ce1843824C736740f787845e5; // wstETH
-        L2_assets[3] = 0x578395611F459F615D877447Dcc955d7095504cb; // weETH
+        L2_assets[0] = 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI
+        L2_assets[1] = 0x505de0f7a5d786063348aB5BC31e3a21344fA7B0; // sUSDe
+        L2_assets[2] = 0x057e70cCa0dC435786a50FcF440bf8FcC1eEAf17; // wstETH
+        L2_assets[3] = 0x0Ee700095AeDFe0814fFf7d6DFD75461De8e2b19; // weETH
 
         for (uint256 i = 0; i < 4; i++) {
             address _asset = UI_assets[i];

@@ -21,7 +21,7 @@ contract BridgerL2NewUpgrade is BridgerL2 {
 
 contract BridgerL2Test is SignatureHelper, SharedSetup {
     address sDAI = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // virtual sDAI
-    address sDAIL2 = 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI L2 representation
+    address sDAIL2 = 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI L2 representation
 
     function setUp() public override {
         super.setUp();
