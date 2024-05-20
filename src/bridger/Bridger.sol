@@ -30,6 +30,7 @@ import "forge-std/console2.sol";
  * If depositing ETH and final asset is wstETH, it is just converted to wstETH (no swap is done).
  * If depositing ETH and final asset is other than wstETH, ETH is first wrapped to WETH and then swapped to desired asset.
  * If USDe is provided, it is directly staked to sUSDe.
+ * Immutables such as DAI, USDe, sUSDe, and wstETH should be set to address(0) to disable related features on the chains which do not support them.
  */
 contract Bridger is
     Initializable,
@@ -45,7 +46,7 @@ contract Bridger is
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
-    event Bridged(
+    event Deposit(
         address indexed from,
         address indexed wallet,
         address indexed asset,
@@ -239,7 +240,7 @@ contract Bridger is
             bridgeData.options
         );
 
-        emit Bridged(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
+        emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
     }
 
     /* ============ Privileged Functions ============ */
@@ -302,7 +303,7 @@ contract Bridger is
             bridgeData.options
         );
 
-        emit Bridged(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
+        emit Deposit(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }
 
     function _swap(
