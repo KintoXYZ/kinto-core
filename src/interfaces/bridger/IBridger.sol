@@ -67,6 +67,7 @@ interface IBridger {
 
     struct BridgeData {
         address vault;
+        uint256 gasFee;
         uint256 msgGasLimit;
         address connector;
         bytes execPayload;
@@ -80,7 +81,7 @@ interface IBridger {
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external;
+    ) external payable;
 
     function depositERC20(
         address inputAsset,
@@ -90,9 +91,10 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external;
+    ) external payable;
 
     function depositETH(
+        uint256 amount,
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,

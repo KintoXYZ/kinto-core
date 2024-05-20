@@ -18,6 +18,8 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/interfaces/bridger/IBridge.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title Bridger - To be deployed on ETH mainnet.
  * Users can deposit tokens in to the Kinto L2 using this contract.
@@ -176,7 +178,7 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
         _permit(
             depositData.signer,
             depositData.inputAsset,
@@ -206,7 +208,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external override whenNotPaused nonReentrant {
+    ) external payable override whenNotPaused nonReentrant {
         _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
@@ -217,6 +219,7 @@ contract Bridger is
      * @param swapCallData Struct with all the required information to swap the tokens
      */
     function depositETH(
+        uint256 amount,
         address kintoWallet,
         address finalAsset,
         uint256 minReceive,
@@ -225,13 +228,13 @@ contract Bridger is
     ) external payable override whenNotPaused nonReentrant {
         _checkFinalAsset(finalAsset);
 
-        if (msg.value == 0) revert InvalidAmount(msg.value);
+        if (amount == 0) revert InvalidAmount(amount);
 
-        uint256 amountBought = _swap(ETH, finalAsset, msg.value, minReceive, swapCallData);
+        uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
         IERC20(finalAsset).safeIncreaseAllowance(bridgeData.vault, amountBought);
-        IBridge(bridgeData.vault).bridge(
+        IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,
@@ -240,7 +243,7 @@ contract Bridger is
             bridgeData.options
         );
 
-        emit Bridged(msg.sender, kintoWallet, ETH, msg.value, finalAsset, amountBought);
+        emit Bridged(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
     }
 
     /* ============ Privileged Functions ============ */
@@ -293,7 +296,7 @@ contract Bridger is
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Bridge the final amount to Kinto
-        IBridge(bridgeData.vault).bridge(
+        IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
             bridgeData.msgGasLimit,
@@ -312,12 +315,15 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData
     ) private returns (uint256 amountBought) {
+        console2.log("swapping");
+
         amountBought = amount;
         if (inputAsset != finalAsset) {
             return amount;
         }
 
         if (inputAsset == ETH && finalAsset == wstETH) {
+            console2.log("staking ETh");
             return _stakeEthToWstEth(amount);
         }
 

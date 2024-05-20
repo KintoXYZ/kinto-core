@@ -37,6 +37,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     bytes internal constant OPTIONS = bytes("OPTIONS ");
 
     uint256 internal constant MSG_GAS_LIMIT = 1e6;
+    uint256 internal constant GAS_FEE = 1e16;
 
     address internal kintoWallet;
 
@@ -87,6 +88,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         mockBridgerData = IBridger.BridgeData({
             vault: address(vault),
+            gasFee: GAS_FEE,
             msgGasLimit: MSG_GAS_LIMIT,
             connector: connector,
             execPayload: EXEC_PAYLOAD,
@@ -135,11 +137,12 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.expectCall(
             address(vault),
+            GAS_FEE,
             abi.encodeCall(
                 vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
-        bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
+        bridger.depositBySig{value: GAS_FEE}(permitSignature, sigdata, bytes(""), mockBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
@@ -276,6 +279,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     function testDepositERC20() public {
         uint256 amountToDeposit = 1e18;
         deal(address(sDAI), _user, amountToDeposit);
+        deal(_user, GAS_FEE);
 
         vm.prank(_user);
         sDAI.approve(address(bridger), amountToDeposit);
@@ -283,11 +287,12 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_user);
         vm.expectCall(
             address(vault),
+            GAS_FEE,
             abi.encodeCall(
                 vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
-        bridger.depositERC20(
+        bridger.depositERC20{value: GAS_FEE}(
             address(sDAI), amountToDeposit, kintoWallet, address(sDAI), amountToDeposit, bytes(""), mockBridgerData
         );
 
@@ -299,15 +304,18 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     function testDepositETH() public {
         uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit);
+        vm.deal(_user, amountToDeposit + GAS_FEE);
 
         vm.expectCall(
             address(vault),
+            GAS_FEE,
             abi.encodeCall(
                 vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
             )
         );
-        bridger.depositETH{value: amountToDeposit}(kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
+        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
+            amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
+        );
     }
 
     function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
@@ -315,7 +323,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositETH{value: amountToDeposit}(kintoWallet, address(1), 1, bytes(""), mockBridgerData);
+        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
+            amountToDeposit, kintoWallet, address(1), 1, bytes(""), mockBridgerData
+        );
         vm.stopPrank();
     }
 
@@ -324,7 +334,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.deal(_user, amountToDeposit);
         vm.startPrank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
-        bridger.depositETH{value: amountToDeposit}(kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
+        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
+            amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
+        );
         vm.stopPrank();
     }
 
