@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@kinto-core/interfaces/IBridger.sol";
-import "@kinto-core/bridger/Bridger.sol";
-
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -15,22 +12,28 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
+import "@kinto-core/interfaces/bridger/IBridger.sol";
+import "@kinto-core/bridger/Bridger.sol";
+
 contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
-    address constant l1ToL2Router = 0xD9041DeCaDcBA88844b373e7053B4AC7A3390D60;
     address constant kintoWalletL2 = address(33);
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
     address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
+    address constant ENA = 0x57e114B691Db790C35207b2e685D4A43181e6061;
+
     address constant senderAccount = address(100);
     address constant l2Vault = address(99);
 
     BridgerHarness internal bridger;
+    IBridger.BridgeData internal emptyBridgerData;
+
+    mapping(address => IBridger.BridgeData) internal brideData;
 
     function setUp() public override {
         super.setUp();
 
-        // give some eth to _owner
         vm.deal(_owner, 1e20);
 
         bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
@@ -38,6 +41,54 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // transfer owner's ownership to _owner
         vm.prank(bridger.owner());
         bridger.transferOwnership(_owner);
+
+        emptyBridgerData = IBridger.BridgeData({
+            vault: address(0),
+            msgGasLimit: 0,
+            connector: address(0),
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.wstETH()] = IBridger.BridgeData({
+            vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
+            msgGasLimit: 500_000,
+            connector: 0x83C6d6597891Ad48cF5e0BA901De55120C37C6bE,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.weETH()] = IBridger.BridgeData({
+            vault: 0xeB66259d2eBC3ed1d3a98148f6298927d8A36397,
+            msgGasLimit: 500_000,
+            connector: 0xE2c2291B80BFC8Bd0e4fc8Af196Ae5fc9136aeE0,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.sDAI()] = IBridger.BridgeData({
+            vault: 0x5B8Ae1C9c5970e2637Cf3Af431acAAebEf7aFb85,
+            msgGasLimit: 500_000,
+            connector: 0xF5992B6A0dEa32dCF6BE7bfAf762A4D94f139Ea7,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[bridger.sUSDe()] = IBridger.BridgeData({
+            vault: 0x43b718Aa5e678b08615CA984cbe25f690B085b32,
+            msgGasLimit: 500_000,
+            connector: 0xE274dB6b891159547FbDC18b07412EE7F4B8d767,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        brideData[ENA] = IBridger.BridgeData({
+            vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
+            msgGasLimit: 500_000,
+            connector: 0x266abd77Da7F877cdf93c0dd5782cC61Fa29ac96,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 
     function setUpChain() public virtual override {
@@ -54,6 +105,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         vm.prank(_owner);
         bridger.initialize(senderAccount);
+    }
+
+    function upgradeBridger() internal {
+        // give some eth to _owner
+        vm.deal(_owner, 1e20);
+
+        BridgerHarness newImpl = new BridgerHarness(l2Vault);
+        vm.prank(_owner);
+        bridger.upgradeTo(address(newImpl));
     }
 
     /* ============ Bridger Deposit ============ */
@@ -1015,71 +1075,37 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.stopPrank();
     }
 
-    /* ============ Bridge ============ */
+    /* ============ bridgeDeposits ============ */
 
     function testBridgeDeposits() public {
-        // TODO: Fix the test
-        vm.skip(true);
-        address asset = bridger.sDAI();
+        upgradeBridger();
+
+        address asset = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(bridger), amountToDeposit);
+        uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
 
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+        vm.prank(bridger.senderAccount());
+        bridger.bridgeDeposits{value: 1 ether}(asset, amountToDeposit, brideData[asset]);
 
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
-
-        assertEq(bridger.deposits(_user, asset), 0);
-        assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+        assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amountToDeposit);
     }
 
-    function testBridgeDeposits_RevertWhen_InsufficientGas() public {
-        address asset = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        deal(address(asset), address(bridger), amountToDeposit);
+    function testBridgeDepositsAllAssets() public {
+        upgradeBridger();
 
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-
-        vm.expectRevert(IBridger.NotEnoughEthToBridge.selector);
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
-    }
-
-    function testBridgeDeposits_WhenMultipleTimes() public {
-        // TODO: Fix the test
-        vm.skip(true);
         // array of allowedAssets
-        address[4] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH()];
-
-        uint256 amountToDeposit = 1e18;
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-        uint256 callValue = kintoMaxSubmissionCost + (kintoMaxGas * kintoGasPriceBid);
+        address[5] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH(), ENA];
 
         // for each allowed asset, deposit 1e18 2 times
         for (uint256 i = 0; i < allowedAssets.length; i++) {
             address asset = allowedAssets[i];
-            deal(address(asset), address(bridger), amountToDeposit);
+            uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
+            uint256 amount = balanceBefore;
 
             vm.prank(_owner);
-            bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+            bridger.bridgeDeposits{value: 1 ether}(asset, amount, brideData[asset]);
 
-            assertEq(bridger.deposits(_user, asset), 0);
-            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
-
-            // 2nd time
-
-            vm.prank(_owner);
-            bridger.bridgeDeposits{value: callValue}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
-
-            assertEq(bridger.deposits(_user, asset), 0);
-            assertEq(ERC20(asset).balanceOf(address(bridger)), 0);
+            assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amount);
         }
     }
 }

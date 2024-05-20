@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "@kinto-core/interfaces/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -40,6 +40,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address constant l2Vault = address(99);
 
     BridgerHarness internal bridger;
+    IBridger.BridgeData internal emptyBridgerData;
 
     function setUp() public override {
         super.setUp();
@@ -50,6 +51,14 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         // with mocked contracts
         ERC20PermitToken sDAI = new ERC20PermitToken("sDAI", "sDAI");
         vm.etch(bridger.sDAI(), address(sDAI).code); // add sDAI code to sDAI address in Bridger
+
+        emptyBridgerData = IBridger.BridgeData({
+            vault: address(0),
+            msgGasLimit: 0,
+            connector: address(0),
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 
     function _deployBridger() internal {
@@ -239,20 +248,15 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.stopPrank();
     }
 
-    /* ============ Bridge ============ */
+    /* ============ bridgeDeposits ============ */
 
-    function testBridgeDeposits_RevertWhen_InsufficientGas() public {
+    function testBridgeDeposits_RevertsWhen_NotOwner() public {
         address asset = bridger.sDAI();
         uint256 amountToDeposit = 1e18;
         deal(address(asset), address(bridger), amountToDeposit);
 
-        uint256 kintoMaxGas = 1e6;
-        uint256 kintoGasPriceBid = 1e9;
-        uint256 kintoMaxSubmissionCost = 1e18;
-
-        vm.expectRevert(IBridger.NotEnoughEthToBridge.selector);
-        vm.prank(_owner);
-        bridger.bridgeDeposits{value: 1}(asset, kintoMaxGas, kintoGasPriceBid, kintoMaxSubmissionCost);
+        vm.expectRevert(IBridger.OnlyOwner.selector);
+        bridger.bridgeDeposits(asset, amountToDeposit, emptyBridgerData);
     }
 
     /* ============ Pause ============ */

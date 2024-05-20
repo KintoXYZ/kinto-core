@@ -11,12 +11,8 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract BridgerV2 is Bridger {
-    constructor(address _l2Vault) Bridger(_l2Vault) {}
-}
-
-contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, Test {
-    Bridger _bridger;
+contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test {
+    Bridger bridger;
 
     function setUp() public {}
 
@@ -36,20 +32,19 @@ contract KintoMainnetMigration4DeployScript is Create2Helper, ArtifactsReader, T
         }
         address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
 
-        // Deploy Engen Credits implementation
-        BridgerV2 _newIimplementation = new BridgerV2(bridgerAddressL2);
-        // wrap in ABI to support easier calls
-        _bridger = Bridger(payable(bridgerAddress));
-        _bridger.upgradeTo(address(_newIimplementation));
+        // Deploy implementation
+        Bridger newImpl = new Bridger(bridgerAddressL2);
+        bridger = Bridger(payable(bridgerAddress));
+        bridger.upgradeTo(address(newImpl));
         vm.stopBroadcast();
 
         // Checks
-        assertEq(_bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
-        assertEq(_bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
-        assertEq(_bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
+        assertEq(bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
+        assertEq(bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
+        assertEq(bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
 
         // Writes the addresses to a file
         console.log("Add these addresses to the artifacts mainnet file");
-        console.log(string.concat('"BridgerV2-impl": "', vm.toString(address(_newIimplementation)), '"'));
+        console.log(string.concat('"BridgerV5-impl": "', vm.toString(address(newImpl)), '"'));
     }
 }

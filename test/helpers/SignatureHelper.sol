@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@kinto-core/KintoID.sol";
 import "@kinto-core/interfaces/IKintoID.sol";
 import "@kinto-core/interfaces/IFaucet.sol";
-import "@kinto-core/interfaces/IBridger.sol";
+import "@kinto-core/interfaces/bridger/IBridger.sol";
 
 abstract contract SignatureHelper is CommonBase {
     using ECDSAUpgradeable for bytes32;
