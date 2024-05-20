@@ -318,13 +318,12 @@ contract Bridger is
             return amount;
         }
 
-        if (inputAsset == ETH && finalAsset == wstETH) {
-            return _stakeEthToWstEth(amount);
-        }
-
         if (inputAsset == ETH) {
-            WETH.deposit{value: amount}();
-            inputAsset = address(WETH);
+            if (finalAsset == wstETH) {
+                return _stakeEthToWstEth(amount);
+            }
+          WETH.deposit{value: amount}();
+          inputAsset = address(WETH);
         }
 
         if (finalAsset != inputAsset) {
