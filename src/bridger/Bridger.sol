@@ -314,7 +314,7 @@ contract Bridger is
         bytes calldata swapCallData
     ) private returns (uint256 amountBought) {
         amountBought = amount;
-        if (inputAsset != finalAsset) {
+        if (inputAsset == finalAsset) {
             return amount;
         }
 
