@@ -21,17 +21,15 @@ import "@kinto-core/interfaces/bridger/IBridge.sol";
 import "forge-std/console2.sol";
 
 /**
- * @title Bridger - To be deployed on ETH mainnet.
- * Users can deposit tokens in to the Kinto L2 using this contract.
+ * @title Bridger
+ * @notice Users can bridge tokens in to the Kinto L2 using this contract.
  * The contract will swap the tokens if needed and deposit them in to the Kinto L2
- * in batches every few hours.
- * Users can select one of 4 final assets to deposit in to the Kinto L2:
- * sDAI, sUSDe, wstETH, weETH.
- * Swaps are initially disabled but will be performed using 0x API.
- * Input assets are only assets that support ERC20 permit + ETH.
+ * Users can select one of `finalAllowedAssets` assets to bridge in to the Kinto L2
+ * Input assets are restricted by `allowedAssets`.
+ * Users can deposit by signature, providing ERC20 tokens or pure ETH.
  * If depositing ETH and final asset is wstETH, it is just converted to wstETH (no swap is done).
  * If depositing ETH and final asset is other than wstETH, ETH is first wrapped to WETH and then swapped to desired asset.
- * If USDe is provided, it is directly staked.
+ * If USDe is provided, it is directly staked to sUSDe.
  */
 contract Bridger is
     Initializable,
@@ -63,8 +61,6 @@ contract Bridger is
     address public immutable USDe;
     address public immutable sUSDe;
     address public immutable wstETH;
-    address public immutable weETH;
-    address public immutable sDAI;
 
     bytes32 public immutable override domainSeparator;
     address public immutable override l2Vault;
@@ -316,7 +312,6 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData
     ) private returns (uint256 amountBought) {
-        console2.log("swapping");
 
         amountBought = amount;
         if (inputAsset != finalAsset) {
@@ -324,7 +319,6 @@ contract Bridger is
         }
 
         if (inputAsset == ETH && finalAsset == wstETH) {
-            console2.log("staking ETh");
             return _stakeEthToWstEth(amount);
         }
 
@@ -337,7 +331,7 @@ contract Bridger is
             amountBought = _fillQuote(
                 amount,
                 IERC20(inputAsset),
-                // if sUSDE, swap to USDe & then stake
+                // if sUSDe, swap to USDe & then stake
                 IERC20(finalAsset == sUSDe ? USDe : finalAsset),
                 swapCallData,
                 minReceive

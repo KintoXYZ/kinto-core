@@ -60,7 +60,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[bridger.wstETH()] = IBridger.BridgeData({
+        bridgeData[wstETH] = IBridger.BridgeData({
             vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -69,7 +69,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[bridger.weETH()] = IBridger.BridgeData({
+        bridgeData[weETH] = IBridger.BridgeData({
             vault: 0xeB66259d2eBC3ed1d3a98148f6298927d8A36397,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -78,7 +78,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[bridger.sDAI()] = IBridger.BridgeData({
+        bridgeData[sDAI] = IBridger.BridgeData({
             vault: 0x5B8Ae1C9c5970e2637Cf3Af431acAAebEf7aFb85,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -87,7 +87,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[bridger.sUSDe()] = IBridger.BridgeData({
+        bridgeData[sUSDe] = IBridger.BridgeData({
             vault: 0x43b718Aa5e678b08615CA984cbe25f690B085b32,
             gasFee: 1e16,
             msgGasLimit: 500_000,
