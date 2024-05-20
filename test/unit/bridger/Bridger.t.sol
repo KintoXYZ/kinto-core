@@ -29,7 +29,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
     address internal l2Vault;
     address internal bridge;
     address internal router;
-    address internal wEth;
+    address internal weth;
     address internal usde;
     address internal wstEth;
 
@@ -59,7 +59,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         l2Vault = makeAddr("l2Vault");
         bridge = makeAddr("bridge");
         router = makeAddr("router");
-        wEth = makeAddr("weth");
+        weth = 0x4200000000000000000000000000000000000006;
         usde = makeAddr("usde");
         wstEth = makeAddr("wsteth");
 
@@ -69,7 +69,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vault = new BridgeMock();
 
         // deploy a new Bridger contract
-        BridgerHarness implementation = new BridgerHarness(l2Vault, router, wEth, dai, usde, address(sUSDe), wstEth);
+        BridgerHarness implementation = new BridgerHarness(l2Vault, router, weth, dai, usde, address(sUSDe), wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
         vm.label(address(bridger), "bridger");
