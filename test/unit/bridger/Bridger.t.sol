@@ -223,6 +223,19 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     /* ============ depositETH ============ */
 
+    function testDepositETH() public {
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit);
+
+        vm.expectCall(
+            address(vault),
+            abi.encodeCall(
+                vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+            )
+        );
+        bridger.depositETH{value: amountToDeposit}(kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
+    }
+
     function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit);
