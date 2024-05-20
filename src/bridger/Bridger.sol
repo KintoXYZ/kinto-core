@@ -313,7 +313,6 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData
     ) private returns (uint256 amountBought) {
-
         amountBought = amount;
         if (inputAsset != finalAsset) {
             return amount;
