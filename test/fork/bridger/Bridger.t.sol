@@ -111,8 +111,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness implementation =
-            new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
+        BridgerHarness implementation = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 

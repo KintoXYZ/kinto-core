@@ -68,11 +68,10 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vault = new BridgeMock();
 
         // deploy a new Bridger contract
-        BridgerHarness implementation =
-            new BridgerHarness(l2Vault, router, wEth, dai, usde, sUsde, wstEth);
+        BridgerHarness implementation = new BridgerHarness(l2Vault, router, wEth, dai, usde, sUsde, wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
-        vm.label(address(bridger), 'bridger');
+        vm.label(address(bridger), "bridger");
 
         vm.prank(_owner);
         bridger.initialize(senderAccount);
