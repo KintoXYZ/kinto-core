@@ -101,7 +101,6 @@ contract Bridger is
      */
     constructor(
         address vault,
-        address bridge,
         address exchange,
         address weth,
         address dai,
@@ -114,7 +113,6 @@ contract Bridger is
 
         l2Vault = vault;
         swapRouter = exchange;
-        bridgeGateway = IBridge(bridge);
 
         WETH = IWETH(weth);
         DAI = dai;
