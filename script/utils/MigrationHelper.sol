@@ -77,7 +77,6 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         bytes32 salt
     ) internal returns (address _impl) {
         // deploy new implementation via factory
-        console2.log("factory:", address(factory));
         vm.broadcast(deployerPrivateKey);
         _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
 
@@ -199,7 +198,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
             Ownable(_proxy).transferOwnership(_newOwner);
         } else {
             // we don't want to allow transferring ownership to an EOA (e.g LEDGER_ADMIN) when contract is not allowed to receive EOA calls
-            if (_newOwner.code.length == 0) revert("Cannot transfer ownership to LEDGER_ADMIN");
+            if (_newOwner.code.length == 0) revert("Cannot transfer ownership to EOA");
             _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, _newOwner), _proxy, _signerPk);
         }
     }
@@ -258,7 +257,15 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
     }
 
+    // @notice handles ops without using a sponsorPaymaster
     function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        _handleOps(_selectorAndParams, _to, address(0), _signerPk);
+    }
+
+    // @notice handles ops using a sponsorPaymaster
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, address _sponsorPaymaster, uint256 _signerPk)
+        internal
+    {
         address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
@@ -267,14 +274,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         uint256 nonce = IKintoWallet(_from).getNonce();
         for (uint256 i = 0; i < _selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
-                block.chainid,
-                _from,
-                _to,
-                0,
-                nonce,
-                privateKeys,
-                _selectorAndParams[i],
-                _getChainDeployment("SponsorPaymaster")
+                block.chainid, _from, _to, 0, nonce, privateKeys, _selectorAndParams[i], _sponsorPaymaster
             );
             nonce++;
         }
@@ -291,12 +291,13 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
 
     function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
         // contracts allowed to receive EOAs calls
-        address[5] memory GETH_ALLOWED_CONTRACTS = [
+        address[6] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
             _getChainDeployment("KintoWalletFactory"),
             _getChainDeployment("SponsorPaymaster"),
             _getChainDeployment("KintoID"),
-            _getChainDeployment("KintoAppRegistry")
+            _getChainDeployment("KintoAppRegistry"),
+            _getChainDeployment("BundleBulker")
         ];
 
         // check if contract is a geth allowed contract
