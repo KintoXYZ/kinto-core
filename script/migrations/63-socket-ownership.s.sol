@@ -117,8 +117,8 @@ contract KintoMigration63DeployScript is MigrationHelper {
         bytes32 role = keccak256("RESCUE_ROLE");
         address[] memory contracts = getContracts();
 
-        if (kintoArbitrumSafeAddress != address(0)) revert("Arbitrum Safe address not set");
-        if (kintoBaseSafeAddress != address(0)) revert("Base Safe address not set");
+        if (kintoArbitrumSafeAddress == address(0)) revert("Arbitrum Safe address not set");
+        if (kintoBaseSafeAddress == address(0)) revert("Base Safe address not set");
         if (kintoMainnetSafeAddress == address(0)) revert("Mainnet Safe address not set");
         address safeAddress = getSafe();
 
