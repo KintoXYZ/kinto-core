@@ -18,13 +18,13 @@ interface AccessControl {
     function claimOwner() external;
 }
 
-contract KintoMigration61DeployScript is MigrationHelper {
+contract KintoMigration63DeployScript is MigrationHelper {
     using LibString for *;
     using stdJson for string;
 
     address kintoMainnetSafeAddress = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
-    address kintoBaseSafeAddress = address(0);
-    address kintoArbitrumSafeAddress = address(0);
+    address kintoBaseSafeAddress = 0x45e9deAbb4FdD048Ae38Fce9D9E8d68EC6f592a2;
+    address kintoArbitrumSafeAddress = 0x8bFe32Ac9C21609F45eE6AE44d4E326973700614;
 
     address[39] mainnetContracts = [
         0x12Cf431BdF7F143338cC09A0629EDcCEDCBCEcB5,
@@ -125,7 +125,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
         vm.startBroadcast(deployerPrivateKey);
 
         // revoke RESCUE_ROLE from deployer
-        console2.log("Revoking RESCUE_ROLE roles...");
+        console2.log("Granting/Revoking RESCUE_ROLE roles...");
         for (uint256 i = 0; i < contracts.length; i++) {
             bool hasRole = AccessControl(contracts[i]).hasRole(role, kintoDeployer);
             if (hasRole) {
@@ -134,10 +134,8 @@ contract KintoMigration61DeployScript is MigrationHelper {
             } else {
                 console2.log("- Role already revoked from %s on %s", kintoDeployer, contracts[i]);
             }
-        }
 
-        for (uint256 i = 0; i < contracts.length; i++) {
-            bool hasRole = AccessControl(contracts[i]).hasRole(role, safeAddress);
+            hasRole = AccessControl(contracts[i]).hasRole(role, safeAddress);
             if (hasRole) {
                 console2.log("- Role already granted to %s on %s", safeAddress, contracts[i]);
             } else {
@@ -182,7 +180,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
             revert("Unsupported chain");
         }
     }
-    
+
     function getContracts() public view returns (address[] memory contracts) {
         if (block.chainid == 1) {
             contracts = new address[](mainnetContracts.length);
