@@ -13,31 +13,31 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
 
-contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
-    uint256 internal constant chainId = 42161;
+contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
     Bridger internal bridger;
     address internal impl;
 
     function setUp() public {}
 
     function deployContracts(address) internal override {
-        if (block.chainid != chainId) {
-            console2.log("This script is meant to be run on the arbitrum");
+        if (block.chainid != ARBITRUM_CHAINID) {
+            console2.log("This script is meant to be run on the chain: %s", ARBITRUM_CHAINID);
             return;
         }
-        address bridgerAddress = _getChainDeployment("Bridger", chainId);
+        address bridgerAddress = _getChainDeployment("Bridger", ARBITRUM_CHAINID);
         if (bridgerAddress != address(0)) {
             console2.log("Already deployed bridger", bridgerAddress);
             return;
         }
 
-        // Set DAI to zero, since it has normal `permit` on Arbitrum
-        // Set USDe and sUSDe to zero, since staking USDe is not supported on Aribtrum
+        // Set DAI to zero, as it has a normal `permit` on Arbitrum.
+        // Set wstEth to zero, as staking is not supported on Arbitrum.
+        // Set USDe and sUSDe to zero, as staking USDe is not supported on Arbitrum.
         impl = create2(
             "BridgerV1-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
-                abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), wstETH)
+                abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), address(0))
             )
         );
         console2.log("Bridger implementation deployed at", address(impl));
