@@ -223,8 +223,11 @@ contract Bridger is
 
         uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
+            IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
+        }
         // Bridge the final amount to Kinto
-        IERC20(finalAsset).safeIncreaseAllowance(bridgeData.vault, amountBought);
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
@@ -256,8 +259,11 @@ contract Bridger is
 
         uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
+            IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
+        }
         // Bridge the final amount to Kinto
-        IERC20(finalAsset).safeIncreaseAllowance(bridgeData.vault, amountBought);
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
@@ -302,7 +308,8 @@ contract Bridger is
         }
 
         if (finalAsset == sUSDe) {
-            amountBought = _stakeUSDe(USDe, amountBought);
+            IERC20(USDe).safeApprove(address(sUSDe), amount);
+            amountBought = IsUSDe(sUSDe).deposit(amount, address(this));
         }
     }
 
@@ -312,11 +319,6 @@ contract Bridger is
         (bool sent,) = wstETH.call{value: amount}("");
         if (!sent) revert FailedToStakeEth();
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
-    }
-
-    function _stakeUSDe(address asset, uint256 amount) private returns (uint256) {
-        IERC20(asset).safeApprove(address(sUSDe), amount);
-        return IsUSDe(sUSDe).deposit(amount, address(this));
     }
 
     /**
@@ -373,6 +375,9 @@ contract Bridger is
         // Slippage protection
         uint256 minReceive
     ) private returns (uint256) {
+        if (sellToken == buyToken) {
+            return amountIn;
+        }
         // Increase the allowance for the swapRouter to handle `amountIn` of `sellToken`
         sellToken.safeIncreaseAllowance(swapRouter, amountIn);
 
@@ -386,7 +391,6 @@ contract Bridger is
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
 
         if (boughtAmount < minReceive) revert SlippageError(boughtAmount, minReceive);
-
         return boughtAmount;
     }
 
