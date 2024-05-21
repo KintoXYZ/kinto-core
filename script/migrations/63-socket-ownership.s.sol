@@ -120,8 +120,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
         if (kintoArbitrumSafeAddress != address(0)) revert("Arbitrum Safe address not set");
         if (kintoBaseSafeAddress != address(0)) revert("Base Safe address not set");
         if (kintoMainnetSafeAddress == address(0)) revert("Mainnet Safe address not set");
-
-        address safeAddress = kintoMainnetSafeAddress;
+        address safeAddress = getSafe();
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -172,6 +171,18 @@ contract KintoMigration61DeployScript is MigrationHelper {
         }
     }
 
+    function getSafe() public view returns (address safeAddress) {
+        if (block.chainid == 1) {
+            safeAddress = kintoMainnetSafeAddress;
+        } else if (block.chainid == 42161) {
+            safeAddress = kintoArbitrumSafeAddress;
+        } else if (block.chainid == 8453) {
+            safeAddress = kintoBaseSafeAddress;
+        } else {
+            revert("Unsupported chain");
+        }
+    }
+    
     function getContracts() public view returns (address[] memory contracts) {
         if (block.chainid == 1) {
             contracts = new address[](mainnetContracts.length);
