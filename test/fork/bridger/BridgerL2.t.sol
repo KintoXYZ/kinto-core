@@ -36,6 +36,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
+        address ENA = 0xE040001C257237839a69E9683349C173297876F0;
+
         // UI "wrong" assets
         address[] memory UI_assets = new address[](4);
         UI_assets[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
@@ -45,10 +47,25 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
         // L2 representations
         address[] memory L2_assets = new address[](4);
-        L2_assets[0] = 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI
-        L2_assets[1] = 0xa75C0f526578595AdB75D13FCea1017AC1b97e48; // sUSDe
-        L2_assets[2] = 0xCA47413347D04E0ce1843824C736740f787845e5; // wstETH
-        L2_assets[3] = 0x578395611F459F615D877447Dcc955d7095504cb; // weETH
+        L2_assets[0] = 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI
+        L2_assets[1] = 0x505de0f7a5d786063348aB5BC31e3a21344fA7B0; // sUSDe
+        L2_assets[2] = 0x057e70cCa0dC435786a50FcF440bf8FcC1eEAf17; // wstETH
+        L2_assets[3] = 0x0Ee700095AeDFe0814fFf7d6DFD75461De8e2b19; // weETH
+
+        // unlock commitments
+        vm.prank(_owner);
+        _bridgerL2.unlockCommitments();
+
+        // set deposited assets
+        address[] memory assets = new address[](5);
+        assets[0] = UI_assets[0];
+        assets[1] = UI_assets[1];
+        assets[2] = UI_assets[2];
+        assets[3] = UI_assets[3];
+        assets[4] = ENA;
+
+        vm.prank(_owner);
+        _bridgerL2.setDepositedAssets(assets);
 
         for (uint256 i = 0; i < 4; i++) {
             address _asset = UI_assets[i];
@@ -61,7 +78,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
             _bridgerL2.setDepositedAssets(_assets);
             _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
-            _bridgerL2.unlockCommitments();
 
             vm.stopPrank();
 
@@ -74,5 +90,24 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
             assertEq(_bridgerL2.deposits(address(_kintoWallet), _asset), 0);
             assertEq(ERC20(L2_assets[i]).balanceOf(address(_kintoWallet)), _amount);
         }
+
+        // asign ENA rewards
+        address[] memory users = new address[](1);
+        users[0] = address(_kintoWallet);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+
+        vm.prank(_owner);
+        _bridgerL2.assignENARewards(users, amounts);
+
+        // add ENA balance to the bridger
+        deal(ENA, address(_bridgerL2), 100);
+
+        // claim ENA rewards
+        vm.prank(address(_kintoWallet));
+        _bridgerL2.claimCommitment();
+
+        assertEq(_bridgerL2.deposits(address(_kintoWallet), ENA), 0);
+        assertEq(ERC20(ENA).balanceOf(address(_kintoWallet)), 100);
     }
 }

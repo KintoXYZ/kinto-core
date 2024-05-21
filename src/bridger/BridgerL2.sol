@@ -108,6 +108,18 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         depositedAssets = assets;
     }
 
+    /**
+     * @dev Assign ENA rewards to users
+     * Note: Only owner can call this function
+     * @param users array of addresses of the users
+     * @param amounts array of amounts of ENA to assign
+     */
+    function assignENARewards(address[] memory users, uint256[] memory amounts) external onlyOwner {
+        for (uint256 i = 0; i < users.length; i++) {
+            deposits[users[i]][0xE040001C257237839a69E9683349C173297876F0] = amounts[i];
+        }
+    }
+
     /* ============ Claim L2 ============ */
 
     /**
@@ -164,11 +176,11 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @dev Returns actual L2 token representation address in Kinto
      */
     function _l2Address(address _asset) private pure returns (address) {
-        if (_asset == 0x4190A8ABDe37c9A85fAC181037844615BA934711) return 0x71E742F94362097D67D1e9086cE4604256EEDd25; // sDAI
-        if (_asset == 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee) return 0xa75C0f526578595AdB75D13FCea1017AC1b97e48; // sUSDe
-        if (_asset == 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200) return 0xCA47413347D04E0ce1843824C736740f787845e5; // wstETH
-        if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x578395611F459F615D877447Dcc955d7095504cb; // weETH
-        return address(0);
+        if (_asset == 0x4190A8ABDe37c9A85fAC181037844615BA934711) return 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI
+        if (_asset == 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee) return 0x505de0f7a5d786063348aB5BC31e3a21344fA7B0; // sUSDe
+        if (_asset == 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200) return 0x057e70cCa0dC435786a50FcF440bf8FcC1eEAf17; // wstETH
+        if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x0Ee700095AeDFe0814fFf7d6DFD75461De8e2b19; // weETH
+        return _asset;
     }
 }
 
