@@ -16,9 +16,10 @@ let contracts = {};
  * @param {string} contractName - name of the contract.
  */
 function processSolidityFile(filePath, contractName) {
-  const cmd = `forge inspect ${contractName} abi`;
+  const cmd = `forge inspect ${filePath}:${contractName} abi`;
   const result = execSync(cmd).toString();
   const jsonObject = JSON.parse(result);
+  console.log(`Processing: ${contractName}`);
   let address = addresses[contractName];
   if ((!address || address.length < 8) && contractName !== 'KintoWallet') {
     console.error(`* Missing address for ${contractName}`);
@@ -53,7 +54,7 @@ function processFiles() {
   files.forEach(file => {
     const filePath = path.join(dirPath, file);
     const fileExt = path.extname(filePath);
-
+    console.log('Processing file:', filePath);
     if (fileExt === '' && !filePath.includes('interfaces') && !filePath.includes('libraries')) {
       processDirectory(filePath);
     } else if (fileExt === '.sol') {
