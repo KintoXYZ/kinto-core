@@ -24,8 +24,6 @@ import "forge-std/console2.sol";
  * @title Bridger
  * @notice Users can bridge tokens in to the Kinto L2 using this contract.
  * The contract will swap the tokens if needed and deposit them in to the Kinto L2
- * Users can select one of `finalAllowedAssets` assets to bridge in to the Kinto L2
- * Input assets are restricted by `allowedAssets`.
  * Users can deposit by signature, providing ERC20 tokens or pure ETH.
  * If depositing ETH and final asset is wstETH, it is just converted to wstETH (no swap is done).
  * If depositing ETH and final asset is other than wstETH, ETH is first wrapped to WETH and then swapped to desired asset.
@@ -71,8 +69,8 @@ contract Bridger is
     /* ============ State Variables ============ */
     address public override senderAccount;
 
-    /// @dev Mapping of input assets that are allowed
-    mapping(address => bool) public override allowedAssets;
+    /// @dev DEPRECATED
+    mapping(address => bool) private allowedAssets;
     /// @dev DEPRECATED
     mapping(address => mapping(address => uint256)) private deposits;
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
@@ -82,8 +80,6 @@ contract Bridger is
     uint256 public depositCount;
     /// @dev DEPRECATED
     bool private swapsEnabled;
-    /// @dev Mapping of final assets that are allowed
-    mapping(address => bool) public override finalAllowedAssets;
 
     /* ============ Modifiers ============ */
     modifier onlyPrivileged() {
@@ -223,8 +219,6 @@ contract Bridger is
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant {
-        _checkFinalAsset(finalAsset);
-
         if (amount == 0) revert InvalidAmount(amount);
 
         uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
@@ -243,30 +237,6 @@ contract Bridger is
         emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
     }
 
-    /* ============ Privileged Functions ============ */
-
-    /**
-     * @dev Whitelist the assets that can be deposited
-     * @param _assets array of addresses of the assets to be whitelisted
-     */
-    function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external override onlyOwner {
-        if (_assets.length != _flags.length) revert InvalidAssets();
-        for (uint256 i = 0; i < _assets.length; i++) {
-            allowedAssets[_assets[i]] = _flags[i];
-        }
-    }
-
-    /**
-     * @dev Whitelist the final assets that can be deposited
-     * @param _assets array of addresses of the assets to be whitelisted
-     */
-    function whitelistFinalAssets(address[] calldata _assets, bool[] calldata _flags) external override onlyOwner {
-        if (_assets.length != _flags.length) revert InvalidAssets();
-        for (uint256 i = 0; i < _assets.length; i++) {
-            finalAllowedAssets[_assets[i]] = _flags[i];
-        }
-    }
-
     /* ============ Private Functions ============ */
 
     function _deposit(
@@ -280,12 +250,6 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) internal {
         if (amount == 0) revert InvalidAmount(0);
-
-        _checkFinalAsset(finalAsset);
-
-        if (inputAsset != finalAsset && !allowedAssets[inputAsset]) {
-            revert InvalidInputAsset(inputAsset);
-        }
 
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
@@ -424,12 +388,6 @@ contract Bridger is
         if (boughtAmount < minReceive) revert SlippageError(boughtAmount, minReceive);
 
         return boughtAmount;
-    }
-
-    function _checkFinalAsset(address finalAsset) internal view {
-        if (!finalAllowedAssets[finalAsset]) {
-            revert InvalidFinalAsset(finalAsset);
-        }
     }
 
     /* ============ Signature Recovery ============ */

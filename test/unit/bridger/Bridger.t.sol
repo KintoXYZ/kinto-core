@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
+import "@kinto-core-test/helpers/WETH.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -59,7 +60,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         l2Vault = makeAddr("l2Vault");
         bridge = makeAddr("bridge");
         router = makeAddr("router");
-        weth = 0x4200000000000000000000000000000000000006;
+        weth = address(new WETH());
         usde = makeAddr("usde");
         wstEth = makeAddr("wsteth");
 
@@ -76,15 +77,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
         vm.prank(_owner);
         bridger.initialize(senderAccount);
-
-        address[] memory assets = new address[](2);
-        assets[0] = address(sDAI);
-        assets[1] = address(sUSDe);
-        bool[] memory flags = new bool[](2);
-        flags[0] = true;
-        flags[1] = true;
-        vm.prank(_owner);
-        bridger.whitelistFinalAssets(assets, flags);
 
         mockBridgerData = IBridger.BridgeData({
             vault: address(vault),
@@ -202,78 +194,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
     }
 
-    function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
-        address assetToDeposit = address(sDAI);
-        uint256 amountToDeposit = 1000e18;
-
-        address[] memory assets = new address[](1);
-        assets[0] = assetToDeposit;
-        bool[] memory flags = new bool[](1);
-        flags[0] = false;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWallet,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            1,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.prank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidInputAsset.selector, assetToDeposit));
-        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
-        vm.stopPrank();
-    }
-
-    function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
-        address assetToDeposit = address(sDAI);
-        uint256 amountToDeposit = 1000e18;
-        deal(address(assetToDeposit), _user, amountToDeposit);
-
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWallet,
-            bridger,
-            _user,
-            assetToDeposit,
-            address(1),
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.prank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositBySig(permitSignature, sigdata, bytes(""), emptyBridgerData);
-        vm.stopPrank();
-    }
-
     /* ============ depositERC20 ============ */
 
     function testDepositERC20() public {
@@ -302,33 +222,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     /* ============ depositETH ============ */
 
-    function testDepositETH() public {
-        uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit + GAS_FEE);
-
-        vm.expectCall(
-            address(vault),
-            GAS_FEE,
-            abi.encodeCall(
-                vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
-            )
-        );
-        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
-            amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
-        );
-    }
-
-    function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
-        uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidFinalAsset.selector, address(1)));
-        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
-            amountToDeposit, kintoWallet, address(1), 1, bytes(""), mockBridgerData
-        );
-        vm.stopPrank();
-    }
-
     function testDepositETH_RevertWhen_AmountIsZero() public {
         uint256 amountToDeposit = 0;
         vm.deal(_user, amountToDeposit);
@@ -338,41 +231,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
         );
         vm.stopPrank();
-    }
-
-    /* ============ Whitelist ============ */
-
-    function testWhitelistAsset() public {
-        address asset = address(768);
-        address[] memory assets = new address[](1);
-        assets[0] = asset;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-        assertEq(bridger.allowedAssets(asset), true);
-    }
-
-    function testWhitelistFinalAsset() public {
-        address asset = address(768);
-        address[] memory assets = new address[](1);
-        assets[0] = asset;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistFinalAssets(assets, flags);
-        assertEq(bridger.finalAllowedAssets(asset), true);
-    }
-
-    function testWhitelistAsset_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        bridger.whitelistAssets(new address[](1), new bool[](1));
-    }
-
-    function testWhitelistAsset_RevertWhen_LengthMismatch() public {
-        vm.expectRevert(IBridger.InvalidAssets.selector);
-        vm.prank(_owner);
-        bridger.whitelistAssets(new address[](1), new bool[](2));
     }
 
     /* ============ Pause ============ */

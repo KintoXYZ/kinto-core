@@ -129,19 +129,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         BridgerHarness newImpl = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
         vm.prank(_owner);
         bridger.upgradeTo(address(newImpl));
-
-        address[] memory assets = new address[](4);
-        assets[0] = address(sDAI);
-        assets[1] = address(sUSDe);
-        assets[2] = address(wstETH);
-        assets[3] = address(weETH);
-        bool[] memory flags = new bool[](4);
-        flags[0] = true;
-        flags[1] = true;
-        flags[2] = true;
-        flags[3] = true;
-        vm.prank(_owner);
-        bridger.whitelistFinalAssets(assets, flags);
     }
 
     /* ============ Bridger Deposit ============ */
@@ -236,14 +223,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         // enable swaps
         vm.prank(_owner);
-
-        // whitelist DAI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = DAI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
 
         // top-up _user DAI balance
         address assetToDeposit = DAI;

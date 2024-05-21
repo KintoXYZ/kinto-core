@@ -33,8 +33,6 @@ interface IBridger {
     error SignatureExpired();
     error InvalidNonce();
     error InvalidSigner();
-    error InvalidInputAsset(address asset);
-    error InvalidFinalAsset(address asset);
     error InvalidAmount(uint256 amount);
     error InvalidAssets();
     error SwapsDisabled();
@@ -102,10 +100,6 @@ interface IBridger {
         BridgeData calldata bridgeData
     ) external payable;
 
-    function whitelistAssets(address[] calldata assets, bool[] calldata flags) external;
-
-    function whitelistFinalAssets(address[] calldata assets, bool[] calldata flags) external;
-
     function pause() external;
 
     function unpause() external;
@@ -117,10 +111,6 @@ interface IBridger {
     function nonces(address account) external view returns (uint256);
 
     function domainSeparator() external view returns (bytes32);
-
-    function allowedAssets(address) external view returns (bool);
-
-    function finalAllowedAssets(address) external view returns (bool);
 
     function l2Vault() external view returns (address);
 
