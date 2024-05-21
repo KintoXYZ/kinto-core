@@ -31,7 +31,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         newImpl = create2(
             "BridgerV5-impl",
             abi.encodePacked(
-                type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH)
+                type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH)
             )
         );
         // Stop broadcast because the Owner is Safe account
