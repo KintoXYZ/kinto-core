@@ -22,9 +22,10 @@ contract KintoMigration61DeployScript is MigrationHelper {
     using LibString for *;
     using stdJson for string;
 
-    address kintoSafeAddress = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
+    address kintoMainnetSafeAddress = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
+    address kintoBaseSafeAddress = address(0);
+    address kintoArbitrumSafeAddress = address(0);
 
-    // ethereum mainnet contracts (vaults, connectors and hooks)
     address[39] mainnetContracts = [
         0x12Cf431BdF7F143338cC09A0629EDcCEDCBCEcB5,
         0x1991Fb3e5EC42A5eee9acC70fB30b0DBEF34B667,
@@ -113,12 +114,16 @@ contract KintoMigration61DeployScript is MigrationHelper {
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         address kintoDeployer = vm.addr(deployerPrivateKey);
+        bytes32 role = keccak256("RESCUE_ROLE");
+        address[] memory contracts = getContracts();
+
+        if (kintoArbitrumSafeAddress != address(0)) revert("Arbitrum Safe address not set");
+        if (kintoBaseSafeAddress != address(0)) revert("Base Safe address not set");
+        if (kintoMainnetSafeAddress == address(0)) revert("Mainnet Safe address not set");
+
+        address safeAddress = kintoMainnetSafeAddress;
 
         vm.startBroadcast(deployerPrivateKey);
-
-        bytes32 role = keccak256("RESCUE_ROLE");
-
-        address[] memory contracts = getContracts();
 
         // revoke RESCUE_ROLE from deployer
         console2.log("Revoking RESCUE_ROLE roles...");
@@ -133,20 +138,20 @@ contract KintoMigration61DeployScript is MigrationHelper {
         }
 
         for (uint256 i = 0; i < contracts.length; i++) {
-            bool hasRole = AccessControl(contracts[i]).hasRole(role, kintoSafeAddress);
+            bool hasRole = AccessControl(contracts[i]).hasRole(role, safeAddress);
             if (hasRole) {
-                console2.log("- Role already granted to %s on %s", kintoSafeAddress, contracts[i]);
+                console2.log("- Role already granted to %s on %s", safeAddress, contracts[i]);
             } else {
-                console2.log("- Granting role to %s on %s", kintoSafeAddress, contracts[i]);
-                AccessControl(contracts[i]).grantRole(role, kintoSafeAddress);
+                console2.log("- Granting role to %s on %s", safeAddress, contracts[i]);
+                AccessControl(contracts[i]).grantRole(role, safeAddress);
             }
         }
 
         // nominate new owner
         console2.log("\nNominating new owners...");
         for (uint256 i = 0; i < contracts.length; i++) {
-            console2.log("- Nominating", kintoSafeAddress, "as owner of", contracts[i]);
-            AccessControl(contracts[i]).nominateOwner(kintoSafeAddress);
+            console2.log("- Nominating", safeAddress, "as owner of", contracts[i]);
+            AccessControl(contracts[i]).nominateOwner(safeAddress);
         }
 
         vm.stopBroadcast();
@@ -156,14 +161,14 @@ contract KintoMigration61DeployScript is MigrationHelper {
         for (uint256 i = 0; i < contracts.length; i++) {
             AccessControl contractInstance = AccessControl(contracts[i]);
             require(!contractInstance.hasRole(role, kintoDeployer), "Rescue role not revoked");
-            require(contractInstance.hasRole(role, kintoSafeAddress), "Rescue role not set");
+            require(contractInstance.hasRole(role, safeAddress), "Rescue role not set");
         }
 
         // validate Safe can claim ownership
-        vm.startPrank(kintoSafeAddress);
+        vm.startPrank(safeAddress);
         for (uint256 i = 0; i < contracts.length; i++) {
             AccessControl(contracts[i]).claimOwner();
-            require(AccessControl(contracts[i]).owner() == kintoSafeAddress, "Ownership not transferred");
+            require(AccessControl(contracts[i]).owner() == safeAddress, "Ownership not transferred");
         }
     }
 
