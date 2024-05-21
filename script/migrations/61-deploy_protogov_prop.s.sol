@@ -16,27 +16,61 @@ contract KintoMigration61DeployScript is MigrationHelper {
 
         EngenCredits credits = EngenCredits(_getChainDeployment("EngenCredits"));
         EngenGovernance governance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
-        credits.mint(vm.envAddress("KintoWallet-admin"), 5e23);
 
-        address[] memory targets = new address[](1);
-        targets[0] = address(_getChainDeployment("Counter"));
-        bytes[] memory data = new bytes[](1);
-        data[0] = abi.encodeWithSignature("increment()");
-        uint256[] memory values = new uint256[](1);
-        values[0] = 0;
-
-        bytes memory selectorAndParams = abi.encodeWithSelector(
-            Governor.propose.selector, targets, values, data, "ENIP:1 - Kinto Constitution"
+        bytes memory selectorAndParams;
+        address[] memory wallets = new address[](1);
+        wallets[0] = _getChainDeployment("KintoWallet-admin");
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 5e23;
+        selectorAndParams = abi.encodeWithSelector(
+            EngenCredits.setCredits.selector, wallets, amounts
         );
-        _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
+        _handleOps(selectorAndParams, address(credits), deployerPrivateKey);
 
-        selectorAndParams =
-            abi.encodeWithSelector(Governor.propose.selector, targets, values, data, "ENIP:2 - The Kinto Token");
-        _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
+        _whitelistApp(_getChainDeployment("EngenGovernance"), deployerPrivateKey, true);
+
+        address[] memory targets;
+        bytes[] memory data;
+        uint256[] memory values;
+        string memory description;
+        uint proposalId;
+
+        targets = new address[](1);
+        targets[0] = address(_getChainDeployment("Counter"));
+        data = new bytes[](1);
+        data[0] = abi.encodeWithSignature("increment()");
+        values = new uint256[](1);
+        values[0] = 0;
+        description = "ENIP:1 - Kinto Constitution";
+
 
         selectorAndParams = abi.encodeWithSelector(
-            Governor.propose.selector, targets, values, data, "ENIP:3 - The Mining Program"
+            Governor.propose.selector, targets, values, data, description
         );
         _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
+
+        proposalId =  governance.hashProposal(targets, values, data, keccak256(bytes(description)));
+        require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
+        console.log('Proposal ID 1:', proposalId);
+
+        description = "ENIP:2 - The Kinto Token";
+        selectorAndParams =
+            abi.encodeWithSelector(Governor.propose.selector, targets, values, data, description);
+        _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
+        proposalId =  governance.hashProposal(targets, values, data, keccak256(bytes(description)));
+        require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
+        console.log('Proposal ID 2:', proposalId);
+
+
+        description = "ENIP:3 - The Mining Program";
+        selectorAndParams = abi.encodeWithSelector(
+            Governor.propose.selector, targets, values, data, description
+        );
+        _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
+
+        proposalId =  governance.hashProposal(targets, values, data, keccak256(bytes(description)));
+        require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
+        console.log('Proposal ID 3:', proposalId);
+
     }
 }
