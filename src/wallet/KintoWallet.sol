@@ -12,7 +12,7 @@ import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
 import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IEngenCredits.sol";
-import "../interfaces/IBridgerL2.sol";
+import "../interfaces/bridger/IBridgerL2.sol";
 import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
@@ -476,7 +476,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV7 is KintoWallet {
+contract KintoWalletV8 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
