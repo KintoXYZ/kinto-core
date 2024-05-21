@@ -33,9 +33,6 @@ contract KintoMigration54DeployScript is MigrationHelper {
             deployerPrivateKey
         );
 
-        //Remove comment to mint sample badges for the KintoWallet-admin
-
-        
         uint256[] memory ids = new uint256[](11);
         ids[0] = 1;
         ids[1] = 2;
@@ -48,17 +45,11 @@ contract KintoMigration54DeployScript is MigrationHelper {
         ids[8] = 9;
         ids[9] = 10;
         ids[10] = 11;
-        
-        
+
         _handleOps(
-            abi.encodeWithSelector(
-                EngenBadges.mintBadges.selector,
-                _getChainDeployment("KintoWallet-admin"),
-                ids
-            ), 
+            abi.encodeWithSelector(EngenBadges.mintBadges.selector, _getChainDeployment("KintoWallet-admin"), ids),
             address(proxy),
             deployerPrivateKey
         );
-        
     }
 }
