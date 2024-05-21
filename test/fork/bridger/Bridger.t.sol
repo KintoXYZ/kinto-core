@@ -44,6 +44,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     mapping(address => IBridger.BridgeData) internal bridgeData;
 
+    uint256 internal amountIn = 1e18;
+
+
     function setUp() public override {
         super.setUp();
 
@@ -229,9 +232,10 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         IBridger.BridgeData memory data = bridgeData[wstETH];
         address assetIn = DAI;
         address assetOut = wstETH;
-        uint256 amountIn = 1e18;
+
         uint256 bridgerAssetInBalanceBefore = ERC20(assetIn).balanceOf(address(bridger));
         uint256 bridgerAssetOutBalanceBefore = ERC20(assetOut).balanceOf(address(bridger));
+        uint256 vaultAssetOutBalanceBefore = ERC20(assetOut).balanceOf(data.vault);
 
         deal(assetIn, _user, amountIn);
         deal(_user, data.gasFee);
@@ -267,8 +271,12 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(ERC20(assetIn).balanceOf(address(bridger)), bridgerAssetInBalanceBefore); // DAI balance should stay the same
-        assertEq(ERC20(assetOut).balanceOf(address(bridger)), bridgerAssetOutBalanceBefore); // wstETH balance should stay the same
+        // DAI balance should stay the same
+        assertEq(ERC20(assetIn).balanceOf(address(bridger)), bridgerAssetInBalanceBefore);
+        // wstETH balance should stay the same
+        assertEq(ERC20(assetOut).balanceOf(address(bridger)), bridgerAssetOutBalanceBefore);
+        // wstETH should be sent to the vault
+        assertEq(ERC20(assetOut).balanceOf(data.vault), vaultAssetOutBalanceBefore);
     }
 
     /* ============ Bridger ETH Deposit ============ */
