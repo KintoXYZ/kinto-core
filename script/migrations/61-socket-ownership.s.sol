@@ -68,7 +68,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
         0xdE9D8c2d465669c661672d7945D4d4f5407d22E2
     ];
 
-    // arbitrum contracts (vaults, connectors and hooks)
+    // base contracts (vaults, connectors and hooks)
     address[15] baseContracts = [
         0x9354E3822CE6BF77B2761f8922972BB767D771d8,
         0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A,
@@ -87,7 +87,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
         0xb34896F06049891dD5c30E063FCf7A16d3834428
     ];
 
-    // base contracts (vaults, connectors and hooks)
+    // arbitrum contracts (vaults, connectors and hooks)
     address[18] arbitrumContracts = [
         0x36E2DBe085eE4d028fD60f70670f662365d0E978,
         0xeb61Ae531F3a3b06E9da77Ec4AD03B102F5b4eF2,
