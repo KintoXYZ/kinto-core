@@ -46,7 +46,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     uint256 internal amountIn = 1e18;
 
-
     function setUp() public override {
         super.setUp();
 
@@ -276,7 +275,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // wstETH balance should stay the same
         assertEq(ERC20(assetOut).balanceOf(address(bridger)), bridgerAssetOutBalanceBefore);
         // wstETH should be sent to the vault
-        assertEq(ERC20(assetOut).balanceOf(data.vault), vaultAssetOutBalanceBefore);
+        assertEq(ERC20(assetOut).balanceOf(data.vault), vaultAssetOutBalanceBefore + 229930130833080, 'Invalid Vault assetOut balance');
     }
 
     /* ============ Bridger ETH Deposit ============ */
