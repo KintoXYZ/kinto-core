@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../../src/bridger/Bridger.sol";
+import "@kinto-core/bridger/Bridger.sol";
 
-import "../../../test/helpers/Create2Helper.sol";
-import "../../../test/helpers/ArtifactsReader.sol";
-import "../../../test/helpers/UUPSProxy.sol";
+import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -13,44 +13,36 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
 
-contract UpgradeBridgerScript is Create2Helper, ArtifactsReader, Test, Constants {
-    Bridger bridger;
+contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
+    Bridger internal bridger;
+    address internal newImpl;
+    address internal bridgerAddress;
 
     function setUp() public {}
 
-    function run() public {
-        if (block.chainid != 1) {
-            console.log("This script is meant to be run on the mainnet");
-            return;
-        }
-        console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // If not using ledger, replace
-        console.log("Executing with address", msg.sender);
-        vm.startBroadcast();
-
-        address bridgerAddress = _getChainDeployment("Bridger", 1);
+    function deployContracts(address) internal override {
+        bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
             return;
         }
 
         // Deploy implementation
-        Bridger newImpl = new Bridger(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
-        vm.stopBroadcast();
+        newImpl = create2("BridgerV5-impl", abi.encodePacked(type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH)));
+        // Stop broadcast because the Owner is Safe account
+    }
 
+    function checkContracts(address) internal override {
         bridger = Bridger(payable(bridgerAddress));
-        // NOTE: upgrade not broadcast since it needs to happen via SAFE
+        vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
-        // prank
-        Bridger(payable(bridgerAddress)).upgradeTo(address(newImpl));
 
         // Checks
-        assertEq(bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
-        assertEq(bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
-        assertEq(bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
+        assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
+        assertEq(bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0, "Invalid L2 Vault");
+        // Safe Account
+        assertEq(bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82, "Invalid Owner");
 
-        // Writes the addresses to a file
-        console.log("Add these addresses to the artifacts mainnet file");
-        console.log(string.concat('"BridgerV5-impl": "', vm.toString(address(newImpl)), '"'));
+        console.log("BridgerV5-impl at: %s", address(newImpl));
     }
 }
