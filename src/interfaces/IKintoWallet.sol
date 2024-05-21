@@ -54,11 +54,7 @@ interface IKintoWallet {
 
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
-    function claimEngen(
-        uint8 firstVote,
-        uint8 secondVote,
-        uint8 thirdVote
-    ) external;
+    function claimEngen(uint8 firstVote, uint8 secondVote, uint8 thirdVote) external;
 
     /* ============ Basic Viewers ============ */
 

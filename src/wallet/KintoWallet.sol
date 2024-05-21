@@ -12,6 +12,7 @@ import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoEntryPoint.sol";
 import "../interfaces/IKintoWallet.sol";
 import "../interfaces/IEngenCredits.sol";
+import "../interfaces/IBridgerL2.sol";
 import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
@@ -143,17 +144,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Engen Claim Simplification ============ */
 
-    function claimEngen(
-        uint8 firstVote,
-        uint8 secondVote,
-        uint8 thirdVote
-    ) external override onlySelf {
+    function claimEngen(uint8 firstVote, uint8 secondVote, uint8 thirdVote) external override onlySelf {
         IEngenCredits(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).mintCredits();
         EngenGovernance engenGovernance = EngenGovernance(payable(0x27926a991BB0193Bf5b679bdb6Cb3d3B6581084E));
         // TODO: hardcode proposal ids when created
         engenGovernance.castVote(0, firstVote);
         engenGovernance.castVote(1, secondVote);
         engenGovernance.castVote(1, thirdVote);
+        // claim commitment
+        IBridgerL2(0x26181Dfc530d96523350e895180b09BAf3d816a0).claimCommitment();
     }
 
     /* ============ Whitelist Management ============ */
