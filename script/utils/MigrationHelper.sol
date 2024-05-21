@@ -258,14 +258,26 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
     }
 
     // @notice handles ops without using a sponsorPaymaster
-    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, _to, address(0), _signerPk);
+    function _handleOps(bytes[] memory _selectorAndParams, address[] memory _tos, uint256 _signerPk) internal {
+        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
     }
 
     // @notice handles ops using a sponsorPaymaster
-    function _handleOps(bytes[] memory _selectorAndParams, address _to, address _sponsorPaymaster, uint256 _signerPk)
-        internal
-    {
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        address[] memory _tos;
+        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+            _tos[i] = _to;
+        }
+        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
+    }
+
+    function _handleOps(
+        bytes[] memory _selectorAndParams,
+        address[] memory _tos,
+        address _sponsorPaymaster,
+        uint256 _signerPk
+    ) internal {
+        require(_selectorAndParams.length == _tos.length, "_selectorAndParams and _tos mismatch");
         address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
@@ -274,7 +286,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         uint256 nonce = IKintoWallet(_from).getNonce();
         for (uint256 i = 0; i < _selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
-                block.chainid, _from, _to, 0, nonce, privateKeys, _selectorAndParams[i], _sponsorPaymaster
+                block.chainid, _from, _tos[i], 0, nonce, privateKeys, _selectorAndParams[i], _sponsorPaymaster
             );
             nonce++;
         }
