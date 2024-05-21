@@ -26,17 +26,6 @@ interface IsUSDe is IERC20 {
     function deposit(uint256 amount, address recipient) external returns (uint256);
 }
 
-interface IL1GatewayRouter {
-    function outboundTransfer(
-        address _token,
-        address _to,
-        uint256 _amount,
-        uint256 _maxGas,
-        uint256 _gasPriceBid,
-        bytes calldata _data
-    ) external payable;
-}
-
 interface IBridger {
     /* ============ Errors ============ */
     error OnlySender();
@@ -44,14 +33,13 @@ interface IBridger {
     error SignatureExpired();
     error InvalidNonce();
     error InvalidSigner();
-    error InvalidAsset();
-    error InvalidAmount();
+    error InvalidAmount(uint256 amount);
     error InvalidAssets();
     error SwapsDisabled();
     error GasFeeTooHigh();
     error SwapCallFailed();
-    error SlippageError();
-    error OnlyExchangeProxy();
+    error FailedToStakeEth();
+    error SlippageError(uint256 boughtAmount, uint256 minReceive);
 
     /* ============ Structs ============ */
 
@@ -67,13 +55,6 @@ interface IBridger {
         bytes signature;
     }
 
-    struct SwapData {
-        address spender;
-        address swapTarget;
-        bytes swapCallData;
-        uint256 gasFee;
-    }
-
     struct Permit {
         address owner;
         address spender;
@@ -84,6 +65,7 @@ interface IBridger {
 
     struct BridgeData {
         address vault;
+        uint256 gasFee;
         uint256 msgGasLimit;
         address connector;
         bytes execPayload;
@@ -92,45 +74,47 @@ interface IBridger {
 
     /* ============ State Change ============ */
 
-    function depositETH(address _kintoWallet, address _finalAsset, uint256 _minReceive, SwapData calldata _swapData)
-        external
-        payable;
-
     function depositBySig(
-        bytes calldata _permitSignature,
-        IBridger.SignatureData calldata _signatureData,
-        IBridger.SwapData calldata _swapData
+        bytes calldata permitSignature,
+        IBridger.SignatureData calldata signatureData,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
     ) external payable;
 
-    function bridgeDeposits(address asset, uint256 amount, BridgeData calldata bridgeData) external payable;
+    function depositERC20(
+        address inputAsset,
+        uint256 amount,
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable;
 
-    function whitelistAssets(address[] calldata _assets, bool[] calldata _flags) external;
-
-    function setSwapsEnabled(bool _swapsEnabled) external;
+    function depositETH(
+        uint256 amount,
+        address kintoWallet,
+        address finalAsset,
+        uint256 minReceive,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable;
 
     function pause() external;
 
     function unpause() external;
 
-    function setSenderAccount(address _senderAccount) external;
+    function setSenderAccount(address senderAccount) external;
 
-    /* ============ Basic Viewers ============ */
+    /* ============ View ============ */
 
-    function deposits(address _account, address _asset) external view returns (uint256);
-
-    function nonces(address _account) external view returns (uint256);
+    function nonces(address account) external view returns (uint256);
 
     function domainSeparator() external view returns (bytes32);
-
-    function allowedAssets(address) external view returns (bool);
-
-    function swapsEnabled() external view returns (bool);
-
-    function depositCount() external view returns (uint256);
 
     function l2Vault() external view returns (address);
 
     function senderAccount() external view returns (address);
 
-    function exchangeProxy() external view returns (address);
+    function swapRouter() external view returns (address);
 }

@@ -7,12 +7,16 @@ import "../../../test/helpers/Create2Helper.sol";
 import "../../../test/helpers/ArtifactsReader.sol";
 import "../../../test/helpers/UUPSProxy.sol";
 
+import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
+
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, Test {
+contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants {
     Bridger _bridger;
+
+    // Exchange Proxy address is the same on all chains.
 
     function setUp() public {}
 
@@ -31,14 +35,7 @@ contract KintoMainnetMigration2DeployScript is Create2Helper, ArtifactsReader, T
             return;
         }
 
-        address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
-        if (bridgerAddressL2 == address(0)) {
-            console.log("Not deployed bridger L2", bridgerAddressL2);
-            return;
-        }
-
-        // Deploy Engen Credits implementation
-        Bridger _implementation = new Bridger(bridgerAddressL2);
+        Bridger _implementation = new Bridger(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
         UUPSProxy _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");

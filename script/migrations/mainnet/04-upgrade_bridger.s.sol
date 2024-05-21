@@ -11,7 +11,9 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test {
+import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
+
+contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
     Bridger internal bridger;
     address internal newImpl;
     address internal bridgerAddress;
@@ -24,10 +26,14 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test {
             console.log("Not deployed bridger", bridgerAddress);
             return;
         }
-        address bridgerAddressL2 = _getChainDeployment("BridgerL2", 7887);
 
         // Deploy implementation
-        newImpl = create2("BridgerV5-impl", abi.encodePacked(type(Bridger).creationCode, abi.encode(bridgerAddressL2)));
+        newImpl = create2(
+            "BridgerV5-impl",
+            abi.encodePacked(
+                type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDE, SUSDE, WSTETH)
+            )
+        );
         // Stop broadcast because the Owner is Safe account
     }
 

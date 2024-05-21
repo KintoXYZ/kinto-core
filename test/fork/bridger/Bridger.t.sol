@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {stdJson} from "forge-std/StdJson.sol";
+
+import "@kinto-core/interfaces/bridger/IBridger.sol";
+import "@kinto-core/bridger/Bridger.sol";
+
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -16,20 +21,31 @@ import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
-    address constant kintoWalletL2 = address(33);
-    address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address constant UNI = 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984;
-    address constant STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-    address constant ENA = 0x57e114B691Db790C35207b2e685D4A43181e6061;
+    using stdJson for string;
 
-    address constant senderAccount = address(100);
-    address constant l2Vault = address(99);
+    address internal constant kintoWalletL2 = address(33);
+    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address internal constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal constant senderAccount = address(100);
+    address internal constant L2_VAULT = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+    address internal constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+    address internal constant ENA = 0x57e114B691Db790C35207b2e685D4A43181e6061;
+    address internal constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address internal constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
 
     BridgerHarness internal bridger;
     IBridger.BridgeData internal emptyBridgerData;
 
-    mapping(address => IBridger.BridgeData) internal brideData;
+    address constant l2Vault = address(99);
+
+    mapping(address => IBridger.BridgeData) internal bridgeData;
+
+    uint256 internal amountIn = 1e18;
+
 
     function setUp() public override {
         super.setUp();
@@ -44,46 +60,52 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         emptyBridgerData = IBridger.BridgeData({
             vault: address(0),
+            gasFee: 0,
             msgGasLimit: 0,
             connector: address(0),
             execPayload: bytes(""),
             options: bytes("")
         });
 
-        brideData[bridger.wstETH()] = IBridger.BridgeData({
+        bridgeData[wstETH] = IBridger.BridgeData({
             vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
+            gasFee: 1e16,
             msgGasLimit: 500_000,
             connector: 0x83C6d6597891Ad48cF5e0BA901De55120C37C6bE,
             execPayload: bytes(""),
             options: bytes("")
         });
 
-        brideData[bridger.weETH()] = IBridger.BridgeData({
+        bridgeData[weETH] = IBridger.BridgeData({
             vault: 0xeB66259d2eBC3ed1d3a98148f6298927d8A36397,
+            gasFee: 1e16,
             msgGasLimit: 500_000,
             connector: 0xE2c2291B80BFC8Bd0e4fc8Af196Ae5fc9136aeE0,
             execPayload: bytes(""),
             options: bytes("")
         });
 
-        brideData[bridger.sDAI()] = IBridger.BridgeData({
+        bridgeData[sDAI] = IBridger.BridgeData({
             vault: 0x5B8Ae1C9c5970e2637Cf3Af431acAAebEf7aFb85,
+            gasFee: 1e16,
             msgGasLimit: 500_000,
             connector: 0xF5992B6A0dEa32dCF6BE7bfAf762A4D94f139Ea7,
             execPayload: bytes(""),
             options: bytes("")
         });
 
-        brideData[bridger.sUSDe()] = IBridger.BridgeData({
+        bridgeData[sUSDe] = IBridger.BridgeData({
             vault: 0x43b718Aa5e678b08615CA984cbe25f690B085b32,
+            gasFee: 1e16,
             msgGasLimit: 500_000,
             connector: 0xE274dB6b891159547FbDC18b07412EE7F4B8d767,
             execPayload: bytes(""),
             options: bytes("")
         });
 
-        brideData[ENA] = IBridger.BridgeData({
+        bridgeData[ENA] = IBridger.BridgeData({
             vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
+            gasFee: 1e16,
             msgGasLimit: 500_000,
             connector: 0x266abd77Da7F877cdf93c0dd5782cC61Fa29ac96,
             execPayload: bytes(""),
@@ -95,11 +117,11 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         setUpEthereumFork();
     }
 
-    function _deployBridger() internal {
+    function deployBridger() internal {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness implementation = new BridgerHarness(l2Vault);
+        BridgerHarness implementation = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
 
@@ -111,70 +133,33 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness newImpl = new BridgerHarness(l2Vault);
-        vm.prank(_owner);
+        BridgerHarness newImpl = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
+        vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
     }
 
     /* ============ Bridger Deposit ============ */
 
-    // deposit sDAI (no swap)
-    function testDepositBySig_sDAI_WhenNoSwap() public {
-        address assetToDeposit = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
-        deal(assetToDeposit, _user, amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        uint256 nonce = bridger.nonces(_user);
-        vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
-    }
-
     // deposit wstETH (no swap)
     function testDepositBySig_wstETH_WhenNoSwap() public {
-        address assetToDeposit = bridger.wstETH();
-        uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
-        deal(assetToDeposit, _user, amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+        upgradeBridger();
 
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
+        address asset = bridger.wstETH();
+        uint256 amountToDeposit = 1e18;
+        IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
+        uint256 bridgerBalanceBefore = ERC20(asset).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(asset).balanceOf(address(data.vault));
+        deal(asset, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(asset).balanceOf(_user), amountToDeposit);
+
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
             kintoWalletL2,
             bridger,
             _user,
-            assetToDeposit,
-            assetToDeposit,
+            asset,
+            asset,
             amountToDeposit,
             amountToDeposit,
             _userPk,
@@ -182,125 +167,38 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                _user, address(bridger), amountToDeposit, ERC20Permit(asset).nonces(_user), block.timestamp + 1000
             ),
             _userPk,
-            ERC20Permit(assetToDeposit)
+            ERC20Permit(asset)
         );
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, bytes(""), data);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
-    }
 
-    // deposit weETH (no swap)
-    function testDepositBySig_weETH_WhenNoSwap() public {
-        address assetToDeposit = bridger.weETH();
-        uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
-        deal(assetToDeposit, _user, amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        uint256 nonce = bridger.nonces(_user);
-        vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
-    }
-
-    // deposit sUSDe
-    function testDepositBySig_sUSDe_WhenNoSwap() public {
-        address assetToDeposit = bridger.sUSDe();
-        uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(assetToDeposit).balanceOf(address(bridger));
-        uint256 depositBefore = bridger.deposits(_user, assetToDeposit);
-        deal(assetToDeposit, _user, amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        uint256 nonce = bridger.nonces(_user);
-        vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), depositBefore + amountToDeposit);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
+        assertEq(ERC20(asset).balanceOf(address(bridger)), bridgerBalanceBefore);
+        assertEq(ERC20(asset).balanceOf(address(data.vault)), vaultBalanceBefore + amountToDeposit);
     }
 
     // USDe to sUSDe
     function testDepositBySig_WhenUSDeTosUSDe() public {
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[sUSDe];
         address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
-        uint256 sharesBefore = ERC20(bridger.sUSDe()).balanceOf(address(bridger));
+        uint256 sharesBefore = ERC20(sUSDe).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(sUSDe).balanceOf(address(data.vault));
+
         deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0);
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            1e17,
-            _userPk,
-            block.timestamp + 1000
+            kintoWalletL2, bridger, _user, assetToDeposit, sUSDe, amountToDeposit, 1e17, _userPk, block.timestamp + 1000
         );
 
         bytes memory permitSignature = _auxCreatePermitSignature(
@@ -317,388 +215,38 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
         uint256 nonce = bridger.nonces(_user);
         vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, bytes(""), data);
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), amountToDeposit);
 
-        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(amountToDeposit);
-        assertEq(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), sharesBefore + shares);
-    }
-
-    // USDe to sDAI
-    function testDepositBySig_WhenUSDeTosDAI() public {
-        vm.rollFork(19418477); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        vm.deal(_owner, 1e18);
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist USDe as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = bridger.USDe();
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user USDe balance
-        address assetToDeposit = bridger.USDe();
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // 100 USDe to sDAI quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&buyToken=0x83F20F44975D03b1b09e64809B757c47f942BEeA&sellAmount=10000000000000000
-        bytes memory data =
-            hex"0f3b31b2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000d317016cdaaa58700000000000000000000000000000000000000000000000000000000000000030000000000000000000000004c9edd5852cd905f086c759e8383e09bff1e68b3000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000424c9edd5852cd905f086c759e8383e09bff1e68b3000064dac17f958d2ee523a2206206994597c13d831ec70001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002bc02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f483f20f44975d03b1b09e64809b757c47f942beea000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000005e39828abf45b7271af8ffd8c3fa0f40";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, 0); // spender, swapTarget, swapCallData, gasFee
-
-        // create a bridge signature to allow the bridger to deposit the user's UNI
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sDAI(),
-            amountToDeposit,
-            950664239593989504,
-            _userPk,
-            block.timestamp + 1000
-        );
-        uint256 nonce = bridger.nonces(_user);
-
-        vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, swapData);
-
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDe since it was swapped
-        assertGe(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 950664239593989504); // sDAI balance should be equal or greater than the min guaranteed
-            // assertApproxEqRel(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 950664239593989504, 0.015e18); // 1.5%
-    }
-
-    // UNI to sUSDe
-    function testDepositBySig_WhenSwap_WhenUNITosUSDe() public {
-        vm.rollFork(19412323); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist UNI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = UNI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user UNI balance
-        address assetToDeposit = UNI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // UNI to USDe quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&buyToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"6af479b200000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000c3e8aa4bcaabba2c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000421f9840a85d5af5bf1d1762f925bdaddc4201f984000bb8a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000644c9edd5852cd905f086c759e8383e09bff1e68b3000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000417ac500984785634335e679ad0ba662";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        uint256 gasFee = 0 ether;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee); // spender, swapTarget, swapCallData, gasFee
-
-        // create a bridge signature to allow the bridger to deposit the user's UNI
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            14116720274492340224,
-            _userPk,
-            block.timestamp + 1000
-        );
-        uint256 nonce = bridger.nonces(_user);
-
-        vm.prank(_owner);
-        bridger.depositBySig{value: gasFee}(permitSignature, sigdata, swapData);
-
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no UNI since it was swapped
-
-        // preview deposit on 4626 vault
-        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(14116720274492340224);
-        assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
-    }
-
-    // USDC to sUSDe
-    function testDepositBySig_WhenSwap_WhenUSDCTosUSDe() public {
-        vm.rollFork(19408563); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist USDC as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = USDC;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user USDC balance (since forge doesn't support doing deal with USDC, we grab a USDC from an account)
-        address accountWithUSDC = 0xD6153F5af5679a75cC85D8974463545181f48772;
-        address assetToDeposit = USDC;
-        uint256 amountToDeposit = 1e6;
-        vm.prank(accountWithUSDC);
-        ERC20(USDC).transfer(_user, amountToDeposit);
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // USDC to USDe quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&buyToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&sellAmount=1000000
-        bytes memory data =
-            hex"6af479b2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000db00b96e10202260000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000644c9edd5852cd905f086c759e8383e09bff1e68b3000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000ebc4902f950c815797f9229be99af5aa";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, 0); // spender, swapTarget, swapCallData, gasFee
-
-        // create a bridge signature to allow the bridger to deposit the user's UNI
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            996263698022367457,
-            _userPk,
-            block.timestamp + 1000
-        );
-        uint256 nonce = bridger.nonces(_user);
-
-        vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, swapData);
-
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e6);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no USDC since it was swapped
-
-        // preview deposit on 4626 vault
-        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(996263698022367457);
-        assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
-    }
-
-    // stETH to sUSDe
-    function testDepositBySig_WhenSwap_WhenStETHTosUSDe() public {
-        vm.rollFork(19447098); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist stETH as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = STETH;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user stETH balance (since forge doesn't support doing deal with stETH, we grab a stETH from an account)
-        address accountWithStETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-        address assetToDeposit = STETH;
-        uint256 amountToDeposit = 1e18;
-        vm.prank(accountWithStETH);
-        ERC20(assetToDeposit).transfer(_user, amountToDeposit + 1); // +1 because of Lido's 1 wei corner case: https://docs.lido.fi/guides/lido-tokens-integration-guide/#1-2-wei-corner-case
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // stETH to USDe quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&buyToken=0x4c9EDD5852cd905f086C759E8383e09bff1E68B3&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"415565b0000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe840000000000000000000000004c9edd5852cd905f086c759e8383e09bff1e68b30000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000c4729df37ec9b93ef200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e000000000000000000000000000000000000000000000000000000000000007c000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002e000000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000001437572766500000000000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000080000000000000000000000000dc24316b9ae028f1497c275eb9192a3ea0f670223df02124000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000004c9edd5852cd905f086c759e8383e09bff1e68b30000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000300ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e6973776170563300000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000c4729df37ec9b93ef2000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000042c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4dac17f958d2ee523a2206206994597c13d831ec70000644c9edd5852cd905f086c759e8383e09bff1e68b3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000ae7ab96520de3a18e5e111b5eaab095312d7fe84000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000053492f68bf3d43cb7271e63cf94db5ed";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        uint256 gasFee = 0 ether;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee); // spender, swapTarget, swapCallData, gasFee
-
-        // create a bridge signature to allow the bridger to deposit the user's UNI
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            3623820863464615182336,
-            _userPk,
-            block.timestamp + 1000
-        );
-        uint256 nonce = bridger.nonces(_user);
-
-        vm.prank(_owner);
-        bridger.depositBySig{value: gasFee}(permitSignature, sigdata, swapData);
-
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no stETH since it was swapped
-
-        // preview deposit on 4626 vault
-        uint256 shares = ERC4626(bridger.sUSDe()).previewDeposit(3623820863464615182336);
-        assertApproxEqRel(ERC20(bridger.sUSDe()).balanceOf(address(bridger)), shares, 0.015e18); // 1.5%
-    }
-
-    // UNI to wstETH
-    function testDepositBySig_WhenSwap_WhenUNIToWstETH() public {
-        vm.rollFork(19402329); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist UNI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = UNI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user UNI balance
-        address assetToDeposit = UNI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
-
-        uint256 deadline = block.timestamp + 1000;
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user, address(bridger), amountToDeposit, ERC20Permit(assetToDeposit).nonces(_user), deadline
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // UNI to wstETH quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&buyToken=0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"415565b00000000000000000000000001f9840a85d5af5bf1d1762f925bdaddc4201f9840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000b066ea223b34500000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004400000000000000000000000000000000000000000000000000000000000000540000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000380000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001f9840a85d5af5bf1d1762f925bdaddc4201f9840000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e69737761705633000000000000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000b0aac13520804000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000e592427a0aece92de3edee1f18e0157c058615640000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000421f9840a85d5af5bf1d1762f925bdaddc4201f984000bb8dac17f958d2ee523a2206206994597c13d831ec70001f47f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000000043d712e54bf000000000000000000000000ad01c20d5886137e056775af56915de824c8fce5000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000001f9840a85d5af5bf1d1762f925bdaddc4201f984000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000009fad06a693285a6002ba5f7d5d66c41f";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        uint256 gasFee = 0.01 ether;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee); // spender, swapTarget, swapCallData, gasFee
-
-        // create a bridge signature to allow the bridger to deposit the user's UNI
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.wstETH(),
-            amountToDeposit,
-            3106569413738877,
-            _userPk,
-            block.timestamp + 1000
-        );
-        uint256 nonce = bridger.nonces(_user);
-
-        vm.prank(_owner);
-        bridger.depositBySig{value: gasFee}(permitSignature, sigdata, swapData);
-
-        assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no UNI since it was swapped
-        assertApproxEqRel(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 3134690504665512, 0.015e18); // 1.5%
+        uint256 shares = ERC4626(sUSDe).previewDeposit(amountToDeposit);
+        assertEq(ERC20(sUSDe).balanceOf(address(bridger)), sharesBefore);
+        assertEq(ERC20(sUSDe).balanceOf(data.vault), vaultSharesBefore + shares);
     }
 
     // DAI to wstETH
     function testDepositBySig_WhenSwap_WhenDAItoWstETH() public {
-        vm.rollFork(19402392); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist DAI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = DAI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
+        vm.rollFork(19919468); // block number in which the 0x API data was fetched
+        upgradeBridger();
 
         // top-up _user DAI balance
-        address assetToDeposit = DAI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
+        IBridger.BridgeData memory data = bridgeData[wstETH];
+        address assetIn = DAI;
+        address assetOut = wstETH;
+
+        uint256 bridgerAssetInBalanceBefore = ERC20(assetIn).balanceOf(address(bridger));
+        uint256 bridgerAssetOutBalanceBefore = ERC20(assetOut).balanceOf(address(bridger));
+        uint256 vaultAssetOutBalanceBefore = ERC20(assetOut).balanceOf(data.vault);
+
+        deal(assetIn, _user, amountIn);
+        deal(_user, data.gasFee);
 
         // create a permit signature to allow the bridger to transfer the user's DAI
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                _user, address(bridger), amountIn, ERC20Permit(assetIn).nonces(_user), block.timestamp + 1000
             ),
             _userPk,
-            ERC20Permit(assetToDeposit)
+            ERC20Permit(assetIn)
         );
 
         // create a bridge signature to allow the bridger to deposit the user's DAI
@@ -706,9 +254,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             kintoWalletL2,
             bridger,
             _user,
-            assetToDeposit,
+            assetIn,
             bridger.wstETH(),
-            amountToDeposit,
+            amountIn,
             224787412523677,
             _userPk,
             block.timestamp + 1000
@@ -716,319 +264,45 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         // DAI to wstETH quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"415565b00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000ca653edf7a7b00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000002537573686953776170000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000cab3150c6cd1000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000000004dd62cf256000000000000000000000000ad01c20d5886137e056775af56915de824c8fce5000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000001687c5412ac490ac6edc10f35363988b";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        uint256 gasFee = 0.01 ether;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, gasFee); // spender, swapTarget, swapCallData, gasFee
+        // curl 'https://api.0x.org/swap/v1/quote?sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-dai-to-wsteth-quote.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-wsteth-quote.json").readBytes(".data");
 
-        vm.prank(_owner);
-        bridger.depositBySig{value: gasFee}(permitSignature, sigdata, swapData);
+        vm.prank(bridger.senderAccount());
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(bridger.deposits(_user, assetToDeposit), 1e18);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no DAI since it was swapped
-        assertApproxEqRel(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 224787412523677, 0.015e18); // 1.5%
-    }
-
-    function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
-        address assetToDeposit = bridger.sDAI();
-        uint256 amountToDeposit = 1e18;
-        deal(address(assetToDeposit), _user, amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            1,
-            _userPk,
-            block.timestamp + 1000
-        );
-
-        vm.expectRevert(IBridger.OnlyOwner.selector);
-        vm.prank(_user);
-        bridger.depositBySig(bytes(""), sigdata, swapData);
-    }
-
-    function testDepositBySig_WhenSwap_WhenInvalidExchangeProxy() public {
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // whitelist UNI as inputAsset
-        address[] memory assets = new address[](1);
-        assets[0] = UNI;
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        // top-up _user UNI balance
-        address assetToDeposit = UNI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
-
-        // create a permit signature to allow the bridger to transfer the user's UNI
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        address swapTarget = address(0x123);
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, "0x", 0); // spender, swapTarget, swapCallData, gasFee
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.wstETH(),
-            amountToDeposit,
-            0,
-            _userPk,
-            block.timestamp + 1000
-        );
-
-        vm.expectRevert(IBridger.OnlyExchangeProxy.selector);
-        vm.prank(_owner);
-        bridger.depositBySig{value: 0}(permitSignature, sigdata, swapData);
-    }
-
-    function testDepositBySig_RevertWhen_InputAssetIsNotAllowed() public {
-        address assetToDeposit = DAI;
-        uint256 amountToDeposit = 1000e18;
-
-        // disable DAI
-        address[] memory assets = new address[](1);
-        assets[0] = assetToDeposit;
-        bool[] memory flags = new bool[](1);
-        flags[0] = false;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.wstETH(),
-            amountToDeposit,
-            1,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.prank(_owner);
-        vm.expectRevert(IBridger.InvalidAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        vm.stopPrank();
-    }
-
-    function testDepositBySig_RevertWhen_InputAssetIsNotAllowed_2() public {
-        address assetToDeposit = DAI;
-        uint256 amountToDeposit = 1000e18;
-
-        // disable DAI
-        address[] memory assets = new address[](1);
-        assets[0] = assetToDeposit;
-        bool[] memory flags = new bool[](1);
-        flags[0] = false;
-        vm.prank(_owner);
-        bridger.whitelistAssets(assets, flags);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            bridger.sUSDe(),
-            amountToDeposit,
-            1,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.prank(_owner);
-        vm.expectRevert(IBridger.InvalidAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        vm.stopPrank();
-    }
-
-    function testDepositBySig_RevertWhen_OutputAssetIsNotAllowed() public {
-        address assetToDeposit = DAI;
-        uint256 amountToDeposit = 1000e18;
-        deal(address(assetToDeposit), _user, amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.prank(_owner);
-        vm.expectRevert(IBridger.InvalidAsset.selector);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
-        vm.stopPrank();
-    }
-
-    function testDepositBySig_RevertWhen_AmountIsZero() public {
-        address assetToDeposit = bridger.sDAI();
-        uint256 amountToDeposit = 0;
-        deal(address(assetToDeposit), _user, amountToDeposit);
-
-        IBridger.SwapData memory swapData = IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether);
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-        vm.expectRevert(IBridger.InvalidAmount.selector);
-        vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, swapData);
+        // DAI balance should stay the same
+        assertEq(ERC20(assetIn).balanceOf(address(bridger)), bridgerAssetInBalanceBefore);
+        // wstETH balance should stay the same
+        assertEq(ERC20(assetOut).balanceOf(address(bridger)), bridgerAssetOutBalanceBefore);
+        // wstETH should be sent to the vault
+        assertEq(ERC20(assetOut).balanceOf(data.vault), vaultAssetOutBalanceBefore);
     }
 
     /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
-        uint256 gasFee = 0.1 ether;
+        upgradeBridger();
+
         uint256 amountToDeposit = 1e18;
-        uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        vm.deal(_user, amountToDeposit + gasFee);
+        IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
+        uint256 balanceBefore = ERC20(bridger.wstETH()).balanceOf(data.vault);
+        vm.deal(_user, amountToDeposit + data.gasFee);
 
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit + gasFee}(
-            kintoWalletL2, bridger.wstETH(), 1e17, IBridger.SwapData(address(1), address(1), bytes(""), gasFee)
+        bridger.depositETH{value: amountToDeposit + data.gasFee}(
+            amountToDeposit, kintoWalletL2, bridger.wstETH(), 1e17, bytes(""), data
         );
         vm.stopPrank();
 
         assertEq(bridger.nonces(_user), 0);
-        assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
-        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        assertTrue(wstethBalance - wstethBalanceBefore > 0);
+        uint256 balance = ERC20(bridger.wstETH()).balanceOf(data.vault);
+        assertTrue(balance - balanceBefore > 0);
     }
 
-    function testDepositETH_WhenNoGasFee() public {
-        uint256 gasFee = 0;
-        uint256 amountToDeposit = 1e18;
-        uint256 wstethBalanceBefore = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        vm.deal(_user, amountToDeposit + gasFee);
-
-        vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit + gasFee}(
-            kintoWalletL2, bridger.wstETH(), 1e17, IBridger.SwapData(address(1), address(1), bytes(""), gasFee)
-        );
-        vm.stopPrank();
-
-        assertEq(bridger.nonces(_user), 0);
-        assertEq(bridger.deposits(_user, bridger.ETH()), amountToDeposit);
-        uint256 wstethBalance = ERC20(bridger.wstETH()).balanceOf(address(bridger));
-        assertTrue(wstethBalance - wstethBalanceBefore > 0);
-    }
-
-    function testDepositETH_WhenSwap_WhenGasFee() public {
+    function testDepositETH_WhenSwap() public {
         vm.rollFork(19402998); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
-
-        // top-up `_user` ETH balance
-        uint256 amountToDeposit = 1.01 ether;
-        vm.deal(_user, amountToDeposit);
-
-        // WETH to sDAI quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&buyToken=0x83F20F44975D03b1b09e64809B757c47f942BEeA&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"415565b0000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000c8513a48734f22dbe500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000009c000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e69737761705633000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000e592427a0aece92de3edee1f18e0157c0586156400000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002bc02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000054000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000004c0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000001942616c616e6365725632000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000c8513a48734f22dbe5000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000ba12222222228d8ba445958a75a0704d566bf2c8000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e079c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014049cbd67651fbabce12d1df18499896ec87bef46f00000000000000000000064a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000079c58f70905f734641735bc61e45c19dd9ad60bc00000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000014e4e350d61dfbf9717023acbafebe4d";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, 0.01 ether); // spender, swapTarget, swapCallData, gasFee
-
-        // uint256 balanceBefore = address(bridger).balance;
-        vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.sDAI(), 3695201885067717640192, swapData);
-        vm.stopPrank();
-
-        assertEq(_user.balance, 0);
-        assertEq(bridger.deposits(_user, bridger.ETH()), 1e18);
-        // assertEq(address(bridger).balance, balanceBefore); // there's no ETH since it was swapped FIXME: there can be some ETH if the gasFee was not used
-        assertApproxEqRel(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 3695201885067717640192, 0.01e18); // 1%
-    }
-
-    function testDepositETH_WhenSwap_WhenNoGasFee() public {
-        vm.rollFork(19402998); // block number in which the 0x API data was fetched
-        _deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
-        bridger.setSwapsEnabled(true);
+        deployBridger(); // re-deploy the bridger on block
 
         // top-up `_user` ETH balance
         uint256 amountToDeposit = 1 ether;
@@ -1038,74 +312,16 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         // https://api.0x.org/swap/v1/quote?sellToken=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&buyToken=0x83F20F44975D03b1b09e64809B757c47f942BEeA&sellAmount=1000000000000000000
         bytes memory data =
             hex"415565b0000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000c8513a48734f22dbe500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000042000000000000000000000000000000000000000000000000000000000000009c000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000032000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e69737761705633000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000e592427a0aece92de3edee1f18e0157c0586156400000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002bc02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000054000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000004c0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000001942616c616e6365725632000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000c8513a48734f22dbe5000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000002a0000000000000000000000000ba12222222228d8ba445958a75a0704d566bf2c8000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e079c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014049cbd67651fbabce12d1df18499896ec87bef46f00000000000000000000064a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec700000000000000000000000079c58f70905f734641735bc61e45c19dd9ad60bc00000000000000000000000083f20f44975d03b1b09e64809b757c47f942beea000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd00000000000000000000000010000000000000000000000000000000000000110000000000000000000000000000000014e4e350d61dfbf9717023acbafebe4d";
-        address swapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-        IBridger.SwapData memory swapData = IBridger.SwapData(swapTarget, swapTarget, data, 0 ether); // spender, swapTarget, swapCallData, gasFee
 
         uint256 balanceBefore = address(bridger).balance;
         vm.startPrank(_user);
-        bridger.depositETH{value: amountToDeposit}(kintoWalletL2, bridger.sDAI(), 3695201885067717640192, swapData);
+        bridger.depositETH{value: amountToDeposit}(
+            amountToDeposit, kintoWalletL2, sDAI, 3695201885067717640192, data, emptyBridgerData
+        );
         vm.stopPrank();
 
         assertEq(_user.balance, 0);
-        assertEq(bridger.deposits(_user, bridger.ETH()), 1e18);
         assertEq(address(bridger).balance, balanceBefore); // there's no ETH since it was swapped
-        assertApproxEqRel(ERC20(bridger.sDAI()).balanceOf(address(bridger)), 3695201885067717640192, 0.01e18); // 1%
-    }
-
-    function testDepositETH_RevertWhen_FinalAssetisNotAllowed() public {
-        uint256 amountToDeposit = 1e18;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        vm.expectRevert(IBridger.InvalidAsset.selector);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, address(1), 1, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
-        );
-        vm.stopPrank();
-    }
-
-    function testDepositETH_RevertWhen_AmountIsLessThanAllowed() public {
-        uint256 amountToDeposit = 0.05 ether;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        address wsteth = bridger.wstETH();
-        vm.expectRevert(IBridger.InvalidAmount.selector);
-        bridger.depositETH{value: amountToDeposit}(
-            kintoWalletL2, wsteth, 1, IBridger.SwapData(address(1), address(1), bytes(""), 0.1 ether)
-        );
-        vm.stopPrank();
-    }
-
-    /* ============ bridgeDeposits ============ */
-
-    function testBridgeDeposits() public {
-        upgradeBridger();
-
-        address asset = bridger.wstETH();
-        uint256 amountToDeposit = 1e18;
-        uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
-
-        vm.prank(bridger.senderAccount());
-        bridger.bridgeDeposits{value: 1 ether}(asset, amountToDeposit, brideData[asset]);
-
-        assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amountToDeposit);
-    }
-
-    function testBridgeDepositsAllAssets() public {
-        upgradeBridger();
-
-        // array of allowedAssets
-        address[5] memory allowedAssets = [bridger.sDAI(), bridger.sUSDe(), bridger.wstETH(), bridger.weETH(), ENA];
-
-        // for each allowed asset, deposit 1e18 2 times
-        for (uint256 i = 0; i < allowedAssets.length; i++) {
-            address asset = allowedAssets[i];
-            uint256 balanceBefore = ERC20(asset).balanceOf(address(bridger));
-            uint256 amount = balanceBefore;
-
-            vm.prank(_owner);
-            bridger.bridgeDeposits{value: 1 ether}(asset, amount, brideData[asset]);
-
-            assertEq(ERC20(asset).balanceOf(address(bridger)), balanceBefore - amount);
-        }
+        assertApproxEqRel(ERC20(sDAI).balanceOf(address(bridger)), 3695201885067717640192, 0.01e18); // 1%
     }
 }
