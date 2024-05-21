@@ -17,4 +17,10 @@ interface IBridge {
     ) external payable;
 
     function retry(address connector_, bytes32 messageId_) external;
+
+    function getMinFees(
+        address connector_,
+        uint256 msgGasLimit_,
+        uint256 payloadSize_
+    ) external view returns (uint256 totalFees);
 }

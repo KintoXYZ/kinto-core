@@ -21,7 +21,7 @@ function processSolidityFile(filePath, contractName) {
   const jsonObject = JSON.parse(result);
   console.log(`Processing: ${contractName}`);
   let address = addresses[contractName];
-  if ((!address || address.length < 8) && contractName !== 'KintoWallet' && contractName !== 'IBridge' && contractName !== 'IConnector' && contractName !== 'ISocket' && contractName !== 'IHook' && contractName !== 'ISocket' && contractName !== 'BridgedToken') {
+  if ((!address || address.length < 8) && contractName !== 'KintoWallet' && contractName !== 'IBridge' && contractName !== 'IController' && contractName !== 'IConnector' && contractName !== 'ISocket' && contractName !== 'IHook' && contractName !== 'ISocket' && contractName !== 'BridgedToken') {
     console.error(`* Missing address for ${contractName}`);
   } else {
     console.log(`Exported: ${contractName} ABI`);
