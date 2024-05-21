@@ -70,13 +70,13 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 i = 0; i < 4; i++) {
             address _asset = UI_assets[i];
             uint256 _amount = 100;
+            uint256 balanceBefore = ERC20(L2_assets[i]).balanceOf(address(_kintoWallet));
 
             address[] memory _assets = new address[](1);
             _assets[0] = _asset;
 
             vm.startPrank(_owner);
 
-            _bridgerL2.setDepositedAssets(_assets);
             _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
 
             vm.stopPrank();
@@ -88,10 +88,11 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
             _bridgerL2.claimCommitment();
 
             assertEq(_bridgerL2.deposits(address(_kintoWallet), _asset), 0);
-            assertEq(ERC20(L2_assets[i]).balanceOf(address(_kintoWallet)), _amount);
+            assertEq(ERC20(L2_assets[i]).balanceOf(address(_kintoWallet)), balanceBefore + _amount);
         }
 
         // asign ENA rewards
+        uint256 balanceBefore = ERC20(ENA).balanceOf(address(_kintoWallet));
         address[] memory users = new address[](1);
         users[0] = address(_kintoWallet);
         uint256[] memory amounts = new uint256[](1);
@@ -108,6 +109,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         _bridgerL2.claimCommitment();
 
         assertEq(_bridgerL2.deposits(address(_kintoWallet), ENA), 0);
-        assertEq(ERC20(ENA).balanceOf(address(_kintoWallet)), 100);
+        assertEq(ERC20(ENA).balanceOf(address(_kintoWallet)), balanceBefore + 100);
     }
 }

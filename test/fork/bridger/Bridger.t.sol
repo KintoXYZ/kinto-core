@@ -46,7 +46,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     uint256 internal amountIn = 1e18;
 
-
     function setUp() public override {
         super.setUp();
 
