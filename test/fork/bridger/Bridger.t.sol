@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {stdJson} from "forge-std/StdJson.sol";
+
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
@@ -19,6 +21,8 @@ import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
 contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
+    using stdJson for string;
+
     address internal constant kintoWalletL2 = address(33);
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
@@ -127,7 +131,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.deal(_owner, 1e20);
 
         BridgerHarness newImpl = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
-        vm.prank(_owner);
+        vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
     }
 
@@ -191,15 +195,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
         IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            sUSDe,
-            amountToDeposit,
-            1e17,
-            _userPk,
-            block.timestamp + 1000
+            kintoWalletL2, bridger, _user, assetToDeposit, sUSDe, amountToDeposit, 1e17, _userPk, block.timestamp + 1000
         );
 
         bytes memory permitSignature = _auxCreatePermitSignature(
@@ -226,28 +222,27 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     // DAI to wstETH
     function testDepositBySig_WhenSwap_WhenDAItoWstETH() public {
-        vm.rollFork(19402392); // block number in which the 0x API data was fetched
-        deployBridger(); // re-deploy the bridger on block
-
-        // enable swaps
-        vm.prank(_owner);
+        vm.rollFork(19919468); // block number in which the 0x API data was fetched
+        upgradeBridger();
 
         // top-up _user DAI balance
-        address assetToDeposit = DAI;
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
+        IBridger.BridgeData memory data = bridgeData[wstETH];
+        address assetIn = DAI;
+        address assetOut = wstETH;
+        uint256 amountIn = 1e18;
+        uint256 bridgerAssetInBalanceBefore = ERC20(assetIn).balanceOf(address(bridger));
+        uint256 bridgerAssetOutBalanceBefore = ERC20(assetOut).balanceOf(address(bridger));
+
+        deal(assetIn, _user, amountIn);
+        deal(_user, data.gasFee);
 
         // create a permit signature to allow the bridger to transfer the user's DAI
         bytes memory permitSignature = _auxCreatePermitSignature(
             IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
+                _user, address(bridger), amountIn, ERC20Permit(assetIn).nonces(_user), block.timestamp + 1000
             ),
             _userPk,
-            ERC20Permit(assetToDeposit)
+            ERC20Permit(assetIn)
         );
 
         // create a bridge signature to allow the bridger to deposit the user's DAI
@@ -255,9 +250,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             kintoWalletL2,
             bridger,
             _user,
-            assetToDeposit,
+            assetIn,
             bridger.wstETH(),
-            amountToDeposit,
+            amountIn,
             224787412523677,
             _userPk,
             block.timestamp + 1000
@@ -265,16 +260,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         uint256 nonce = bridger.nonces(_user);
 
         // DAI to wstETH quote's swapData
-        // https://api.0x.org/swap/v1/quote?sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000
-        bytes memory data =
-            hex"415565b00000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000ca653edf7a7b00000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000002537573686953776170000000000000000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000cab3150c6cd1000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000d9e1ce17f2641f24ae83637ab66a2cca9c378b9f000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca00000000000000000000000000000000000000000000000000000004dd62cf256000000000000000000000000ad01c20d5886137e056775af56915de824c8fce5000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd0000000000000000000000001000000000000000000000000000000000000011000000000000000000000000000000001687c5412ac490ac6edc10f35363988b";
+        // curl 'https://api.0x.org/swap/v1/quote?sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-dai-to-wsteth-quote.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-wsteth-quote.json").readBytes(".data");
 
-        vm.prank(_owner);
-        bridger.depositBySig(permitSignature, sigdata, data, emptyBridgerData);
+        vm.prank(bridger.senderAccount());
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), 0); // there's no DAI since it was swapped
-        assertApproxEqRel(ERC20(bridger.wstETH()).balanceOf(address(bridger)), 224787412523677, 0.015e18); // 1.5%
+        assertEq(ERC20(assetIn).balanceOf(address(bridger)), bridgerAssetInBalanceBefore); // DAI balance should stay the same
+        assertEq(ERC20(assetOut).balanceOf(address(bridger)), bridgerAssetOutBalanceBefore); // wstETH balance should stay the same
     }
 
     /* ============ Bridger ETH Deposit ============ */
