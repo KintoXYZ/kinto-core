@@ -114,6 +114,18 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      * @param users array of addresses of the users
      * @param amounts array of amounts of ENA to assign
      */
+    function assignWstEthRefunds(address[] memory users, uint256[] memory amounts) external onlyOwner {
+        for (uint256 i = 0; i < users.length; i++) {
+            deposits[users[i]][0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200] = amounts[i];
+        }
+    }
+
+    /**
+     * @dev Assign ENA rewards to users
+     * Note: Only owner can call this function
+     * @param users array of addresses of the users
+     * @param amounts array of amounts of ENA to assign
+     */
     function assignENARewards(address[] memory users, uint256[] memory amounts) external onlyOwner {
         for (uint256 i = 0; i < users.length; i++) {
             deposits[users[i]][0xE040001C257237839a69E9683349C173297876F0] = amounts[i];

@@ -180,6 +180,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.stopPrank();
 
         // change _kintoWallet owner to _owner so we use it on tests
-        changeWalletOwner(_owner, _kycProvider);
+        // changeWalletOwner(_owner, _kycProvider);
     }
 }

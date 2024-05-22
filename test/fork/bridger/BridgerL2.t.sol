@@ -67,10 +67,11 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         _bridgerL2.setDepositedAssets(assets);
 
+        uint256 balanceBefore;
         for (uint256 i = 0; i < 4; i++) {
             address _asset = UI_assets[i];
             uint256 _amount = 100;
-            uint256 balanceBefore = ERC20(L2_assets[i]).balanceOf(address(_kintoWallet));
+            balanceBefore = ERC20(L2_assets[i]).balanceOf(address(_kintoWallet));
 
             address[] memory _assets = new address[](1);
             _assets[0] = _asset;
@@ -91,8 +92,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
             assertEq(ERC20(L2_assets[i]).balanceOf(address(_kintoWallet)), balanceBefore + _amount);
         }
 
-        // asign ENA rewards
-        uint256 balanceBefore = ERC20(ENA).balanceOf(address(_kintoWallet));
+        // assign ENA rewards
+        balanceBefore = ERC20(ENA).balanceOf(address(_kintoWallet));
         address[] memory users = new address[](1);
         users[0] = address(_kintoWallet);
         uint256[] memory amounts = new uint256[](1);
@@ -110,5 +111,32 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
         assertEq(_bridgerL2.deposits(address(_kintoWallet), ENA), 0);
         assertEq(ERC20(ENA).balanceOf(address(_kintoWallet)), balanceBefore + 100);
+    }
+
+    function testAssignWstEthRefunds() public {
+        address wstEthFake = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200;
+        address wstEthReal = 0x057e70cCa0dC435786a50FcF440bf8FcC1eEAf17;
+
+        // assign wstEthRefunds
+        uint256 balanceBefore = ERC20(wstEthReal).balanceOf(address(_kintoWallet));
+        console2.log('balanceBefore:', balanceBefore);
+        address[] memory users = new address[](1);
+        users[0] = address(_kintoWallet);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+
+        vm.prank(_owner);
+        _bridgerL2.assignWstEthRefunds(users, amounts);
+
+        deal(wstEthReal, address(_bridgerL2), 1e18);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.unlockCommitments();
+
+        vm.prank(address(_kintoWallet));
+        _bridgerL2.claimCommitment();
+
+        assertEq(_bridgerL2.deposits(address(_kintoWallet), wstEthFake), 0);
+        assertEq(ERC20(wstEthReal).balanceOf(address(_kintoWallet)), balanceBefore + 1e18);
     }
 }
