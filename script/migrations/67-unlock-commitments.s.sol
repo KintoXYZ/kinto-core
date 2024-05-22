@@ -12,6 +12,6 @@ contract KintoMigration67DeployScript is MigrationHelper {
         super.run();
         KintoWallet kintoWallet = KintoWallet(payable(_getChainDeployment("KintoWallet-admin")));
         bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.unlockCommitments.selector);
-        _handleOps(selectorAndParams, address(kintoWallet), deployerPrivateKey, "ledger");
+        _handleOps(selectorAndParams, address(_getChainDeployment("BridgerL2")), deployerPrivateKey, "ledger");
     }
 }
