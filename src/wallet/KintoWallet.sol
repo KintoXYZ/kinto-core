@@ -310,16 +310,25 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
+        // todo: remove this
+        // if using an app key, no calls to wallet are allowed
+        bytes4 selector = bytes4(userOp.callData[:4]);
+        if (
+            (target == address(this) && selector == IKintoWallet.claimEngen.selector)
+                || (
+                    target == 0x26181Dfc530d96523350e895180b09BAf3d816a0
+                        && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
+                )
+        ) {
+            return _verifySingleSignature(owners[0], hashData, userOp.signature);
+        }
+
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
-                // if using an app key, no calls to wallet are allowed
-                bytes4 selector = bytes4(userOp.callData[:4]);
-                // todo: remove the selector part after engen is done
-                return (
-                    (target != address(this) || selector == IKintoWallet.claimEngen.selector)
-                        && (!batch || _verifyBatch(app, userOp.callData, true))
-                ) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
+                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
+                    ? SIG_VALIDATION_SUCCESS
+                    : SIG_VALIDATION_FAILED;
             }
         }
 
