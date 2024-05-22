@@ -308,8 +308,9 @@ contract Bridger is
         }
 
         if (finalAsset == sUSDe) {
-            IERC20(USDe).safeApprove(address(sUSDe), amount);
-            amountBought = IsUSDe(sUSDe).deposit(amount, address(this));
+            uint256 usde = IERC20(USDe).balanceOf(address(this));
+            IERC20(USDe).safeApprove(address(sUSDe), usde);
+            amountBought = IsUSDe(sUSDe).deposit(usde, address(this));
         }
     }
 

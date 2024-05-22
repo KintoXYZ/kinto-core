@@ -173,10 +173,7 @@ interface ISocket {
      * @param siblingChainSlug_ the sibling chain slug
      * @param plugAddress_ address of plug present at current chain
      */
-    function getPlugConfig(
-        address plugAddress_,
-        uint32 siblingChainSlug_
-    )
+    function getPlugConfig(address plugAddress_, uint32 siblingChainSlug_)
         external
         view
         returns (
