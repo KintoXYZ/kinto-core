@@ -312,11 +312,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
         // todo: remove this
         // if using an app key, no calls to wallet are allowed
-        bytes4 selector = bytes4(userOp.callData[:4]);
         if (
-            (target == address(this) && selector == IKintoWallet.claimEngen.selector)
+            (target == address(this) && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0)
                 || (
-                    target == 0x26181Dfc530d96523350e895180b09BAf3d816a0
+                    (target == 0x26181Dfc530d96523350e895180b09BAf3d816a0 || target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
                         && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
                 )
         ) {
@@ -500,7 +499,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV9 is KintoWallet {
+contract KintoWalletV11 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
