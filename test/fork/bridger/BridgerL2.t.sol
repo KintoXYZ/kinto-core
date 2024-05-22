@@ -119,7 +119,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
         // assign wstEthRefunds
         uint256 balanceBefore = ERC20(wstEthReal).balanceOf(address(_kintoWallet));
-        console2.log('balanceBefore:', balanceBefore);
         address[] memory users = new address[](1);
         users[0] = address(_kintoWallet);
         uint256[] memory amounts = new uint256[](1);
