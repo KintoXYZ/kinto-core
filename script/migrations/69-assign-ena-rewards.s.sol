@@ -14,7 +14,7 @@ contract AssignWstEthRefundsScript is MigrationHelper {
 
         BridgerL2 bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
 
-        string memory json = vm.readFile('./script/data/wstETHgasUsed.json');
+        string memory json = vm.readFile('./script/data/enarewardsfinal.json');
         string[] memory keys = vm.parseJsonKeys(json, "$");
         address[] memory users = new address[](keys.length);
         uint256[] memory amounts = new uint256[](keys.length);
@@ -28,7 +28,7 @@ contract AssignWstEthRefundsScript is MigrationHelper {
         }
 
         bytes memory selectorAndParams =
-            abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, users, amounts);
+            abi.encodeWithSelector(BridgerL2.assignENARewards.selector, users, amounts);
         _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
 
         require(false, "Do not run");

@@ -17,6 +17,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     using stdJson for string;
 
     mapping(address => uint256) internal balancesBefore;
+    address ENA = 0xE040001C257237839a69E9683349C173297876F0;
 
     function setUp() public override {
         super.setUp();
@@ -41,7 +42,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
-        address ENA = 0xE040001C257237839a69E9683349C173297876F0;
 
         // UI "wrong" assets
         address[] memory UI_assets = new address[](4);
@@ -172,6 +172,35 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
             uint256 amount = amounts[index];
             console2.log('amount:', amount);
             assertEq(_bridgerL2.deposits(user, wstEthFake), balancesBefore[user] + amount, "Balance is wrong");
+        }
+    }
+
+    function testAssignEnaRewards() public {
+        // takes a lot of time
+        vm.skip(true);
+
+        string memory json = vm.readFile('./script/data/enarewardsfinal.json');
+        string[] memory keys = vm.parseJsonKeys(json, "$");
+        address[] memory users = new address[](keys.length);
+        uint256[] memory amounts = new uint256[](keys.length);
+        for (uint256 index = 0; index < keys.length; index++) {
+            uint256 amount = json.readUint(string.concat('.',keys[index]));
+            address user = vm.parseAddress(keys[index]);
+            console2.log('address', user);
+            console2.log('amount:', amount);
+            users[index] = user;
+            amounts[index] = amount;
+        }
+
+        vm.prank(_owner);
+        _bridgerL2.assignENARewards(users, amounts);
+
+        for (uint256 index = 0; index < keys.length; index++) {
+            address user = users[index];
+            uint256 amount = amounts[index];
+            console2.log('address', user);
+            console2.log('amount:', amount);
+            assertEq(_bridgerL2.deposits(user, ENA), amount, "Balance is wrong");
         }
     }
 }
