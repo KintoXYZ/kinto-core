@@ -12,7 +12,7 @@ contract KintoMigration66DeployScript is MigrationHelper {
 
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
-        address parentContract = address(0xaBc64E84c653e0f077c0178E4b1fAC01Bfcc20b0); // DAI controller
+        address parentContract = address(0x3e9727470C66B1e77034590926CDe0242B5A3dCc); // Socket-DL contract
         address[] memory appContracts = new address[](26);
 
         // controllers
