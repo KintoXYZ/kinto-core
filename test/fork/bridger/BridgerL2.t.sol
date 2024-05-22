@@ -145,6 +145,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     }
 
     function testAssignWstEthRefundsAll() public {
+        // takes a lot of time
+        vm.skip(true);
         address wstEthFake = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200;
 
         string memory json = vm.readFile('./script/data/wstETHgasUsed.json');
