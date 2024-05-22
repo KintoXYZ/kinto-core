@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.18;
 
+
+import {stdJson} from "forge-std/StdJson.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
@@ -13,6 +14,10 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract BridgerL2Test is SignatureHelper, SharedSetup {
+    using stdJson for string;
+
+    mapping(address => uint256) internal balancesBefore;
+
     function setUp() public override {
         super.setUp();
         // transfer owner's ownership to _owner
@@ -137,5 +142,34 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
         assertEq(_bridgerL2.deposits(address(_kintoWallet), wstEthFake), 0);
         assertEq(ERC20(wstEthReal).balanceOf(address(_kintoWallet)), balanceBefore + 1e18);
+    }
+
+    function testAssignWstEthRefundsAll() public {
+        address wstEthFake = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200;
+
+        string memory json = vm.readFile('./script/data/wstETHgasUsed.json');
+        string[] memory keys = vm.parseJsonKeys(json, "$");
+        address[] memory users = new address[](keys.length);
+        uint256[] memory amounts = new uint256[](keys.length);
+        for (uint256 index = 0; index < keys.length; index++) {
+            uint256 amount = json.readUint(string.concat('.',keys[index]));
+            address user = vm.parseAddress(keys[index]);
+            console2.log('address', user);
+            console2.log('amount:', amount);
+            users[index] = user;
+            amounts[index] = amount;
+            balancesBefore[user] = _bridgerL2.deposits(user, wstEthFake);
+        }
+
+        // assign wstEthRefunds
+        vm.prank(_owner);
+        _bridgerL2.assignWstEthRefunds(users, amounts);
+
+        for (uint256 index = 0; index < keys.length; index++) {
+            address user = users[index];
+            uint256 amount = amounts[index];
+            console2.log('amount:', amount);
+            assertEq(_bridgerL2.deposits(user, wstEthFake), balancesBefore[user] + amount, "Balance is wrong");
+        }
     }
 }

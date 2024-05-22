@@ -15,6 +15,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
+import 'forge-std/console2.sol';
+
 /**
  * @title BridgerL2 - The vault that holds the bridged assets during Phase IV
  * @dev This contract is used to hold the assets that are bridged from L1 to L2 during Phase IV
@@ -116,7 +118,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      */
     function assignWstEthRefunds(address[] memory users, uint256[] memory amounts) external onlyOwner {
         for (uint256 i = 0; i < users.length; i++) {
-            deposits[users[i]][0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200] = amounts[i];
+            deposits[users[i]][0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200] += amounts[i];
         }
     }
 

@@ -8,10 +8,7 @@ import "@kinto-core-script/utils/MigrationHelper.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
 contract AssignWstEthRefundsScript is MigrationHelper {
-    struct Refund {
-        address user;
-        uint256 amount;
-    }
+    address constant wstEth = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200;
 
     using stdJson for string;
     function run() public override {
@@ -24,16 +21,18 @@ contract AssignWstEthRefundsScript is MigrationHelper {
         address[] memory users = new address[](keys.length);
         uint256[] memory amounts = new uint256[](keys.length);
         for (uint256 index = 0; index < keys.length; index++) {
-            console2.log('address', keys[index]);
             uint256 amount = json.readUint(string.concat('.',keys[index]));
+            address user = vm.parseAddress(keys[index]);
+            console2.log('address', user);
             console2.log('amount:', amount);
-            users[0] = keys[index];
-            amounts[0] = amount;
+            users[index] = user;
+            amounts[index] = amount;
         }
-
 
         bytes memory selectorAndParams =
             abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, users, amounts);
         _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
+
+        require(false, "Do not run");
     }
 }
