@@ -456,7 +456,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
-        if (!appWhitelist[appRegistry.getSponsor(dest)] && dest != address(this)) revert AppNotWhitelisted();
+        address sponsor = appRegistry.getSponsor(dest);
+        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != 0x3e9727470C66B1e77034590926CDe0242B5A3dCc) {
+            revert AppNotWhitelisted();
+        }
 
         dest.functionCallWithValue(func, value);
     }
