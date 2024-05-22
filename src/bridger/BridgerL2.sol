@@ -15,8 +15,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import 'forge-std/console2.sol';
-
 /**
  * @title BridgerL2 - The vault that holds the bridged assets during Phase IV
  * @dev This contract is used to hold the assets that are bridged from L1 to L2 during Phase IV
