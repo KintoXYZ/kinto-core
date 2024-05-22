@@ -181,6 +181,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @return whether the funder is whitelisted
      */
     function isFunderWhitelisted(address funder) external view override returns (bool) {
+        if (isBridgeContract(funder)) return true;
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == funder) {
                 return true;
@@ -456,7 +457,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
-        if (!appWhitelist[appRegistry.getSponsor(dest)] && dest != address(this)) revert AppNotWhitelisted();
+        address sponsor = appRegistry.getSponsor(dest);
+        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != 0x3e9727470C66B1e77034590926CDe0242B5A3dCc) {
+            revert AppNotWhitelisted();
+        }
 
         dest.functionCallWithValue(func, value);
     }
@@ -479,10 +483,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
         }
     }
+
+    function isBridgeContract(address funder) private pure returns (bool) {
+        return funder == 0x0f1b7bd7762662B23486320AA91F30312184f70C
+            || funder == 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B || funder == 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
+    }
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV8 is KintoWallet {
+contract KintoWalletV9 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
