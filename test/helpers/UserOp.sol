@@ -416,6 +416,7 @@ abstract contract UserOp is Test {
         args[3] = string(abi.encodePacked(hash));
         if (hwType.eqs("ledger")) {
             args[4] = "--ledger";
+            args[5] = "--no-hash";
         } else if (hwType.eqs("trezor")) {
             args[4] = "--trezor";
         }
