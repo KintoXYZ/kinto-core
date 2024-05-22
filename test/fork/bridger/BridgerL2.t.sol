@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-
 import {stdJson} from "forge-std/StdJson.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
@@ -42,7 +41,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
-
         // UI "wrong" assets
         address[] memory UI_assets = new address[](4);
         UI_assets[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
@@ -149,15 +147,15 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         vm.skip(true);
         address wstEthFake = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200;
 
-        string memory json = vm.readFile('./script/data/wstETHgasUsed.json');
+        string memory json = vm.readFile("./script/data/wstETHgasUsed.json");
         string[] memory keys = vm.parseJsonKeys(json, "$");
         address[] memory users = new address[](keys.length);
         uint256[] memory amounts = new uint256[](keys.length);
         for (uint256 index = 0; index < keys.length; index++) {
-            uint256 amount = json.readUint(string.concat('.',keys[index]));
+            uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log('address', user);
-            console2.log('amount:', amount);
+            console2.log("address", user);
+            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
             balancesBefore[user] = _bridgerL2.deposits(user, wstEthFake);
@@ -170,7 +168,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             address user = users[index];
             uint256 amount = amounts[index];
-            console2.log('amount:', amount);
+            console2.log("amount:", amount);
             assertEq(_bridgerL2.deposits(user, wstEthFake), balancesBefore[user] + amount, "Balance is wrong");
         }
     }
@@ -179,15 +177,15 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         // takes a lot of time
         vm.skip(true);
 
-        string memory json = vm.readFile('./script/data/enarewardsfinal.json');
+        string memory json = vm.readFile("./script/data/enarewardsfinal.json");
         string[] memory keys = vm.parseJsonKeys(json, "$");
         address[] memory users = new address[](keys.length);
         uint256[] memory amounts = new uint256[](keys.length);
         for (uint256 index = 0; index < keys.length; index++) {
-            uint256 amount = json.readUint(string.concat('.',keys[index]));
+            uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log('address', user);
-            console2.log('amount:', amount);
+            console2.log("address", user);
+            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
         }
@@ -198,8 +196,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             address user = users[index];
             uint256 amount = amounts[index];
-            console2.log('address', user);
-            console2.log('amount:', amount);
+            console2.log("address", user);
+            console2.log("amount:", amount);
             assertEq(_bridgerL2.deposits(user, ENA), amount, "Balance is wrong");
         }
     }
