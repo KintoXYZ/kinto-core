@@ -29,7 +29,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
 
         // Deploy implementation
         newImpl = create2(
-            "BridgerV5-impl",
+            "BridgerV6-impl",
             abi.encodePacked(
                 type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH)
             )
@@ -48,6 +48,6 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         // Safe Account
         assertEq(bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82, "Invalid Owner");
 
-        console.log("BridgerV5-impl at: %s", address(newImpl));
+        console.log("BridgerV6-impl at: %s", address(newImpl));
     }
 }

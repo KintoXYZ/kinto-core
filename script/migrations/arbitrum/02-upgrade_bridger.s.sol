@@ -31,7 +31,8 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         newImpl = create2(
             "BridgerV2-impl",
             abi.encodePacked(
-                type(Bridger).creationCode, abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), address(0))
+                type(Bridger).creationCode,
+                abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), address(0))
             )
         );
         bridger = Bridger(payable(bridgerAddress));
