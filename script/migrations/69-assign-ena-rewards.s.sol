@@ -7,7 +7,7 @@ import "../../src/wallet/KintoWallet.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
-contract AssignWstEthRefundsScript is MigrationHelper {
+contract AssignEnaRewardsScript is MigrationHelper {
     using stdJson for string;
 
     function run() public override {

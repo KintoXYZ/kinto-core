@@ -44,7 +44,7 @@ contract AssignWstEthRefundsScript is MigrationHelper {
                 batchAmounts[i - start] = amounts[i];
             }
 
-            bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, users, amounts);
+            bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, batchUsers, batchAmounts);
             _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
         }
     }
