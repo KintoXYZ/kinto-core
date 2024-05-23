@@ -22,8 +22,6 @@ contract AssignWstEthRefundsScript is MigrationHelper {
         for (uint256 index = 0; index < keys.length; index++) {
             uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log("address", user);
-            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
         }
@@ -48,7 +46,6 @@ contract AssignWstEthRefundsScript is MigrationHelper {
 
             bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignENARewards.selector, batchUsers, batchAmounts);
             _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
-            console2.log('batchIndex:', batchIndex);
         }
     }
 }

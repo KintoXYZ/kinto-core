@@ -22,15 +22,30 @@ contract AssignWstEthRefundsScript is MigrationHelper {
         for (uint256 index = 0; index < keys.length; index++) {
             uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log("address", user);
-            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
         }
 
-        bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, users, amounts);
-        _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
+        uint256 batchSize = 100;
+        uint256 totalBatches = (keys.length + batchSize - 1) / batchSize;
 
-        require(false, "Do not run");
+        for (uint256 batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            uint256 start = batchIndex * batchSize;
+            uint256 end = start + batchSize;
+            if (end > keys.length) {
+                end = keys.length;
+            }
+
+            address[] memory batchUsers = new address[](end - start);
+            uint256[] memory batchAmounts = new uint256[](end - start);
+
+            for (uint256 i = start; i < end; i++) {
+                batchUsers[i - start] = users[i];
+                batchAmounts[i - start] = amounts[i];
+            }
+
+            bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignWstEthRefunds.selector, users, amounts);
+            _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
+        }
     }
 }
