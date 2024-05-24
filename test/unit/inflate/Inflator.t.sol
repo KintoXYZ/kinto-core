@@ -39,7 +39,7 @@ contract InflatorTest is SharedSetup {
 
     /* ============ Compress/Inflate tests ============ */
 
-    function testInflate() public view {
+    function testInflate() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -71,7 +71,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenDeployContract() public view {
+    function testInflate_WhenDeployContract() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -104,7 +104,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenTargetEqualsSender() public view {
+    function testInflate_WhenTargetEqualsSender() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -135,7 +135,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenNoPaymaster() public view {
+    function testInflate_WhenNoPaymaster() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),
@@ -200,7 +200,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenExecuteBatch() public view {
+    function testInflate_WhenExecuteBatch() public {
         // 1. create batched user op
         address[] memory targets = new address[](2);
         targets[0] = address(_kintoWallet);
@@ -239,7 +239,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenCustomGasParams() public view {
+    function testInflate_WhenCustomGasParams() public {
         // 1. create batched user op
         address[] memory targets = new address[](2);
         targets[0] = address(_kintoWallet);
@@ -283,7 +283,7 @@ contract InflatorTest is SharedSetup {
         assertEq(decompressed.signature, op.signature);
     }
 
-    function testInflate_WhenSimpleInflate() public view {
+    function testInflate_WhenSimpleInflate() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
             address(_kintoWallet),

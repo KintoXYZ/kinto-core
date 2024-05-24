@@ -251,61 +251,35 @@ abstract contract UserOp is Test {
         privateKeys[0] = privateKey;
         return _signUserOp(op, _entryPoint, chainID, privateKeys);
     }
-
     function _signUserOpWithHW(uint256 hwType, UserOperation memory op, IEntryPoint _entryPoint, uint256 chainID)
+
         internal
         returns (bytes memory signature)
     {
 
-        // Option 1
         bytes32 hash = _getUserOpHash(op, _entryPoint, chainID);
-        hash = hash.toEthSignedMessageHash();
-        string memory hashString = toHexString(hash.toEthSignedMessageHash());
+        string memory hashString = toHexString(hash);
         console.log("\nMessage hash:");
         console.logBytes32(hash);
         console.log("\nMessage hash with Ethereum prefix:");
         console.logBytes32(hash.toEthSignedMessageHash());
-        console.log("\nMessage hash with Ethereum prefix converted to hash string:");
+        console.log("\nMessage hash converted to hash string:");
         console.log(hashString);
 
         console.log("\nSigning hash string...");
-        string memory commandStart = "cast wallet sign ";
-        string memory flags;
-        if (hwType == 0) {
-            flags = string.concat("--ledger ");
-        } else if (hwType == 1) {
-            flags = string.concat("--trezor ");
-        }
 
         string[] memory inputs = new string[](3);
         inputs[0] = "bash";
         inputs[1] = "-c";
-        inputs[2] = string.concat(commandStart, flags, hashString);
-        signature = bytes(vm.ffi(inputs));
+        inputs[2] = string.concat("cast wallet sign ", hwType == 0 ? "--ledger " : "--trezor ", hashString);
+
+        signature = vm.ffi(inputs);
+
         console.log("\nSignature:");
         console.logBytes(signature);
 
-        // Option 2
-        // string[] memory args = new string[](5);
-        // args[0] = "cast";
-        // args[1] = "wallet";
-        // args[2] = "sign";
-        // args[3] = hashString;
-        // if (hwType == 0) {
-        //     args[4] = "--ledger";
-        // } else if (hwType == 1) {
-        //     args[4] = "--trezor";
-        // }
-        // signature = bytes(vm.ffi(args));
-        if (hwType == 1) {
-            signature = _fixSignature(signature);
-        }
+        signature = fixSignature(signature);
 
-        // PROBLEM:
-        // Seems like the signer returned is not the same as the one that signed the message.
-        // If I verify the signature with the hashString on cast, it works fine.
-        // Somehow, the hashString and the hash.toEthSignedMessageHash() are not the same thing
-        // for the signature creation.
         (address signer, ) = ECDSAUpgradeable.tryRecover(hash.toEthSignedMessageHash(), signature);
         console.log("\nHW Signer is: %s", signer);
     }
@@ -317,14 +291,12 @@ abstract contract UserOp is Test {
             str[i * 2] = alphabet[uint256(uint8(data[i] >> 4))];
             str[1 + i * 2] = alphabet[uint256(uint8(data[i] & 0x0f))];
         }
-        return string(str);
+        return string.concat('0x',string(str));
     }
 
-    // Change `r` (recovery) value to 1B (27) or 1C (28) for Trezor signatures
-    // `r` value is the last byte of the signature
-    // @dev we need to remove the last byte of the signature and add 1B (27) or 1C (28),
-    // seems like this is what most wallets do to sign messages.
-    function _fixSignature(bytes memory signature) internal view returns (bytes memory) {
+    // Change `v` value to 1B (27) or 1C (28) for EIP-191 compliance
+    // @dev If last byte of the signature is 0/1/4 then covert it to the EIP-191 standard
+    function fixSignature(bytes memory signature) internal view returns (bytes memory) {
         console.log("\nFixing Trezor signature...");
 
         // check the signature length
@@ -372,7 +344,7 @@ abstract contract UserOp is Test {
         bytes memory signature;
         for (uint256 i = 0; i < privateKeys.length; i++) {
             if (privateKeys[i] == 0 || privateKeys[i] == 1) {
-                bytes memory hwSignature = _signUserOpWithHW(privateKeys[i], op, _entryPoint, chainID);
+                bytes memory hwSignature = _signUserOpWithHW(1, op, _entryPoint, chainID);
                 signature = abi.encodePacked(signature, hwSignature);   
             }
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
