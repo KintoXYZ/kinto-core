@@ -13,13 +13,13 @@ contract VestingContractTest is Test, Create2Helper {
     KintoToken _token;
     VestingContract _vestingContract;
 
-    uint256 _ownerPk = 1;
+    uint256 _ownerPk = 2;
     address payable _owner = payable(vm.addr(_ownerPk));
 
-    uint256 _userPk = 2;
+    uint256 _userPk = 3;
     address payable _user = payable(vm.addr(_userPk));
 
-    uint256 _user2Pk = 3;
+    uint256 _user2Pk = 4;
     address payable _user2 = payable(vm.addr(_user2Pk));
 
     function setUp() public {

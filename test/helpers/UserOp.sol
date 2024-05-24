@@ -255,9 +255,10 @@ abstract contract UserOp is Test, SignerHelper {
 
         bytes memory signature;
         for (uint256 i = 0; i < privateKeys.length; i++) {
-            // if privKey == 1 | 0, it means we need to sign with Ledger | Trezor
+            // if privKey == 0 | 1, it means we need to sign with Ledger | Trezor
             if (privateKeys[i] == 0 || privateKeys[i] == 1) {
-                signature = signWithHW(privateKeys[i], _getUserOpHash(op, _entryPoint, chainID));
+                bytes memory newSig = signWithHW(privateKeys[i], _getUserOpHash(op, _entryPoint, chainID));
+                signature = abi.encodePacked(signature, newSig);
             }
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
             if (i == 0) {

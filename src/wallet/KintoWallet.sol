@@ -17,6 +17,8 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
+import 'forge-std/console2.sol';
+
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
@@ -389,6 +391,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     // @notice ensures required signers have signed the hash
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
+        console2.log('signerPolicy:', signerPolicy);
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);

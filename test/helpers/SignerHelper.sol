@@ -20,10 +20,7 @@ abstract contract SignerHelper is Test {
     using ECDSAUpgradeable for bytes32;
     using LibString for *;
 
-    function signWithHW(uint256 hwType, bytes32 hash)
-        internal
-        returns (bytes memory signature)
-    {
+    function signWithHW(uint256 hwType, bytes32 hash) internal returns (bytes memory signature) {
         string memory hashString = toHexString(hash);
         console.log("\nMessage hash:");
         console.logBytes32(hash);
@@ -46,7 +43,7 @@ abstract contract SignerHelper is Test {
 
         signature = makeEIP191Compliant(signature);
 
-        (address signer, ) = ECDSAUpgradeable.tryRecover(hash.toEthSignedMessageHash(), signature);
+        (address signer,) = ECDSAUpgradeable.tryRecover(hash.toEthSignedMessageHash(), signature);
         console.log("\nHW Signer is: %s", signer);
     }
 
@@ -57,7 +54,7 @@ abstract contract SignerHelper is Test {
             str[i * 2] = alphabet[uint256(uint8(data[i] >> 4))];
             str[1 + i * 2] = alphabet[uint256(uint8(data[i] & 0x0f))];
         }
-        return string.concat('0x',string(str));
+        return string.concat("0x", string(str));
     }
 
     // Change `v` value to 1B (27) or 1C (28) for EIP-191 compliance
