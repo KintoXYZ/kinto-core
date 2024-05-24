@@ -181,6 +181,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @return whether the funder is whitelisted
      */
     function isFunderWhitelisted(address funder) external view override returns (bool) {
+        if (isBridgeContract(funder)) return true;
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == funder) {
                 return true;
@@ -309,16 +310,27 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
+        // todo: remove this after engen
+        // if using an app key, no calls to wallet are allowed
+        if (
+            (
+                target == address(this)
+                    && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
+            )
+                || (
+                    (target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
+                        && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
+                )
+        ) {
+            return _verifySingleSignature(owners[0], hashData, userOp.signature);
+        }
+
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
-                // if using an app key, no calls to wallet are allowed
-                bytes4 selector = bytes4(userOp.callData[:4]);
-                // todo: remove the selector part after engen is done
-                return (
-                    (target != address(this) || selector == IKintoWallet.claimEngen.selector)
-                        && (!batch || _verifyBatch(app, userOp.callData, true))
-                ) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
+                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
+                    ? SIG_VALIDATION_SUCCESS
+                    : SIG_VALIDATION_FAILED;
             }
         }
 
@@ -456,7 +468,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
-        if (!appWhitelist[appRegistry.getSponsor(dest)] && dest != address(this)) revert AppNotWhitelisted();
+        address sponsor = appRegistry.getSponsor(dest);
+        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != 0x3e9727470C66B1e77034590926CDe0242B5A3dCc) {
+            revert AppNotWhitelisted();
+        }
 
         dest.functionCallWithValue(func, value);
     }
@@ -479,10 +494,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
         }
     }
+
+    function isBridgeContract(address funder) private pure returns (bool) {
+        return funder == 0x0f1b7bd7762662B23486320AA91F30312184f70C
+            || funder == 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B || funder == 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
+    }
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV8 is KintoWallet {
+contract KintoWalletV15 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

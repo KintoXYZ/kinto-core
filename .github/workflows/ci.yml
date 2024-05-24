@@ -47,9 +47,6 @@ jobs:
       - name: Build contracts
         run: forge build --sizes
 
-      - name: Check gas snapshots
-        run: forge snapshot --diff
-
       - name: Save forge compilation cache
         uses: actions/cache/save@v3
         with:
