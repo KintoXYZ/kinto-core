@@ -223,14 +223,22 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         _whitelistApp(_app, _signerPk, true);
     }
 
+    // @notice handles ops with KintoWallet-admin as the from address
+    // @dev does not use a sponsorPaymaster
+    // @dev does not use a hardware wallet
     function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
         _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, address(0), _signerPk);
     }
 
+    // @notice handles ops with custom from address
+    // @dev does not use a sponsorPaymaster
+    // @dev does not use a hardware wallet
     function _handleOps(bytes memory _selectorAndParams, address _from, address _to, uint256 _signerPk) internal {
         _handleOps(_selectorAndParams, _from, _to, address(0), _signerPk);
     }
 
+    // @notice handles ops with KintoWallet-admin as the from address
+    // @dev does not use a hardware wallet
     function _handleOps(
         bytes memory _selectorAndParams,
         address _from,
@@ -240,7 +248,19 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
     ) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
+        _handleOps(_selectorAndParams, _from, _to, _sponsorPaymaster, privateKeys);
+    }
 
+    // @notice handles ops with custom params
+    // @dev receives a hardware wallet type (e.g "trezor", "ledger", "none")
+    // if _hwType is "trezor" or "ledger", it will sign the user op with the hardware wallet
+    function _handleOps(
+        bytes memory _selectorAndParams,
+        address _from,
+        address _to,
+        address _sponsorPaymaster,
+        uint256[] memory _privateKeys
+    ) internal {
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             block.chainid,
@@ -248,21 +268,24 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
             _to,
             0,
             IKintoWallet(_from).getNonce(),
-            privateKeys,
+            _privateKeys,
             _selectorAndParams,
             _sponsorPaymaster
         );
-
         vm.broadcast(deployerPrivateKey);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_privateKeys[0])));
     }
 
-    // @notice handles ops without using a sponsorPaymaster
+    // @notice handles ops with multiple ops and destinations
+    // @dev does not use a sponsorPaymaster
+    // @dev does not use a hardware wallet
     function _handleOps(bytes[] memory _selectorAndParams, address[] memory _tos, uint256 _signerPk) internal {
         _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
     }
 
-    // @notice handles ops using a sponsorPaymaster
+    // @notice handles ops with multiple ops but same destinations
+    // @dev does not use a sponsorPaymaster
+    // @dev does not use a hardware wallet
     function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
         address[] memory _tos;
         for (uint256 i = 0; i < _selectorAndParams.length; i++) {
@@ -271,6 +294,9 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
     }
 
+    // @notice handles ops with multiple ops and destinations
+    // @dev uses a sponsorPaymaster
+    // @dev does not use a hardware wallet
     function _handleOps(
         bytes[] memory _selectorAndParams,
         address[] memory _tos,
