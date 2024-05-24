@@ -126,6 +126,16 @@ On the `/script` directory, you can find the following subdirectories:
 
 Find below the instructions to run some of these scripts:
 
+## Debugging crypto txs
+
+The best way is to use cast with the txhash
+
+```
+cast run <tx-hash> --rpc-url $KINTO_RPC_URL
+```
+
+For help decoding use the [General Decoding ABI](https://calldata.swiss-knife.xyz/decoder)
+
 ### Deploy all core contracts
 
 You can use the `DeployerScript` to deploy all the contracts required by account abstraction under the PUBLIC_KEY/PRIVATE_KEY signer:
