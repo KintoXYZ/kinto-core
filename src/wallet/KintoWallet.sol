@@ -313,7 +313,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // todo: remove this after engen
         // if using an app key, no calls to wallet are allowed
         if (
-            (target == address(this) && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0)
+            (
+                target == address(this)
+                    && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
+            )
                 || (
                     (target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
                         && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a

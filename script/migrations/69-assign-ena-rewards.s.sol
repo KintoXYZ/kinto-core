@@ -44,7 +44,8 @@ contract AssignEnaRewardsScript is MigrationHelper {
                 batchAmounts[i - start] = amounts[i];
             }
 
-            bytes memory selectorAndParams = abi.encodeWithSelector(BridgerL2.assignENARewards.selector, batchUsers, batchAmounts);
+            bytes memory selectorAndParams =
+                abi.encodeWithSelector(BridgerL2.assignENARewards.selector, batchUsers, batchAmounts);
             _handleOps(selectorAndParams, address(bridgerL2), deployerPrivateKey);
         }
     }
