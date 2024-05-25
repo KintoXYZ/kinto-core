@@ -23,7 +23,8 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
         console2.log("adminWallet.owners(1):", adminWallet.owners(1));
         console2.log("adminWallet.owners(2):", adminWallet.owners(2));
 
-        replaceOwner(adminWallet, 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        etchWallet();
+        // replaceOwner(adminWallet, 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
         // replaceOwner(adminWallet, _getChainDeployment("EntryPoint"));
 
         uint256[] memory ids = new uint256[](1);
@@ -31,7 +32,7 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
 
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
-        privKeys[1] = TREZOR;
+        privKeys[1] = LEDGER;
         _handleOps(
             abi.encodeWithSelector(EngenBadges.mintBadges.selector, address(adminWallet), ids),
             address(adminWallet),
@@ -41,14 +42,16 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
         );
     }
 
-    function replaceOwner(IKintoWallet wallet, address newOwner) internal {
+    function etchWallet() internal {
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),
             IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
         );
         vm.etch(0x3deAbC32b749b95Df9B125822cCb123757c4d4F1, address(impl).code);
+    }
 
+    function replaceOwner(IKintoWallet wallet, address newOwner) internal {
         address[] memory owners = new address[](3);
         owners[0] = wallet.owners(0);
         owners[1] = newOwner;
