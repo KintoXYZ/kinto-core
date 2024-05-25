@@ -3,6 +3,9 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWallet.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 contract KintoMigration65DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
@@ -11,29 +14,62 @@ contract KintoMigration65DeployScript is MigrationHelper {
         super.run();
         KintoWallet kintoWallet = KintoWallet(payable(_getChainDeployment("KintoWallet-admin")));
         KintoWalletFactory kintoWalletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
+        
+        // upgrade KintoWallet
+        bytes memory bytecode = abi.encodePacked(
+            type(KintoWallet).creationCode,
+            abi.encode(
+                _getChainDeployment("EntryPoint"),
+                IKintoID(_getChainDeployment("KintoID")),
+                IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+            ) // Encoded constructor arguments
+        );
 
-        // create wallet with hot wallet as signer
-        address signer1 = kintoWallet.owners(0);
-        vm.prank(signer1);
-        IKintoWallet fedeWallet = kintoWalletFactory.createAccount(signer1, signer1, 0);
+        // Deploy new wallet implementation
+        vm.startPrank(vm.addr(deployerPrivateKey));
+        KintoWallet _kintoWalletImpl = KintoWallet(payable(kintoWalletFactory.deployContract(vm.addr(deployerPrivateKey), 0, bytecode, bytes32(0))));
+        vm.stopPrank();
 
-        // add funds to fedeWallet
-        vm.prank(0x6E31039abF8d248aBed57E307C9E1b7530c269E4);
-        kintoWalletFactory.sendMoneyToAccount{value: 0.1 ether}(address(fedeWallet));
+        // Upgrade all implementations
+        vm.prank(kintoWalletFactory.owner());
+        kintoWalletFactory.upgradeAllWalletImplementations(_kintoWalletImpl);
 
-        // reset signers and change policy to add trezor
-        address[] memory signers = new address[](2);
-        signers[0] = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
-        signers[1] = 0x9f963A6Bbb236eD4924Ca499575bb95d9AB56993; // fede's trezor wallet
+        // Result(11) [
+        //   '0x7Cb2c41aD96f12DaE5986006C274278122EabC7a', // sender
+        //   2n, // nonce
+        //   '0x', //initCode
+        //   '0x47e1da2a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000505de0f7a5d786063348ab5bc31e3a21344fa7b0000000000000000000000000ce2fc6c6bfcf04f2f857338ecf6004381f4149260000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000083266e09f7a330000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000ce2fc6c6bfcf04f2f857338ecf6004381f414926ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000104405e720a000000000000000000000000439b175a246b3fe2189c4c2fa1e6662eb314310300000000000000000000000000000000000000000000003500f396adff150000000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000008feab0b3050320075c8a02dd8f0e404bc7cffb0000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', // calldata
+        //   750000n,
+        //   230000n,
+        //   1499999n,
+        //   138000000n,
+        //   690000n,
+        //   '0x1842a4eff3efd24c50b63c3cf89cecee245fc2bd', // paymaster
+        //   '0xa27cf8015e97b2e789a57da7f4cc52ba156626a9d7631fd2e1aea21fe6b9151e15b9a642980bd4f5f9d9614ca8a0afe3b5f71833585df181c502b381a3f166ac1b' // signature
+        // ]
+        // ],
+        // '0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1'
+        // ]
 
-        bytes memory selectorAndParams = abi.encodeWithSelector(KintoWallet.resetSigners.selector, signers, 3);
-        _handleOps(selectorAndParams, address(fedeWallet), address(fedeWallet), address(0), deployerPrivateKey);
+        // create handleOps with data above
+        UserOperation memory userOp = UserOperation({
+            sender: 0x7Cb2c41aD96f12DaE5986006C274278122EabC7a,
+            nonce: 2,
+            initCode: bytes(""),
+            callData: hex"47e1da2a000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000505de0f7a5d786063348ab5bc31e3a21344fa7b0000000000000000000000000ce2fc6c6bfcf04f2f857338ecf6004381f4149260000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000083266e09f7a330000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000044095ea7b3000000000000000000000000ce2fc6c6bfcf04f2f857338ecf6004381f414926ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000104405e720a000000000000000000000000439b175a246b3fe2189c4c2fa1e6662eb314310300000000000000000000000000000000000000000000003500f396adff150000000000000000000000000000000000000000000000000000000000000007a1200000000000000000000000008feab0b3050320075c8a02dd8f0e404bc7cffb0000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            callGasLimit: 750000,
+            verificationGasLimit: 230000,
+            preVerificationGas: 1499999,
+            maxFeePerGas: 138000000,
+            maxPriorityFeePerGas: 690000,
+            paymasterAndData: hex"1842a4eff3efd24c50b63c3cf89cecee245fc2bd",
+            signature: hex"a27cf8015e97b2e789a57da7f4cc52ba156626a9d7631fd2e1aea21fe6b9151e15b9a642980bd4f5f9d9614ca8a0afe3b5f71833585df181c502b381a3f166ac1b"
+        });
 
-        // change policy again to 1 (requires the 2 signers)
-        uint256[] memory privateKeys = new uint256[](2);
-        privateKeys[0] = deployerPrivateKey;
-        privateKeys[1] = 1; // indicates the 2nd signer is a trezor wallet
-        selectorAndParams = abi.encodeWithSelector(KintoWallet.setSignerPolicy.selector, signers, 1);
-        _handleOps(selectorAndParams, address(fedeWallet), address(fedeWallet), address(0), privateKeys);
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = userOp;
+
+        EntryPoint entryPoint = EntryPoint(payable(_getChainDeployment("EntryPoint")));
+        entryPoint.handleOps(userOps, payable(0x433704c40F80cBff02e86FD36Bc8baC5e31eB0c1));
     }
 }

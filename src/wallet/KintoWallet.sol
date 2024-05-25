@@ -16,6 +16,7 @@ import "../interfaces/bridger/IBridgerL2.sol";
 import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
+import "forge-std/console.sol";
 
 /**
  * @title KintoWallet
@@ -309,6 +310,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         (address target, bool batch) = _decodeCallData(userOp.callData);
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
+        console.log("App signer", appSigner[app]);
+        console.log("App", app);
+        console.log("Wallet is", address(this));
+        console.log("Target", target);
+        console.log("Balance of", IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)));
 
         // todo: remove this after engen
         // if using an app key, no calls to wallet are allowed
@@ -322,6 +328,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                         && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
                 )
         ) {
+            console.log("here");
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
@@ -349,7 +356,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             return
                 (!batch || _verifyBatch(app, userOp.callData, false)) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
         }
-
+        console.log("HEREEE");
         return SIG_VALIDATION_FAILED;
     }
 
