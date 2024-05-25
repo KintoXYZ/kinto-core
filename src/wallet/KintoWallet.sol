@@ -17,7 +17,7 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
-import 'forge-std/console2.sol';
+import "forge-std/console2.sol";
 
 /**
  * @title KintoWallet
@@ -306,14 +306,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         override
         returns (uint256 validationData)
     {
-        console2.log('_validateSignature');
+        console2.log("_validateSignature");
         if (!kintoID.isKYC(owners[0])) return SIG_VALIDATION_FAILED; // check first owner is KYC'ed
 
         (address target, bool batch) = _decodeCallData(userOp.callData);
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        console2.log('appSigner[app]:', appSigner[app]);
+        console2.log("appSigner[app]:", appSigner[app]);
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
@@ -328,13 +328,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (
                 signerPolicy == SINGLE_SIGNER && owners.length == 1
                     && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
-            )
-                || (
-                    signerPolicy != SINGLE_SIGNER
-                        && _verifyMultipleSignatures(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
-                )
+            ) || (signerPolicy != SINGLE_SIGNER && _verifyMultipleSignatures(hashData, userOp.signature))
         ) {
-            console2.log('batch:', batch);
+            console2.log("batch:", batch);
             // allow wallet calls based on batch rules
             return
                 (!batch || _verifyBatch(app, userOp.callData, false)) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
@@ -393,19 +389,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     // @notice ensures required signers have signed the hash
-    function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
-        console2.log('_verifyMultipleSignatures');
-        console2.log('signature.length:', signature.length);
+    function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (bool) {
+        console2.log("_verifyMultipleSignatures");
+        console2.log("signature.length:", signature.length);
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
-        console2.log('requiredSigners:', requiredSigners);
-        if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
+        console2.log("requiredSigners:", requiredSigners);
+        if (signature.length != 65 * requiredSigners) return false;
 
         // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
         bytes[] memory signatures = ByteSignature.extractSignatures(signature, requiredSigners);
-        console2.log('signatures');
+        console2.log("signatures");
         console2.logBytes(signatures[0]);
         console2.logBytes(signatures[1]);
 
@@ -414,20 +410,20 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             for (uint256 j = 0; j < owners.length; j++) {
                 if (owners[j] == recovered && !hasSigned[j]) {
                     hasSigned[j] = true;
-                    console2.log('hasSigned[j]:', hasSigned[j]);
+                    console2.log("hasSigned[j]:", hasSigned[j]);
                     requiredSigners--;
-                    console2.log('requiredSigners:', requiredSigners);
+                    console2.log("requiredSigners:", requiredSigners);
                     break; // once the owner is found
                 }
             }
         }
 
-        // return success (0) if all required signers have signed, otherwise return failure (1)
-        console2.log('requiredSigners:', requiredSigners);
-        return requiredSigners;
+        console2.log("requiredSigners:", requiredSigners);
+        // return true if all required signers have signed, otherwise return false
+        return requiredSigners == 0;
     }
 
-    // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
+    // @dev SINGLE_SIGNER policy expects NER policy expeave only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded();

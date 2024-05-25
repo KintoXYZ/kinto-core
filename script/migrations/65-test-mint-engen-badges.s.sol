@@ -17,12 +17,11 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
         address engenBadgesAddr = _getChainDeployment("EngenBadges");
         IKintoWallet adminWallet = IKintoWallet(_getChainDeployment("KintoWallet-admin"));
 
-        console2.log('adminWallet.getOwnersCount():', adminWallet.getOwnersCount());
-        console2.log('adminWallet.signerPolicy():', adminWallet.signerPolicy());
-        console2.log('adminWallet.owners(0):', adminWallet.owners(0));
-        console2.log('adminWallet.owners(1):', adminWallet.owners(1));
-        console2.log('adminWallet.owners(2):', adminWallet.owners(2));
-
+        console2.log("adminWallet.getOwnersCount():", adminWallet.getOwnersCount());
+        console2.log("adminWallet.signerPolicy():", adminWallet.signerPolicy());
+        console2.log("adminWallet.owners(0):", adminWallet.owners(0));
+        console2.log("adminWallet.owners(1):", adminWallet.owners(1));
+        console2.log("adminWallet.owners(2):", adminWallet.owners(2));
 
         replaceOwner(adminWallet, 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
         // replaceOwner(adminWallet, _getChainDeployment("EntryPoint"));
@@ -38,12 +37,16 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
             address(adminWallet),
             engenBadgesAddr,
             address(0),
-            privKeys 
+            privKeys
         );
     }
 
     function replaceOwner(IKintoWallet wallet, address newOwner) internal {
-        KintoWallet impl = new KintoWallet(IEntryPoint(_getChainDeployment("EntryPoint")), IKintoID(_getChainDeployment("KintoID")) , IKintoAppRegistry(_getChainDeployment("KintoAppRegistry")));
+        KintoWallet impl = new KintoWallet(
+            IEntryPoint(_getChainDeployment("EntryPoint")),
+            IKintoID(_getChainDeployment("KintoID")),
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+        );
         vm.etch(0x3deAbC32b749b95Df9B125822cCb123757c4d4F1, address(impl).code);
 
         address[] memory owners = new address[](3);
@@ -55,7 +58,7 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
         vm.prank(address(wallet));
         wallet.resetSigners(owners, policy);
 
-        require(wallet.owners(1) == newOwner, 'Failed to replace signer');
-        console2.log('wallet.owners(1):', wallet.owners(1));
+        require(wallet.owners(1) == newOwner, "Failed to replace signer");
+        console2.log("wallet.owners(1):", wallet.owners(1));
     }
 }
