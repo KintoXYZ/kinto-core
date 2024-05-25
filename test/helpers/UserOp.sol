@@ -259,12 +259,13 @@ abstract contract UserOp is Test, SignerHelper {
             if (privateKeys[i] == 0 || privateKeys[i] == 1) {
                 bytes memory newSig = signWithHW(privateKeys[i], _getUserOpHash(op, _entryPoint, chainID));
                 signature = abi.encodePacked(signature, newSig);
-            }
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
-            if (i == 0) {
-                signature = abi.encodePacked(r, s, v);
             } else {
-                signature = abi.encodePacked(signature, r, s, v);
+                (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
+                if (i == 0) {
+                    signature = abi.encodePacked(r, s, v);
+                } else {
+                    signature = abi.encodePacked(signature, r, s, v);
+                }
             }
         }
         return signature;

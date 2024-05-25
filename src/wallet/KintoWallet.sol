@@ -127,9 +127,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Change signer policy
      * @param policy new policy
      */
-    function setSignerPolicy(uint8 policy) public override onlySelf {
+    function setSignerPolicy(uint8 policy) public override {
         if (policy == 0 || policy >= 4 || policy == signerPolicy) revert InvalidPolicy();
-        if (policy != 1 && owners.length <= 1) revert InvalidPolicy();
+        if (policy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy();
         emit WalletPolicyChanged(policy, signerPolicy);
         signerPolicy = policy;
     }
@@ -306,12 +306,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         override
         returns (uint256 validationData)
     {
+        console2.log('_validateSignature');
         if (!kintoID.isKYC(owners[0])) return SIG_VALIDATION_FAILED; // check first owner is KYC'ed
 
         (address target, bool batch) = _decodeCallData(userOp.callData);
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
+        console2.log('appSigner[app]:', appSigner[app]);
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
@@ -332,6 +334,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                         && _verifyMultipleSignatures(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
                 )
         ) {
+            console2.log('batch:', batch);
             // allow wallet calls based on batch rules
             return
                 (!batch || _verifyBatch(app, userOp.callData, false)) ? SIG_VALIDATION_SUCCESS : SIG_VALIDATION_FAILED;
@@ -391,29 +394,37 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     // @notice ensures required signers have signed the hash
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
-        console2.log('signerPolicy:', signerPolicy);
+        console2.log('_verifyMultipleSignatures');
+        console2.log('signature.length:', signature.length);
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
+        console2.log('requiredSigners:', requiredSigners);
         if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
 
         // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
         bytes[] memory signatures = ByteSignature.extractSignatures(signature, requiredSigners);
+        console2.log('signatures');
+        console2.logBytes(signatures[0]);
+        console2.logBytes(signatures[1]);
 
         for (uint256 i = 0; i < signatures.length; i++) {
             address recovered = hashData.recover(signatures[i]);
             for (uint256 j = 0; j < owners.length; j++) {
                 if (owners[j] == recovered && !hasSigned[j]) {
                     hasSigned[j] = true;
+                    console2.log('hasSigned[j]:', hasSigned[j]);
                     requiredSigners--;
+                    console2.log('requiredSigners:', requiredSigners);
                     break; // once the owner is found
                 }
             }
         }
 
         // return success (0) if all required signers have signed, otherwise return failure (1)
-        return _packValidationData(requiredSigners != 0, 0, 0);
+        console2.log('requiredSigners:', requiredSigners);
+        return requiredSigners;
     }
 
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
@@ -438,7 +449,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         owners = newSigners;
 
         // change policy if needed
-        if (_policy != 1 && newSigners.length == 1) revert InvalidSingleSignerPolicy();
+        if (_policy != SINGLE_SIGNER && newSigners.length == 1) revert InvalidSingleSignerPolicy();
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         }
