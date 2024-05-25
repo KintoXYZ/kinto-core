@@ -316,7 +316,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (
                 target == address(this)
                     && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
-            )
+            ) || app == 0x3e9727470C66B1e77034590926CDe0242B5A3dCc
                 || (
                     (target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
                         && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
@@ -502,7 +502,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV15 is KintoWallet {
+contract KintoWalletV16 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
