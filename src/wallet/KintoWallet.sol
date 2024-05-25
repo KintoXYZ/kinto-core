@@ -127,7 +127,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Change signer policy
      * @param policy new policy
      */
-    function setSignerPolicy(uint8 policy) public override {
+    function setSignerPolicy(uint8 policy) public override onlySelf {
         if (policy == 0 || policy >= 4 || policy == signerPolicy) revert InvalidPolicy();
         if (policy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy();
         emit WalletPolicyChanged(policy, signerPolicy);
