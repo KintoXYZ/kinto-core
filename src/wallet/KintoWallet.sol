@@ -423,7 +423,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return requiredSigners == 0;
     }
 
-    // @dev SINGLE_SIGNER policy expects NER policy expeave only one owner though this is not enforced.
+    // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
         if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded();
