@@ -233,33 +233,28 @@ contract ResetSignerTest is SharedSetup {
         assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
     }
 
-    // todo: we technically allow this but the additional owners are ignored
-    // function testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners_2() public {
-    //     address[] memory owners = new address[](2);
-    //     owners[0] = _owner;
-    //     owners[1] = _user;
+    function testResetSignersWhen_ChangingSignersLength_WhenKeepingPolicy() public {
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
 
-    //     // call resetSigners with existing policy (SINGLE_SIGNER) should revert because I'm passing 2 owners
-    //     UserOperation[] memory userOps = new UserOperation[](1);
-    //     userOps[0] = _createUserOperation(
-    //         address(_kintoWallet),
-    //         address(_kintoWallet),
-    //         _kintoWallet.getNonce(),
-    //         privateKeys,
-    //         abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
-    //         address(_paymaster)
-    //     );
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
 
-    //     vm.expectEmit(true, true, true, false);
-    //     emit UserOperationRevertReason(
-    //         _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-    //     );
+        // call resetSigners with existing policy (SINGLE_SIGNER)
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_kintoWallet),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.signerPolicy()),
+            address(_paymaster)
+        );
 
-    //     vm.recordLogs();
-    //     _entryPoint.handleOps(userOps, payable(_owner));
+        _entryPoint.handleOps(userOps, payable(_owner));
 
-    //     assertRevertReasonEq("Address: low-level call with value failed");
-    //     assertEq(_kintoWallet.owners(0), _owner);
-    //     assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
-    // }
+        assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_kintoWallet.owners(1), _user);
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
+    }
 }
