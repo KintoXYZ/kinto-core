@@ -396,10 +396,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         pure
         returns (uint256)
     {
-        if (signature.length > 65) {
-            signature = ByteSignature.extractSignatures(signature, signature.length / 65)[0];
-        }
-
         if (signer != hashData.recover(signature)) {
             return SIG_VALIDATION_FAILED;
         }
