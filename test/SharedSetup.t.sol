@@ -40,7 +40,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         privateKeys[0] = _ownerPk;
 
         deployCounter();
-        etchEngenCredits();
     }
 
     function setUpChain() public virtual override {
@@ -117,6 +116,8 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
         assertEq(_kintoWallet.getOwnersCount(), 1);
+
+        etchEngenCredits();
     }
 
     function setUpKintoFork() public {
