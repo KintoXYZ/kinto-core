@@ -44,6 +44,15 @@ contract Bridger is
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
+    /**
+     * @notice Emitted when a deposit is made.
+     * @param from The address of the depositor.
+     * @param wallet The address of the Kinto wallet on L2.
+     * @param asset The address of the input asset.
+     * @param amount The amount of the input asset.
+     * @param assetBought The address of the final asset.
+     * @param amountBought The amount of the final asset bought.
+     */
     event Deposit(
         address indexed from,
         address indexed wallet,
@@ -54,34 +63,45 @@ contract Bridger is
     );
 
     /* ============ Constants & Immutables ============ */
+    /// @notice The address representing ETH.
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    /// @notice The WETH contract instance.
     IWETH public immutable WETH;
+    /// @notice The address of the DAI token.
     address public immutable DAI;
+    /// @notice The address of the USDe token.
     address public immutable USDe;
+    /// @notice The address of the sUSDe token.
     address public immutable sUSDe;
+    /// @notice The address of the wstETH token.
     address public immutable wstETH;
 
+    /// @notice The domain separator for EIP-712.
     bytes32 public immutable override domainSeparator;
+    /// @notice The address of the L2 vault.
     address public immutable override l2Vault;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
 
     /* ============ State Variables ============ */
+    /// @notice The address of the sender account.
     address public override senderAccount;
 
-    /// @dev DEPRECATED
+    /// @dev DEPRECATED: Mapping of allowed assets.
     mapping(address => bool) private allowedAssets;
-    /// @dev DEPRECATED
+    /// @dev DEPRECATED: Mapping of deposits.
     mapping(address => mapping(address => uint256)) private deposits;
-    /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
-    /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
+    /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
-    /// @dev Count of deposits
+    /// @notice Count of deposits.
     uint256 public depositCount;
-    /// @dev DEPRECATED
+    /// @dev DEPRECATED: Flag indicating if swaps are enabled.
     bool private swapsEnabled;
 
     /* ============ Modifiers ============ */
+    /**
+     * @notice Modifier to restrict access to only the owner or sender account.
+     */
     modifier onlyPrivileged() {
         if (msg.sender != owner() && msg.sender != senderAccount) revert OnlyOwner();
         _;
