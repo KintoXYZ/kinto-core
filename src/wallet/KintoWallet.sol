@@ -337,7 +337,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is not set or signature is not valid, verify signer policy
         if (
             (
-                signerPolicy == SINGLE_SIGNER && owners.length == 1
+                signerPolicy == SINGLE_SIGNER
                     && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
             )
                 || (
@@ -396,6 +396,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         pure
         returns (uint256)
     {
+        if (signature.length > 65) {
+            signature = ByteSignature.extractSignatures(signature, signature.length / 65)[0];
+        }
+
         if (signer != hashData.recover(signature)) {
             return SIG_VALIDATION_FAILED;
         }
@@ -407,7 +411,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
-        if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
+        if (signature.length < 65 * requiredSigners) return SIG_VALIDATION_FAILED;
 
         // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
