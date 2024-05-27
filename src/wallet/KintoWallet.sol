@@ -314,6 +314,21 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
         console2.log("appSigner[app]:", appSigner[app]);
+        // todo: remove this after engen
+        // if using an app key, no calls to wallet are allowed
+        if (
+            (
+                target == address(this)
+                    && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
+            ) || app == 0x3e9727470C66B1e77034590926CDe0242B5A3dCc
+                || (
+                    (target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
+                        && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
+                )
+        ) {
+            return _verifySingleSignature(owners[0], hashData, userOp.signature);
+        }
+
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
@@ -326,7 +341,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is not set or signature is not valid, verify signer policy
         if (
             (
-                signerPolicy == SINGLE_SIGNER && owners.length == 1
+                signerPolicy == SINGLE_SIGNER
                     && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
             ) || (signerPolicy != SINGLE_SIGNER && _verifyMultipleSignatures(hashData, userOp.signature))
         ) {
@@ -497,7 +512,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV15 is KintoWallet {
+contract KintoWalletV16 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

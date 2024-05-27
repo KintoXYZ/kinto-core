@@ -7,7 +7,7 @@ import "../../src/bridger/BridgerL2.sol";
 
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
-contract KintoMigration68DeployScript is MigrationHelper {
+contract KintoMigration71DeployScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
@@ -16,7 +16,7 @@ contract KintoMigration68DeployScript is MigrationHelper {
         address implementation;
 
         bytecode = abi.encodePacked(
-            type(KintoWallet).creationCode,
+            type(KintoWalletV16).creationCode,
             abi.encode(
                 _getChainDeployment("EntryPoint"),
                 _getChainDeployment("KintoID"),
