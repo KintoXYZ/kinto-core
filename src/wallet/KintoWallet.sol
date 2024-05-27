@@ -337,7 +337,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is not set or signature is not valid, verify signer policy
         if (
             (
-                signerPolicy == SINGLE_SIGNER
+                signerPolicy == SINGLE_SIGNER && owners.length == 1
                     && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
             )
                 || (
