@@ -193,6 +193,16 @@ contract Bridger is
         );
     }
 
+    /**
+     * @dev Deposit the specified amount of ERC20 tokens in to the Kinto L2
+     * @param inputAsset Address of the input asset
+     * @param amount Amount of the input asset
+     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
+     * @param finalAsset Address of the final asset
+     * @param minReceive Minimum amount to receive after swap
+     * @param swapCallData Data required for the swap
+     * @param bridgeData Data required for the bridge
+     */
     function depositERC20(
         address inputAsset,
         uint256 amount,
@@ -242,6 +252,17 @@ contract Bridger is
 
     /* ============ Private Functions ============ */
 
+    /**
+     * @dev Internal function to handle deposits
+     * @param user Address of the user
+     * @param inputAsset Address of the input asset
+     * @param amount Amount of the input asset
+     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited
+     * @param finalAsset Address of the final asset
+     * @param minReceive Minimum amount to receive after swap
+     * @param swapCallData Data required for the swap
+     * @param bridgeData Data required for the bridge
+     */
     function _deposit(
         address user,
         address inputAsset,
@@ -276,6 +297,15 @@ contract Bridger is
         emit Deposit(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
     }
 
+    /**
+     * @dev Internal function to handle swaps
+     * @param inputAsset Address of the input asset
+     * @param finalAsset Address of the final asset
+     * @param amount Amount of the input asset
+     * @param minReceive Minimum amount to receive after swap
+     * @param swapCallData Data required for the swap
+     * @return amountBought Amount of the final asset bought
+     */
     function _swap(
         address inputAsset,
         address finalAsset,
@@ -314,6 +344,11 @@ contract Bridger is
         }
     }
 
+    /**
+     * @dev Internal function to stake ETH to wstETH
+     * @param amount Amount of ETH to stake
+     * @return amountBought Amount of wstETH bought
+     */
     function _stakeEthToWstEth(uint256 amount) private returns (uint256 amountBought) {
         // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
@@ -364,6 +399,12 @@ contract Bridger is
 
     /**
      * @dev Swaps ERC20->ERC20 tokens held by this contract using a 0x-API quote.
+     * @param amountIn Amount of input asset
+     * @param sellToken Address of the sell token
+     * @param buyToken Address of the buy token
+     * @param swapCallData Data required for the swap
+     * @param minReceive Minimum amount to receive after swap
+     * @return Amount of buy token bought
      */
     function _fillQuote(
         uint256 amountIn,
@@ -414,6 +455,10 @@ contract Bridger is
 
     /* ============ EIP-712 Helpers ============ */
 
+    /**
+     * @dev Returns the domain separator for the current chain.
+     * @return The domain separator.
+     */
     function _domainSeparatorV4() internal view returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -426,6 +471,11 @@ contract Bridger is
         );
     }
 
+    /**
+     * @dev Hashes the signature data.
+     * @param depositData The signature data to hash.
+     * @return The hashed signature data.
+     */
     function _hashSignatureData(SignatureData calldata depositData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -446,5 +496,9 @@ contract Bridger is
 
     /* ============ Fallback ============ */
 
+    /**
+     * @dev Fallback function to receive ETH.
+     */
     receive() external payable {}
 }
+
