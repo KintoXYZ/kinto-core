@@ -238,6 +238,8 @@ contract ResetSignerTest is SharedSetup {
         owners[0] = _owner;
         owners[1] = _user;
 
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.SINGLE_SIGNER());
+
         // call resetSigners with existing policy (SINGLE_SIGNER)
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
