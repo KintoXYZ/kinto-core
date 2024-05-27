@@ -116,6 +116,8 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
         assertEq(_kintoWallet.getOwnersCount(), 1);
+
+        etchEngenCredits();
     }
 
     function setUpKintoFork() public {
@@ -181,5 +183,10 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);
+    }
+
+    function etchEngenCredits() internal {
+        EngenCredits impl = new EngenCredits();
+        vm.etch(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F, address(impl).code);
     }
 }

@@ -54,6 +54,38 @@ contract ValidateSignatureTest is SharedSetup {
 
     /* ============ single-signer ops (todo) ============ */
 
+    function testValidateSignature_WhenOneSignerPolicy_WhenMultipleOwners_WhenOneSigner() public {
+        // reset signers & change policy
+        address[] memory owners = new address[](2);
+        owners[0] = _owner;
+        owners[1] = _user;
+        resetSigners(owners, _kintoWallet.SINGLE_SIGNER());
+
+        // create user op with only one signer
+        privateKeys = new uint256[](1);
+        privateKeys[0] = _ownerPk;
+
+        // call increment
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    // @dev this use case would fail
+    // function testValidateSignature_WhenOneSignerPolicy_WhenMultipleOwners_WhenOneSigner() public {}
+
     function testValidateSignature_WhenMultipleOwners_When1SignerPolicy() public {
         UserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
