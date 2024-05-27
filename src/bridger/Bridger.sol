@@ -192,6 +192,7 @@ contract Bridger is
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+        // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
             depositData.inputAsset,
@@ -201,6 +202,7 @@ contract Bridger is
             permitSig
         );
 
+        // Perform the deposit operation
         _deposit(
             depositData.signer,
             depositData.inputAsset,
@@ -333,34 +335,42 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData
     ) private returns (uint256 amountBought) {
+        // Initialize amountBought with the input amount
         amountBought = amount;
+
+        // If the input asset is the same as the final asset, no swap is needed
         if (inputAsset == finalAsset) {
             return amount;
         }
 
+        // If the input asset is ETH, handle special cases for wstETH and WETH
         if (inputAsset == ETH) {
+            // If the final asset is wstETH, stake ETH to wstETH
             if (finalAsset == wstETH) {
                 return _stakeEthToWstEth(amount);
             }
+            // Otherwise, wrap ETH to WETH
             WETH.deposit{value: amount}();
             inputAsset = address(WETH);
         }
 
+        // If the final asset is different from the input asset, perform the swap
         if (finalAsset != inputAsset) {
             amountBought = _fillQuote(
                 amount,
                 IERC20(inputAsset),
-                // if sUSDe, swap to USDe & then stake
+                // If the final asset is sUSDe, swap to USDe first and then stake
                 IERC20(finalAsset == sUSDe ? USDe : finalAsset),
                 swapCallData,
                 minReceive
             );
         }
 
+        // If the final asset is sUSDe, stake USDe to sUSDe
         if (finalAsset == sUSDe) {
-            uint256 usde = IERC20(USDe).balanceOf(address(this));
-            IERC20(USDe).safeApprove(address(sUSDe), usde);
-            amountBought = IsUSDe(sUSDe).deposit(usde, address(this));
+            uint256 balance = IERC20(USDe).balanceOf(address(this));
+            IERC20(USDe).safeApprove(address(sUSDe), balance);
+            amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
         }
     }
 
@@ -463,12 +473,19 @@ contract Bridger is
      * @param args Signature data.
      */
     modifier onlySignerVerified(IBridger.SignatureData calldata args) {
+        // Check if the signature has expired
         if (block.timestamp > args.expiresAt) revert SignatureExpired();
+
+        // Check if the nonce is valid
         if (nonces[args.signer] != args.nonce) revert InvalidNonce();
 
+        // Compute the digest using the domain separator and the hashed signature data
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(args));
+
+        // Verify if the signer is valid
         if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner();
 
+        // Increment the nonce to prevent replay attacks
         nonces[args.signer]++;
         _;
     }
@@ -521,4 +538,3 @@ contract Bridger is
      */
     receive() external payable {}
 }
-
