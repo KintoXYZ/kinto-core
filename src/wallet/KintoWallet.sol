@@ -407,7 +407,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
-        if (signature.length < 65 * requiredSigners) return SIG_VALIDATION_FAILED;
+        if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
 
         // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
