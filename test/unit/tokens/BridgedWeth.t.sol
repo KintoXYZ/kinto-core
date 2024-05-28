@@ -35,4 +35,70 @@ contract BridgedWethTest is BaseTest {
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
     }
+
+    function testDeposit() public {
+        uint256 depositAmount = 1 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        token.deposit{value: depositAmount}();
+
+        assertEq(token.balanceOf(alice), depositAmount);
+        assertEq(address(token).balance, depositAmount);
+    }
+
+    function testWithdraw() public {
+        uint256 depositAmount = 1 ether;
+        uint256 withdrawAmount = 0.5 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        token.deposit{value: depositAmount}();
+
+        vm.prank(alice);
+        token.withdraw(withdrawAmount);
+
+        assertEq(token.balanceOf(alice), depositAmount - withdrawAmount);
+        assertEq(address(token).balance, depositAmount - withdrawAmount);
+        assertEq(alice.balance, withdrawAmount);
+    }
+
+    function testDepositTo() public {
+        uint256 depositAmount = 1 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        token.depositTo{value: depositAmount}(alice);
+
+        assertEq(token.balanceOf(alice), depositAmount);
+        assertEq(address(token).balance, depositAmount);
+    }
+
+    function testWithdrawTo() public {
+        uint256 depositAmount = 1 ether;
+        uint256 withdrawAmount = 0.5 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        token.deposit{value: depositAmount}();
+
+        vm.prank(alice);
+        token.withdrawTo(alice, withdrawAmount);
+
+        assertEq(token.balanceOf(alice), depositAmount - withdrawAmount);
+        assertEq(address(token).balance, depositAmount - withdrawAmount);
+        assertEq(alice.balance, withdrawAmount);
+    }
+
+    function testReceive() public {
+        uint256 depositAmount = 1 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        (bool success, ) = address(token).call{value: depositAmount}("");
+
+        assertTrue(success);
+        assertEq(token.balanceOf(alice), depositAmount);
+        assertEq(address(token).balance, depositAmount);
+    }
 }
