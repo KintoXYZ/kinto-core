@@ -125,13 +125,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /**
      * @dev Change signer policy
-     * @param policy new policy
+     * @param newPolicy new policy
      */
-    function setSignerPolicy(uint8 policy) public override onlySelf {
-        if (policy == 0 || policy >= 4 || policy == signerPolicy) revert InvalidPolicy();
-        if (policy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy();
-        emit WalletPolicyChanged(policy, signerPolicy);
-        signerPolicy = policy;
+    function setSignerPolicy(uint8 newPolicy) public override onlySelf {
+        _setSignerPolicy(newPolicy);
     }
 
     /**
@@ -426,6 +423,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return requiredSigners == 0;
     }
 
+    /**
+     * @dev Change signer policy
+     * @param newPolicy new policy
+     */
+    function _setSignerPolicy(uint8 newPolicy) internal {
+        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) {
+            revert InvalidPolicy(newPolicy);
+        }
+        if (newPolicy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy(newPolicy);
+        emit WalletPolicyChanged(newPolicy, signerPolicy);
+        signerPolicy = newPolicy;
+    }
+
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
     function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
@@ -444,14 +454,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             if (newSigners[i] == address(0)) revert InvalidSigner();
         }
 
-        emit SignersChanged(owners, newSigners);
         owners = newSigners;
 
         // change policy if needed
         if (_policy != SINGLE_SIGNER && newSigners.length == 1) revert InvalidSingleSignerPolicy();
         if (_policy != signerPolicy) {
-            setSignerPolicy(_policy);
+            _setSignerPolicy(_policy);
         }
+
+        emit SignersChanged(owners, newSigners);
     }
 
     function _onlySelf() internal view {

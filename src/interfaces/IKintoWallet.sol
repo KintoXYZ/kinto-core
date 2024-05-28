@@ -10,7 +10,7 @@ interface IKintoWallet {
     /* ============ Errors ============ */
 
     error LengthMismatch();
-    error InvalidPolicy();
+    error InvalidPolicy(uint8 policy);
     error InvalidSigner();
     error InvalidApp();
     error AppNotWhitelisted();

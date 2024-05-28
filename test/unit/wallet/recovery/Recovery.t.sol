@@ -63,6 +63,57 @@ contract RecoveryTest is SharedSetup {
         assertEq(_kintoWallet.owners(0), _user);
     }
 
+    function testRecoverWalletMultipleSigners() public {
+        address[] memory signers = new address[](2);
+        signers[0] = _owner;
+        signers[1] = _user;
+
+        uint8 MINUS_ONE_SIGNER = _kintoWallet.MINUS_ONE_SIGNER();
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.resetSigners(signers, MINUS_ONE_SIGNER);
+
+        assertEq(_kintoWallet.owners(0), _owner);
+
+        // start Recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.startRecovery();
+        assertEq(_kintoWallet.inRecovery(), block.timestamp);
+
+        // mint NFT to new owner
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](0);
+        vm.prank(_kycProvider);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+
+        // burn old NFT
+        sigdata = _auxCreateSignature(_kintoID, _owner, _ownerPk, block.timestamp + 1000);
+        vm.prank(_kycProvider);
+        _kintoID.burnKYC(sigdata);
+
+        assertEq(_kintoID.isKYC(_user), true);
+        assertEq(_kintoID.isKYC(_owner), false);
+
+        // pass recovery time
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        // trigger monitor
+        address[] memory users = new address[](1);
+        users[0] = _user;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        // complete recovery
+        vm.prank(address(_walletFactory));
+        _kintoWallet.completeRecovery(users);
+
+        assertEq(_kintoWallet.inRecovery(), 0);
+        assertEq(_kintoWallet.owners(0), _user);
+    }
+
     function testComplete_RevertWhen_RecoverWithoutBurningOldOwner() public {
         assertEq(_kintoWallet.owners(0), _owner);
 
