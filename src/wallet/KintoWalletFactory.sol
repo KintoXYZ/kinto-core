@@ -235,6 +235,22 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (!sent) revert SendFailed();
     }
 
+    /**
+     * @dev Send money to a recoverer from a wallet to do the recovery process
+     * @param wallet The wallet address
+     * @param recoverer The recoverer address
+     */
+    function sendMoneyToRecoverer(address wallet, address recoverer) external payable override {
+        if (recoverer.balance > 0) revert InvalidRecoverer();
+        if (walletTs[wallet] == 0) revert InvalidWallet();
+        if (recoverer != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        bool isPrivileged =
+            owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
+        if (!isPrivileged) revert OnlyRecoverer();
+        (bool sent,) = recoverer.call{value: msg.value}("");
+        if (!sent) revert SendFailed();
+    }
+
     /* ============ Getters ============ */
 
     /**
@@ -327,6 +343,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV13 is KintoWalletFactory {
+contract KintoWalletFactoryV14 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
