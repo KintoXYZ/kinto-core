@@ -15,8 +15,9 @@ import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import "@kinto-core/interfaces/bridger/IBridger.sol";
-import "@kinto-core/interfaces/bridger/IBridge.sol";
+import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
+import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 
 import "forge-std/console2.sol";
 

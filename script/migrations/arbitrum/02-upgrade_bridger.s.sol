@@ -39,7 +39,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         bridger.upgradeTo(address(newImpl));
     }
 
-    function checkContracts(address deployer) internal override {
+    function checkContracts(address deployer) view internal override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");
