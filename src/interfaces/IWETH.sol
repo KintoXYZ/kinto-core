@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Interface for WETH
-interface IWETH  {
+interface IWETH {
     /// @notice Deposit ether to get wrapped ether
     function deposit() external payable;
 
@@ -14,6 +14,6 @@ interface IWETH  {
     /// @notice Withdraw wrapped ether to get ether
     function withdraw(uint256) external;
 
-    /// @notice 
+    /// @notice
     function withdrawTo(address account, uint256 amount) external;
 }

@@ -7,6 +7,7 @@ import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessContro
 import {BridgedWeth} from "@kinto-core/tokens/BridgedWeth.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
+import {ReceiveRevert} from "@kinto-core-test/helpers/ReceiveRevert.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
 
 contract BridgedWethTest is BaseTest {
@@ -15,13 +16,16 @@ contract BridgedWethTest is BaseTest {
     address upgrader;
     address alice;
 
-    BridgedWeth token;
+    BridgedWeth internal token;
+    ReceiveRevert internal receiveRevert;
 
     function setUp() public override {
         admin = createUser("admin");
         minter = createUser("minter");
         upgrader = createUser("upgrader");
         alice = createUser("alice");
+
+        receiveRevert = new ReceiveRevert();
 
         token = BridgedWeth(payable(address(new UUPSProxy(address(new BridgedWeth(18)), ""))));
         token.initialize("wrapped eth", "ETH", admin, minter, upgrader);
@@ -95,10 +99,23 @@ contract BridgedWethTest is BaseTest {
         vm.deal(alice, depositAmount);
 
         vm.prank(alice);
-        (bool success, ) = address(token).call{value: depositAmount}("");
+        (bool success,) = address(token).call{value: depositAmount}("");
 
         assertTrue(success);
         assertEq(token.balanceOf(alice), depositAmount);
         assertEq(address(token).balance, depositAmount);
+    }
+
+    function testEthTransferFailed() public {
+        uint256 depositAmount = 1 ether;
+        uint256 withdrawAmount = 0.5 ether;
+        vm.deal(alice, depositAmount);
+
+        vm.prank(alice);
+        token.deposit{value: depositAmount}();
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(BridgedWeth.EthTransferFailed.selector, address(receiveRevert), withdrawAmount));
+        token.withdrawTo(address(receiveRevert), withdrawAmount);
     }
 }

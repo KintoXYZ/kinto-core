@@ -30,9 +30,9 @@ contract BridgedWeth is BridgedToken, IWETH {
 
     function withdrawTo(address account, uint256 amount) public {
         _burn(msg.sender, amount);
-        (bool success, ) = account.call{ value: amount }("");
-        if(!success) {
-            revert EthTransferFailed( account, amount);
+        (bool success,) = account.call{value: amount}("");
+        if (!success) {
+            revert EthTransferFailed(account, amount);
         }
     }
 
