@@ -677,7 +677,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     /// @dev if batch is true, then we batch the increment ops
     // otherwise we do them one by one
-    function _incrementCounterOps(uint256 amt, address app) internal view returns (UserOperation[] memory userOps) {
+    function _incrementCounterOps(uint256 amt, address app) internal returns (UserOperation[] memory userOps) {
         uint256 nonce = _kintoWallet.getNonce();
         userOps = new UserOperation[](amt);
         // we iterate from 1 because the first op is whitelisting the app

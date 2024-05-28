@@ -17,6 +17,8 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
@@ -127,7 +129,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function setSignerPolicy(uint8 policy) public override onlySelf {
         if (policy == 0 || policy >= 4 || policy == signerPolicy) revert InvalidPolicy();
-        if (policy != 1 && owners.length <= 1) revert InvalidPolicy();
+        if (policy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy();
         emit WalletPolicyChanged(policy, signerPolicy);
         signerPolicy = policy;
     }
@@ -339,11 +341,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (
                 signerPolicy == SINGLE_SIGNER
                     && _verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
-            )
-                || (
-                    signerPolicy != SINGLE_SIGNER
-                        && _verifyMultipleSignatures(hashData, userOp.signature) == SIG_VALIDATION_SUCCESS
-                )
+            ) || (signerPolicy != SINGLE_SIGNER && _verifyMultipleSignatures(hashData, userOp.signature))
         ) {
             // allow wallet calls based on batch rules
             return
@@ -403,11 +401,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     // @notice ensures required signers have signed the hash
-    function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (uint256) {
+    function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (bool) {
         // calculate required signers
         uint256 requiredSigners =
             signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
-        if (signature.length != 65 * requiredSigners) return SIG_VALIDATION_FAILED;
+        if (signature.length != 65 * requiredSigners) return false;
 
         // check if all required signers have signed
         bool[] memory hasSigned = new bool[](owners.length);
@@ -424,8 +422,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             }
         }
 
-        // return success (0) if all required signers have signed, otherwise return failure (1)
-        return _packValidationData(requiredSigners != 0, 0, 0);
+        // return true if all required signers have signed, otherwise return false
+        return requiredSigners == 0;
     }
 
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
@@ -450,7 +448,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         owners = newSigners;
 
         // change policy if needed
-        if (_policy != 1 && newSigners.length == 1) revert InvalidSingleSignerPolicy();
+        if (_policy != SINGLE_SIGNER && newSigners.length == 1) revert InvalidSingleSignerPolicy();
         if (_policy != signerPolicy) {
             setSignerPolicy(_policy);
         }

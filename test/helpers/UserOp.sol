@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import {LibString} from "solady/utils/LibString.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
@@ -9,9 +10,16 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.
 
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core-test/helpers/SignerHelper.sol";
 
-abstract contract UserOp is Test {
+import "forge-std/Vm.sol";
+import "forge-std/console.sol";
+import {Script} from "forge-std/Script.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+abstract contract UserOp is Test, SignerHelper {
     using ECDSAUpgradeable for bytes32;
+    using LibString for *;
 
     uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
@@ -30,143 +38,168 @@ abstract contract UserOp is Test {
         bytes[] bytesOps;
     }
 
+    /**
+     * @notice Creates a UserOperation with all parameters including chainID, paymaster, gas limits, and batch operations.
+     * @param chainID The chain ID for the operation.
+     * @param from The sender address.
+     * @param target The target address for the call.
+     * @param value The value to send with the call.
+     * @param nonce The nonce for the operation.
+     * @param privateKeyOwners Array of private keys for signing the operation.
+     * @param bytesOp The call data for the operation.
+     * @param paymaster The paymaster address.
+     * @param gasLimits Array of gas limits [callGasLimit, maxFeePerGas, maxPriorityFeePerGas].
+     * @param isBatch Boolean indicating if the operation is a batch operation.
+     * @param opParams The parameters for batch operations.
+     * @return op The created UserOperation.
+     */
     function _createUserOperation(
-        address _from,
-        address _target,
-        uint256 _nonce,
-        uint256[] memory _privateKeyOwners,
-        bytes memory _bytesOp
-    ) internal view returns (UserOperation memory op) {
-        return _createUserOperation(
-            block.chainid,
-            _from,
-            _target,
-            0,
-            _nonce,
-            _privateKeyOwners,
-            _bytesOp,
-            address(0),
-            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
-        );
-    }
+        uint256 chainID,
+        address from,
+        address target,
+        uint256 value,
+        uint256 nonce,
+        uint256[] memory privateKeyOwners,
+        bytes memory bytesOp,
+        address paymaster,
+        uint256[3] memory gasLimits,
+        bool isBatch,
+        OperationParamsBatch memory opParams
+    ) internal returns (UserOperation memory op) {
+        bytes memory callData;
+        if (isBatch) {
+            callData = abi.encodeCall(KintoWallet.executeBatch, (opParams.targets, opParams.values, opParams.bytesOps));
+        } else {
+            callData = abi.encodeCall(KintoWallet.execute, (target, value, bytesOp));
+        }
 
-    // with paymaster
-    function _createUserOperation(
-        address _from,
-        address _target,
-        uint256 _nonce,
-        uint256[] memory _privateKeyOwners,
-        bytes memory _bytesOp,
-        address _paymaster
-    ) internal view returns (UserOperation memory op) {
-        return _createUserOperation(
-            block.chainid,
-            _from,
-            _target,
-            0,
-            _nonce,
-            _privateKeyOwners,
-            _bytesOp,
-            _paymaster,
-            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
-        );
-    }
-
-    // with chain ID and paymaster
-    function _createUserOperation(
-        uint256 _chainID,
-        address _from,
-        address _target,
-        uint256 _value,
-        uint256 _nonce,
-        uint256[] memory _privateKeyOwners,
-        bytes memory _bytesOp,
-        address _paymaster
-    ) internal view returns (UserOperation memory op) {
-        return _createUserOperation(
-            _chainID,
-            _from,
-            _target,
-            _value,
-            _nonce,
-            _privateKeyOwners,
-            _bytesOp,
-            _paymaster,
-            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
-        );
-    }
-
-    // with all params (chain ID, paymaster and gas limits)
-    function _createUserOperation(
-        uint256 _chainID,
-        address _from,
-        address _target,
-        uint256 _value,
-        uint256 _nonce,
-        uint256[] memory _privateKeyOwners,
-        bytes memory _bytesOp,
-        address _paymaster,
-        uint256[3] memory _gasLimits
-    ) internal view returns (UserOperation memory op) {
         op = UserOperation({
-            sender: _from,
-            nonce: _nonce,
+            sender: from,
+            nonce: nonce,
             initCode: bytes(""),
-            callData: abi.encodeCall(KintoWallet.execute, (_target, _value, _bytesOp)),
-            callGasLimit: _gasLimits[0], // generate from call simulation
+            callData: callData,
+            callGasLimit: gasLimits[0], // generate from call simulation
             verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
             preVerificationGas: 21_000, // should also cover calldata cost.
-            maxFeePerGas: _gasLimits[1], // grab from current gas
-            maxPriorityFeePerGas: _gasLimits[2], // grab from current gas
-            paymasterAndData: abi.encodePacked(_paymaster),
+            maxFeePerGas: gasLimits[1], // grab from current gas
+            maxPriorityFeePerGas: gasLimits[2], // grab from current gas
+            paymasterAndData: abi.encodePacked(paymaster),
             signature: bytes("")
         });
-        op.signature = _signUserOp(op, KintoWallet(payable(_from)).entryPoint(), _chainID, _privateKeyOwners);
+        op.signature = _signUserOp(op, KintoWallet(payable(from)).entryPoint(), chainID, privateKeyOwners);
         return op;
     }
 
-    // with execute batch
+    /**
+     * @notice Creates a UserOperation without specifying paymaster, gas limits, or batch operations.
+     */
     function _createUserOperation(
-        address _from,
-        uint256 _nonce,
-        uint256[] memory _privateKeyOwners,
-        OperationParamsBatch memory opParams,
-        address _paymaster
-    ) internal view returns (UserOperation memory op) {
-        op = _createUserOperation(
+        address from,
+        address target,
+        uint256 nonce,
+        uint256[] memory privateKeyOwners,
+        bytes memory bytesOp
+    ) internal returns (UserOperation memory op) {
+        return _createUserOperation(
             block.chainid,
-            _from,
-            address(0),
+            from,
+            target,
             0,
-            _nonce,
-            _privateKeyOwners,
-            bytes(""),
-            _paymaster,
-            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS]
+            nonce,
+            privateKeyOwners,
+            bytesOp,
+            address(0),
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS],
+            false,
+            OperationParamsBatch(new address[](0), new uint256[](0), new bytes[](0))
         );
-        op.callData = abi.encodeCall(KintoWallet.executeBatch, (opParams.targets, opParams.values, opParams.bytesOps));
-        op.signature = _signUserOp(op, KintoWallet(payable(_from)).entryPoint(), block.chainid, _privateKeyOwners);
     }
 
-    // user ops generators
+    /**
+     * @notice Creates a UserOperation with a specified paymaster but without gas limits or batch operations.
+     */
+    function _createUserOperation(
+        address from,
+        address target,
+        uint256 nonce,
+        uint256[] memory privateKeyOwners,
+        bytes memory bytesOp,
+        address paymaster
+    ) internal returns (UserOperation memory op) {
+        return _createUserOperation(
+            block.chainid,
+            from,
+            target,
+            0,
+            nonce,
+            privateKeyOwners,
+            bytesOp,
+            paymaster,
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS],
+            false,
+            OperationParamsBatch(new address[](0), new uint256[](0), new bytes[](0))
+        );
+    }
 
-    function _whitelistAppOp(
-        uint256[] memory pk,
+    /**
+     * @notice Creates a UserOperation with specified chainID and paymaster but without batch operations.
+     * @param chainID The chain ID for the operation.
+     * @param from The sender address.
+     * @param target The target address for the call.
+     * @param value The value to send with the call.
+     * @param nonce The nonce for the operation.
+     * @param privateKeyOwners Array of private keys for signing the operation.
+     * @param bytesOp The call data for the operation.
+     * @param paymaster The paymaster address.
+     * @return op The created UserOperation.
+     */
+    function _createUserOperation(
+        uint256 chainID,
+        address from,
+        address target,
+        uint256 value,
+        uint256 nonce,
+        uint256[] memory privateKeyOwners,
+        bytes memory bytesOp,
+        address paymaster
+    ) internal returns (UserOperation memory op) {
+        return _createUserOperation(
+            chainID,
+            from,
+            target,
+            value,
+            nonce,
+            privateKeyOwners,
+            bytesOp,
+            paymaster,
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS],
+            false,
+            OperationParamsBatch(new address[](0), new uint256[](0), new bytes[](0))
+        );
+    }
+
+    /**
+     * @notice Creates a UserOperation for batch execution with a specified paymaster.
+     */
+    function _createUserOperation(
         address from,
         uint256 nonce,
-        address app,
-        bool[] memory flags,
-        address _paymaster
-    ) internal view returns (UserOperation memory userOp) {
-        address[] memory targets = new address[](1);
-        targets[0] = address(app);
+        uint256[] memory privateKeyOwners,
+        OperationParamsBatch memory opParams,
+        address paymaster
+    ) internal returns (UserOperation memory op) {
         return _createUserOperation(
+            block.chainid,
             from,
-            from, // target is the wallet itself
+            address(0),
+            0,
             nonce,
-            pk,
-            abi.encodeWithSignature("whitelistApp(address[],bool[])", targets, flags),
-            address(_paymaster)
+            privateKeyOwners,
+            bytes(""),
+            paymaster,
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS],
+            true,
+            opParams
         );
     }
 
@@ -216,20 +249,25 @@ abstract contract UserOp is Test {
         IEntryPoint _entryPoint,
         uint256 chainID,
         uint256[] memory privateKeys
-    ) internal pure returns (bytes memory) {
+    ) internal returns (bytes memory) {
         bytes32 hash = _getUserOpHash(op, _entryPoint, chainID);
         hash = hash.toEthSignedMessageHash();
 
         bytes memory signature;
         for (uint256 i = 0; i < privateKeys.length; i++) {
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
-            if (i == 0) {
-                signature = abi.encodePacked(r, s, v);
+            // if privKey == 0 | 1, it means we need to sign with Ledger | Trezor
+            if (privateKeys[i] == 0 || privateKeys[i] == 1) {
+                bytes memory newSig = signWithHW(privateKeys[i], _getUserOpHash(op, _entryPoint, chainID));
+                signature = abi.encodePacked(signature, newSig);
             } else {
-                signature = abi.encodePacked(signature, r, s, v);
+                (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKeys[i], hash);
+                if (i == 0) {
+                    signature = abi.encodePacked(r, s, v);
+                } else {
+                    signature = abi.encodePacked(signature, r, s, v);
+                }
             }
         }
-
         return signature;
     }
 }

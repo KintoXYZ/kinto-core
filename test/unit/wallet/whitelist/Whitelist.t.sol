@@ -32,14 +32,7 @@ contract WhitelistTest is SharedSetup {
         assertEq(counter.count(), 0);
 
         // create whitelist app user op
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
-        );
-
-        _entryPoint.handleOps(userOps, payable(_owner));
+        whitelistApp(address(counter), true);
 
         assertTrue(_kintoWallet.appWhitelist(address(counter)));
     }
@@ -53,19 +46,12 @@ contract WhitelistTest is SharedSetup {
         // deploy an app
         Counter counter = new Counter();
 
-        // create whitelist app user op
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
-        );
-
-        _entryPoint.handleOps(userOps, payable(_owner));
+        whitelistApp(address(counter), true);
 
         assertTrue(_kintoWallet.appWhitelist(address(counter)));
         assertEq(_kintoWallet.appSigner(address(counter)), address(0), "Signer is not a zero address");
 
+        UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
@@ -74,17 +60,10 @@ contract WhitelistTest is SharedSetup {
             abi.encodeWithSignature("setAppKey(address,address)", address(counter), _user),
             address(_paymaster)
         );
-
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.appSigner(address(counter)), _user);
 
-        // create remove whitelist app user op
-        flags[0] = false;
-        userOps[0] = _whitelistAppOp(
-            privateKeys, address(_kintoWallet), _kintoWallet.getNonce(), address(counter), flags, address(_paymaster)
-        );
-
-        _entryPoint.handleOps(userOps, payable(_owner));
+        whitelistApp(address(counter), false);
 
         assertFalse(_kintoWallet.appWhitelist(address(counter)));
         assertEq(_kintoWallet.appSigner(address(counter)), address(0), "Signer is not a zero address");
