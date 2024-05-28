@@ -3,9 +3,9 @@
 pragma solidity ^0.8.18;
 
 contract ReceiveRevert {
-    error ReceiveRevert(address sender, uint256 amount);
+    error Reject(address sender, uint256 amount);
 
     receive() external payable {
-        revert ReceiveRevert(msg.sender, msg.value);
+        revert Reject(msg.sender, msg.value);
     }
 }

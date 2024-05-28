@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
 import {BridgedWeth} from "@kinto-core/tokens/BridgedWeth.sol";
+import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {ReceiveRevert} from "@kinto-core-test/helpers/ReceiveRevert.sol";
@@ -115,7 +116,9 @@ contract BridgedWethTest is BaseTest {
         token.deposit{value: depositAmount}();
 
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(BridgedWeth.EthTransferFailed.selector, address(receiveRevert), withdrawAmount));
+        vm.expectRevert(
+            abi.encodeWithSelector(IWETH.EthTransferFailed.selector, address(receiveRevert), withdrawAmount)
+        );
         token.withdrawTo(address(receiveRevert), withdrawAmount);
     }
 }
