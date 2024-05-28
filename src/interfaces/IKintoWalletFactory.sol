@@ -13,6 +13,7 @@ interface IKintoWalletFactory {
     error KYCRequired();
     error KYCMustNotExist();
     error InvalidWallet();
+    error InvalidRecoverer();
     error OnlyRecoverer();
     error InvalidWalletOrFunder();
     error InvalidSender();
@@ -46,6 +47,8 @@ interface IKintoWalletFactory {
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external;
 
     function sendMoneyToAccount(address target) external payable;
+
+    function sendMoneyToRecoverer(address wallet, address recoverer) external payable;
 
     function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
 
