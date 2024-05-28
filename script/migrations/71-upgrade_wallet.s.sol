@@ -16,13 +16,13 @@ contract KintoMigration71DeployScript is MigrationHelper {
         address implementation;
 
         bytecode = abi.encodePacked(
-            type(KintoWalletV16).creationCode,
+            type(KintoWallet).creationCode,
             abi.encode(
                 _getChainDeployment("EntryPoint"),
                 _getChainDeployment("KintoID"),
                 _getChainDeployment("KintoAppRegistry")
             )
         );
-        implementation = _deployImplementationAndUpgrade("KintoWallet", "V16", bytecode);
+        implementation = _deployImplementationAndUpgrade("KintoWallet", "V17", bytecode);
     }
 }
