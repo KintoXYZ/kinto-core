@@ -48,7 +48,7 @@ contract MintEngenBadgesScript is MigrationHelper, Constants {
             IKintoID(_getChainDeployment("KintoID")),
             IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
         );
-        vm.etch(0x3deAbC32b749b95Df9B125822cCb123757c4d4F1, address(impl).code);
+        vm.etch(0xa7040b6Ed2fC09C7485AA6A89fb2C320E2A739c3, address(impl).code);
     }
 
     function replaceOwner(IKintoWallet wallet, address newOwner) internal {
