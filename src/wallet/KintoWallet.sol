@@ -462,7 +462,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             _setSignerPolicy(_policy);
         }
 
-        emit SignersChanged(owners, newSigners);
+        emit SignersChanged(newSigners, owners);
     }
 
     function _onlySelf() internal view {
