@@ -11,7 +11,7 @@ import "@solady/utils/LibZip.sol";
 
 /// @notice Inflator contract for Kinto user operations
 /// @dev This contract is responsible for inflating and compressing (off-chain) user operations
-/// For further compression, consider: (1) using assembly for encoding/decoding, 
+/// For further compression, consider: (1) using assembly for encoding/decoding,
 /// (2) hardcoding gas params (or using smaller types, same for nonce), (3) using IDs instead of names for Kinto contracts
 
 /// On the first byte of the compressed data we store some flags.
@@ -150,7 +150,8 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
             cursor = _encodeExecuteCalldata(op, target, value, bytesOp, buffer, cursor);
         } else {
             // if selector is `executeBatch`, encode the callData as a batch of operations
-            (address[] memory targets, uint256[] memory values, bytes[] memory bytesOps) = abi.decode(callData, (address[], uint256[], bytes[]));
+            (address[] memory targets, uint256[] memory values, bytes[] memory bytesOps) =
+                abi.decode(callData, (address[], uint256[], bytes[]));
             cursor = _encodeExecuteBatchCalldata(targets, values, bytesOps, buffer, cursor);
         }
 
