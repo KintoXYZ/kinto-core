@@ -8,14 +8,11 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@solady/utils/LibZip.sol";
-import "forge-std/console.sol";
-
-// TODO: consider using assembly for encoding/decoding?
-// TODO: consider hardcoding gas params (or using smaller types, also for nonce)
-// TODO: consider using IDs instead of names for Kinto contracts
 
 /// @notice Inflator contract for Kinto user operations
 /// @dev This contract is responsible for inflating and compressing (off-chain) user operations
+/// For further compression, consider: (1) using assembly for encoding/decoding, 
+/// (2) hardcoding gas params (or using smaller types, same for nonce), (3) using IDs instead of names for Kinto contracts
 
 /// On the first byte of the compressed data we store some flags.
 /// The first bit is used to encode whether the selector is `execute` or `executeBatch` (so we don't need to encode the selector)
@@ -149,12 +146,12 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         // encode `callData` depending on the selector
         if (selector == IKintoWallet.execute.selector) {
             // if selector is `execute`, encode the callData as a single operation
-            (address target,, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
-            cursor = _encodeExecuteCalldata(op, target, bytesOp, buffer, cursor);
+            (address target, uint256 value, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
+            cursor = _encodeExecuteCalldata(op, target, value, bytesOp, buffer, cursor);
         } else {
             // if selector is `executeBatch`, encode the callData as a batch of operations
-            (address[] memory targets,, bytes[] memory bytesOps) = abi.decode(callData, (address[], uint256[], bytes[]));
-            cursor = _encodeExecuteBatchCalldata(targets, bytesOps, buffer, cursor);
+            (address[] memory targets, uint256[] memory values, bytes[] memory bytesOps) = abi.decode(callData, (address[], uint256[], bytes[]));
+            cursor = _encodeExecuteBatchCalldata(targets, values, bytesOps, buffer, cursor);
         }
 
         // encode gas params: `callGasLimit`, `verificationGasLimit`, `preVerificationGas`, `maxFeePerGas`, `maxPriorityFeePerGas`
@@ -201,7 +198,6 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     /* ============ Inflate Helpers ============ */
 
     /// @notice extracts `calldata` (selector, target, value, bytesOp)
-    /// @dev skips `value` since we assume it's always 0
     function _inflateExecuteCalldata(address sender, uint8 flags, bytes memory data, uint256 cursor)
         internal
         view
@@ -230,14 +226,18 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
             }
         }
 
-        // 2. extract bytesOp
+        // 2. extract value
+        uint256 value = _bytesToUint256(data, cursor);
+        cursor += 32;
+
+        // 3. extract bytesOp
         uint256 bytesOpLength = _bytesToUint32(data, cursor);
         cursor += 4;
         bytes memory bytesOp = _slice(data, cursor, bytesOpLength);
         cursor += bytesOpLength;
 
-        // 3. build `callData`
-        callData = abi.encodeCall(IKintoWallet.execute, (target, 0, bytesOp));
+        // 4. build `callData`
+        callData = abi.encodeCall(IKintoWallet.execute, (target, value, bytesOp));
 
         newCursor = cursor;
     }
@@ -261,8 +261,9 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
             targets[i] = _bytesToAddress(data, cursor);
             cursor += 20;
 
-            // extract value (we assume this is always 0 for now)
-            values[i] = 0;
+            // extract value
+            values[i] = _bytesToUint256(data, cursor);
+            cursor += 32;
 
             // extract bytesOp
             uint256 bytesOpLength = _bytesToUint32(data, cursor);
@@ -304,6 +305,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     function _encodeExecuteCalldata(
         UserOperation memory op,
         address target,
+        uint256 value,
         bytes memory bytesOp,
         bytes memory buffer,
         uint256 index
@@ -329,8 +331,8 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
             }
         }
 
-        // 2. encode `value` (always 0 for now)
-        // index = _encodeUint256(value, buffer, index);
+        // 2. encode `value`
+        index = _encodeUint256(value, buffer, index);
 
         // 3. encode `bytesOp` length and content
         newIndex = _encodeBytes(bytesOp, buffer, index);
@@ -338,6 +340,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     function _encodeExecuteBatchCalldata(
         address[] memory targets,
+        uint256[] memory values,
         bytes[] memory bytesOps,
         bytes memory buffer,
         uint256 index
@@ -349,6 +352,9 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         // encode targets (as addresses, potentially we can improve this)
         for (uint8 i = 0; i < uint8(targets.length); i++) {
             index = _encodeAddress(targets[i], buffer, index);
+
+            // encode value
+            index = _encodeUint256(values[i], buffer, index);
 
             // encode bytesOps content
             index = _encodeBytes(bytesOps[i], buffer, index);
@@ -386,6 +392,13 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         require(_bytes.length >= start + 4, "Data too short");
         assembly {
             value := mload(add(add(_bytes, 4), start))
+        }
+    }
+
+    function _bytesToUint256(bytes memory _bytes, uint256 start) internal pure returns (uint256 value) {
+        require(_bytes.length >= start + 32, "Data too short");
+        assembly {
+            value := mload(add(add(_bytes, 32), start))
         }
     }
 
