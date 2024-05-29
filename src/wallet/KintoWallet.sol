@@ -29,7 +29,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     using ECDSA for bytes32;
     using Address for address;
 
-    /* ============ State Variables ============ */
+    /* ============ Constants & Immutables ============ */
     IKintoID public immutable override kintoID;
     IEntryPoint private immutable _entryPoint;
 
@@ -40,6 +40,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint256 public constant override RECOVERY_TIME = 7 days;
     uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
     uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
+    address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
+    address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C; 
+    address internal constant BRIDGER_ARBITRUM = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0; 
+    address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
+
+    /* ============ State Variables ============ */
 
     uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
     uint256 public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
@@ -309,18 +315,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        // todo: remove this after engen
         // if using an app key, no calls to wallet are allowed
-        if (
-            (
-                target == address(this)
-                    && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
-            ) || app == 0x3e9727470C66B1e77034590926CDe0242B5A3dCc
-                || (
-                    (target == 0xD1295F0d8789c3E0931A04F91049dB33549E9C8F)
-                        && address(this) == 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a
-                )
-        ) {
+        if (app == SOCKET) {
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
@@ -478,7 +474,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
         address sponsor = appRegistry.getSponsor(dest);
-        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != 0x3e9727470C66B1e77034590926CDe0242B5A3dCc) {
+        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != SOCKET) {
             revert AppNotWhitelisted();
         }
 
@@ -505,8 +501,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     function isBridgeContract(address funder) private pure returns (bool) {
-        return funder == 0x0f1b7bd7762662B23486320AA91F30312184f70C
-            || funder == 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B || funder == 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
+        return funder == BRIDGER_MAINNET || funder == BRIDGER_BASE || funder == BRIDGER_ARBITRUM;
     }
 }
 
