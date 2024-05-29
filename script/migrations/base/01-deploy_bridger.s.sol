@@ -19,7 +19,7 @@ contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants
 
     function setUp() public {}
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         if (block.chainid != BASE_CHAINID) {
             console2.log("This script is meant to be run on the chain: %s", BASE_CHAINID);
             return;
@@ -50,7 +50,7 @@ contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants
         bridger.initialize(SENDER_ACCOUNT);
     }
 
-    function checkContracts(address deployer) internal view override {
+    function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");

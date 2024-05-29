@@ -18,7 +18,7 @@ contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
     AccessRegistry registry;
     AccessPoint newImpl;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         registry = AccessRegistry(_getChainDeployment("AccessRegistry"));
         if (address(registry) == address(0)) {
             console2.log("Access Protocol has to be deployed");
@@ -36,7 +36,7 @@ contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
         registry.upgradeAll(newImpl);
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(address(newImpl.entryPoint()) == ENTRY_POINT, "Wrong entry point address");
     }
 }

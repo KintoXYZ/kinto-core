@@ -20,7 +20,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
 
     function setUp() public {}
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         bridgerAddress = _getChainDeployment("Bridger", ARBITRUM_CHAINID);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
@@ -39,7 +39,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         bridger.upgradeTo(address(newImpl));
     }
 
-    function checkContracts(address deployer) internal view override {
+    function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");

@@ -32,7 +32,7 @@ contract DeployAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
     WethWorkflow wethWorkflow;
     SwapWorkflow swapWorkflow;
 
-    function deployContracts(address deployer) internal override {
+    function broadcast(address deployer) internal override {
         address accessRegistryAddr = _getChainDeployment("AccessRegistry");
         if (accessRegistryAddr != address(0)) {
             console2.log("Access Protocol is already deployed:", accessRegistryAddr);
@@ -93,7 +93,7 @@ contract DeployAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
         registry.allowWorkflow(address(swapWorkflow));
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(registry.beacon() == beacon, "Beacon is not set properly");
         require(registry.isWorkflowAllowed(address(withdrawWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(wethWorkflow)), "Workflow is not set properly");

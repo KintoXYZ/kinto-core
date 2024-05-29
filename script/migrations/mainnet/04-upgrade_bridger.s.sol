@@ -20,7 +20,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
 
     function setUp() public {}
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
@@ -37,7 +37,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         // Stop broadcast because the Owner is Safe account
     }
 
-    function checkContracts(address) internal override {
+    function validate(address) internal override {
         bridger = Bridger(payable(bridgerAddress));
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));

@@ -14,7 +14,7 @@ contract UpgradeAccessProtocolScript is Script, ArtifactsReader, DeployerHelper 
     AccessRegistry registry;
     address newImpl;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         registry = AccessRegistry(_getChainDeployment("AccessRegistry"));
         if (address(registry) == address(0)) {
             console2.log("Access Protocol has to be deployed");
@@ -29,7 +29,7 @@ contract UpgradeAccessProtocolScript is Script, ArtifactsReader, DeployerHelper 
         registry.upgradeToAndCall(address(newImpl), bytes(""));
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(registry.getAddress(address(this), 1234) != address(0), "Upgrade failed");
     }
 }

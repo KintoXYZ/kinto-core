@@ -14,7 +14,7 @@ import {console2} from "forge-std/console2.sol";
 contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
     Viewer internal viewer;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         address viewerAddr = _getChainDeployment("Viewer");
         if (viewerAddr != address(0)) {
             console2.log("Viewer is already deployed:", viewerAddr);
@@ -33,7 +33,7 @@ contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
         viewer.initialize();
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(viewer.getBalances(new address[](0), address(this)).length == 0, "getBalances not working");
     }
 }

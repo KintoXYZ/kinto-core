@@ -18,16 +18,16 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
 
         vm.startBroadcast(privateKey);
 
-        deployContracts(deployer);
+        broadcast(deployer);
 
         vm.stopBroadcast();
 
-        checkContracts(deployer);
+        validate(deployer);
     }
 
-    function deployContracts(address deployer) internal virtual;
+    function broadcast(address deployer) internal virtual;
 
-    function checkContracts(address deployer) internal virtual;
+    function validate(address deployer) internal virtual;
 
     function getWethByChainId(uint256 chainid) public view returns (address) {
         // local

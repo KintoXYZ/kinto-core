@@ -28,10 +28,10 @@ contract KintoMigration60DeployScript is MigrationHelper {
     function run() public override {
         super.run();
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        deployContracts();
+        broadcast();
     }
 
-    function deployContracts() internal {
+    function broadcast() internal {
         (string memory symbol, address bridgedToken, address impl) = deployBridgedToken(ETHFI);
 
         console2.log("%s implementation deployed @%s", symbol, impl);
