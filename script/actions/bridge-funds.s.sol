@@ -12,7 +12,9 @@ import "forge-std/console.sol";
 contract BridgeFundsScript is MigrationHelper {
     using stdJson for string;
 
-    function broadcast(address) internal override {
+    function run() public override {
+        super.run();
+
         string memory json = vm.readFile("./script/data/weEthKintoToEthereumBridge.json");
 
         address from = json.readAddress(string.concat(".", "from"));
@@ -25,11 +27,8 @@ contract BridgeFundsScript is MigrationHelper {
         bytes memory options = json.readBytes(string.concat(".", "options"));
         uint256 gasFee = json.readUint(string.concat(".", "gasFee"));
 
-        if (amount == 0) {}
-
-        uint256[] memory privKeys = new uint256[](2);
+        uint256[] memory privKeys = new uint256[](1);
         privKeys[0] = deployerPrivateKey;
-        privKeys[1] = LEDGER;
         _handleOps(
             abi.encodeWithSelector(
                 IBridge.bridge.selector, receiver, amount, msgGasLimit, connector, execPayload, options
@@ -41,6 +40,4 @@ contract BridgeFundsScript is MigrationHelper {
             privKeys
         );
     }
-
-    function validate(address) internal view override {}
 }

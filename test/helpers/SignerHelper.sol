@@ -12,7 +12,8 @@ import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 
 import "forge-std/Vm.sol";
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
+
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -22,29 +23,22 @@ abstract contract SignerHelper is Test {
 
     function signWithHW(uint256 hwType, bytes32 hash) internal returns (bytes memory signature) {
         string memory hashString = toHexString(hash);
-        console.log("\nMessage hash:");
-        console.logBytes32(hash);
-        console.log("\nMessage hash with Ethereum prefix:");
-        console.logBytes32(hash.toEthSignedMessageHash());
-        console.log("\nMessage hash converted to hash string:");
-        console.log(hashString);
-
-        console.log("\nSigning hash string...");
 
         string[] memory inputs = new string[](3);
         inputs[0] = "bash";
         inputs[1] = "-c";
+        console2.log('hwType:', hwType);
         inputs[2] = string.concat("cast wallet sign ", hwType == 0 ? "--ledger " : "--trezor ", hashString);
 
         signature = vm.ffi(inputs);
 
-        console.log("\nSignature:");
-        console.logBytes(signature);
+        console2.log("\nSignature:");
+        console2.logBytes(signature);
 
         signature = makeEIP191Compliant(signature);
 
         (address signer,) = ECDSAUpgradeable.tryRecover(hash.toEthSignedMessageHash(), signature);
-        console.log("\nHW Signer is: %s", signer);
+        console2.log('signer:', signer);
     }
 
     function toHexString(bytes32 data) internal pure returns (string memory) {
@@ -59,9 +53,7 @@ abstract contract SignerHelper is Test {
 
     // Change `v` value to 1B (27) or 1C (28) for EIP-191 compliance
     // @dev If last byte of the signature is 0/1/4 then covert it to the EIP-191 standard
-    function makeEIP191Compliant(bytes memory signature) internal view returns (bytes memory) {
-        console.log("\nFixing Trezor signature...");
-
+    function makeEIP191Compliant(bytes memory signature) internal pure returns (bytes memory) {
         // check the signature length
         require(signature.length == 65, "Invalid signature length");
 
@@ -88,9 +80,6 @@ abstract contract SignerHelper is Test {
 
         // reconstruct the signature with the correct v value
         bytes memory newSignature = abi.encodePacked(r, s, v);
-
-        console.log("\nFixed signature:");
-        console.logBytes(newSignature);
 
         return newSignature;
     }

@@ -38,14 +38,30 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
-    function run() public virtual override {
+    function run() public virtual {
         try vm.envBool("TEST_MODE") returns (bool _testMode) {
             testMode = _testMode;
         } catch {}
 
-        super.run();
+        console2.log("Running on chain with id:", vm.toString(block.chainid));
+        deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+        console2.log("Deployer:", deployer);
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        broadcast(deployer);
+
+        vm.stopBroadcast();
+
+        validate(deployer);
+
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
+
+    function broadcast(address deployer) internal virtual {}
+
+    function validate(address deployer) internal virtual {}
 
     /// @dev deploys proxy contract via factory from deployer address
     function _deployProxy(string memory contractName, address implementation, bytes32 salt)
@@ -354,5 +370,27 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
             return vm.envAddress("KINTO_ADMIN_WALLET");
         }
         return super._getChainDeployment(_contractName);
+    }
+
+    function etchWallet(address wallet) internal {
+        KintoWallet impl = new KintoWallet(
+            IEntryPoint(_getChainDeployment("EntryPoint")),
+            IKintoID(_getChainDeployment("KintoID")),
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+        );
+        vm.etch(wallet, address(impl).code);
+    }
+
+    function replaceOwner(IKintoWallet wallet, address newOwner) internal {
+        address[] memory owners = new address[](3);
+        owners[0] = wallet.owners(0);
+        owners[1] = newOwner;
+        owners[2] = wallet.owners(2);
+
+        uint8 policy = wallet.signerPolicy();
+        vm.prank(address(wallet));
+        wallet.resetSigners(owners, policy);
+
+        require(wallet.owners(1) == newOwner, "Failed to replace signer");
     }
 }
