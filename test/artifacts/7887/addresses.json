@@ -58,6 +58,7 @@
   "KintoInflator": "0x336a76a7A2a1e97CE20c420F39FC08c441234aa2",
   "KintoInflatorV1-impl": "0xEeA0eb3A5181Ea2FF5C56bC9bE1120b706f2BCbE",
   "KintoInflatorV2-impl": "0x81beAb2ADFc659708d99539aAfBA53a7Df2d82b9",
+  "KintoInflatorV3-impl": "0xCd430F595bCa8e63fDeF4fE52D94bb92fBA93Bc2",
   "KintoWallet-admin": "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a",
   "KintoWallet-impl": "0x51c676fC24C776eBcb78B8ca3e6Ca2E810Dd6B80",
   "KintoWallet-usdc-proxy-admin": "0x7403542bF2aF061eBF0DC16cAfA3068b90Fc1e75",
