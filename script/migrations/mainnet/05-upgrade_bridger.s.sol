@@ -3,24 +3,23 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/bridger/Bridger.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-import {Constants} from "@kinto-core-script/migrations/mainnet/const.sol";
-
-contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
+contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal newImpl;
     address internal bridgerAddress;
 
     function setUp() public {}
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
@@ -37,7 +36,7 @@ contract UpgradeBridgerScript is ArtifactsReader, DeployerHelper, Test, Constant
         // Stop broadcast because the Owner is Safe account
     }
 
-    function checkContracts(address) internal override {
+    function validate(address) internal override {
         bridger = Bridger(payable(bridgerAddress));
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));

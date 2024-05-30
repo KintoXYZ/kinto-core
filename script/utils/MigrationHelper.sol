@@ -19,8 +19,11 @@ import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
+import {Constants} from "@kinto-core-script/migrations/const.sol";
+
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
+import "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
@@ -28,7 +31,7 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
+contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constants {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -36,14 +39,30 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
-    function run() public virtual override {
+    function run() public virtual {
         try vm.envBool("TEST_MODE") returns (bool _testMode) {
             testMode = _testMode;
         } catch {}
 
-        super.run();
+        console2.log("Running on chain with id:", vm.toString(block.chainid));
+        deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
+        console2.log("Deployer:", deployer);
+
+        vm.startBroadcast(deployerPrivateKey);
+
+        broadcast(deployer);
+
+        vm.stopBroadcast();
+
+        validate(deployer);
+
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
+
+    function broadcast(address deployer) internal virtual {}
+
+    function validate(address deployer) internal virtual {}
 
     /// @dev deploys proxy contract via factory from deployer address
     function _deployProxy(string memory contractName, address implementation, bytes32 salt)
@@ -246,7 +265,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
     ) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
-        _handleOps(_selectorAndParams, _from, _to, _sponsorPaymaster, privateKeys);
+        _handleOps(_selectorAndParams, _from, _to, 0, _sponsorPaymaster, privateKeys);
     }
 
     // @notice handles ops with custom params
@@ -256,6 +275,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
         bytes memory _selectorAndParams,
         address _from,
         address _to,
+        uint256 value,
         address _sponsorPaymaster,
         uint256[] memory _privateKeys
     ) internal {
@@ -264,7 +284,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
             block.chainid,
             _from,
             _to,
-            0,
+            value,
             IKintoWallet(_from).getNonce(),
             _privateKeys,
             _selectorAndParams,
@@ -351,5 +371,27 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
             return vm.envAddress("KINTO_ADMIN_WALLET");
         }
         return super._getChainDeployment(_contractName);
+    }
+
+    function etchWallet(address wallet) internal {
+        KintoWallet impl = new KintoWallet(
+            IEntryPoint(_getChainDeployment("EntryPoint")),
+            IKintoID(_getChainDeployment("KintoID")),
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+        );
+        vm.etch(wallet, address(impl).code);
+    }
+
+    function replaceOwner(IKintoWallet wallet, address newOwner) internal {
+        address[] memory owners = new address[](3);
+        owners[0] = wallet.owners(0);
+        owners[1] = newOwner;
+        owners[2] = wallet.owners(2);
+
+        uint8 policy = wallet.signerPolicy();
+        vm.prank(address(wallet));
+        wallet.resetSigners(owners, policy);
+
+        require(wallet.owners(1) == newOwner, "Failed to replace signer");
     }
 }

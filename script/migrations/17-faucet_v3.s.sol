@@ -13,7 +13,7 @@ import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
 import "../../test/helpers/UserOp.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -23,8 +23,6 @@ contract FaucetV3 is Faucet {
 }
 
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using ECDSAUpgradeable for bytes32;
-
     FaucetV3 _implementation;
     UUPSProxy _proxy;
 

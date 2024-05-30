@@ -11,10 +11,10 @@ import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/u
 import "@kinto-core-script/migrations/const.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
-contract UpgradeBridgedWethScript is Constants, MigrationHelper {
+contract UpgradeBridgedWethScript is MigrationHelper {
     BridgedWeth weth;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         weth = BridgedWeth(payable(_getChainDeployment("WETH")));
         if (address(weth) == address(0)) {
             console2.log("WETH has to be deployed");
@@ -32,12 +32,13 @@ contract UpgradeBridgedWethScript is Constants, MigrationHelper {
             abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, newImpl, bytes("")),
             _getChainDeployment("KintoWallet-admin"),
             address(weth),
+            0,
             address(0),
             privKeys
         );
     }
 
-    function checkContracts(address) internal override {
+    function validate(address) internal override {
         weth.deposit{value: 1}();
         require(weth.balanceOf(address(this)) == 1, "WETH deposit failed");
         assertEq(weth.name(), "Wrapped Ether");

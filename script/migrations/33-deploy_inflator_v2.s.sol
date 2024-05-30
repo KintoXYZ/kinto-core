@@ -2,11 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "../../src/inflators/KintoInflator.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract KintoMigration33DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
 

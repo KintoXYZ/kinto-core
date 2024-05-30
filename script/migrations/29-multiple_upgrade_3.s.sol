@@ -10,11 +10,9 @@ import "../../src/KintoID.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/Faucet.sol";
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration29DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
         bytes memory bytecode;

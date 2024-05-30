@@ -9,7 +9,8 @@ import "../../src/bridger/token-bridge-contracts//L2CustomGateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2ERC20Gateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2WethGateway.sol";
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 
 interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;
@@ -19,15 +20,8 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration41DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
-
-        deployerPrivateKey = vm.envUint("TEST_PRIVATE_KEY");
-        console.log("Running on chain: ", vm.toString(block.chainid));
-        console.log("Executing from address", msg.sender);
-        console.log("Deployer is: ", vm.addr(deployerPrivateKey));
 
         TransparentUpgradeableProxy l2CustomGateway =
             TransparentUpgradeableProxy(payable(0x094F8C3eA1b5671dd19E15eCD93C80d2A33fCA99)); // devnet

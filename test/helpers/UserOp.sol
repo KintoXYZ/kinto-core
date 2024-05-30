@@ -13,7 +13,8 @@ import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core-test/helpers/SignerHelper.sol";
 
 import "forge-std/Vm.sol";
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
+
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 

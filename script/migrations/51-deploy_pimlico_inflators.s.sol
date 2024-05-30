@@ -8,7 +8,9 @@ import {KintoInflator} from "../../src/inflators/KintoInflator.sol";
 import {BundleBulker} from "../../src/inflators/BundleBulker.sol";
 import {IInflator} from "../../src/interfaces/IInflator.sol";
 import {PerOpInflator, IOpInflator} from "@alto/src/Compression/PerOpInflator.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "forge-std/console2.sol";
 
 contract KintoMigration51DeployScript is MigrationHelper {
     function run() public override {
@@ -23,15 +25,15 @@ contract KintoMigration51DeployScript is MigrationHelper {
         bytes memory bytecode = abi.encodePacked(type(PerOpInflator).creationCode, abi.encode(perOpInflatorOwner));
         vm.broadcast(deployerPrivateKey);
         address perOpInflator = factory.deployContract(kintoWalletAdmin, 0, bytecode, bytes32(0));
-        console.log("PerOpInflator deployed @", perOpInflator);
+        console2.log("PerOpInflator deployed @", perOpInflator);
 
         // register PerOpInflator in BundleBulker (can be called directly since BundleBulker is whitelisted at Geth level)
         vm.broadcast(deployerPrivateKey);
         BundleBulker(_getChainDeployment("BundleBulker")).registerInflator(1, IInflator(perOpInflator));
-        console.log("PerOpInflator registered on BundleBulker");
+        console2.log("PerOpInflator registered on BundleBulker");
 
         _whitelistApp(perOpInflator, deployerPrivateKey, true);
-        console.log("PerOpInflator whitelisted on KintoWallet-admin");
+        console2.log("PerOpInflator whitelisted on KintoWallet-admin");
 
         // register Kinto's Inflator in PerOpInflator via handleOps
         _handleOps(

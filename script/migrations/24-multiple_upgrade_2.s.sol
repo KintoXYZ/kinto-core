@@ -2,11 +2,9 @@
 pragma solidity ^0.8.18;
 
 import "../../src/viewers/KYCViewer.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration24DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
 
@@ -107,6 +105,6 @@ contract KintoMigration24DeployScript is MigrationHelper {
         // );
 
         // deployAndUpgrade("KYCViewer", "V3", bytecode);
-        console.log(KintoAppRegistry(_getChainDeployment("KintoAppRegistry")).owner());
+        // console.log(KintoAppRegistry(_getChainDeployment("KintoAppRegistry")).owner());
     }
 }

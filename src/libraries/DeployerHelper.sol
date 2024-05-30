@@ -10,25 +10,6 @@ import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
     using stdJson for string;
 
-    function run() public virtual {
-        console2.log("Running on chain with id:", vm.toString(block.chainid));
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(privateKey);
-        console2.log("Deployer:", deployer);
-
-        vm.startBroadcast(privateKey);
-
-        deployContracts(deployer);
-
-        vm.stopBroadcast();
-
-        checkContracts(deployer);
-    }
-
-    function deployContracts(address deployer) internal virtual {}
-
-    function checkContracts(address deployer) internal virtual {}
-
     function getWethByChainId(uint256 chainid) public view returns (address) {
         // local
         if (chainid == 31337) {

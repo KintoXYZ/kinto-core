@@ -16,8 +16,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
-    using ECDSAUpgradeable for bytes32;
-
     Faucet _implementation;
     UUPSProxy _proxy;
 

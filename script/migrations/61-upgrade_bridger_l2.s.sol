@@ -3,21 +3,20 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/bridger/BridgerL2.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 
 contract KintoMigration61DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
 
         bytes memory bytecode =
             abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         address implementation = _deployImplementation("BridgerL2", "V10", bytecode);
-        console.log("implementation: %s", implementation);
+        console2.log("implementation: %s", implementation);
 
         address proxy = _getChainDeployment("BridgerL2");
-        console.log("proxy: %s", proxy);
+        console2.log("proxy: %s", proxy);
         _upgradeTo(proxy, implementation, deployerPrivateKey);
 
         // set deposited assets (adding ENA)

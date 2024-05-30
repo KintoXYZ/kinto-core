@@ -5,14 +5,13 @@ import "../../src/tokens/EngenCredits.sol";
 import "../../src/governance/EngenGovernance.sol";
 import "@openzeppelin/contracts/governance/Governor.sol";
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 
 contract KintoMigration61DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
-        console.log("Executing with address", msg.sender, vm.envAddress("LEDGER_ADMIN"));
+        console2.log("Executing with address", msg.sender, vm.envAddress("LEDGER_ADMIN"));
 
         EngenCredits credits = EngenCredits(_getChainDeployment("EngenCredits"));
         EngenGovernance governance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
@@ -46,14 +45,14 @@ contract KintoMigration61DeployScript is MigrationHelper {
 
         proposalId = governance.hashProposal(targets, values, data, keccak256(bytes(description)));
         require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
-        console.log("Proposal ID 1:", proposalId);
+        console2.log("Proposal ID 1:", proposalId);
 
         description = "ENIP:2 - The Kinto Token";
         selectorAndParams = abi.encodeWithSelector(Governor.propose.selector, targets, values, data, description);
         _handleOps(selectorAndParams, address(governance), deployerPrivateKey);
         proposalId = governance.hashProposal(targets, values, data, keccak256(bytes(description)));
         require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
-        console.log("Proposal ID 2:", proposalId);
+        console2.log("Proposal ID 2:", proposalId);
 
         description = "ENIP:3 - The Mining Program";
         selectorAndParams = abi.encodeWithSelector(Governor.propose.selector, targets, values, data, description);
@@ -61,6 +60,6 @@ contract KintoMigration61DeployScript is MigrationHelper {
 
         proposalId = governance.hashProposal(targets, values, data, keccak256(bytes(description)));
         require(governance.state(proposalId) == IGovernor.ProposalState.Pending);
-        console.log("Proposal ID 3:", proposalId);
+        console2.log("Proposal ID 3:", proposalId);
     }
 }

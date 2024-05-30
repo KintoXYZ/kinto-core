@@ -3,8 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/bridger/Bridger.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
-import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
@@ -13,13 +12,13 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
 
-contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
+contract DeployBridgerScript is Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal impl;
 
     function setUp() public {}
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         if (block.chainid != ARBITRUM_CHAINID) {
             console2.log("This script is meant to be run on the chain: %s", ARBITRUM_CHAINID);
             return;
@@ -50,7 +49,7 @@ contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants
         bridger.initialize(SENDER_ACCOUNT);
     }
 
-    function checkContracts(address deployer) internal view override {
+    function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");

@@ -6,19 +6,19 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
+contract UpgradeAccessPointScript is Script, MigrationHelper {
     address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
 
     AccessRegistry registry;
     AccessPoint newImpl;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         registry = AccessRegistry(_getChainDeployment("AccessRegistry"));
         if (address(registry) == address(0)) {
             console2.log("Access Protocol has to be deployed");
@@ -36,7 +36,7 @@ contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
         registry.upgradeAll(newImpl);
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(address(newImpl.entryPoint()) == ENTRY_POINT, "Wrong entry point address");
     }
 }

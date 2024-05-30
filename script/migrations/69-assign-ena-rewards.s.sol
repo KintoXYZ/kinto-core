@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {stdJson} from "forge-std/StdJson.sol";
 
 import "../../src/wallet/KintoWallet.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
 contract AssignEnaRewardsScript is MigrationHelper {

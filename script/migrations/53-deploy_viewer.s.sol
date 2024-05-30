@@ -4,17 +4,16 @@ pragma solidity ^0.8.18;
 import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 import {Viewer} from "@kinto-core/viewers/Viewer.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
-import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
+contract DeployViewerScript is Script, MigrationHelper {
     Viewer internal viewer;
 
-    function deployContracts(address) internal override {
+    function broadcast(address) internal override {
         address viewerAddr = _getChainDeployment("Viewer");
         if (viewerAddr != address(0)) {
             console2.log("Viewer is already deployed:", viewerAddr);
@@ -33,7 +32,7 @@ contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
         viewer.initialize();
     }
 
-    function checkContracts(address) internal view override {
+    function validate(address) internal view override {
         require(viewer.getBalances(new address[](0), address(this)).length == 0, "getBalances not working");
     }
 }

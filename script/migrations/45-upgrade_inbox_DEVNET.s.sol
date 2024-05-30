@@ -7,8 +7,9 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/nitro-contracts/bridge/AbsInbox.sol";
 import "../../src/nitro-contracts/bridge/Inbox.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {L1GatewayRouter} from "@token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
+import "forge-std/console2.sol";
 
 interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;
@@ -18,8 +19,6 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration45DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         vm.setEnv("PRIVATE_KEY", vm.toString(vm.envUint("TEST_PRIVATE_KEY")));
         super.run();
@@ -37,7 +36,7 @@ contract KintoMigration45DeployScript is MigrationHelper {
         uint256 maxDataSize = AbsInbox(address(inbox)).maxDataSize();
         vm.broadcast(deployerPrivateKey);
         address impl = address(new Inbox(maxDataSize));
-        console.log("InboxV2-impl: ", impl);
+        console2.log("InboxV2-impl: ", impl);
         bytes memory upgradeCallData = abi.encodeWithSelector(ProxyAdmin.upgrade.selector, inbox, impl);
 
         vm.broadcast(deployerPrivateKey);

@@ -7,7 +7,8 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/nitro-contracts/bridge/AbsInbox.sol";
 import "../../src/nitro-contracts/bridge/Inbox.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 import {L1GatewayRouter} from "@token-bridge-contracts/contracts/tokenbridge/ethereum/gateway/L1GatewayRouter.sol";
 
 interface IUpgradeExecutor {
@@ -18,8 +19,6 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration45DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
-
     function run() public override {
         super.run();
 
@@ -32,11 +31,11 @@ contract KintoMigration45DeployScript is MigrationHelper {
         uint256 maxDataSize = AbsInbox(address(inbox)).maxDataSize();
         vm.broadcast();
         address impl = address(new Inbox(maxDataSize));
-        console.log("InboxV2-impl: ", impl);
+        console2.log("InboxV2-impl: ", impl);
 
         // upgrade Inbox (only from multisig)
         if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
-            console.log("Sender does not have EXECUTOR_ROLE");
+            console2.log("Sender does not have EXECUTOR_ROLE");
             return;
         }
 
