@@ -18,6 +18,8 @@ import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 
+import "@kinto-core-script/migrations/const.sol";
+
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
 import {Script} from "forge-std/Script.sol";
@@ -27,7 +29,7 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, SaltHelper {
+contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, SaltHelper, Constants {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -248,7 +250,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
     ) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
-        _handleOps(_selectorAndParams, _from, _to, _sponsorPaymaster, privateKeys);
+        _handleOps(_selectorAndParams, _from, _to,0, _sponsorPaymaster, privateKeys);
     }
 
     // @notice handles ops with custom params
@@ -258,6 +260,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
         bytes memory _selectorAndParams,
         address _from,
         address _to,
+        uint256 value,
         address _sponsorPaymaster,
         uint256[] memory _privateKeys
     ) internal {
@@ -266,7 +269,7 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
             block.chainid,
             _from,
             _to,
-            0,
+            value,
             IKintoWallet(_from).getNonce(),
             _privateKeys,
             _selectorAndParams,

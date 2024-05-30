@@ -1,39 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core/wallet/KintoWallet.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
-import "@kinto-core-test/helpers/Create2Helper.sol";
-import "@kinto-core-test/helpers/ArtifactsReader.sol";
-import "@kinto-core-test/helpers/UUPSProxy.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
+import {stdJson} from "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract BridgeFundsScript is Create2Helper, ArtifactsReader {
-    function setUp() public {}
+contract BridgeFundsScript is MigrationHelper {
+    using stdJson for string;
 
-    function run() public {
-        console.log("RUNNING ON CHAIN WITH ID", vm.toString(block.chainid));
-        // Execute this script with the ledger admin but first we use the hot wallet
-        console.log("Executing with address", msg.sender, vm.envAddress("LEDGER_ADMIN"));
-        address factoryAddr = _getChainDeployment("KintoWalletFactory");
-        if (factoryAddr == address(0)) {
-            console.log("Need to execute main deploy script first", factoryAddr);
-            return;
+    function broadcast(address) internal override {
+        string memory json = vm.readFile("./script/data/weEthKintoToEthereumBridge.json");
+
+        address from = json.readAddress(string.concat(".", "from"));
+        address vault = json.readAddress(string.concat(".", "vault"));
+        address receiver = json.readAddress(string.concat(".", "receiver"));
+        uint256 amount = json.readUint(string.concat(".", "amount"));
+        uint256 msgGasLimit = json.readUint(string.concat(".", "msgGasLimit"));
+        address connector = json.readAddress(string.concat(".", "connector"));
+        bytes memory execPayload = json.readBytes(string.concat(".", "execPayload"));
+        bytes memory options = json.readBytes(string.concat(".", "options"));
+        uint256 gasFee = json.readUint(string.concat(".", "gasFee"));
+
+        if(amount == 0) {
+
         }
-        // Start admin
-        vm.startBroadcast();
-        uint256 AMOUNT_TO_SEND = 0.1 ether;
-        KintoWalletFactory(address(factoryAddr)).sendMoneyToAccount{value: AMOUNT_TO_SEND}(
-            0xb539019776eF803E89EC062Ad54cA24D1Fdb008a
+
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = deployerPrivateKey;
+        privKeys[1] = LEDGER;
+        _handleOps(
+            abi.encodeWithSelector(IBridge.bridge.selector, receiver, amount, msgGasLimit, connector, execPayload, options),
+            from,
+            vault,
+            gasFee,
+            address(0),
+            privKeys
         );
-        vm.stopBroadcast();
-        require(address(0xb539019776eF803E89EC062Ad54cA24D1Fdb008a).balance >= AMOUNT_TO_SEND, "amount was not sent");
-        // writes the addresses to a file
-        console.log("Faucet amount sent");
+    }
+
+    function validate(address) internal view override {
     }
 }
 

@@ -6,9 +6,7 @@ import "@kinto-core/interfaces/IKintoWallet.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
-import "@kinto-core-script/migrations/const.sol";
-
-contract MintEngenBadgesScript is MigrationHelper, Constants {
+contract MintEngenBadgesScript is MigrationHelper {
     using ECDSAUpgradeable for bytes32;
 
     function run() public override {
