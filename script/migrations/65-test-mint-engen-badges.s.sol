@@ -29,6 +29,7 @@ contract MintEngenBadgesScript is MigrationHelper {
             abi.encodeWithSelector(EngenBadges.mintBadges.selector, address(adminWallet), ids),
             address(adminWallet),
             engenBadgesAddr,
+            0,
             address(0),
             privKeys
         );

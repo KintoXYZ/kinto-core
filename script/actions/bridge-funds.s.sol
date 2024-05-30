@@ -25,15 +25,15 @@ contract BridgeFundsScript is MigrationHelper {
         bytes memory options = json.readBytes(string.concat(".", "options"));
         uint256 gasFee = json.readUint(string.concat(".", "gasFee"));
 
-        if(amount == 0) {
-
-        }
+        if (amount == 0) {}
 
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = LEDGER;
         _handleOps(
-            abi.encodeWithSelector(IBridge.bridge.selector, receiver, amount, msgGasLimit, connector, execPayload, options),
+            abi.encodeWithSelector(
+                IBridge.bridge.selector, receiver, amount, msgGasLimit, connector, execPayload, options
+            ),
             from,
             vault,
             gasFee,
@@ -42,7 +42,5 @@ contract BridgeFundsScript is MigrationHelper {
         );
     }
 
-    function validate(address) internal view override {
-    }
+    function validate(address) internal view override {}
 }
-

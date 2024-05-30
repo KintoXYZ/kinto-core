@@ -30,7 +30,7 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
+contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constants {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -248,7 +248,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
     ) internal {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
-        _handleOps(_selectorAndParams, _from, _to,0, _sponsorPaymaster, privateKeys);
+        _handleOps(_selectorAndParams, _from, _to, 0, _sponsorPaymaster, privateKeys);
     }
 
     // @notice handles ops with custom params
