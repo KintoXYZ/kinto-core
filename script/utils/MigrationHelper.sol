@@ -17,6 +17,7 @@ import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
+import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
@@ -27,7 +28,7 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, SaltHelper {
+contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -35,15 +36,12 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
     uint256 deployerPrivateKey;
     KintoWalletFactory factory;
 
-    function run() public virtual {
+    function run() public virtual override {
         try vm.envBool("TEST_MODE") returns (bool _testMode) {
             testMode = _testMode;
         } catch {}
-        console.log("Running on chain: ", vm.toString(block.chainid));
-        console.log("Executing from address", msg.sender);
-        deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        console.log("Deployer is: ", vm.addr(deployerPrivateKey));
 
+        super.run();
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
 
@@ -345,22 +343,6 @@ contract MigrationHelper is Script, Create2Helper, ArtifactsReader, UserOp, Salt
                 break;
             }
         }
-    }
-
-    function saveContractAddress(string memory contractName, address addr) internal {
-        string memory path = _getAddressesFile();
-        string memory dir = _getAddressesDir();
-        if (!vm.isDir(dir)) vm.createDir(dir, true);
-        if (!vm.isFile(path)) {
-            vm.writeFile(path, "{}");
-        }
-
-        string memory json = vm.readFile(path);
-        string[] memory keys = vm.parseJsonKeys(json, "$");
-        for (uint256 index = 0; index < keys.length; index++) {
-            vm.serializeString(contractName, keys[index], json.readString(string.concat(".", keys[index])));
-        }
-        vm.writeJson(vm.serializeAddress(contractName, contractName, addr), path);
     }
 
     // @dev this is a workaround to get the address of the KintoWallet-admin in test mode
