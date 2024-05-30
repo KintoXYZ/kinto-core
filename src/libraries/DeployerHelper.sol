@@ -10,7 +10,7 @@ import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
     using stdJson for string;
 
-    function run() public {
+    function run() public virtual {
         console2.log("Running on chain with id:", vm.toString(block.chainid));
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(privateKey);
@@ -25,9 +25,9 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         validate(deployer);
     }
 
-    function broadcast(address deployer) internal virtual;
+    function broadcast(address deployer) internal virtual {};
 
-    function validate(address deployer) internal virtual;
+    function validate(address deployer) internal virtual {};
 
     function getWethByChainId(uint256 chainid) public view returns (address) {
         // local
@@ -74,6 +74,8 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
 
     function saveContractAddress(string memory contractName, address addr) internal {
         string memory path = _getAddressesFile();
+        string memory dir = _getAddressesDir();
+        if (!vm.isDir(dir)) vm.createDir(dir, true);
         if (!vm.isFile(path)) {
             vm.writeFile(path, "{}");
         }

@@ -42,13 +42,16 @@ contract InflatorTest is SharedSetup {
     function testInflate() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
+            block.chainid,
             address(_kintoWallet),
             address(counter),
+            1 ether,
             _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
+
         op.initCode = "0x1234567890";
 
         // 2. compress user op
@@ -207,8 +210,8 @@ contract InflatorTest is SharedSetup {
         targets[1] = address(counter);
 
         uint256[] memory values = new uint256[](2);
-        values[0] = 0;
-        values[1] = 0;
+        values[0] = 1 ether;
+        values[1] = 2 ether;
 
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSignature("recoverer()");
@@ -246,8 +249,8 @@ contract InflatorTest is SharedSetup {
         targets[1] = address(counter);
 
         uint256[] memory values = new uint256[](2);
-        values[0] = 0;
-        values[1] = 0;
+        values[0] = 0.1 ether;
+        values[1] = 3 ether;
 
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeWithSignature("recoverer()");
