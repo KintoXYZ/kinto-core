@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 
 interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;
@@ -11,15 +12,9 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration44DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();
-
-        deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        console.log("Running on chain: ", vm.toString(block.chainid));
-        console.log("Executing from address", msg.sender);
-        console.log("Deployer is: ", vm.addr(deployerPrivateKey));
 
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
 

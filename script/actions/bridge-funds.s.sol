@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import {stdJson} from "forge-std/StdJson.sol";
 import "forge-std/Script.sol";

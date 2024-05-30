@@ -13,7 +13,6 @@ import "@kinto-core/interfaces/IFaucet.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 
 abstract contract SignatureHelper is CommonBase {
-    using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     // Create a test for minting a KYC token

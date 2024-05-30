@@ -9,7 +9,8 @@ import "../../src/bridger/token-bridge-contracts//L2CustomGateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2ERC20Gateway.sol";
 import "../../src/bridger/token-bridge-contracts//L2WethGateway.sol";
 
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "forge-std/console2.sol";
 
 interface IUpgradeExecutor {
     function initialize(address admin, address[] memory executors) external;
@@ -19,7 +20,6 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration42DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();
@@ -33,7 +33,7 @@ contract KintoMigration42DeployScript is MigrationHelper {
         ProxyAdmin proxyAdmin = ProxyAdmin(0x9eC0253E4174a14C0536261888416451A407Bf79);
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(0x88e03D41a6EAA9A0B93B0e2d6F1B34619cC4319b);
 
-        console.log("msg.sender: %s", msg.sender);
+        console2.log("msg.sender: %s", msg.sender);
         if (!upgradeExecutor.hasRole(keccak256("EXECUTOR_ROLE"), msg.sender)) {
             revert("Sender does not have EXECUTOR_ROLE");
         }

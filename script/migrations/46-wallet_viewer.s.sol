@@ -3,10 +3,9 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/viewers/WalletViewer.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration46DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();

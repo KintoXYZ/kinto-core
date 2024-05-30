@@ -19,10 +19,11 @@ import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
-import "@kinto-core-script/migrations/const.sol";
+import {Constants} from "@kinto-core-script/migrations/const.sol";
 
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
+import "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 

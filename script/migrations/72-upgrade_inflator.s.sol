@@ -3,11 +3,10 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/inflators/KintoInflator.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import "@kinto-core-script/migrations/const.sol";
 
 contract KintoMigration72DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

@@ -3,8 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/bridger/Bridger.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
-import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import "forge-std/Script.sol";
@@ -13,7 +12,7 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
 
-contract DeployBridgerScript is ArtifactsReader, DeployerHelper, Test, Constants {
+contract DeployBridgerScript is  Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal impl;
 

@@ -33,7 +33,6 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 }
 
 contract KintoWalletFactoryTest is SharedSetup {
-    using ECDSAUpgradeable for bytes32;
     using SignatureChecker for address;
 
     KintoWalletFactoryUpgrade _walletFactoryv2;

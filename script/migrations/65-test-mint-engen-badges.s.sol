@@ -4,10 +4,9 @@ pragma solidity ^0.8.18;
 import "@kinto-core/tokens/EngenBadges.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 import "../../test/helpers/ArtifactsReader.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract MintEngenBadgesScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();
@@ -34,5 +33,4 @@ contract MintEngenBadgesScript is MigrationHelper {
             privKeys
         );
     }
-
 }

@@ -4,14 +4,13 @@ pragma solidity ^0.8.18;
 import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 import {Viewer} from "@kinto-core/viewers/Viewer.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
-import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract DeployViewerScript is Script, ArtifactsReader, DeployerHelper {
+contract DeployViewerScript is Script, MigrationHelper{
     Viewer internal viewer;
 
     function broadcast(address) internal override {

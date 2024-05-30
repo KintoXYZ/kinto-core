@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/viewers/KYCViewer.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KYCViewerV3 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
@@ -11,7 +11,6 @@ contract KYCViewerV3 is KYCViewer {
 }
 
 contract KintoMigration23DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();

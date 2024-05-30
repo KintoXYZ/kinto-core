@@ -2,10 +2,11 @@
 pragma solidity ^0.8.18;
 
 import "../../src/KintoID.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
+import "forge-std/console2.sol";
 
 contract KintoMigration39DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();
@@ -13,7 +14,7 @@ contract KintoMigration39DeployScript is MigrationHelper {
 
         address factoryAddr = _getChainDeployment("KintoWalletFactory");
         if (factoryAddr == address(0)) {
-            console.log("Need to execute main deploy script first", factoryAddr);
+            console2.log("Need to execute main deploy script first", factoryAddr);
             return;
         }
 

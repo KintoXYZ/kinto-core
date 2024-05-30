@@ -6,13 +6,13 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessPointScript is Script, ArtifactsReader, DeployerHelper {
+contract UpgradeAccessPointScript is Script, MigrationHelper {
     address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
 
     AccessRegistry registry;

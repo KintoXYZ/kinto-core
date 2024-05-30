@@ -3,11 +3,11 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/tokens/EngenCredits.sol";
 import "@kinto-core/governance/EngenGovernance.sol";
-import "../../test/helpers/ArtifactsReader.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
+import "forge-std/console2.sol";
 
 contract KintoMigration55DeployScript is MigrationHelper {
-    using ECDSAUpgradeable for bytes32;
 
     function run() public override {
         super.run();
@@ -19,7 +19,7 @@ contract KintoMigration55DeployScript is MigrationHelper {
         // Upgrades engen credits
         proxy = _getChainDeployment("EngenCredits");
         bytecode = abi.encodePacked(type(EngenCredits).creationCode);
-        console.log("proxy: %s", proxy);
+        console2.log("proxy: %s", proxy);
         implementation = _deployImplementation("EngenCredits", "V3", bytecode);
         _upgradeTo(proxy, implementation, deployerPrivateKey);
 

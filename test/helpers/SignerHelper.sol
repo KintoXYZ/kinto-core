@@ -27,7 +27,7 @@ abstract contract SignerHelper is Test {
         string[] memory inputs = new string[](3);
         inputs[0] = "bash";
         inputs[1] = "-c";
-        console2.log('hwType:', hwType);
+        console2.log("hwType:", hwType);
         inputs[2] = string.concat("cast wallet sign ", hwType == 0 ? "--ledger " : "--trezor ", hashString);
 
         signature = vm.ffi(inputs);
@@ -38,7 +38,7 @@ abstract contract SignerHelper is Test {
         signature = makeEIP191Compliant(signature);
 
         (address signer,) = ECDSAUpgradeable.tryRecover(hash.toEthSignedMessageHash(), signature);
-        console2.log('signer:', signer);
+        console2.log("signer:", signer);
     }
 
     function toHexString(bytes32 data) internal pure returns (string memory) {

@@ -9,7 +9,7 @@ import "../../src/KintoID.sol";
 import "../../test/helpers/Create2Helper.sol";
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
-import "@kinto-core-script/utils/MigrationHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -19,7 +19,6 @@ contract KintoWalletFactoryV4 is KintoWalletFactory {
 }
 
 contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
-    using ECDSAUpgradeable for bytes32;
 
     KintoWalletFactoryV4 _factoryImpl;
 

@@ -4,13 +4,12 @@ pragma solidity ^0.8.18;
 import {AccessRegistry} from "../../src/access/AccessRegistry.sol";
 import {IAccessRegistry} from "../../src/interfaces/IAccessRegistry.sol";
 
-import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
-import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
+contract UpgradeAccessProtocolScript is Script, MigrationHelper{
     AccessRegistry registry;
     address newImpl;
 

@@ -13,14 +13,14 @@ import {WethWorkflow} from "../../src/access/workflows/WethWorkflow.sol";
 import {SwapWorkflow} from "../../src/access/workflows/SwapWorkflow.sol";
 import {SafeBeaconProxy} from "../../src/proxy/SafeBeaconProxy.sol";
 
-import {DeployerHelper} from "../../src/libraries/DeployerHelper.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 import {UUPSProxy} from "../../test/helpers/UUPSProxy.sol";
 
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract DeployAccessProtocolScript is Script, ArtifactsReader, DeployerHelper {
+contract DeployAccessProtocolScript is Script, MigrationHelper {
     // Entry Point address is the same on all chains.
     address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
     // Exchange Proxy address is the same on all chains.
