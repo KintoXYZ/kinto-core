@@ -23,7 +23,6 @@ contract FaucetV3 is Faucet {
 }
 
 contract KintoMigration15DeployScript is Create2Helper, ArtifactsReader, UserOp {
-
     FaucetV3 _implementation;
     UUPSProxy _proxy;
 

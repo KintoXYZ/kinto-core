@@ -3,10 +3,9 @@ pragma solidity ^0.8.18;
 
 import "../../src/paymasters/SponsorPaymaster.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
-import {KintoAppRegistry}  from "@kinto-core/apps/KintoAppRegistry.sol";
+import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 
 contract KintoMigration27DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

@@ -23,7 +23,6 @@ contract KintoIDV4 is KintoID {
 }
 
 contract KintoMigration14DeployScript is Create2Helper, ArtifactsReader {
-
     KintoWalletFactoryV3 _factoryImpl;
     KintoID _kintoID;
     KintoIDV4 _kintoIDImpl;

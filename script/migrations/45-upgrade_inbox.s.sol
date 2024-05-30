@@ -19,7 +19,6 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration45DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

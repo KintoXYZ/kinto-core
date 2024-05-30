@@ -13,7 +13,7 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
 
-contract UpgradeBridgerScript is  Constants, Test, MigrationHelper{
+contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal newImpl;
     address internal bridgerAddress;

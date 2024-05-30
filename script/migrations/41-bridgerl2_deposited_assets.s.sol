@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration41DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");

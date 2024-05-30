@@ -10,7 +10,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract DeployViewerScript is Script, MigrationHelper{
+contract DeployViewerScript is Script, MigrationHelper {
     Viewer internal viewer;
 
     function broadcast(address) internal override {

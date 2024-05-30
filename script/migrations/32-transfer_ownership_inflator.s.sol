@@ -6,7 +6,6 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract KintoMigration32DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
         address inflator = _getChainDeployment("KintoInflator");

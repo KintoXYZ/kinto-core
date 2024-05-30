@@ -6,7 +6,6 @@ import "../../src/viewers/WalletViewer.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration46DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

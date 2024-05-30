@@ -6,7 +6,6 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 
 contract KintoMigration66DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

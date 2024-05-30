@@ -19,7 +19,6 @@ contract KintoWalletFactoryV5 is KintoWalletFactory {
 }
 
 contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
-
     KintoWalletFactoryV5 _factoryImpl;
 
     function setUp() public {}

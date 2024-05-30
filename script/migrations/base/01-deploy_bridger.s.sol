@@ -12,7 +12,7 @@ import "forge-std/Test.sol";
 
 import {Constants} from "@kinto-core-script/migrations/base/const.sol";
 
-contract DeployBridgerScript is Constants, Test, MigrationHelper{
+contract DeployBridgerScript is Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal impl;
 

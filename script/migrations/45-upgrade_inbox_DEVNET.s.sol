@@ -19,7 +19,6 @@ interface IUpgradeExecutor {
 }
 
 contract KintoMigration45DeployScript is MigrationHelper {
-
     function run() public override {
         vm.setEnv("PRIVATE_KEY", vm.toString(vm.envUint("TEST_PRIVATE_KEY")));
         super.run();

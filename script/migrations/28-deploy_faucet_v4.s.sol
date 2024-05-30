@@ -5,7 +5,6 @@ import "@kinto-core/Faucet.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration28DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

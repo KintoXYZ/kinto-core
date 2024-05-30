@@ -11,7 +11,6 @@ contract KYCViewerV3 is KYCViewer {
 }
 
 contract KintoMigration23DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

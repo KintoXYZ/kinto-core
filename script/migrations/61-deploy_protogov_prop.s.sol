@@ -9,7 +9,6 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import "forge-std/console2.sol";
 
 contract KintoMigration61DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
         console2.log("Executing with address", msg.sender, vm.envAddress("LEDGER_ADMIN"));

@@ -9,7 +9,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
-contract UpgradeAccessProtocolScript is Script, MigrationHelper{
+contract UpgradeAccessProtocolScript is Script, MigrationHelper {
     AccessRegistry registry;
     address newImpl;
 

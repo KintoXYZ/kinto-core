@@ -6,7 +6,6 @@ import {BundleBulker} from "../../src/inflators/BundleBulker.sol";
 import "forge-std/console2.sol";
 
 contract KintoMigration50DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

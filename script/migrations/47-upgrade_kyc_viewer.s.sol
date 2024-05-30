@@ -5,7 +5,6 @@ import "../../src/viewers/KYCViewer.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration47DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

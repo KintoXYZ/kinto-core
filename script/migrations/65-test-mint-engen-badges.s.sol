@@ -7,7 +7,6 @@ import "../../test/helpers/ArtifactsReader.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract MintEngenBadgesScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

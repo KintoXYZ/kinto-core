@@ -6,7 +6,6 @@ import "../../test/helpers/ArtifactsReader.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration54DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

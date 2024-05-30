@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration9DeployScript is Create2Helper, ArtifactsReader {
-
     KintoAppRegistry _kintoApp;
     KintoAppRegistry _kintoAppImpl;
 

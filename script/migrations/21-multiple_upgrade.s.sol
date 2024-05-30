@@ -42,7 +42,6 @@ contract KintoAppRegistryV3 is KintoAppRegistry {
 }
 
 contract KintoMigration21DeployScript is Create2Helper, ArtifactsReader, UserOp {
-
     KintoWalletFactory _walletFactory;
     uint256 deployerPrivateKey;
 

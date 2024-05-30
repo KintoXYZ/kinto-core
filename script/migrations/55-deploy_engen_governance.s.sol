@@ -8,7 +8,6 @@ import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 import "forge-std/console2.sol";
 
 contract KintoMigration55DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

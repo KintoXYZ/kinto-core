@@ -19,7 +19,6 @@ contract KintoIDV3 is KintoID {
 }
 
 contract KintoMigration13DeployScript is Create2Helper, ArtifactsReader {
-
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _paymaster;
     SponsorPaymasterV3 _paymasterImpl;

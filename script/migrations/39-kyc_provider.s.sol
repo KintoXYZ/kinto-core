@@ -7,7 +7,6 @@ import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
 import "forge-std/console2.sol";
 
 contract KintoMigration39DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
         address DEFENDER_KYC_PROVIDER = 0xb539019776eF803E89EC062Ad54cA24D1Fdb008a;

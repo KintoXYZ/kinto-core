@@ -7,7 +7,6 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import "forge-std/console2.sol";
 
 contract KintoMigration43DeployScript is MigrationHelper {
-
     function run() public override {
         super.run();
 

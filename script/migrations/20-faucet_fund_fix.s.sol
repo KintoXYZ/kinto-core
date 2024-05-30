@@ -15,7 +15,6 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoMigration20DeployScript is Create2Helper, ArtifactsReader {
-
     KintoWalletFactoryV6 _factoryImpl;
 
     function setUp() public {}
