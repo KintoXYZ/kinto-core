@@ -42,7 +42,7 @@ contract UpgradeBridgedWethScript is MigrationHelper {
             address(0),
             privKeys
         );
- 
+
         weth.deposit{value: 1}();
         require(weth.balanceOf(address(this)) == 1, "WETH deposit failed");
         assertEq(weth.name(), "Wrapped Ether");

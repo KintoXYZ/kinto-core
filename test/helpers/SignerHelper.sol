@@ -30,8 +30,8 @@ abstract contract SignerHelper is Test {
         inputs[2] = string.concat("cast wallet sign ", hwType == 0 ? "--ledger " : "--trezor ", hashString);
 
         signature = vm.ffi(inputs);
-        if(signature.length != 65) {
-            console2.log('Error: %s', string(signature));
+        if (signature.length != 65) {
+            console2.log("Error: %s", string(signature));
         }
 
         console2.log("\nSignature:");
