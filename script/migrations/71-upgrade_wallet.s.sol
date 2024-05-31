@@ -21,6 +21,6 @@ contract KintoMigration71DeployScript is MigrationHelper {
                 _getChainDeployment("KintoAppRegistry")
             )
         );
-        implementation = _deployImplementationAndUpgrade("KintoWallet", "V17", bytecode);
+        implementation = _deployImplementationAndUpgrade("KintoWallet", "V18", bytecode);
     }
 }
