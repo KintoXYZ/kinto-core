@@ -315,11 +315,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        // if using an app key, no calls to wallet are allowed
         if (app == SOCKET) {
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
+        // if using an app key, no calls to wallet are allowed
         // check if an app key is set
         if (appSigner[app] != address(0)) {
             if (_verifySingleSignature(appSigner[app], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {

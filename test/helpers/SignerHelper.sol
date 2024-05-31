@@ -27,10 +27,12 @@ abstract contract SignerHelper is Test {
         string[] memory inputs = new string[](3);
         inputs[0] = "bash";
         inputs[1] = "-c";
-        console2.log("hwType:", hwType);
         inputs[2] = string.concat("cast wallet sign ", hwType == 0 ? "--ledger " : "--trezor ", hashString);
 
         signature = vm.ffi(inputs);
+        if(signature.length != 65) {
+            console2.log('Error: %s', string(signature));
+        }
 
         console2.log("\nSignature:");
         console2.logBytes(signature);

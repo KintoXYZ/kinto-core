@@ -88,15 +88,15 @@ contract Bridger is
     /// @notice The address of the sender account.
     address public override senderAccount;
 
-    /// @dev DEPRECATED: Mapping of allowed assets.
+    /// @notice DEPRECATED: Mapping of allowed assets.
     mapping(address => bool) private allowedAssets;
-    /// @dev DEPRECATED: Mapping of deposits.
+    /// @notice DEPRECATED: Mapping of deposits.
     mapping(address => mapping(address => uint256)) private deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
-    /// @notice Count of deposits.
+    /// @notice DEPRECATED: Count of deposits..
     uint256 public depositCount;
-    /// @dev DEPRECATED: Flag indicating if swaps are enabled.
+    /// @notice DEPRECATED: Flag indicating if swaps are enabled.
     bool private swapsEnabled;
 
     /* ============ Modifiers ============ */
