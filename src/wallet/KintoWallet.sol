@@ -41,6 +41,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
     uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
     address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
+    address internal constant ADMIN_WALLET = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
     address internal constant BRIDGER_ARBITRUM = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
     address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
@@ -315,7 +316,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        if (app == SOCKET) {
+        if (app == SOCKET && address(this) != ADMIN_WALLET) {
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
