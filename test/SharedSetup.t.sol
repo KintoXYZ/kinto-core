@@ -181,8 +181,20 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _faucet.transferOwnership(_owner);
         vm.stopPrank();
 
+        // TODO: Remove once the wallet is fixed
+        etchWallet(0xe1FcA7f6d88E30914089b600A73eeF72eaC7f601);
+
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);
+    }
+
+    function etchWallet(address wallet) internal {
+        KintoWallet impl = new KintoWallet(
+            IEntryPoint(_getChainDeployment("EntryPoint")),
+            IKintoID(_getChainDeployment("KintoID")),
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+        );
+        vm.etch(wallet, address(impl).code);
     }
 
     function etchEngenCredits() internal {
