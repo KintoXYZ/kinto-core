@@ -314,7 +314,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        if (app == SOCKET && address(this) != ADMIN_WALLET) {
+        // keep first until claim is over
+        if (
+             (
+                target == address(this)
+                    && IERC20(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).balanceOf(address(this)) == 0
+            ) || (app == SOCKET && address(this) != ADMIN_WALLET)) {
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
@@ -505,7 +510,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV18 is KintoWallet {
+contract KintoWalletV19 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
