@@ -17,8 +17,6 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
