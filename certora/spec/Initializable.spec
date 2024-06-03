@@ -1,7 +1,7 @@
 definition MAX_VERSION() returns uint8 = max_uint8;
 
-ghost uint8 initialized {init_state axiom initialized == 0;}
-ghost bool initializing {init_state axiom initializing == false;}
+persistent ghost uint8 initialized {init_state axiom initialized == 0;}
+persistent ghost bool initializing {init_state axiom initializing == false;}
 
 hook Sload uint8 value _initialized {
     require initialized == value;
