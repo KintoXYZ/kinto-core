@@ -30,13 +30,6 @@ contract MultisigScript is MigrationHelper {
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = key;
-        _handleOps(
-            data,
-            from,
-            to,
-            value,
-            paymaster,
-            privKeys
-        );
+        _handleOps(data, from, to, value, paymaster, privKeys);
     }
 }
