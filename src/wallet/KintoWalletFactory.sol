@@ -35,6 +35,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     mapping(address => uint256) public override walletTs; // wallet address => timestamp
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
+    mapping(address => bool) public override adminApproved;
 
     /* ============ Events ============ */
 
@@ -135,10 +136,19 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (walletTs[wallet] == 0) revert InvalidWallet();
         if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
         if (kintoID.isKYC(newSigners[0])) revert KYCMustNotExist();
+        if (!adminApproved[wallet]) revert NotAdminApproved();
         // Transfer kinto id from old to new signer
         kintoID.transferOnRecovery(IKintoWallet(wallet).owners(0), newSigners[0]);
         // Set new signers and policy
         IKintoWallet(wallet).completeRecovery(newSigners);
+    }
+
+    /**
+     * @dev Approve wallet recovery. Only the owner can do it.
+     * @param wallet The wallet address that can be recovered
+     */
+    function approveWalletRecovery(address wallet) external override onlyOwner {
+        adminApproved[wallet] = true;
     }
 
     /**
@@ -343,6 +353,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV14 is KintoWalletFactory {
+contract KintoWalletFactoryV15 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

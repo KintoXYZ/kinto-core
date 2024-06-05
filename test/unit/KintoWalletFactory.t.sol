@@ -247,7 +247,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
     }
 
-    /* ============ Recovery tests ============ */
+    /* ============ Start Recovery tests ============ */
 
     function testStartWalletRecovery_WhenCallerIsRecoverer() public {
         vm.prank(address(_kintoWallet.recoverer()));
@@ -265,6 +265,29 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.prank(someone);
         vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+    }
+
+    /* ============ Complete Recovery tests ============ */
+
+    function testCompleteWalletRecovery_WhenCallerIsRecoverer() public {
+        vm.prank(_owner);
+        _walletFactory.approveWalletRecovery(payable(address(_kintoWallet)));
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
+
+        vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
+
+        // run monitor
+        address[] memory users = new address[](1);
+        users[0] = _noKyc;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        vm.prank(_kycProvider);
+        _kintoID.monitor(users, updates);
+
+        vm.prank(address(_kintoWallet.recoverer()));
+        _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 
     function testCompleteWalletRecovery_RevertWhen_CallerIsRecovererAndAlreadyKYC() public {
@@ -290,6 +313,8 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testCompleteWalletRecovery_RevertWhenCallerIsRecovererButOwnerBurnedID() public {
+        vm.prank(_owner);
+        _walletFactory.approveWalletRecovery(payable(address(_kintoWallet)));
         vm.prank(address(_kintoWallet.recoverer()));
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
 
@@ -311,7 +336,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 
-    function testCompleteWalletRecovery_WhenCallerIsRecoverer() public {
+    function testCompleteWalletRecovery_RevertWhen__AdminNotApproved() public {
         vm.prank(address(_kintoWallet.recoverer()));
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
 
@@ -327,6 +352,8 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoID.monitor(users, updates);
 
         vm.prank(address(_kintoWallet.recoverer()));
+        vm.expectRevert(IKintoWalletFactory.NotAdminApproved.selector);
+
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 

@@ -20,6 +20,7 @@ interface IKintoWalletFactory {
     error SendFailed();
     error InvalidFaucet();
     error InvalidTarget();
+    error NotAdminApproved();
     error OnlyPrivileged();
     error DeploymentNotAllowed(string reason);
     error AmountMismatch();
@@ -52,6 +53,8 @@ interface IKintoWalletFactory {
 
     function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
 
+    function approveWalletRecovery(address wallet) external;
+
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
@@ -61,6 +64,8 @@ interface IKintoWalletFactory {
     function walletTs(address _account) external view returns (uint256);
 
     function getWalletTimestamp(address wallet) external view returns (uint256);
+
+    function adminApproved(address wallet) external view returns (bool);
 
     /* ============ Constants and attrs ============ */
 
