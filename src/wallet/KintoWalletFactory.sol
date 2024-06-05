@@ -33,9 +33,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     IKintoWallet private immutable _implAddress;
     IKintoID public override kintoID;
     mapping(address => uint256) public override walletTs; // wallet address => timestamp
-    mapping(address => bool) public override adminApproved;
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
+    mapping(address => bool) public override adminApproved;
 
     /* ============ Events ============ */
 
