@@ -16,6 +16,10 @@ contract Create2FactoryTest is SharedSetup {
         factory = new Create2Factory(_kintoID);
     }
 
+    function testUp() public view override {
+        assertEq(address(factory.kintoID()), address(_kintoID));
+    }
+
     function testDeployCreate2_RevertWhen_CallerHasNoKYC() public {
         vm.prank(_user);
         (bool success, bytes memory returnData) =

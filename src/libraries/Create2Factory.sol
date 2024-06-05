@@ -13,8 +13,8 @@ contract Create2Factory {
     /// @param amount The amount sent with the transaction.
     error Reject(address sender, uint256 amount);
 
-    IKintoID public kintoID;
     /// @notice The KintoID contract instance.
+    IKintoID public immutable kintoID;
 
     /// @notice Constructor to initialize the KintoID contract.
     /// @param _kintoID The address of the KintoID contract.
