@@ -16,7 +16,6 @@ import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract MoveOwnershipScript is MigrationHelper {
-
     function run() public override {
         super.run();
 
@@ -28,7 +27,6 @@ contract MoveOwnershipScript is MigrationHelper {
         KintoWalletFactory kintoWalletFactory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
         SponsorPaymaster sponsorPaymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
 
-
         vm.startBroadcast(); // requires LEDGER_ADMIN
         //vm.startPrank(ledger);
 
@@ -36,7 +34,7 @@ contract MoveOwnershipScript is MigrationHelper {
         kintoAppRegistry.transferOwnership(adminWallet);
         assertEq(kintoAppRegistry.owner(), adminWallet);
 
-        // KintoID 
+        // KintoID
         kintoID.grantRole(kintoID.KYC_PROVIDER_ROLE(), adminWallet);
         kintoID.grantRole(kintoID.UPGRADER_ROLE(), adminWallet);
         kintoID.grantRole(kintoID.DEFAULT_ADMIN_ROLE(), adminWallet);
@@ -63,6 +61,5 @@ contract MoveOwnershipScript is MigrationHelper {
 
         //vm.stopPrank();
         vm.stopBroadcast();
-
     }
 }
