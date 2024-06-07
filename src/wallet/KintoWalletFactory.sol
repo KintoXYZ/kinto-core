@@ -142,6 +142,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         }
         // Set new signers and policy
         IKintoWallet(wallet).completeRecovery(newSigners);
+        // Resets approved wallet
+        adminApproved[wallet] = false;
     }
 
     /**
