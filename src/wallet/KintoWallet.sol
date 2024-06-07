@@ -257,7 +257,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newSigners.length == 0) revert EmptySigners();
         if (inRecovery == 0) revert RecoveryNotStarted();
         if (block.timestamp <= (inRecovery + RECOVERY_TIME)) revert RecoveryTimeNotElapsed();
-        if (owners[0] != newSigners[0] && (kintoID.isKYC(owners[0]) || !kintoID.isKYC(newSigners[0]))) revert OwnerKYCMustBeBurned();
+        if (owners[0] != newSigners[0] && (kintoID.isKYC(owners[0]) || !kintoID.isKYC(newSigners[0]))) {
+            revert OwnerKYCMustBeBurned();
+        }
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
