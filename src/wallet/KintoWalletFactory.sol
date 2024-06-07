@@ -135,10 +135,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
         if (walletTs[wallet] == 0) revert InvalidWallet();
         if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
-        if (kintoID.isKYC(newSigners[0])) revert KYCMustNotExist();
         if (!adminApproved[wallet]) revert NotAdminApproved();
         // Transfer kinto id from old to new signer
-        kintoID.transferOnRecovery(IKintoWallet(wallet).owners(0), newSigners[0]);
+        if (!kintoID.isKYC(newSigners[0]) && kintoID.isKYC(IKintoWallet(wallet).owners(0))) {
+            kintoID.transferOnRecovery(IKintoWallet(wallet).owners(0), newSigners[0]);
+        }
         // Set new signers and policy
         IKintoWallet(wallet).completeRecovery(newSigners);
     }
@@ -353,6 +354,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV15 is KintoWalletFactory {
+contract KintoWalletFactoryV16 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }

@@ -257,7 +257,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newSigners.length == 0) revert EmptySigners();
         if (inRecovery == 0) revert RecoveryNotStarted();
         if (block.timestamp <= (inRecovery + RECOVERY_TIME)) revert RecoveryTimeNotElapsed();
-        if (kintoID.isKYC(owners[0]) || !kintoID.isKYC(newSigners[0])) revert OwnerKYCMustBeBurned();
+        if (owners[0] != newSigners[0] && (kintoID.isKYC(owners[0]) || !kintoID.isKYC(newSigners[0]))) revert OwnerKYCMustBeBurned();
         _resetSigners(newSigners, SINGLE_SIGNER);
         inRecovery = 0;
     }
@@ -511,7 +511,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV19 is KintoWallet {
+contract KintoWalletV20 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
