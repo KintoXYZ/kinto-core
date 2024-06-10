@@ -146,9 +146,11 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
         _engenGovernance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
 
+        address adminWallet = _getChainDeployment("KintoWallet-admin");
+
         // grant admin role to _owner on kintoID
         bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();
-        vm.prank(vm.envAddress("LEDGER_ADMIN"));
+        vm.prank(adminWallet);
         _kintoID.grantRole(role, _owner);
 
         // grant KYC provider role to _kycProvider and _owner on kintoID
@@ -166,23 +168,24 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         // approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
 
-        // for geth allowed contracts, transfer ownership from LEDGER to _owner
-        vm.startPrank(_kintoAppRegistry.owner());
+        vm.prank(_kintoAppRegistry.owner());
         _kintoAppRegistry.transferOwnership(_owner);
+
+        vm.prank(_walletFactory.owner());
         _walletFactory.transferOwnership(_owner);
+
+        vm.prank(_paymaster.owner());
         _paymaster.transferOwnership(_owner);
-        vm.stopPrank();
 
-        // for other contracts, transfer ownership from KintoWallet-admin to _owner
         // TODO: we should actually use the KintoWallet-admin and adjust tests so they use the handleOps
-        vm.startPrank(address(_kintoWallet));
+        vm.prank(_engenCredits.owner());
         _engenCredits.transferOwnership(_owner);
-        _kycViewer.transferOwnership(_owner);
-        _faucet.transferOwnership(_owner);
-        vm.stopPrank();
 
-        // TODO: Remove once the wallet is fixed
-        etchWallet(0xe1FcA7f6d88E30914089b600A73eeF72eaC7f601);
+        vm.prank(_kycViewer.owner());
+        _kycViewer.transferOwnership(_owner);
+
+        vm.prank(_faucet.owner());
+        _faucet.transferOwnership(_owner);
 
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);

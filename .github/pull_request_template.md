@@ -10,6 +10,7 @@
 - [ ] Breaking change <!-- (would cause existing functionality to not work as expected) -->
 - [ ] Dependency changes
 - [ ] Deployment
+- [ ] Forge Script
 - [ ] Code refactor / cleanup
 - [ ] Documentation or wording changes
 - [ ] Other
