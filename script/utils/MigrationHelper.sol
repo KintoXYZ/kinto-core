@@ -125,26 +125,20 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         // (2). call upgradeTo to set new implementation
         if (!testMode) {
             if (isWallet) {
-                vm.broadcast(); // may require LEDGER_ADMIN
-                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
+                _upgradeWallet(_impl, deployerPrivateKey);
             } else {
-                if (_isGethAllowed(proxy)) {
-                    vm.broadcast(); // may require LEDGER_ADMIN
-                    UUPSUpgradeable(proxy).upgradeTo(_impl);
-                } else {
-                    try Ownable(proxy).owner() returns (address owner) {
-                        if (owner != _getChainDeployment("KintoWallet-admin")) {
-                            console.log(
-                                "%s contract is not owned by the KintoWallet-admin, its owner is %s",
-                                contractName,
-                                vm.toString(owner)
-                            );
-                            revert("Contract is not owned by KintoWallet-admin");
-                        }
-                        _upgradeTo(proxy, _impl, deployerPrivateKey);
-                    } catch {
-                        _upgradeTo(proxy, _impl, deployerPrivateKey);
+                try Ownable(proxy).owner() returns (address owner) {
+                    if (owner != _getChainDeployment("KintoWallet-admin")) {
+                        console.log(
+                            "%s contract is not owned by the KintoWallet-admin, its owner is %s",
+                            contractName,
+                            vm.toString(owner)
+                        );
+                        revert("Contract is not owned by KintoWallet-admin");
                     }
+                    _upgradeTo(proxy, _impl, deployerPrivateKey);
+                } catch {
+                    _upgradeTo(proxy, _impl, deployerPrivateKey);
                 }
             }
         } else {
@@ -167,28 +161,32 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         _upgradeTo(_proxy, _newImpl, _sponsorPaymaster, _signerPk);
     }
 
-    function _upgradeTo(address _proxy, address _newImpl, uint256 _signerPk) internal {
-        // prep upgradeTo user op
-        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
-        uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = _signerPk;
+    function _upgradeWallet(address _impl, uint256 _signerPk) internal {
+        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = _signerPk;
+        privKeys[1] = 0; // Ledger
+
+        bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, _impl);
+
+        _handleOps(data, from, address(factory), 0, address(0), privKeys);
+    }
+
+    function _upgradeTo(address proxy, address _newImpl, uint256 _signerPk) internal {
+        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = _signerPk;
+        privKeys[1] = 0; // Ledger
 
         // if UUPS contract has UPGRADE_INTERFACE_VERSION set to 5.0.0, we use upgradeToAndCall
-        bytes memory bytesOp = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl));
-        try UUPSUpgradeable5(_proxy).UPGRADE_INTERFACE_VERSION() returns (string memory _version) {
+        bytes memory data = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl));
+        try UUPSUpgradeable5(proxy).UPGRADE_INTERFACE_VERSION() returns (string memory _version) {
             if (keccak256(abi.encode(_version)) == keccak256(abi.encode("5.0.0"))) {
-                bytesOp =
-                    abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes(""));
+                data = abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(_newImpl), bytes(""));
             }
         } catch {}
 
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            block.chainid, _from, _proxy, 0, IKintoWallet(_from).getNonce(), privateKeys, bytesOp, address(0)
-        );
-
-        vm.broadcast(_signerPk);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+        _handleOps(data, from, proxy, 0, address(0), privKeys);
     }
 
     // TODO: should be extended to work with other initalize() that receive params
