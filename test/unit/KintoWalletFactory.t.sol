@@ -291,6 +291,8 @@ contract KintoWalletFactoryTest is SharedSetup {
     }
 
     function testCompleteWalletRecovery_RevertWhen_CallerIsRecovererAndAlreadyKYC() public {
+        vm.prank(_owner);
+        _walletFactory.approveWalletRecovery(payable(address(_kintoWallet)));
         vm.prank(address(_kintoWallet.recoverer()));
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
 
@@ -308,11 +310,11 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoID.monitor(users, updates);
 
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert(IKintoWalletFactory.KYCMustNotExist.selector);
+        vm.expectRevert(IKintoWallet.OwnerKYCMustBeBurned.selector);
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 
-    function testCompleteWalletRecovery_RevertWhenCallerIsRecovererButOwnerBurnedID() public {
+    function testCompleteWalletRecovery_WhenCallerIsRecovererAndFirstOwnerIsSame() public {
         vm.prank(_owner);
         _walletFactory.approveWalletRecovery(payable(address(_kintoWallet)));
         vm.prank(address(_kintoWallet.recoverer()));
@@ -320,19 +322,21 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         vm.warp(block.timestamp + _kintoWallet.RECOVERY_TIME() + 1);
 
-        revokeKYC(_kycProvider, _owner, _ownerPk);
+        // revokeKYC(_kycProvider, _owner, _ownerPk);
 
         // run monitor
-        address[] memory users = new address[](1);
-        users[0] = _noKyc;
-        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](1);
+        address[] memory users = new address[](2);
+        users[0] = _kintoWallet.owners(0);
+        users[1] = _noKyc;
+        IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](2);
         updates[0] = new IKintoID.MonitorUpdateData[](1);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
+        updates[1] = new IKintoID.MonitorUpdateData[](1);
+        updates[1][0] = IKintoID.MonitorUpdateData(true, true, 5);
         vm.prank(_kycProvider);
         _kintoID.monitor(users, updates);
 
         vm.prank(address(_kintoWallet.recoverer()));
-        vm.expectRevert("Invalid transfer");
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), users);
     }
 
