@@ -21,8 +21,6 @@ import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/ICurveStableSwapNG.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title Bridger
  * @notice Users can bridge tokens in to the Kinto L2 using this contract.
@@ -407,12 +405,10 @@ contract Bridger is
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
-        console2.log('finalAsset:', finalAsset);
         if (finalAsset == sUSDe) {
             return USDe;
         }
         if (finalAsset == wUSDM) {
-            console2.log('USDC:', USDC);
             return USDC;
         }
         return finalAsset;

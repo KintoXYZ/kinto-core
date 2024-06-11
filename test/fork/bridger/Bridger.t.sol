@@ -311,8 +311,16 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
 
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature( kintoWalletL2, bridger, _user, assetToDeposit, wUSDM,
-            amountToDeposit, 968e3, _userPk, block.timestamp + 1000
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            wUSDM,
+            amountToDeposit,
+            968e3,
+            _userPk,
+            block.timestamp + 1000
         );
 
         bytes memory permitSignature = _auxCreatePermitSignature(
@@ -337,8 +345,8 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(bridger.nonces(_user), nonce + 1);
 
         uint256 shares = ERC4626(wUSDM).previewDeposit(999386882362714689);
-        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, 'Invalid balance of the Bridger');
-        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, 'Invalid balance of the Vault');
+        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
     /* ============ Bridger ETH Deposit ============ */
