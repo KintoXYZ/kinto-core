@@ -85,7 +85,7 @@ contract KintoMigration60DeployScript is MigrationHelper {
         assertEq(proxy, expectedAddress);
 
         {
-            // whitelist app & initialize 
+            // whitelist app & initialize
             address wallet = 0x7403542bF2aF061eBF0DC16cAfA3068b90Fc1e75; // fede's kinto wallet
             uint256[] memory privKeys = new uint256[](1);
             privKeys[0] = deployerPrivateKey;
@@ -107,7 +107,7 @@ contract KintoMigration60DeployScript is MigrationHelper {
                 abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, minter, upgrader);
             _handleOps(selectorAndParams, wallet, proxy, 0, address(0), privKeys);
         }
-        
+
         checkToken(proxy, name, symbol);
     }
 }
