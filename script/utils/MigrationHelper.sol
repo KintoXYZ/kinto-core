@@ -37,6 +37,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
 
     bool testMode;
     uint256 deployerPrivateKey;
+    address deployer;
     KintoWalletFactory factory;
 
     function run() public virtual {
@@ -46,23 +47,13 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
 
         console2.log("Running on chain with id:", vm.toString(block.chainid));
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
+        deployer = vm.addr(deployerPrivateKey);
         console2.log("Deployer:", deployer);
 
         vm.startBroadcast(deployerPrivateKey);
 
-        broadcast(deployer);
-
-        vm.stopBroadcast();
-
-        validate(deployer);
-
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
-
-    function broadcast(address deployer) internal virtual {}
-
-    function validate(address deployer) internal virtual {}
 
     /// @dev deploys proxy contract via factory from deployer address
     function _deployProxy(string memory contractName, address implementation, bytes32 salt)

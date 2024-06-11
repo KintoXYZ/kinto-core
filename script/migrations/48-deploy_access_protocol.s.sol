@@ -32,7 +32,9 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
     WethWorkflow wethWorkflow;
     SwapWorkflow swapWorkflow;
 
-    function broadcast(address deployer) internal override {
+    function run() public override {
+        super.run();
+
         address accessRegistryAddr = _getChainDeployment("AccessRegistry");
         if (accessRegistryAddr != address(0)) {
             console2.log("Access Protocol is already deployed:", accessRegistryAddr);
@@ -91,9 +93,7 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
             create2("SwapWorkflow", abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY)))
         );
         registry.allowWorkflow(address(swapWorkflow));
-    }
 
-    function validate(address) internal view override {
         require(registry.beacon() == beacon, "Beacon is not set properly");
         require(registry.isWorkflowAllowed(address(withdrawWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(wethWorkflow)), "Workflow is not set properly");

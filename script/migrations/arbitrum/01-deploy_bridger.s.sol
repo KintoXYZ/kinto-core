@@ -18,7 +18,9 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
 
     function setUp() public {}
 
-    function broadcast(address) internal override {
+    function run() public override {
+        super.run();
+
         if (block.chainid != ARBITRUM_CHAINID) {
             console2.log("This script is meant to be run on the chain: %s", ARBITRUM_CHAINID);
             return;
@@ -47,9 +49,7 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         console2.log("Bridger proxy deployed at ", address(bridger));
         // Initialize proxy
         bridger.initialize(SENDER_ACCOUNT);
-    }
 
-    function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.owner(), deployer, "Invalid Owner");

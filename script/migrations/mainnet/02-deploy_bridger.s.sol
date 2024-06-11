@@ -18,8 +18,6 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants 
 
     // Exchange Proxy address is the same on all chains.
 
-    function setUp() public {}
-
     function run() public {
         if (block.chainid != 1) {
             console.log("This script is meant to be run on the mainnet");

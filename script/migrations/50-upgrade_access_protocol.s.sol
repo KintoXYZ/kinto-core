@@ -13,7 +13,9 @@ contract UpgradeAccessProtocolScript is Script, MigrationHelper {
     AccessRegistry registry;
     address newImpl;
 
-    function broadcast(address) internal override {
+    function run() public override {
+        super.run();
+
         registry = AccessRegistry(_getChainDeployment("AccessRegistry"));
         if (address(registry) == address(0)) {
             console2.log("Access Protocol has to be deployed");
@@ -26,9 +28,7 @@ contract UpgradeAccessProtocolScript is Script, MigrationHelper {
             create2("AccessRegistryV3-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
 
         registry.upgradeToAndCall(address(newImpl), bytes(""));
-    }
 
-    function validate(address) internal view override {
         require(registry.getAddress(address(this), 1234) != address(0), "Upgrade failed");
     }
 }

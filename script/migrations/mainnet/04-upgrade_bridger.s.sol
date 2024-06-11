@@ -20,7 +20,9 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
 
     function setUp() public {}
 
-    function broadcast(address) internal override {
+    function run() public override {
+        super.run();
+
         bridgerAddress = _getChainDeployment("Bridger", 1);
         if (bridgerAddress == address(0)) {
             console.log("Not deployed bridger", bridgerAddress);
@@ -36,9 +38,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
             )
         );
         // Stop broadcast because the Owner is Safe account
-    }
 
-    function validate(address) internal override {
         bridger = Bridger(payable(bridgerAddress));
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
