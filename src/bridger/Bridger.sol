@@ -205,7 +205,16 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+    )
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+        onlyPrivileged
+        onlySignerVerified(depositData)
+        returns (uint256)
+    {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -217,7 +226,7 @@ contract Bridger is
         );
 
         // Perform the deposit operation
-        _deposit(
+        return _deposit(
             depositData.signer,
             depositData.inputAsset,
             depositData.amount,
@@ -247,7 +256,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
         _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
@@ -264,7 +273,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
 
         uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
@@ -284,6 +293,8 @@ contract Bridger is
         );
 
         emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
+
+        return amountBought;
     }
 
     /* ============ Private Functions ============ */
@@ -308,7 +319,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) internal {
+    ) internal returns (uint256) {
         if (amount == 0) revert InvalidAmount(0);
 
         // slither-disable-next-line arbitrary-send-erc20
@@ -331,6 +342,8 @@ contract Bridger is
         );
 
         emit Deposit(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
+
+        return amountBought;
     }
 
     /**

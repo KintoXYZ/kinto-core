@@ -140,13 +140,14 @@ interface IBridger {
      * @param signatureData Data for the deposit.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount deposited.
      */
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Deposit ERC20 tokens.
@@ -157,6 +158,7 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount deposited.
      */
     function depositERC20(
         address inputAsset,
@@ -166,7 +168,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Deposit ETH.
@@ -176,6 +178,7 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount deposited.
      */
     function depositETH(
         uint256 amount,
@@ -184,7 +187,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Pause the contract.
