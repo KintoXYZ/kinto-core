@@ -144,7 +144,8 @@ abstract contract SignatureHelper is CommonBase {
     {
         bytes32 PERMIT_TYPEHASH;
         bytes32 structHash;
-        if (keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("DAI"))) {
+        // DAI has special permit signature on Ethereum
+        if (block.chainid == 1 && keccak256(abi.encodePacked(_asset.symbol())) == keccak256(abi.encodePacked("DAI"))) {
             PERMIT_TYPEHASH =
                 keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
             structHash =

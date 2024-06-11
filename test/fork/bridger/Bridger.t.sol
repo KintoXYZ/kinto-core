@@ -6,6 +6,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
+import "@kinto-core-test/fork/const.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -20,43 +21,15 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
 
-contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
-    using stdJson for string;
+import "forge-std/console2.sol";
 
-    address internal constant kintoWalletL2 = address(33);
-    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address internal constant sDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
-    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-    address internal constant senderAccount = address(100);
-    address internal constant L2_VAULT = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address internal constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
-    address internal constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
-    address internal constant ENA = 0x57e114B691Db790C35207b2e685D4A43181e6061;
-    address internal constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address internal constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
+abstract contract BridgeDataHelper is Constants {
+    // chainid => asset => bridger data
+    mapping(uint256 => mapping(address => IBridger.BridgeData)) internal bridgeData;
 
-    BridgerHarness internal bridger;
     IBridger.BridgeData internal emptyBridgerData;
 
-    address constant l2Vault = address(99);
-
-    mapping(address => IBridger.BridgeData) internal bridgeData;
-
-    uint256 internal amountIn = 1e18;
-
-    function setUp() public override {
-        super.setUp();
-
-        vm.deal(_owner, 1e20);
-
-        bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
-
-        // transfer owner's ownership to _owner
-        vm.prank(bridger.owner());
-        bridger.transferOwnership(_owner);
-
+    constructor() {
         emptyBridgerData = IBridger.BridgeData({
             vault: address(0),
             gasFee: 0,
@@ -66,7 +39,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[wstETH] = IBridger.BridgeData({
+        bridgeData[ETHEREUM_CHAINID][wstETH_ETHEREUM] = IBridger.BridgeData({
             vault: 0xc5d01939Af7Ce9Ffc505F0bb36eFeDde7920f2dc,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -75,7 +48,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[weETH] = IBridger.BridgeData({
+        bridgeData[ETHEREUM_CHAINID][WETH_ETHEREUM] = IBridger.BridgeData({
             vault: 0xeB66259d2eBC3ed1d3a98148f6298927d8A36397,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -84,7 +57,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[sDAI] = IBridger.BridgeData({
+        bridgeData[ETHEREUM_CHAINID][sDAI_ETHEREUM] = IBridger.BridgeData({
             vault: 0x5B8Ae1C9c5970e2637Cf3Af431acAAebEf7aFb85,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -93,7 +66,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[sUSDe] = IBridger.BridgeData({
+        bridgeData[ETHEREUM_CHAINID][sUSDe_ETHEREUM] = IBridger.BridgeData({
             vault: 0x43b718Aa5e678b08615CA984cbe25f690B085b32,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -102,7 +75,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             options: bytes("")
         });
 
-        bridgeData[ENA] = IBridger.BridgeData({
+        bridgeData[ETHEREUM_CHAINID][ENA_ETHEREUM] = IBridger.BridgeData({
             vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
             gasFee: 1e16,
             msgGasLimit: 500_000,
@@ -110,29 +83,72 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
             execPayload: bytes(""),
             options: bytes("")
         });
+
+        bridgeData[ARBITRUM_CHAINID][wUSDM] = IBridger.BridgeData({
+            vault: 0x500c8337782a9f82C5376Ea71b66A749cE42b507,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0xe5FA8E712B8932AdBB3bcd7e1d49Ea1E7cC0F58D,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+    }
+}
+
+contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHelper {
+    using stdJson for string;
+
+    address internal constant kintoWalletL2 = address(33);
+
+    address internal DAI;
+    address internal USDC;
+    address internal WETH;
+    address internal USDe;
+    address internal sUSDe;
+    address internal ENA;
+    address internal wstETH;
+    address internal weETH;
+    address internal usdmCurvePool;
+
+    BridgerHarness internal bridger;
+
+    uint256 internal amountIn = 1e18;
+
+    function setUp() public override {
+        super.setUp();
+
+        upgradeBridger();
     }
 
     function setUpChain() public virtual override {
         setUpEthereumFork();
     }
 
-    function deployBridger() internal {
-        // give some eth to _owner
-        vm.deal(_owner, 1e20);
-
-        BridgerHarness implementation = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
-        address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
-        bridger = BridgerHarness(payable(proxy));
-
-        vm.prank(_owner);
-        bridger.initialize(senderAccount);
-    }
-
     function upgradeBridger() internal {
-        // give some eth to _owner
         vm.deal(_owner, 1e20);
 
-        BridgerHarness newImpl = new BridgerHarness(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
+        bridger = BridgerHarness(payable(_getChainDeployment("Bridger")));
+
+        // transfer owner's ownership to _owner
+        vm.prank(bridger.owner());
+        bridger.transferOwnership(_owner);
+
+        WETH = address(bridger.WETH());
+        DAI = bridger.DAI();
+        USDe = bridger.USDe();
+        sUSDe = bridger.sUSDe();
+        wstETH = bridger.wstETH();
+
+        BridgerHarness newImpl = new BridgerHarness(
+            EXCHANGE_PROXY,
+            block.chainid == ARBITRUM_CHAINID ? USDM_CURVE_POOL_ARBITRUM : address(0),
+            block.chainid == ARBITRUM_CHAINID ? USDC_ARBITRUM : address(0),
+            WETH,
+            DAI,
+            USDe,
+            sUSDe,
+            wstETH
+        );
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
     }
@@ -141,11 +157,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     // deposit wstETH (no swap)
     function testDepositBySig_wstETH_WhenNoSwap() public {
-        upgradeBridger();
-
         address asset = bridger.wstETH();
         uint256 amountToDeposit = 1e18;
-        IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
+        IBridger.BridgeData memory data = bridgeData[block.chainid][bridger.wstETH()];
         uint256 bridgerBalanceBefore = ERC20(asset).balanceOf(address(bridger));
         uint256 vaultBalanceBefore = ERC20(asset).balanceOf(address(data.vault));
         deal(asset, _user, amountToDeposit);
@@ -183,9 +197,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
 
     // USDe to sUSDe
     function testDepositBySig_WhenUSDeTosUSDe() public {
-        upgradeBridger();
-
-        IBridger.BridgeData memory data = bridgeData[sUSDe];
+        IBridger.BridgeData memory data = bridgeData[block.chainid][sUSDe];
         address assetToDeposit = bridger.USDe();
         uint256 amountToDeposit = 1e18;
         uint256 sharesBefore = ERC20(sUSDe).balanceOf(address(bridger));
@@ -228,7 +240,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         upgradeBridger();
 
         // top-up _user DAI balance
-        IBridger.BridgeData memory data = bridgeData[wstETH];
+        IBridger.BridgeData memory data = bridgeData[block.chainid][wstETH];
         address assetIn = DAI;
         address assetOut = wstETH;
 
@@ -282,13 +294,58 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         );
     }
 
+    // DAI to wUSDM
+    function testDepositBySig_WhenDaiToWUSDM() public {
+        setUpArbitrumFork();
+        vm.rollFork(220859199); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
+        address assetToDeposit = DAI_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 sharesBefore = ERC20(wUSDM).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(wUSDM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature( kintoWalletL2, bridger, _user, assetToDeposit, wUSDM,
+            amountToDeposit, 968e3, _userPk, block.timestamp + 1000
+        );
+
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        // DAI to USDC quote's swapData
+        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000'  --header '0x-api-key: 39e9a7b4-5773-48d4-b55e-3f84f6bad161' | jq > ./test/data/swap-dai-to-usdc-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-usdc-arb.json").readBytes(".data");
+
+        vm.prank(_owner);
+        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
+        assertEq(bridger.nonces(_user), nonce + 1);
+
+        uint256 shares = ERC4626(wUSDM).previewDeposit(999386882362714689);
+        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, 'Invalid balance of the Bridger');
+        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, 'Invalid balance of the Vault');
+    }
+
     /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
-        upgradeBridger();
-
         uint256 amountToDeposit = 1e18;
-        IBridger.BridgeData memory data = bridgeData[bridger.wstETH()];
+        IBridger.BridgeData memory data = bridgeData[block.chainid][bridger.wstETH()];
         uint256 balanceBefore = ERC20(bridger.wstETH()).balanceOf(data.vault);
         vm.deal(_user, amountToDeposit + data.gasFee);
 
@@ -307,9 +364,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.rollFork(19919468); // block number in which the 0x API data was fetched
         upgradeBridger();
 
-        address assetOut = sDAI;
+        address assetOut = sDAI_ETHEREUM;
 
-        IBridger.BridgeData memory data = bridgeData[sDAI];
+        IBridger.BridgeData memory data = bridgeData[block.chainid][sDAI_ETHEREUM];
         amountIn = 1 ether;
         // top-up `_user` ETH balance
         vm.deal(_user, amountIn + data.gasFee);

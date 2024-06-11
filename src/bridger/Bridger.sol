@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -18,6 +19,7 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
+import {ICurveStableSwapNG} from "@kinto-core/interfaces/ICurveStableSwapNG.sol";
 
 import "forge-std/console2.sol";
 
@@ -45,6 +47,7 @@ contract Bridger is
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
+
     /**
      * @notice Emitted when a deposit is made.
      * @param from The address of the depositor.
@@ -64,10 +67,17 @@ contract Bridger is
     );
 
     /* ============ Constants & Immutables ============ */
+
+    /// @notice The address of the USDM token. The same on all chains.
+    address public constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
+    /// @notice The address of the wrapped USDM token. The same on all chains.
+    address public constant wUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
     /// @notice The address representing ETH.
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
+    /// @notice The address of the USDC token.
+    address public immutable USDC;
     /// @notice The address of the DAI token.
     address public immutable DAI;
     /// @notice The address of the USDe token.
@@ -79,27 +89,29 @@ contract Bridger is
 
     /// @notice The domain separator for EIP-712.
     bytes32 public immutable override domainSeparator;
-    /// @notice The address of the L2 vault.
-    address public immutable override l2Vault;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
+    /// @notice The address of the Curve pool for USDM.
+    address public immutable usdmCurvePool;
 
     /* ============ State Variables ============ */
+
     /// @notice The address of the sender account.
     address public override senderAccount;
 
     /// @notice DEPRECATED: Mapping of allowed assets.
-    mapping(address => bool) private allowedAssets;
+    mapping(address => bool) private __allowedAssets;
     /// @notice DEPRECATED: Mapping of deposits.
-    mapping(address => mapping(address => uint256)) private deposits;
+    mapping(address => mapping(address => uint256)) private __deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
     /// @notice DEPRECATED: Count of deposits..
-    uint256 public depositCount;
+    uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
-    bool private swapsEnabled;
+    bool private __swapsEnabled;
 
     /* ============ Modifiers ============ */
+
     /**
      * @notice Modifier to restrict access to only the owner or sender account.
      */
@@ -115,8 +127,9 @@ contract Bridger is
      * @param exchange The address of the exchange proxy to be used for token swaps.
      */
     constructor(
-        address vault,
         address exchange,
+        address usdmCurveAmm,
+        address usdc,
         address weth,
         address dai,
         address usde,
@@ -126,26 +139,27 @@ contract Bridger is
         _disableInitializers();
 
         domainSeparator = _domainSeparatorV4();
-        l2Vault = vault;
         swapRouter = exchange;
 
+        USDC = usdc;
         WETH = IWETH(weth);
         DAI = dai;
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
+        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize(address _senderAccount) external initializer {
+    function initialize(address sender) external initializer {
         __UUPSUpgradeable_init();
         __Ownable_init();
         __Pausable_init();
 
         _transferOwnership(msg.sender);
-        senderAccount = _senderAccount;
+        senderAccount = sender;
     }
 
     /**
@@ -175,10 +189,10 @@ contract Bridger is
 
     /**
      * @notice Sets the sender account. Only the owner can call this function.
-     * @param _senderAccount Address of the sender account.
+     * @param sender Address of the sender account.
      */
-    function setSenderAccount(address _senderAccount) external override onlyOwner {
-        senderAccount = _senderAccount;
+    function setSenderAccount(address sender) external override onlyOwner {
+        senderAccount = sender;
     }
 
     /* ============ Public ============ */
@@ -362,18 +376,46 @@ contract Bridger is
                 amount,
                 IERC20(inputAsset),
                 // If the final asset is sUSDe, swap to USDe first and then stake
-                IERC20(finalAsset == sUSDe ? USDe : finalAsset),
+                // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
+                IERC20(_getFinalAssetByAsset(finalAsset)),
                 swapCallData,
                 minReceive
             );
         }
 
-        // If the final asset is sUSDe, stake USDe to sUSDe
+        // If the final asset is sUSDe, stake USDe to sUSDe.
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
             amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
         }
+
+        // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
+        if (finalAsset == wUSDM) {
+            // 0 coin == USDC
+            // 1 coin == USDM
+            uint256 balance = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeApprove(usdmCurvePool, balance);
+            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
+            amountBought =
+                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
+            // wrap USDM to wUSDM
+            balance = IERC20(USDM).balanceOf(address(this));
+            IERC20(USDM).safeApprove(wUSDM, balance);
+            amountBought = IERC4626(wUSDM).deposit(balance, address(this));
+        }
+    }
+
+    function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
+        console2.log('finalAsset:', finalAsset);
+        if (finalAsset == sUSDe) {
+            return USDe;
+        }
+        if (finalAsset == wUSDM) {
+            console2.log('USDC:', USDC);
+            return USDC;
+        }
+        return finalAsset;
     }
 
     /**

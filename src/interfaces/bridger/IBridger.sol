@@ -218,12 +218,6 @@ interface IBridger {
     function domainSeparator() external view returns (bytes32);
 
     /**
-     * @notice Get the L2 vault address.
-     * @return L2 vault address.
-     */
-    function l2Vault() external view returns (address);
-
-    /**
      * @notice Get the sender account address.
      * @return Sender account address.
      */

@@ -32,7 +32,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
             "BridgerV2-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
-                abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), address(0))
+                abi.encode(EXCHANGE_PROXY, CURVE_USDM_POOL, USDC, WETH, address(0), address(0), address(0), address(0))
             )
         );
         bridger = Bridger(payable(bridgerAddress));
@@ -42,7 +42,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
-        assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");
         assertEq(bridger.owner(), deployer, "Invalid Owner");
         console.log("BridgerV2-impl at: %s", address(newImpl));
     }
