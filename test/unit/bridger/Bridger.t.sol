@@ -229,7 +229,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         vm.expectRevert(abi.encodeWithSelector(IBridger.DepositBySigResult.selector, amountToDeposit));
         bridger.previewDepositBySig{value: GAS_FEE}(permitSignature, sigdata, bytes(""), mockBridgerData);
-
     }
 
     /* ============ depositERC20 ============ */

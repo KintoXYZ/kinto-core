@@ -209,7 +209,7 @@ contract Bridger is
         nonReentrant
         onlyPrivileged
         onlySignerVerified(depositData)
-        returns (uint256) 
+        returns (uint256)
     {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
@@ -241,14 +241,7 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-    {
+    ) external payable override whenNotPaused nonReentrant onlyPrivileged {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -317,7 +310,6 @@ contract Bridger is
 
         return amountOut;
     }
-
 
     /* ============ Private Functions ============ */
 
