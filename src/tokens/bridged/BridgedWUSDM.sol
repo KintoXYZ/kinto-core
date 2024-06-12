@@ -8,11 +8,9 @@ import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 /**
- * @title BridgedToken
- * @notice Implements an ERC20 token with bridging capabilities for cross-chain asset transfers.
- * Extends OpenZeppelin's ERC20, ERC20Permit, and AccessControl.
- * @dev Introduces `mint` and `burn` functions secured with the `MINTER_ROLE` for bridging processes.
- * Inherits ERC20 functionality, permit mechanism for gasless transactions, and role-based access control.
+ * @title BridgedWusdm
+ * @notice Implements an ERC20 token with transfer restrictions for USA accounts.
+ * Extends BridgedToken.
  */
 contract BridgedWusdm is BridgedToken {
     /**
@@ -29,7 +27,7 @@ contract BridgedWusdm is BridgedToken {
      * (or `to`) is the zero address. All customizations to transfers, mints, and burns should be done by overriding
      * this function.
      *
-     * If destination is a KintoWallet, only allow the transfer if
+     * If destination is a KintoWallet, allow all transfer except for KintoWallet with USA trait.
      *
      * Emits a {Transfer} event.
      */
