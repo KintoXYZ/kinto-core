@@ -337,7 +337,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         uint256 nonce = bridger.nonces(_user);
 
         // DAI to USDC quote's swapData
-        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000'  --header '0x-api-key: 39e9a7b4-5773-48d4-b55e-3f84f6bad161' | jq > ./test/data/swap-dai-to-usdc-arb.json
+        // curl
+        'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000'
+        --header '0x-api-key:key' | jq > ./test/data/swap-dai-to-usdc-arb.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-usdc-arb.json").readBytes(".data");
 
         vm.prank(_owner);
