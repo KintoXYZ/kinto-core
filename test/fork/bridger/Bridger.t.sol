@@ -297,7 +297,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // DAI to wUSDM
     function testDepositBySig_WhenDaiToWUSDM() public {
         setUpArbitrumFork();
-        vm.rollFork(220859199); // block number in which the 0x API data was fetched
+        vm.rollFork(221170245); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
@@ -344,7 +344,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
         assertEq(bridger.nonces(_user), nonce + 1);
 
-        uint256 shares = ERC4626(wUSDM).previewDeposit(999386882362714689);
+        uint256 shares = ERC4626(wUSDM).previewDeposit(999377507945232038);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
