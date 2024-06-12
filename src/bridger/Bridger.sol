@@ -370,7 +370,7 @@ contract Bridger is
                 // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
                 IERC20(_getFinalAssetByAsset(finalAsset)),
                 swapCallData,
-                minReceive
+                finalAsset == sUSDe || finalAsset == wUSDM ? 1 : minReceive
             );
         }
 
@@ -395,6 +395,7 @@ contract Bridger is
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
+        if (amountBought < minReceive) revert SlippageError(amountBought, minReceive);
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
