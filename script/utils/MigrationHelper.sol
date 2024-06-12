@@ -146,12 +146,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         }
     }
 
-    // utils for doing actions through EntryPoint
-
-    function _upgradeTo(address _proxy, address _newImpl, address _sponsorPaymaster, uint256 _signerPk) internal {
-        _upgradeTo(_proxy, _newImpl, _sponsorPaymaster, _signerPk);
-    }
-
     function _upgradeWallet(address _impl, uint256 _signerPk) internal {
         address payable from = payable(_getChainDeployment("KintoWallet-admin"));
         uint256[] memory privKeys = new uint256[](2);
@@ -180,7 +174,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         _handleOps(data, from, proxy, 0, address(0), privKeys);
     }
 
-    // TODO: should be extended to work with other initalize() that receive params
+    // TODO: should be extended to work with other initialize() that receive params
     function _initialize(address _proxy, uint256 _signerPk) internal {
         // fund _proxy in the paymaster if necessary
         if (_isGethAllowed(_proxy)) {
