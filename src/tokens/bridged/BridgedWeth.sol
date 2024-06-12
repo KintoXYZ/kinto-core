@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 
 /**
