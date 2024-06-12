@@ -53,21 +53,31 @@ interface IBridger {
     /* ============ Errors ============ */
     /// @notice Only the owner can call this function.
     error OnlyOwner();
+
     /// @notice The signature has expired.
     error SignatureExpired();
+
     /// @notice The nonce is invalid.
     error InvalidNonce();
+
     /// @notice The signer is invalid.
     error InvalidSigner();
+
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
     error InvalidAmount(uint256 amount);
+
     /// @notice Failed to stake ETH.
     error FailedToStakeEth();
+
     /// @notice Slippage error occurred.
     /// @param boughtAmount The amount bought.
     /// @param minReceive The minimum amount to receive.
     error SlippageError(uint256 boughtAmount, uint256 minReceive);
+
+    /// @notice Returns the amount of final asset to deposit.
+    /// @param amountOut The amount to deposit.
+    error DepositBySigResult(uint256 amountOut);
 
     /* ============ Structs ============ */
 
@@ -140,8 +150,23 @@ interface IBridger {
      * @param signatureData Data for the deposit.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositBySig(
+        bytes calldata permitSignature,
+        IBridger.SignatureData calldata signatureData,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable returns (uint256);
+
+    /**
+     * @notice Previews a deposit of the specified amount of tokens into the Kinto L2.
+     * @param permitSignature Signature for permit.
+     * @param signatureData Data for the deposit.
+     * @param swapCallData Data required for the swap.
+     * @param bridgeData Data required for the bridge.
+     */
+    function previewDepositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
@@ -157,6 +182,7 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositERC20(
         address inputAsset,
@@ -166,7 +192,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
@@ -176,6 +202,7 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositETH(
         uint256 amount,
@@ -184,7 +211,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Pause the contract.

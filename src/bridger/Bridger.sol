@@ -209,6 +209,7 @@ contract Bridger is
         nonReentrant
         onlyPrivileged
         onlySignerVerified(depositData)
+        returns (uint256) 
     {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
@@ -221,7 +222,7 @@ contract Bridger is
         );
 
         // Perform the deposit operation
-        _deposit(
+        return _deposit(
             depositData.signer,
             depositData.inputAsset,
             depositData.amount,
@@ -234,6 +235,45 @@ contract Bridger is
     }
 
     /// @inheritdoc IBridger
+    /// @dev The function always reverts with the amount to deposit. Doesn't modify the state.
+    function previewDepositBySig(
+        bytes calldata permitSig,
+        IBridger.SignatureData calldata depositData,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    )
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+        onlyPrivileged
+    {
+        // Permit the contract to spend the tokens on behalf of the signer
+        _permit(
+            depositData.signer,
+            depositData.inputAsset,
+            depositData.amount,
+            depositData.expiresAt,
+            ERC20Permit(depositData.inputAsset).nonces(depositData.signer),
+            permitSig
+        );
+
+        // Perform the deposit operation
+        uint256 amountOut = _deposit(
+            depositData.signer,
+            depositData.inputAsset,
+            depositData.amount,
+            depositData.kintoWallet,
+            depositData.finalAsset,
+            depositData.minReceive,
+            swapCallData,
+            bridgeData
+        );
+        revert DepositBySigResult(amountOut);
+    }
+
+    /// @inheritdoc IBridger
     function depositERC20(
         address inputAsset,
         uint256 amount,
@@ -242,8 +282,8 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
-        _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+        return _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
     /// @inheritdoc IBridger
@@ -254,27 +294,30 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
 
-        uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
+        uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
         // Approve max allowance to save on gas for future transfers
-        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
+        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountOut) {
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge the final amount to Kinto
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
-            amountBought,
+            amountOut,
             bridgeData.msgGasLimit,
             bridgeData.connector,
             bridgeData.execPayload,
             bridgeData.options
         );
 
-        emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
+        emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountOut);
+
+        return amountOut;
     }
+
 
     /* ============ Private Functions ============ */
 
@@ -298,13 +341,13 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) internal {
+    ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
 
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
 
-        uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
+        amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Approve max allowance to save on gas for future transfers
         if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
