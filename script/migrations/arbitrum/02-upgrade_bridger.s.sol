@@ -21,7 +21,9 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
 
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
 
-        address newImpl = address(new Bridger(EXCHANGE_PROXY, CURVE_USDM_POOL, USDC, WETH, address(0), address(0), address(0), address(0)));
+        address newImpl = address(
+            new Bridger(EXCHANGE_PROXY, CURVE_USDM_POOL, USDC, WETH, address(0), address(0), address(0), address(0))
+        );
         bridger.upgradeTo(address(newImpl));
 
         // Checks

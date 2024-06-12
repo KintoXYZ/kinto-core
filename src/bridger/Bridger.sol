@@ -369,8 +369,7 @@ contract Bridger is
                 // If the final asset is sUSDe, swap to USDe first and then stake
                 // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
                 IERC20(_getFinalAssetByAsset(finalAsset)),
-                swapCallData,
-                finalAsset == sUSDe || finalAsset == wUSDM ? 1 : minReceive
+                swapCallData
             );
         }
 
@@ -468,7 +467,6 @@ contract Bridger is
      * @param sellToken Address of the sell token.
      * @param buyToken Address of the buy token.
      * @param swapCallData Data required for the swap.
-     * @param minReceive Minimum amount to receive after swap.
      * @return Amount of buy token bought.
      */
     function _fillQuote(
@@ -478,9 +476,7 @@ contract Bridger is
         // The `buyTokenAddress` field from the API response.
         IERC20 buyToken,
         // The `data` field from the API response.
-        bytes calldata swapCallData,
-        // Slippage protection
-        uint256 minReceive
+        bytes calldata swapCallData
     ) private returns (uint256) {
         if (sellToken == buyToken) {
             return amountIn;
@@ -497,7 +493,6 @@ contract Bridger is
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
 
-        if (boughtAmount < minReceive) revert SlippageError(boughtAmount, minReceive);
         return boughtAmount;
     }
 
