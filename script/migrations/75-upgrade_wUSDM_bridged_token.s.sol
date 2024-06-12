@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {BridgedToken} from "../../src/tokens/bridged/BridgedToken.sol";
+import {BridgedWusdm} from "../../src/tokens/bridged/BridgedWusdm.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
@@ -40,7 +40,7 @@ contract KintoMigration75DeployScript is MigrationHelper {
     }
 
     function checkToken(address token, string memory name, string memory symbol) internal view {
-        BridgedToken bridgedToken = BridgedToken(token);
+        BridgedWusdm bridgedToken = BridgedWusdm(token);
         require(keccak256(abi.encodePacked(bridgedToken.name())) == keccak256(abi.encodePacked(name)), "Name mismatch");
         require(
             keccak256(abi.encodePacked(bridgedToken.symbol())) == keccak256(abi.encodePacked(symbol)), "Symbol mismatch"
@@ -67,7 +67,7 @@ contract KintoMigration75DeployScript is MigrationHelper {
         vm.selectFork(kintoFork);
 
         // deploy token
-        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(6));
+        bytes memory bytecode = abi.encodePacked(type(BridgedWusdm).creationCode, abi.encode(6));
         proxy = _getChainDeployment("wUSDM");
         implementation = _deployImplementationAndUpgrade("wUSDM", "V2", bytecode);
 
