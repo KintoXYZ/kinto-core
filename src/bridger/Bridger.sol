@@ -195,11 +195,7 @@ contract Bridger is
 
     /* ============ Public ============ */
 
-    /**
-     * @notice Deposits the specified amount of tokens into the Kinto L2.
-     * @param depositData Struct with all the required information to deposit via signature.
-     * @param permitSig Signature to be recovered to allow the spender to spend the tokens.
-     */
+    /// @inheritdoc IBridger
     function depositBySig(
         bytes calldata permitSig,
         IBridger.SignatureData calldata depositData,
@@ -213,7 +209,6 @@ contract Bridger is
         nonReentrant
         onlyPrivileged
         onlySignerVerified(depositData)
-        returns (uint256)
     {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
@@ -226,7 +221,7 @@ contract Bridger is
         );
 
         // Perform the deposit operation
-        return _deposit(
+        _deposit(
             depositData.signer,
             depositData.inputAsset,
             depositData.amount,
@@ -238,16 +233,7 @@ contract Bridger is
         );
     }
 
-    /**
-     * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
-     * @param inputAsset Address of the input asset.
-     * @param amount Amount of the input asset.
-     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
-     * @param finalAsset Address of the final asset.
-     * @param minReceive Minimum amount to receive after swap.
-     * @param swapCallData Data required for the swap.
-     * @param bridgeData Data required for the bridge.
-     */
+    /// @inheritdoc IBridger
     function depositERC20(
         address inputAsset,
         uint256 amount,
@@ -256,16 +242,11 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+    ) external payable override whenNotPaused nonReentrant {
         _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
-    /**
-     * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
-     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
-     * @param finalAsset Asset to deposit into.
-     * @param swapCallData Struct with all the required information to swap the tokens.
-     */
+    /// @inheritdoc IBridger
     function depositETH(
         uint256 amount,
         address kintoWallet,
@@ -273,7 +254,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+    ) external payable override whenNotPaused nonReentrant {
         if (amount == 0) revert InvalidAmount(amount);
 
         uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
@@ -293,8 +274,6 @@ contract Bridger is
         );
 
         emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
-
-        return amountBought;
     }
 
     /* ============ Private Functions ============ */
@@ -319,7 +298,7 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) internal returns (uint256) {
+    ) internal {
         if (amount == 0) revert InvalidAmount(0);
 
         // slither-disable-next-line arbitrary-send-erc20
@@ -342,8 +321,6 @@ contract Bridger is
         );
 
         emit Deposit(user, kintoWallet, inputAsset, amount, finalAsset, amountBought);
-
-        return amountBought;
     }
 
     /**

@@ -135,22 +135,21 @@ interface IBridger {
     /* ============ State Change ============ */
 
     /**
-     * @notice Deposit tokens by signature.
+     * @notice Deposits the specified amount of tokens into the Kinto L2.
      * @param permitSignature Signature for permit.
      * @param signatureData Data for the deposit.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
-     * @return The amount deposited.
      */
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external payable;
 
     /**
-     * @notice Deposit ERC20 tokens.
+     * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
      * @param inputAsset Address of the input asset.
      * @param amount Amount of the input asset.
      * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
@@ -158,7 +157,6 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
-     * @return The amount deposited.
      */
     function depositERC20(
         address inputAsset,
@@ -168,17 +166,16 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external payable;
 
     /**
-     * @notice Deposit ETH.
+     * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
      * @param amount Amount of ETH to deposit.
      * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
      * @param finalAsset Address of the final asset.
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
-     * @return The amount deposited.
      */
     function depositETH(
         uint256 amount,
@@ -187,7 +184,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external payable;
 
     /**
      * @notice Pause the contract.
