@@ -193,44 +193,6 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
     }
 
-    function testPreviewDepositBySig() public {
-        address assetToDeposit = address(sDAI);
-        uint256 amountToDeposit = 1e18;
-        deal(assetToDeposit, _user, amountToDeposit);
-
-        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
-
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWallet,
-            bridger,
-            _user,
-            assetToDeposit,
-            assetToDeposit,
-            amountToDeposit,
-            amountToDeposit,
-            _userPk,
-            block.timestamp + 1000
-        );
-
-        sigdata.signature = bytes("");
-
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        vm.prank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IBridger.DepositBySigResult.selector, amountToDeposit));
-        bridger.previewDepositBySig{value: GAS_FEE}(permitSignature, sigdata, bytes(""), mockBridgerData);
-    }
-
     /* ============ depositERC20 ============ */
 
     function testDepositERC20() public {

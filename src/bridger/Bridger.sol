@@ -235,38 +235,6 @@ contract Bridger is
     }
 
     /// @inheritdoc IBridger
-    /// @dev The function always reverts with the amount to deposit. Doesn't modify the state.
-    function previewDepositBySig(
-        bytes calldata permitSig,
-        IBridger.SignatureData calldata depositData,
-        bytes calldata swapCallData,
-        BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged {
-        // Permit the contract to spend the tokens on behalf of the signer
-        _permit(
-            depositData.signer,
-            depositData.inputAsset,
-            depositData.amount,
-            depositData.expiresAt,
-            ERC20Permit(depositData.inputAsset).nonces(depositData.signer),
-            permitSig
-        );
-
-        // Perform the deposit operation
-        uint256 amountOut = _deposit(
-            depositData.signer,
-            depositData.inputAsset,
-            depositData.amount,
-            depositData.kintoWallet,
-            depositData.finalAsset,
-            depositData.minReceive,
-            swapCallData,
-            bridgeData
-        );
-        revert DepositBySigResult(amountOut);
-    }
-
-    /// @inheritdoc IBridger
     function depositERC20(
         address inputAsset,
         uint256 amount,

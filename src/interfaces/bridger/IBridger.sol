@@ -160,20 +160,6 @@ interface IBridger {
     ) external payable returns (uint256);
 
     /**
-     * @notice Previews a deposit of the specified amount of tokens into the Kinto L2.
-     * @param permitSignature Signature for permit.
-     * @param signatureData Data for the deposit.
-     * @param swapCallData Data required for the swap.
-     * @param bridgeData Data required for the bridge.
-     */
-    function previewDepositBySig(
-        bytes calldata permitSignature,
-        IBridger.SignatureData calldata signatureData,
-        bytes calldata swapCallData,
-        BridgeData calldata bridgeData
-    ) external payable;
-
-    /**
      * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
      * @param inputAsset Address of the input asset.
      * @param amount Amount of the input asset.
