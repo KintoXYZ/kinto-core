@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import {BridgedWusdm} from "@kinto-core/tokens/bridged/BridgedWusdm.sol";
+import {BridgedWusdm} from "@kinto-core/tokens/bridged/BridgedWUSDM.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
