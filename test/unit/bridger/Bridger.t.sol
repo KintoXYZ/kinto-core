@@ -86,7 +86,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             options: OPTIONS
         });
 
-        vm.etch(address(bridger.PERMIT2()), vm.readFileBinary('./test/data/permit2-bytecode-binary.data'));
+        vm.etch(address(bridger.PERMIT2()), vm.readFileBinary("./test/data/permit2-bytecode-binary.data"));
     }
 
     /* ============ depositBySig ============ */
@@ -219,8 +219,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             block.timestamp + 1000
         );
 
-        IAllowanceTransfer.PermitSingle memory permitSingle =
-            IAllowanceTransfer.PermitSingle(IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0), address(bridger), type(uint256).max);
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
 
         bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
 
@@ -260,8 +263,11 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             block.timestamp + 1000
         );
 
-        IAllowanceTransfer.PermitSingle memory permitSingle =
-            IAllowanceTransfer.PermitSingle(IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0), address(bridger), type(uint256).max);
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
 
         bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
 
@@ -291,10 +297,13 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             _userPk,
             block.timestamp + 1000
         );
-        sigData.signature = hex'dead';
+        sigData.signature = hex"dead";
 
-        IAllowanceTransfer.PermitSingle memory permitSingle =
-            IAllowanceTransfer.PermitSingle(IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0), address(bridger), type(uint256).max);
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
 
         bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
 
