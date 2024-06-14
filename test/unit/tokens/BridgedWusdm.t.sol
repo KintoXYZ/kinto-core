@@ -21,12 +21,16 @@ contract BridgedWusdmTest is SharedSetup {
         minter = createUser("minter");
         upgrader = createUser("upgrader");
 
-        token = BridgedWusdm(payable(address(new UUPSProxy(address(new BridgedWusdm(18)), ""))));
+        token = BridgedWusdm(
+            payable(
+                address(new UUPSProxy(address(new BridgedWusdm(18, address(_walletFactory), address(_kintoID))), ""))
+            )
+        );
         token.initialize("Wrapped USDM", "WUSDM", admin, minter, upgrader);
     }
 
     function setUpChain() public virtual override {
-        setUpKintoFork();
+        setUpKintoLocal();
     }
 
     function testUp() public override {
@@ -64,7 +68,7 @@ contract BridgedWusdmTest is SharedSetup {
 
         vm.expectRevert(
             abi.encodeWithSignature(
-                "TransferNotAllowed(address,address,uint256)", address(0), address(_kintoWallet), 840
+                "CountryIsNotAllowed(address,address,uint256)", address(0), address(_kintoWallet), 840
             )
         );
         vm.prank(minter);
@@ -110,7 +114,7 @@ contract BridgedWusdmTest is SharedSetup {
 
         vm.expectRevert(
             abi.encodeWithSignature(
-                "TransferNotAllowed(address,address,uint256)", address(_user), address(_kintoWallet), 840
+                "CountryIsNotAllowed(address,address,uint256)", address(_user), address(_kintoWallet), 840
             )
         );
         vm.prank(_user);
