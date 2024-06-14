@@ -36,6 +36,13 @@ contract BridgedWusdmTest is SharedSetup {
     function testUp() public override {
         super.testUp();
 
+        token = BridgedWusdm(
+            payable(
+                address(new UUPSProxy(address(new BridgedWusdm(18, address(_walletFactory), address(_kintoID))), ""))
+            )
+        );
+        token.initialize("Wrapped USDM", "WUSDM", admin, minter, upgrader);
+
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Wrapped USDM");
         assertEq(token.symbol(), "WUSDM");
