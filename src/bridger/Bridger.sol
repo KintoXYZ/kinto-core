@@ -68,6 +68,8 @@ contract Bridger is
 
     /* ============ Constants & Immutables ============ */
 
+    /// @notice The address of the PERMIT2 contract. The same on all chains.
+    IAllowanceTransfer public immutable PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     /// @notice The address of the USDM token. The same on all chains.
     address public constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
     /// @notice The address of the wrapped USDM token. The same on all chains.
@@ -93,8 +95,6 @@ contract Bridger is
     address public immutable swapRouter;
     /// @notice The address of the Curve pool for USDM.
     address public immutable usdmCurvePool;
-    /// @notice The address of the PERMIT2 contract.
-    IAllowanceTransfer public immutable PERMIT2;
 
     /* ============ State Variables ============ */
 
