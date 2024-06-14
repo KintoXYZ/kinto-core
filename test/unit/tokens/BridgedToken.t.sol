@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
-import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";

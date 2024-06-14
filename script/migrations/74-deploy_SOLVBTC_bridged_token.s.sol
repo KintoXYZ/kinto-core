@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {BridgedToken} from "../../src/tokens/BridgedToken.sol";
+import {BridgedToken} from "../../src/tokens/bridged/BridgedToken.sol";
 import {IKintoWallet} from "../../src/interfaces/IKintoWallet.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
