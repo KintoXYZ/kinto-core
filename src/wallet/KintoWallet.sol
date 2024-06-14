@@ -148,7 +148,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Engen Claim Simplification ============ */
 
-    function claimEngen(uint8 firstVote, uint8 secondVote, uint8 thirdVote) external override onlySelf {
+    function claimEngen(uint8, uint8, uint8) external override onlySelf {
         IEngenCredits(0xD1295F0d8789c3E0931A04F91049dB33549E9C8F).mintCredits();
         // EngenGovernance engenGovernance = EngenGovernance(payable(0x27926a991BB0193Bf5b679bdb6Cb3d3B6581084E));
         // // Proposal Ids

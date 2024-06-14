@@ -96,8 +96,6 @@ contract Bridger is
     /// @notice The address of the PERMIT2 contract.
     IAllowanceTransfer public immutable PERMIT2;
 
-
-
     /* ============ State Variables ============ */
 
     /// @notice The address of the sender account.
@@ -228,7 +226,7 @@ contract Bridger is
         );
 
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
+        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
 
         // Perform the deposit operation
         return _deposit(
@@ -264,12 +262,7 @@ contract Bridger is
         PERMIT2.permit(depositData.signer, permitSingle, permit2Signature);
 
         // Transfer tokens from the user to the Bridger.
-        PERMIT2.transferFrom(
-            depositData.signer,
-            address(this),
-            uint160(depositData.amount),
-            permitSingle.details.token
-        );
+        PERMIT2.transferFrom(depositData.signer, address(this), uint160(depositData.amount), permitSingle.details.token);
 
         // Perform the deposit operation
         return _deposit(
@@ -295,7 +288,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         // slither-disable-next-line arbitrary-send-erc20
-        IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
+        IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
 
         return _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
