@@ -18,8 +18,6 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants 
 
     // Exchange Proxy address is the same on all chains.
 
-    function setUp() public {}
-
     function run() public {
         if (block.chainid != 1) {
             console.log("This script is meant to be run on the mainnet");
@@ -35,7 +33,7 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants 
             return;
         }
 
-        Bridger _implementation = new Bridger(L2_VAULT, EXCHANGE_PROXY, WETH, DAI, USDe, sUSDe, wstETH);
+        Bridger _implementation = new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, DAI, USDe, sUSDe, wstETH);
         console.log("Bridger implementation deployed at", address(_implementation));
         // deploy proxy contract and point it to implementation
         UUPSProxy _proxy = new UUPSProxy{salt: 0}(address(_implementation), "");
@@ -48,7 +46,6 @@ contract DeployBridgerScript is Create2Helper, ArtifactsReader, Test, Constants 
 
         // Checks
         assertEq(_bridger.senderAccount(), 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7);
-        assertEq(_bridger.l2Vault(), 0x26181Dfc530d96523350e895180b09BAf3d816a0);
         assertEq(_bridger.owner(), vm.envAddress("LEDGER_ADMIN"));
 
         // Writes the addresses to a file

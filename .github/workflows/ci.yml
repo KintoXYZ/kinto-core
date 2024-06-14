@@ -114,6 +114,7 @@ jobs:
           LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
           DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
 
   coverage:
     needs:
@@ -146,6 +147,7 @@ jobs:
           LEDGER_ADMIN: ${{ secrets.LEDGER_ADMIN }}
           DEPLOYER_PUBLIC_KEY: ${{ secrets.DEPLOYER_PUBLIC_KEY }}
           ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
 
       - name: Upload report to Codecov
         uses: codecov/codecov-action@v4

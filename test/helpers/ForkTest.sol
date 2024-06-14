@@ -22,4 +22,11 @@ abstract contract ForkTest is BaseTest {
 
         vm.createSelectFork(rpc);
     }
+
+    function setUpArbitrumFork() public {
+        string memory rpc = vm.envString("ARBITRUM_RPC_URL");
+        require(bytes(rpc).length > 0, "ARBITRUM_RPC_URL is not set");
+
+        vm.createSelectFork(rpc);
+    }
 }

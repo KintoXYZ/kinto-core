@@ -73,7 +73,7 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
         return super.getNonce();
     }
 
-    // @inheritdoc BaseAccount
+    /// @inheritdoc BaseAccount
     function entryPoint() public view virtual override returns (IEntryPoint) {
         return _entryPoint;
     }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -18,8 +19,7 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
-
-import "forge-std/console2.sol";
+import {ICurveStableSwapNG} from "@kinto-core/interfaces/ICurveStableSwapNG.sol";
 
 /**
  * @title Bridger
@@ -45,6 +45,7 @@ contract Bridger is
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
+
     /**
      * @notice Emitted when a deposit is made.
      * @param from The address of the depositor.
@@ -64,10 +65,17 @@ contract Bridger is
     );
 
     /* ============ Constants & Immutables ============ */
+
+    /// @notice The address of the USDM token. The same on all chains.
+    address public constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
+    /// @notice The address of the wrapped USDM token. The same on all chains.
+    address public constant wUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
     /// @notice The address representing ETH.
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
+    /// @notice The address of the USDC token.
+    address public immutable USDC;
     /// @notice The address of the DAI token.
     address public immutable DAI;
     /// @notice The address of the USDe token.
@@ -79,27 +87,29 @@ contract Bridger is
 
     /// @notice The domain separator for EIP-712.
     bytes32 public immutable override domainSeparator;
-    /// @notice The address of the L2 vault.
-    address public immutable override l2Vault;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
+    /// @notice The address of the Curve pool for USDM.
+    address public immutable usdmCurvePool;
 
     /* ============ State Variables ============ */
+
     /// @notice The address of the sender account.
     address public override senderAccount;
 
     /// @notice DEPRECATED: Mapping of allowed assets.
-    mapping(address => bool) private allowedAssets;
+    mapping(address => bool) private __allowedAssets;
     /// @notice DEPRECATED: Mapping of deposits.
-    mapping(address => mapping(address => uint256)) private deposits;
+    mapping(address => mapping(address => uint256)) private __deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
     /// @notice DEPRECATED: Count of deposits..
-    uint256 public depositCount;
+    uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
-    bool private swapsEnabled;
+    bool private __swapsEnabled;
 
     /* ============ Modifiers ============ */
+
     /**
      * @notice Modifier to restrict access to only the owner or sender account.
      */
@@ -115,8 +125,9 @@ contract Bridger is
      * @param exchange The address of the exchange proxy to be used for token swaps.
      */
     constructor(
-        address vault,
         address exchange,
+        address usdmCurveAmm,
+        address usdc,
         address weth,
         address dai,
         address usde,
@@ -126,26 +137,27 @@ contract Bridger is
         _disableInitializers();
 
         domainSeparator = _domainSeparatorV4();
-        l2Vault = vault;
         swapRouter = exchange;
 
+        USDC = usdc;
         WETH = IWETH(weth);
         DAI = dai;
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
+        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize(address _senderAccount) external initializer {
+    function initialize(address sender) external initializer {
         __UUPSUpgradeable_init();
         __Ownable_init();
         __Pausable_init();
 
         _transferOwnership(msg.sender);
-        senderAccount = _senderAccount;
+        senderAccount = sender;
     }
 
     /**
@@ -175,25 +187,30 @@ contract Bridger is
 
     /**
      * @notice Sets the sender account. Only the owner can call this function.
-     * @param _senderAccount Address of the sender account.
+     * @param sender Address of the sender account.
      */
-    function setSenderAccount(address _senderAccount) external override onlyOwner {
-        senderAccount = _senderAccount;
+    function setSenderAccount(address sender) external override onlyOwner {
+        senderAccount = sender;
     }
 
     /* ============ Public ============ */
 
-    /**
-     * @notice Deposits the specified amount of tokens into the Kinto L2.
-     * @param depositData Struct with all the required information to deposit via signature.
-     * @param permitSig Signature to be recovered to allow the spender to spend the tokens.
-     */
+    /// @inheritdoc IBridger
     function depositBySig(
         bytes calldata permitSig,
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) {
+    )
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+        onlyPrivileged
+        onlySignerVerified(depositData)
+        returns (uint256)
+    {
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -205,7 +222,7 @@ contract Bridger is
         );
 
         // Perform the deposit operation
-        _deposit(
+        return _deposit(
             depositData.signer,
             depositData.inputAsset,
             depositData.amount,
@@ -217,16 +234,7 @@ contract Bridger is
         );
     }
 
-    /**
-     * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
-     * @param inputAsset Address of the input asset.
-     * @param amount Amount of the input asset.
-     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
-     * @param finalAsset Address of the final asset.
-     * @param minReceive Minimum amount to receive after swap.
-     * @param swapCallData Data required for the swap.
-     * @param bridgeData Data required for the bridge.
-     */
+    /// @inheritdoc IBridger
     function depositERC20(
         address inputAsset,
         uint256 amount,
@@ -235,16 +243,11 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
-        _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+        return _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
-    /**
-     * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
-     * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
-     * @param finalAsset Asset to deposit into.
-     * @param swapCallData Struct with all the required information to swap the tokens.
-     */
+    /// @inheritdoc IBridger
     function depositETH(
         uint256 amount,
         address kintoWallet,
@@ -252,26 +255,28 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant {
+    ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
 
-        uint256 amountBought = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
+        uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
         // Approve max allowance to save on gas for future transfers
-        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
+        if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountOut) {
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge the final amount to Kinto
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
-            amountBought,
+            amountOut,
             bridgeData.msgGasLimit,
             bridgeData.connector,
             bridgeData.execPayload,
             bridgeData.options
         );
 
-        emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountBought);
+        emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountOut);
+
+        return amountOut;
     }
 
     /* ============ Private Functions ============ */
@@ -296,13 +301,13 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) internal {
+    ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
 
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
 
-        uint256 amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
+        amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
         // Approve max allowance to save on gas for future transfers
         if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
@@ -362,18 +367,44 @@ contract Bridger is
                 amount,
                 IERC20(inputAsset),
                 // If the final asset is sUSDe, swap to USDe first and then stake
-                IERC20(finalAsset == sUSDe ? USDe : finalAsset),
-                swapCallData,
-                minReceive
+                // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
+                IERC20(_getFinalAssetByAsset(finalAsset)),
+                swapCallData
             );
         }
 
-        // If the final asset is sUSDe, stake USDe to sUSDe
+        // If the final asset is sUSDe, stake USDe to sUSDe.
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
             amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
         }
+
+        // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
+        if (finalAsset == wUSDM) {
+            // 0 coin == USDC
+            // 1 coin == USDM
+            uint256 balance = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeApprove(usdmCurvePool, balance);
+            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
+            amountBought =
+                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
+            // wrap USDM to wUSDM
+            balance = IERC20(USDM).balanceOf(address(this));
+            IERC20(USDM).safeApprove(wUSDM, balance);
+            amountBought = IERC4626(wUSDM).deposit(balance, address(this));
+        }
+        if (amountBought < minReceive) revert SlippageError(amountBought, minReceive);
+    }
+
+    function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
+        if (finalAsset == sUSDe) {
+            return USDe;
+        }
+        if (finalAsset == wUSDM) {
+            return USDC;
+        }
+        return finalAsset;
     }
 
     /**
@@ -436,7 +467,6 @@ contract Bridger is
      * @param sellToken Address of the sell token.
      * @param buyToken Address of the buy token.
      * @param swapCallData Data required for the swap.
-     * @param minReceive Minimum amount to receive after swap.
      * @return Amount of buy token bought.
      */
     function _fillQuote(
@@ -446,9 +476,7 @@ contract Bridger is
         // The `buyTokenAddress` field from the API response.
         IERC20 buyToken,
         // The `data` field from the API response.
-        bytes calldata swapCallData,
-        // Slippage protection
-        uint256 minReceive
+        bytes calldata swapCallData
     ) private returns (uint256) {
         if (sellToken == buyToken) {
             return amountIn;
@@ -465,7 +493,6 @@ contract Bridger is
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
 
-        if (boughtAmount < minReceive) revert SlippageError(boughtAmount, minReceive);
         return boughtAmount;
     }
 

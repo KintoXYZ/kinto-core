@@ -53,21 +53,31 @@ interface IBridger {
     /* ============ Errors ============ */
     /// @notice Only the owner can call this function.
     error OnlyOwner();
+
     /// @notice The signature has expired.
     error SignatureExpired();
+
     /// @notice The nonce is invalid.
     error InvalidNonce();
+
     /// @notice The signer is invalid.
     error InvalidSigner();
+
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
     error InvalidAmount(uint256 amount);
+
     /// @notice Failed to stake ETH.
     error FailedToStakeEth();
+
     /// @notice Slippage error occurred.
     /// @param boughtAmount The amount bought.
     /// @param minReceive The minimum amount to receive.
     error SlippageError(uint256 boughtAmount, uint256 minReceive);
+
+    /// @notice Returns the amount of final asset to deposit.
+    /// @param amountOut The amount to deposit.
+    error DepositBySigResult(uint256 amountOut);
 
     /* ============ Structs ============ */
 
@@ -135,21 +145,22 @@ interface IBridger {
     /* ============ State Change ============ */
 
     /**
-     * @notice Deposit tokens by signature.
+     * @notice Deposits the specified amount of tokens into the Kinto L2.
      * @param permitSignature Signature for permit.
      * @param signatureData Data for the deposit.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
-     * @notice Deposit ERC20 tokens.
+     * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
      * @param inputAsset Address of the input asset.
      * @param amount Amount of the input asset.
      * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
@@ -157,6 +168,7 @@ interface IBridger {
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositERC20(
         address inputAsset,
@@ -166,16 +178,17 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
-     * @notice Deposit ETH.
+     * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
      * @param amount Amount of ETH to deposit.
      * @param kintoWallet Kinto Wallet Address on L2 where tokens will be deposited.
      * @param finalAsset Address of the final asset.
      * @param minReceive Minimum amount to receive after swap.
      * @param swapCallData Data required for the swap.
      * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
      */
     function depositETH(
         uint256 amount,
@@ -184,7 +197,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable;
+    ) external payable returns (uint256);
 
     /**
      * @notice Pause the contract.
@@ -216,12 +229,6 @@ interface IBridger {
      * @return Domain separator.
      */
     function domainSeparator() external view returns (bytes32);
-
-    /**
-     * @notice Get the L2 vault address.
-     * @return L2 vault address.
-     */
-    function l2Vault() external view returns (address);
 
     /**
      * @notice Get the sender account address.

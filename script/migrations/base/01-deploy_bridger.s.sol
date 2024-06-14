@@ -16,9 +16,9 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
     Bridger internal bridger;
     address internal impl;
 
-    function setUp() public {}
+    function run() public override {
+        super.run();
 
-    function broadcast(address) internal override {
         if (block.chainid != BASE_CHAINID) {
             console2.log("This script is meant to be run on the chain: %s", BASE_CHAINID);
             return;
@@ -36,7 +36,7 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
             "BridgerV1-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
-                abi.encode(L2_VAULT, EXCHANGE_PROXY, WETH, address(0), address(0), address(0), address(0))
+                abi.encode(EXCHANGE_PROXY, address(0), address(0), WETH, address(0), address(0), address(0), address(0))
             )
         );
         console2.log("Bridger implementation deployed at", address(impl));
@@ -47,12 +47,9 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         console2.log("Bridger proxy deployed at ", address(bridger));
         // Initialize proxy
         bridger.initialize(SENDER_ACCOUNT);
-    }
 
-    function validate(address deployer) internal view override {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
-        assertEq(bridger.l2Vault(), L2_VAULT, "Invalid L2 Vault");
         assertEq(bridger.owner(), deployer, "Invalid Owner");
     }
 }
