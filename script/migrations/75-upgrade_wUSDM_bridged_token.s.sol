@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 
-import {BridgedWusdm} from "@kinto-core/tokens/bridged/BridgedWusdm.sol";
+import {BridgedWusdm} from "@kinto-core/tokens/bridged/BridgedWUSDM.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {Constants} from "@kinto-core-script/migrations/const.sol";
