@@ -556,7 +556,7 @@ contract Bridger is
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(args));
 
         // Verify if the signer is valid
-        if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner();
+        if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner(args.signer);
 
         // Increment the nonce to prevent replay attacks
         nonces[args.signer]++;

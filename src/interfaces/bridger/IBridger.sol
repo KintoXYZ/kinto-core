@@ -62,7 +62,8 @@ interface IBridger {
     error InvalidNonce();
 
     /// @notice The signer is invalid.
-    error InvalidSigner();
+    /// @param signer The signer.
+    error InvalidSigner(address signer);
 
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
