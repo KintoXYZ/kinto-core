@@ -45,6 +45,23 @@ contract EngenBadges is
         _grantRole(UPGRADER_ROLE, msg.sender);
     }
 
+    /* ============ View functions ============ */
+
+    /**
+     * @dev Return all badge balances for a given wallet up to a specified badge ID.
+     * @param wallet The address of the wallet to check.
+     * @param upToId The highest badge ID to check.
+     */
+    function getAllBadges(address wallet, uint256 upToId) public view returns (uint256[] memory) {
+        uint256[] memory balances = new uint256[](upToId + 1);
+        for (uint256 i = 0; i <= upToId; i++) {
+            balances[i] = balanceOf(wallet, i);
+        }
+        return balances;
+    }
+
+    /* ======= Privileged Functions ============ */
+
     /**
      * @dev Mints badges to a specified address with each ID only being minted once.
      * @param to The address to mint the badges to.
@@ -94,4 +111,8 @@ contract EngenBadges is
     {
         return super.supportsInterface(interfaceId);
     }
+}
+
+contract EngenCreditsV2 is EngenCredits {
+    constructor() EngenCredits() {}
 }

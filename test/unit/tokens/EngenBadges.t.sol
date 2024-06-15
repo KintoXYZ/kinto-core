@@ -66,6 +66,12 @@ contract EngenBadgesTest is SharedSetup {
 
         assertEq(_engenBadges.balanceOf(alice, 1), 1);
         assertEq(_engenBadges.balanceOf(alice, 2), 1);
+
+        uint256[] memory balances = _engenBadges.getAllBadges(alice, 3);
+        assertEq(balances[0], 0);
+        assertEq(balances[1], 1);
+        assertEq(balances[2], 1);
+        assertEq(balances[3], 0);
     }
 
     function testMint_RevertWhen_NotMinter() public {
