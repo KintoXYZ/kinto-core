@@ -20,9 +20,9 @@ contract KintoMigration74DeployScript is MigrationHelper {
                 _getChainDeployment("KintoAppRegistry")
             )
         );
-        implementation = _deployImplementationAndUpgrade("KintoWallet", "V20", bytecode);
+        implementation = _deployImplementationAndUpgrade("KintoWallet", "V22", bytecode);
 
-        bytecode = abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(implementation));
-        _deployImplementationAndUpgrade("KintoWalletFactory", "V16", bytecode);
+        // bytecode = abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(implementation));
+        // _deployImplementationAndUpgrade("KintoWalletFactory", "V16", bytecode);
     }
 }
