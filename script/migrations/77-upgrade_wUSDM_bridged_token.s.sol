@@ -12,7 +12,7 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import {console2} from "forge-std/console2.sol";
 
-contract KintoMigration75DeployScript is MigrationHelper {
+contract KintoMigration77DeployScript is MigrationHelper {
     using LibString for *;
 
     function run() public override {

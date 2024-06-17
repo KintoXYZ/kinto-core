@@ -50,7 +50,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         deployer = vm.addr(deployerPrivateKey);
         console2.log("Deployer:", deployer);
 
-        vm.startBroadcast(deployerPrivateKey);
+        // vm.startBroadcast(deployerPrivateKey);
 
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
         vm.stopBroadcast();
