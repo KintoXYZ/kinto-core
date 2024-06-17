@@ -4,8 +4,8 @@ pragma solidity ^0.8.18;
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
-import {BridgedToken} from "@kinto-core/tokens/BridgedToken.sol";
-import {BridgedWeth} from "@kinto-core/tokens/BridgedWeth.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
+import {BridgedWeth} from "@kinto-core/tokens/bridged/BridgedWeth.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";

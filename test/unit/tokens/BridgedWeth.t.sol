@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
-import {BridgedWeth} from "@kinto-core/tokens/BridgedWeth.sol";
+import {BridgedWeth} from "@kinto-core/tokens/bridged/BridgedWeth.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
