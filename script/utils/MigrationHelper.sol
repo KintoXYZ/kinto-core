@@ -107,7 +107,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         internal
         returns (address _impl)
     {
-        console.log('aaa');
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         address proxy = _getChainDeployment(contractName);
 
@@ -115,7 +114,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
 
         // (1). deploy new implementation via wallet factory
         _impl = _deployImplementation(contractName, version, bytecode);
-        console.log('heree');
         // (2). call upgradeTo to set new implementation
         if (!testMode) {
             if (isWallet) {
@@ -360,7 +358,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     function etchWallet(address wallet) internal {
-        console.log('etching wallet:', vm.toString(wallet));
+        console.log("etching wallet:", vm.toString(wallet));
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),
