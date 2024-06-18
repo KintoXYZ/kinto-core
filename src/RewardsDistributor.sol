@@ -23,7 +23,7 @@ contract RewardsDistributor is ReentrancyGuard, AccessControl {
     event RootUpdated(bytes32 indexed newRoot, bytes32 indexed oldRoot);
 
     /**
-     * @notice Updates a root of the merkle tree.
+     * @notice Emitted once `user` claims `amount` of tokens.
      * @param user The user which claimed.
      * @param amount Amount of tokens claimed.
      */
