@@ -5,12 +5,12 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MerkleProof.sol";
 import {ReentrancyGuard} from "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
-import {AccessControl} from "@openzeppelin-5.0.1/contracts/access/AccessControl.sol";
+import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
 /**
  * @title Rewards Distributor
  */
-contract RewardsDistributor is ReentrancyGuard, AccessControl {
+contract RewardsDistributor is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
@@ -51,9 +51,6 @@ contract RewardsDistributor is ReentrancyGuard, AccessControl {
     /// @notice The address of Kinto token to distribute.
     IERC20 public immutable KINTO;
 
-    /// @notice Role that can update root.
-    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
-
     /* ============ State Variables ============ */
     /// @notice The root of the merkle tree for Kinto token distribition.
     bytes32 public root;
@@ -69,20 +66,15 @@ contract RewardsDistributor is ReentrancyGuard, AccessControl {
     constructor(
         IERC20 kinto_,
         bytes32 root_,
-        address admin_,
-        address updater_,
         uint256 engenFunds_,
         uint256 maxRatePerSecond_,
         uint256 startTime_
-    ) {
+    ) Ownable(msg.sender) {
         KINTO = kinto_;
         root = root_;
         engenFunds = engenFunds_;
         maxRatePerSecond = maxRatePerSecond_;
         startTime = startTime_;
-
-        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _grantRole(UPDATER_ROLE, updater_);
     }
 
     /* ============ External ============ */
@@ -104,7 +96,7 @@ contract RewardsDistributor is ReentrancyGuard, AccessControl {
         emit UserClaimed(user, amount);
     }
 
-    function updateRoot(bytes32 newRoot) external onlyRole(UPDATER_ROLE) {
+    function updateRoot(bytes32 newRoot) external onlyOwner {
         emit RootUpdated(newRoot, root);
         root = newRoot;
     }

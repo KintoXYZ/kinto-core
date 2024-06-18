@@ -28,7 +28,8 @@ contract RewardsDistributorTest is ForkTest {
 
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
 
-        distributor = new RewardsDistributor(kinto, root, _owner, _upgrader, engenFunds, maxRatePerSecond, startTime);
+        vm.prank(_owner);
+        distributor = new RewardsDistributor(kinto, root, engenFunds, maxRatePerSecond, startTime);
     }
 
     function testUp() public override {}
@@ -48,6 +49,8 @@ contract RewardsDistributorTest is ForkTest {
 
         assertEq(kinto.balanceOf(address(distributor)), 0);
         assertEq(kinto.balanceOf(_user), amount);
+        assertEq(distributor.totalClaimed(), amount);
+        assertEq(distributor.claimedByUser(_user), amount);
     }
 
     function testClaim_RevertWhen_InvalidProof() public {
@@ -62,7 +65,8 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testClaim_RevertWhen_MaxLimitExceeded() public {
-        distributor = new RewardsDistributor(kinto, root, _owner, _upgrader, 0, maxRatePerSecond, startTime); uint256 amount = 1e18;
+        distributor = new RewardsDistributor(kinto, root, 0, maxRatePerSecond, startTime);
+        uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
