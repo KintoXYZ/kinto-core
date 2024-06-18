@@ -5,6 +5,7 @@
   "homepage": "https://github.com/KintoXYZ/kinto-core.git#readme",
   "version": "0.1.0",
   "devDependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.6",
     "dotenv": "^16.4.5",
     "ethers": "^6.11.1",
     "permissionless": "^0.1.24",
