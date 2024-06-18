@@ -21,7 +21,7 @@ contract RewardsDistributorTest is ForkTest {
     bytes32 internal leaf;
     uint256 internal engenFunds = 600_000e18;
     uint256 internal maxRatePerSecond = 3e16; // 0.03 tokens per second, or 2,592 tokens per day
-    uint256 internal startTime = 1;
+    uint256 internal startTime = START_TIMESTAMP;
 
     function setUp() public override {
         super.setUp();
