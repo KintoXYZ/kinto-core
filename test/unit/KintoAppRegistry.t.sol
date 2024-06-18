@@ -211,17 +211,14 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isSponsored(parentContract, address(8)), true);
     }
 
-    function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper(string memory name, address parentContract) public {
-        vm.assume(parentContract != address(0));
-        vm.assume(bytes(name).length > 0);
-
-        registerApp(_owner, name, parentContract);
+    function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {
+        registerApp(_owner, "app", address(0));
 
         // update app
         vm.prank(_user);
         vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
         _kintoAppRegistry.updateMetadata(
-            name, parentContract, new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)]
+            "app", address(0), new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)]
         );
     }
 

@@ -15,6 +15,13 @@ import "@kinto-core/interfaces/bridger/IBridger.sol";
 abstract contract SignatureHelper is CommonBase {
     using SignatureChecker for address;
 
+    bytes32 public constant _PERMIT_SINGLE_TYPEHASH = keccak256(
+        "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
+    );
+
+    bytes32 public constant _PERMIT_DETAILS_TYPEHASH =
+        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
+
     // Create a test for minting a KYC token
     function _auxCreateSignature(IKintoID _kintoID, address _signer, uint256 _privateKey, uint256 _expiresAt)
         internal
@@ -74,6 +81,27 @@ abstract contract SignatureHelper is CommonBase {
         // update & return SignatureData
         signData.signature = signature;
         return signData;
+    }
+
+    // An aux function to create an EIP-191 compliant signature for Permit2.
+    function _auxPermit2Signature(
+        IAllowanceTransfer.PermitSingle memory permit,
+        uint256 privateKey,
+        bytes32 domainSeparator
+    ) internal pure returns (bytes memory) {
+        bytes32 permitHash = keccak256(abi.encode(_PERMIT_DETAILS_TYPEHASH, permit.details));
+
+        bytes32 eip712Hash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(abi.encode(_PERMIT_SINGLE_TYPEHASH, permitHash, permit.spender, permit.sigDeadline))
+            )
+        );
+
+        // sign the hash
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, eip712Hash);
+        return abi.encodePacked(r, s, v);
     }
 
     // Create a aux function to create an EIP-191 compliant signature for claiming Kinto ETH from the faucet
