@@ -21,7 +21,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @param newBaseAmount The new base amount.
      * @param oldBaseAmount The old base amount.
      */
-    event BaseAmountUpdated(uint256 indexed newBaseAmount, uint256 indexed oldInitialAmount);
+    event BaseAmountUpdated(uint256 indexed newBaseAmount, uint256 indexed oldBaseAmount);
 
     /**
      * @notice Emitted when the maximum rate per second is updated.
@@ -139,8 +139,8 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice Updates the base amount of tokens.
-     * @param newBaseAmount The new base amount.
+     * @notice Updates the root of the Merkle tree.
+     * @param newRoot The new root.
      */
     function updateRoot(bytes32 newRoot) external onlyOwner {
         emit RootUpdated(newRoot, root);
