@@ -119,6 +119,7 @@ contract MasterSwapper is Initializable, UUPSUpgradeable, OwnableUpgradeable, IM
                 continue;
             }
             SwapInfo memory swap = swaps[i];
+            // todo: verify with on-chain price oracle as well
             // transfer the asset to the user
             IERC20(swap.buyAsset).transfer(msg.sender, resultingSwapAmounts[i]);
             // todo: keep fee for us
