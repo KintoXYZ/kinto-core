@@ -15,6 +15,10 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
 
     /* ============ Events ============ */
 
+    event BaseAmountUpdated(uint256 indexed newBaseAmount, uint256 indexed oldInitialAmount);
+
+    event MaxRatePerSecondUpdated(uint256 indexed newMaxRatePerSecond, uint256 indexed oldMaxRatePerSecond);
+
     /**
      * @notice Updates a root of the merkle tree.
      * @param newRoot The new root.
@@ -39,12 +43,6 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
 
     /* ============ Constants & Immutables ============ */
 
-    /// @notice Amount of funds for ENGEN program.
-    uint256 public immutable engenFunds;
-
-    /// @notice The maximum rate of token per second which can be distributed.
-    uint256 public immutable maxRatePerSecond;
-
     /// @notice Starting time of the mining program.
     uint256 public immutable startTime;
 
@@ -52,6 +50,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     IERC20 public immutable KINTO;
 
     /* ============ State Variables ============ */
+
     /// @notice The root of the merkle tree for Kinto token distribition.
     bytes32 public root;
 
@@ -61,18 +60,24 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice Returns the amount of tokens claimed by a user.
     mapping(address => uint256) public claimedByUser;
 
+    /// @notice Amount of funds preloaded at the start.
+    uint256 public baseAmount;
+
+    /// @notice The maximum rate of token per second which can be distributed.
+    uint256 public maxRatePerSecond;
+
     /* ============ Constructor ============ */
 
     constructor(
         IERC20 kinto_,
         bytes32 root_,
-        uint256 engenFunds_,
+        uint256 baseAmount_,
         uint256 maxRatePerSecond_,
         uint256 startTime_
     ) Ownable(msg.sender) {
         KINTO = kinto_;
         root = root_;
-        engenFunds = engenFunds_;
+        baseAmount = baseAmount_;
         maxRatePerSecond = maxRatePerSecond_;
         startTime = startTime_;
     }
@@ -84,8 +89,8 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         if (MerkleProof.verify(proof, root, leaf) == false) {
             revert InvalidProof(proof, leaf);
         }
-        if (totalClaimed + amount > maxRatePerSecond * (block.timestamp - startTime) + engenFunds) {
-            revert MaxLimitReached(totalClaimed + amount, maxRatePerSecond * (block.timestamp - startTime) + engenFunds);
+        if (totalClaimed + amount > maxRatePerSecond * (block.timestamp - startTime) + baseAmount) {
+            revert MaxLimitReached(totalClaimed + amount, maxRatePerSecond * (block.timestamp - startTime) + baseAmount);
         }
 
         totalClaimed += amount;
@@ -99,5 +104,25 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     function updateRoot(bytes32 newRoot) external onlyOwner {
         emit RootUpdated(newRoot, root);
         root = newRoot;
+    }
+
+    function updateBaseAmount(uint256 newBaseAmount) external onlyOwner {
+        emit BaseAmountUpdated(newBaseAmount, baseAmount);
+        baseAmount = newBaseAmount;
+    }
+
+    function updateMaxRatePerSecond(uint256 newMaxRatePerSecond) external onlyOwner {
+        emit MaxRatePerSecondUpdated(newMaxRatePerSecond, maxRatePerSecond);
+        maxRatePerSecond = newMaxRatePerSecond;
+    }
+
+    /* ============ View ============ */
+
+    function getTotalLimit() external view returns (uint256){
+        return maxRatePerSecond * (block.timestamp - startTime) + baseAmount;
+    }
+
+    function getUnclaimedLimit() external view returns (uint256){
+        return maxRatePerSecond * (block.timestamp - startTime) + baseAmount - totalClaimed;
     }
 }

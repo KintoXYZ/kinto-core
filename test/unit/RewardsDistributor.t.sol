@@ -19,7 +19,7 @@ contract RewardsDistributorTest is ForkTest {
     ERC20Mock internal kinto;
     bytes32 internal root = 0xf5d3a04b6083ba8077d903785b3001db5b9077f1a3af3e06d27a8a9fa3567546;
     bytes32 internal leaf;
-    uint256 internal engenFunds = 600_000e18;
+    uint256 internal baseAmount = 600_000e18;
     uint256 internal maxRatePerSecond = 3e16; // 0.03 tokens per second, or 2,592 tokens per day
     uint256 internal startTime = START_TIMESTAMP;
 
@@ -29,10 +29,21 @@ contract RewardsDistributorTest is ForkTest {
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
 
         vm.prank(_owner);
-        distributor = new RewardsDistributor(kinto, root, engenFunds, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, root, baseAmount, maxRatePerSecond, startTime);
     }
 
-    function testUp() public override {}
+    function testUp() public override {
+        distributor = new RewardsDistributor(kinto, root, baseAmount, maxRatePerSecond, startTime);
+
+        assertEq(distributor.startTime(), START_TIMESTAMP);
+        assertEq(address(distributor.KINTO()), address(kinto));
+        assertEq(distributor.root(), root);
+        assertEq(distributor.totalClaimed(), 0);
+        assertEq(distributor.baseAmount(), baseAmount);
+        assertEq(distributor.maxRatePerSecond(), maxRatePerSecond);
+        assertEq(distributor.getTotalLimit(), baseAmount);
+        assertEq(distributor.getUnclaimedLimit(), baseAmount);
+    }
 
     function testClaim() public {
         uint256 amount = 1e18;
