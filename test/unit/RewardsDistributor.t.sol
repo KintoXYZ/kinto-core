@@ -21,7 +21,7 @@ contract RewardsDistributorTest is ForkTest {
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
     bytes32 internal leaf;
     uint256 internal baseAmount = 600_000e18;
-    uint256 internal maxRatePerSecond = 3e16; // 0.03 tokens per second, or 2,592 tokens per day
+    uint256 internal maxRatePerSecond = 1e16;
     uint256 internal startTime = START_TIMESTAMP;
 
     function setUp() public override {
@@ -58,6 +58,8 @@ contract RewardsDistributorTest is ForkTest {
         proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
         proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
 
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.UserClaimed(_user, amount);
         distributor.claim(proof, _user, amount);
 
         assertEq(kinto.balanceOf(address(distributor)), 0);
@@ -66,6 +68,33 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.claimedByUser(_user), amount);
         assertEq(distributor.getTotalLimit(), baseAmount);
         assertEq(distributor.getUnclaimedLimit(), baseAmount - amount);
+    }
+
+    function testClaim_WhenTimePass() public {
+        uint256 amount = 1e18;
+
+        vm.prank(_owner);
+        distributor.updateBaseAmount(0);
+
+        kinto.mint(address(distributor), amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), amount);
+        assertEq(kinto.balanceOf(_user), 0);
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
+
+        vm.warp(START_TIMESTAMP + amount / maxRatePerSecond);
+
+        distributor.claim(proof, _user, amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), 0);
+        assertEq(kinto.balanceOf(_user), amount);
+        assertEq(distributor.totalClaimed(), amount);
+        assertEq(distributor.claimedByUser(_user), amount);
+        assertEq(distributor.getTotalLimit(), amount);
+        assertEq(distributor.getUnclaimedLimit(), 0);
     }
 
     function testClaimMultiple() public {
@@ -130,6 +159,8 @@ contract RewardsDistributorTest is ForkTest {
     function testUpdateRoot() public {
         bytes32 newRoot = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.RootUpdated(newRoot, root);
         vm.prank(_owner);
         distributor.updateRoot(newRoot);
 
@@ -146,6 +177,8 @@ contract RewardsDistributorTest is ForkTest {
     function testUpdateBaseAmount() public {
         uint256 newBaseAmount = 1_000_000e18;
 
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.BaseAmountUpdated(newBaseAmount, baseAmount);
         vm.prank(_owner);
         distributor.updateBaseAmount(newBaseAmount);
 
@@ -162,6 +195,8 @@ contract RewardsDistributorTest is ForkTest {
     function testUpdateMaxRatePerSecond() public {
         uint256 newMaxRatePerSecond = 5e16; // 0.05 tokens per second
 
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.MaxRatePerSecondUpdated(newMaxRatePerSecond, maxRatePerSecond);
         vm.prank(_owner);
         distributor.updateMaxRatePerSecond(newMaxRatePerSecond);
 
