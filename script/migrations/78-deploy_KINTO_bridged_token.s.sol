@@ -26,12 +26,13 @@ contract DeployKintoScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        string memory symbol = 'KINTO';
-        string memory name = 'Kinto Token';
+        string memory symbol = "KINTO";
+        string memory name = "Kinto Token";
 
         // deploy token
         bytes memory bytecode = abi.encodePacked(type(BridgedKinto).creationCode);
-        address implementation = _deployImplementation("BridgedKinto", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+        address implementation =
+            _deployImplementation("BridgedKinto", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "010700");

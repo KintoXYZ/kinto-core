@@ -20,11 +20,7 @@ contract BridgedKintoTest is SharedSetup {
         minter = createUser("minter");
         upgrader = createUser("upgrader");
 
-        token = BridgedKinto(
-            payable(
-                address(new UUPSProxy(address(new BridgedKinto()), ""))
-            )
-        );
+        token = BridgedKinto(payable(address(new UUPSProxy(address(new BridgedKinto()), ""))));
         token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
 
         vm.prank(minter);
@@ -38,11 +34,7 @@ contract BridgedKintoTest is SharedSetup {
     function testUp() public override {
         super.testUp();
 
-        token = BridgedKinto(
-            payable(
-                address(new UUPSProxy(address(new BridgedKinto()), ""))
-            )
-        );
+        token = BridgedKinto(payable(address(new UUPSProxy(address(new BridgedKinto()), ""))));
         token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
 
         assertEq(token.totalSupply(), 0);

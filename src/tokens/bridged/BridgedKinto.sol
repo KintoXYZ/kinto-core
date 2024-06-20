@@ -31,7 +31,7 @@ contract BridgedKinto is BridgedToken {
     /**
      * @notice Constructor to initialize the BridgedKinto.
      */
-    constructor() BridgedToken(18) { }
+    constructor() BridgedToken(18) {}
 
     /**
      * @notice Enable token transfers
@@ -62,6 +62,9 @@ contract BridgedKinto is BridgedToken {
     function _update(address from, address to, uint256 amount) internal override {
         super._update(from, to, amount);
 
-        if (!tokenTransfersEnabled && from != address(0) && from != address(miningContract) && to != address(miningContract)) revert TransferIsNotAllowed(from, to, amount);
+        if (
+            !tokenTransfersEnabled && from != address(0) && from != address(miningContract)
+                && to != address(miningContract)
+        ) revert TransferIsNotAllowed(from, to, amount);
     }
 }
