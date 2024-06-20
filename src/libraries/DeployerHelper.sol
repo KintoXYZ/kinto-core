@@ -38,10 +38,7 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         return create2(creationCodeWithArgs, 0);
     }
 
-    function create2(bytes memory creationCodeWithArgs, bytes32 salt)
-        internal
-        returns (address addr)
-    {
+    function create2(bytes memory creationCodeWithArgs, bytes32 salt) internal returns (address addr) {
         console2.log("keccak256(creationCodeWithArgs)");
         console2.logBytes32(keccak256(creationCodeWithArgs));
         addr = computeAddress(salt, creationCodeWithArgs);

@@ -40,8 +40,7 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         );
         console2.log("Bridger implementation deployed at", address(impl));
         // deploy proxy contract and point it to implementation
-        address proxy =
-            create2( abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
+        address proxy = create2(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
         bridger = Bridger(payable(address(proxy)));
         console2.log("Bridger proxy deployed at ", address(bridger));
         // Initialize proxy

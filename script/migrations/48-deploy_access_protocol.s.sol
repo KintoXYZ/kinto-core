@@ -41,9 +41,8 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
             return;
         }
 
-        address dummyAccessPointImpl = create2(
-            abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0)))
-        );
+        address dummyAccessPointImpl =
+            create2(abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0))));
         beacon = UpgradeableBeacon(
             create2(
                 abi.encodePacked(
@@ -51,8 +50,7 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
                 )
             )
         );
-        address accessRegistryImpl =
-            create2(abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+        address accessRegistryImpl = create2(abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
         // salt to get a nice address for the registry
         address accessRegistryProxy = create2(
             abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, "")),
@@ -61,9 +59,8 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
 
         registry = AccessRegistry(address(accessRegistryProxy));
         UpgradeableBeacon(beacon).transferOwnership(address(registry));
-        address accessPointImpl = create2(
-             abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
-        );
+        address accessPointImpl =
+            create2(abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry)));
 
         registry.initialize();
         registry.upgradeAll(IAccessPoint(accessPointImpl));
@@ -74,20 +71,16 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
         );
         console2.log("SafeBeaconProxy at: %s", address(safeBeaconProxy));
 
-        withdrawWorkflow =
-            WithdrawWorkflow(create2( abi.encodePacked(type(WithdrawWorkflow).creationCode)));
+        withdrawWorkflow = WithdrawWorkflow(create2(abi.encodePacked(type(WithdrawWorkflow).creationCode)));
         registry.allowWorkflow(address(withdrawWorkflow));
 
         wethWorkflow = WethWorkflow(
-            create2(
-                abi.encodePacked(type(WethWorkflow).creationCode, abi.encode(getWethByChainId(block.chainid)))
-            )
+            create2(abi.encodePacked(type(WethWorkflow).creationCode, abi.encode(getWethByChainId(block.chainid))))
         );
         registry.allowWorkflow(address(wethWorkflow));
 
-        swapWorkflow = SwapWorkflow(
-            create2( abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY)))
-        );
+        swapWorkflow =
+            SwapWorkflow(create2(abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY))));
         registry.allowWorkflow(address(swapWorkflow));
 
         require(registry.beacon() == beacon, "Beacon is not set properly");

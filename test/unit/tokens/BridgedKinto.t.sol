@@ -58,22 +58,6 @@ contract BridgedKintoTest is SharedSetup {
         assertEq(token.balanceOf(address(_kintoAppRegistry)), 1000);
     }
 
-    function testTransfer_WhenEnabled() public {
-        vm.prank(admin);
-        token.enableTokenTransfers();
-
-        vm.prank(_user);
-        token.transfer(_user2, 500);
-
-        assertEq(token.balanceOf(_user2), 500);
-    }
-
-    function testTransfer_RevertWhenNotEnabled() public {
-        vm.prank(_user);
-        vm.expectRevert(abi.encodeWithSelector(BridgedKinto.TransferIsNotAllowed.selector, _user, _user2, 500));
-        token.transfer(_user2, 500);
-    }
-
     function testTransfer_WhenToMiningContract() public {
         vm.prank(admin);
         token.setMiningContract(_user2);

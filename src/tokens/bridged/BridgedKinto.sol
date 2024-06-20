@@ -16,30 +16,16 @@ contract BridgedKinto is BridgedToken {
     /// @notice The error thrown if the recipient is not allowed.
     error TransferIsNotAllowed(address from, address to, uint256 amount);
 
-    /// @notice Emitted when token transfers are enabled.
-    event TokenTransfersEnabled();
-
     /// @notice Emmitted when new mining contract is set.
     event MiningContractSet(address indexed miningContract, address oldMiningContract);
 
     /// @notice Address of the mining contract.
     address public miningContract;
 
-    /// @notice Whether token transfers are enabled.
-    bool public tokenTransfersEnabled;
-
     /**
      * @notice Constructor to initialize the BridgedKinto.
      */
     constructor() BridgedToken(18) {}
-
-    /**
-     * @notice Enable token transfers
-     */
-    function enableTokenTransfers() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        tokenTransfersEnabled = true;
-        emit TokenTransfersEnabled();
-    }
 
     /**
      * @notice Set the mining contract address.
@@ -55,16 +41,13 @@ contract BridgedKinto is BridgedToken {
      * (or `to`) is the zero address. All customizations to transfers, mints, and burns should be done by overriding
      * this function.
      *
-     * Transfers can be enabled by admin. Mining contract transfers are allowed.
-     *
      * Emits a {Transfer} event.
      */
     function _update(address from, address to, uint256 amount) internal override {
         super._update(from, to, amount);
 
-        if (
-            !tokenTransfersEnabled && from != address(0) && from != address(miningContract)
-                && to != address(miningContract)
-        ) revert TransferIsNotAllowed(from, to, amount);
+        if (from != address(0) && from != address(miningContract) && to != address(miningContract)) {
+            revert TransferIsNotAllowed(from, to, amount);
+        }
     }
 }

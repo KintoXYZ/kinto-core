@@ -13,7 +13,7 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract InitKintoScript {
-    constructor(BridgedToken token, string memory name, string memory symbol, address adminWallet ) {
+    constructor(BridgedToken token, string memory name, string memory symbol, address adminWallet) {
         token.initialize(name, symbol, adminWallet, adminWallet, adminWallet);
         selfdestruct(payable(msg.sender));
     }
