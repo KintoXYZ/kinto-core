@@ -3,11 +3,9 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core-test/SharedSetup.t.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
 
 contract ValidateSignatureTest is SharedSetup {
-    // constants
-    uint256 constant SIG_VALIDATION_FAILED = 1;
-    uint256 constant SIG_VALIDATION_SUCCESS = 0;
 
     function setUp() public override {
         super.setUp();

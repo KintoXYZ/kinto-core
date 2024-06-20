@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "@kinto-core/KintoID.sol";
@@ -10,7 +10,7 @@ import "@kinto-core/viewers/KYCViewer.sol";
 import "@kinto-core/viewers/WalletViewer.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/tokens/EngenCredits.sol";

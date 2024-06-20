@@ -2,6 +2,7 @@
 pragma solidity >=0.8;
 
 import "../interfaces/IInflator.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 
 /**
  * note: forked from https://github.com/daimo-eth/bulk/blob/master/src/BundleBulker.sol
@@ -43,7 +44,7 @@ contract BundleBulker {
     function inflate(bytes calldata compressed)
         public
         view
-        returns (UserOperation[] memory ops, address payable beneficiary)
+        returns (PackedUserOperation[] memory ops, address payable beneficiary)
     {
         uint32 inflatorID = uint32(bytes4(compressed[0:4]));
         IInflator inflator = idToInflator[inflatorID];
@@ -52,7 +53,7 @@ contract BundleBulker {
     }
 
     fallback() external {
-        (UserOperation[] memory ops, address payable beneficiary) = inflate(msg.data);
+        (PackedUserOperation[] memory ops, address payable beneficiary) = inflate(msg.data);
         IEntryPoint(entryPoint).handleOps(ops, beneficiary);
     }
 }

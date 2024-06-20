@@ -7,12 +7,12 @@ import "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 
-import {BaseAccount} from "@aa-v7/core/BaseAccount.sol";
-import {UserOperationLib} from "@aa-v7/core/UserOperationLib.sol";
-import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa-v7/core/Helpers.sol";
-import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
-import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
-import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler.sol";
+import {BaseAccount} from "@aa/core/BaseAccount.sol";
+import {UserOperationLib} from "@aa/core/UserOperationLib.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";

@@ -5,10 +5,10 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "@kinto-core/apps/KintoAppRegistry.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/sample/Counter.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 

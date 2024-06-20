@@ -4,13 +4,14 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
-import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-import "@kinto-core/wallet/KintoWallet.sol";
-import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core-test/helpers/SignerHelper.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
+import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
+import {SignerHelper} from "@kinto-core-test/helpers/SignerHelper.sol";
 
 import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
@@ -66,7 +67,7 @@ abstract contract UserOp is Test, SignerHelper {
         uint256[3] memory gasLimits,
         bool isBatch,
         OperationParamsBatch memory opParams
-    ) internal returns (UserOperation memory op) {
+    ) internal returns (PackedUserOperation memory op) {
         bytes memory callData;
         if (isBatch) {
             callData = abi.encodeCall(KintoWallet.executeBatch, (opParams.targets, opParams.values, opParams.bytesOps));
@@ -74,7 +75,7 @@ abstract contract UserOp is Test, SignerHelper {
             callData = abi.encodeCall(KintoWallet.execute, (target, value, bytesOp));
         }
 
-        op = UserOperation({
+        op = PackedUserOperation({
             sender: from,
             nonce: nonce,
             initCode: bytes(""),
@@ -100,7 +101,7 @@ abstract contract UserOp is Test, SignerHelper {
         uint256 nonce,
         uint256[] memory privateKeyOwners,
         bytes memory bytesOp
-    ) internal returns (UserOperation memory op) {
+    ) internal returns (PackedUserOperation memory op) {
         return _createUserOperation(
             block.chainid,
             from,
@@ -126,7 +127,7 @@ abstract contract UserOp is Test, SignerHelper {
         uint256[] memory privateKeyOwners,
         bytes memory bytesOp,
         address paymaster
-    ) internal returns (UserOperation memory op) {
+    ) internal returns (PackedUserOperation memory op) {
         return _createUserOperation(
             block.chainid,
             from,
@@ -163,7 +164,7 @@ abstract contract UserOp is Test, SignerHelper {
         uint256[] memory privateKeyOwners,
         bytes memory bytesOp,
         address paymaster
-    ) internal returns (UserOperation memory op) {
+    ) internal returns (PackedUserOperation memory op) {
         return _createUserOperation(
             chainID,
             from,
@@ -188,7 +189,7 @@ abstract contract UserOp is Test, SignerHelper {
         uint256[] memory privateKeyOwners,
         OperationParamsBatch memory opParams,
         address paymaster
-    ) internal returns (UserOperation memory op) {
+    ) internal returns (PackedUserOperation memory op) {
         return _createUserOperation(
             block.chainid,
             from,
@@ -206,7 +207,7 @@ abstract contract UserOp is Test, SignerHelper {
 
     // signature helpers
 
-    function _packUserOp(UserOperation memory op, bool forSig) internal pure returns (bytes memory) {
+    function _packUserOp(PackedUserOperation memory op, bool forSig) internal pure returns (bytes memory) {
         if (forSig) {
             return abi.encode(
                 op.sender,
@@ -236,7 +237,7 @@ abstract contract UserOp is Test, SignerHelper {
         );
     }
 
-    function _getUserOpHash(UserOperation memory op, IEntryPoint _entryPoint, uint256 chainID)
+    function _getUserOpHash(PackedUserOperation memory op, IEntryPoint _entryPoint, uint256 chainID)
         internal
         pure
         returns (bytes32)
@@ -246,7 +247,7 @@ abstract contract UserOp is Test, SignerHelper {
     }
 
     function _signUserOp(
-        UserOperation memory op,
+        PackedUserOperation memory op,
         IEntryPoint _entryPoint,
         uint256 chainID,
         uint256[] memory privateKeys

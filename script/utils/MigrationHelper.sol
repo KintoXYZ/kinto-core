@@ -5,18 +5,25 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {UUPSUpgradeable as UUPSUpgradeable5} from
     "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
-import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
-import "@kinto-core/apps/KintoAppRegistry.sol";
+import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 
-import "@kinto-core/interfaces/ISponsorPaymaster.sol";
-import "@kinto-core/interfaces/IKintoWallet.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 
-import "@kinto-core-test/helpers/Create2Helper.sol";
-import "@kinto-core-test/helpers/ArtifactsReader.sol";
-import "@kinto-core-test/helpers/UserOp.sol";
-import "@kinto-core-test/helpers/UUPSProxy.sol";
+import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
+
+import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
+import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
 import {Constants} from "@kinto-core-script/migrations/const.sol";
@@ -70,7 +77,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         vm.broadcast(deployerPrivateKey);
         _proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
 
-        console.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
+        console2.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
     }
 
     function _deployProxy(string memory contractName, address implementation) internal returns (address _proxy) {
@@ -90,7 +97,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         vm.broadcast(deployerPrivateKey);
         _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
 
-        console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
+        console2.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
     }
 
     function _deployImplementation(string memory contractName, string memory version, bytes memory bytecode)
@@ -121,7 +128,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
             } else {
                 try Ownable(proxy).owner() returns (address owner) {
                     if (owner != _getChainDeployment("KintoWallet-admin")) {
-                        console.log(
+                        console2.log(
                             "%s contract is not owned by the KintoWallet-admin, its owner is %s",
                             contractName,
                             vm.toString(owner)
@@ -263,7 +270,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         address _sponsorPaymaster,
         uint256[] memory _privateKeys
     ) internal {
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             block.chainid,
             _from,
@@ -310,7 +317,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
-        UserOperation[] memory userOps = new UserOperation[](_selectorAndParams.length);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](_selectorAndParams.length);
         uint256 nonce = IKintoWallet(_from).getNonce();
         for (uint256 i = 0; i < _selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
@@ -358,7 +365,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     function etchWallet(address wallet) internal {
-        console.log("etching wallet:", vm.toString(wallet));
+        console2.log("etching wallet:", vm.toString(wallet));
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),

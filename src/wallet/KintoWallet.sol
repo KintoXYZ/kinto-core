@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "@aa/core/BaseAccount.sol";
-import "@aa/samples/callback/TokenCallbackHandler.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/IKintoEntryPoint.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IEngenCredits.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../governance/EngenGovernance.sol";
-import "../interfaces/IKintoAppRegistry.sol";
-import "../libraries/ByteSignature.sol";
+import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
+import {BaseAccount} from "@aa/core/BaseAccount.sol";
+import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
+
+import {IKintoID} from "../interfaces/IKintoID.sol";
+import {IKintoEntryPoint} from "../interfaces/IKintoEntryPoint.sol";
+import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
+import {IEngenCredits} from "../interfaces/IEngenCredits.sol";
+import {IBridgerL2} from "../interfaces/bridger/IBridgerL2.sol";
+import {IKintoAppRegistry} from "../interfaces/IKintoAppRegistry.sol";
+import {EngenGovernance} from "../governance/EngenGovernance.sol";
+import {ByteSignature} from "../libraries/ByteSignature.sol";
 
 /**
  * @title KintoWallet
@@ -37,7 +41,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint8 public constant override ALL_SIGNERS = 3;
     uint256 public constant override RECOVERY_TIME = 7 days;
     uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
-    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
     address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
     address internal constant ADMIN_WALLET = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
@@ -285,7 +288,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /// implement template method of BaseAccount
     /// @dev we don't want to do requires here as it would revert the whole transaction
     /// @dev this is very similar to SponsorPaymaster._decodeCallData, consider unifying
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
@@ -373,7 +376,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (signer != hashData.recover(signature)) {
             return SIG_VALIDATION_FAILED;
         }
-        return _packValidationData(false, 0, 0);
+        return SIG_VALIDATION_SUCCESS;
     }
 
     // @notice ensures required signers have signed the hash

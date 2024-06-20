@@ -9,7 +9,7 @@ import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/apps/KintoAppRegistry.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";

@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import "../interfaces/IOpInflator.sol";
 import "../interfaces/IKintoWallet.sol";
 
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -56,12 +58,12 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Inflate & Compress ============ */
 
-    function inflate(bytes calldata compressed) external view returns (UserOperation memory op) {
+    function inflate(bytes calldata compressed) external view returns (PackedUserOperation memory op) {
         // decompress the data
         return this._inflate(LibZip.flzDecompress(compressed));
     }
 
-    function _inflate(bytes calldata decompressed) public view returns (UserOperation memory op) {
+    function _inflate(bytes calldata decompressed) public view returns (PackedUserOperation memory op) {
         uint256 cursor = 0; // keep track of the current position in the decompressed data
 
         // extract flags
@@ -123,7 +125,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         return op;
     }
 
-    function compress(UserOperation memory op) external view returns (bytes memory compressed) {
+    function compress(PackedUserOperation memory op) external view returns (bytes memory compressed) {
         // initialize a dynamic bytes array for the pre-compressed data
         bytes memory buffer = new bytes(1024); // arbitrary size of 1024 bytes (resized later)
         uint256 cursor = 0;
@@ -179,11 +181,11 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Simple compress/inflate ============ */
 
-    function inflateSimple(bytes calldata compressed) external pure returns (UserOperation memory op) {
-        op = abi.decode(LibZip.flzDecompress(compressed), (UserOperation));
+    function inflateSimple(bytes calldata compressed) external pure returns (PackedUserOperation memory op) {
+        op = abi.decode(LibZip.flzDecompress(compressed), (PackedUserOperation));
     }
 
-    function compressSimple(UserOperation memory op) external pure returns (bytes memory compressed) {
+    function compressSimple(PackedUserOperation memory op) external pure returns (bytes memory compressed) {
         compressed = LibZip.flzCompress(abi.encode(op));
     }
 
@@ -281,7 +283,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Compress Helpers ============ */
 
-    function _flags(bytes4 selector, UserOperation memory op, bytes memory callData)
+    function _flags(bytes4 selector, PackedUserOperation memory op, bytes memory callData)
         internal
         view
         returns (uint8 flags)
@@ -304,7 +306,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     function _encodeExecuteCalldata(
-        UserOperation memory op,
+        PackedUserOperation memory op,
         address target,
         uint256 value,
         bytes memory bytesOp,

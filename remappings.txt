@@ -12,8 +12,7 @@ lib/account-abstraction-0.7.0:@openzeppelin/=lib/openzeppelin-contracts-5.0.1
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 
-@aa/=lib/account-abstraction/contracts/
-@aa-v7/=lib/account-abstraction-0.7.0/contracts
+@aa/=lib/account-abstraction-0.7.0/contracts
 
 
 @openzeppelin-5.0.1/contracts/=lib/openzeppelin-contracts-5.0.1/contracts/

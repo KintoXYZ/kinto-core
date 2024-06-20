@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "../../src/sample/Counter.sol";
 import "../../src/interfaces/IKintoWallet.sol";
 import "../../src/interfaces/IKintoWalletFactory.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "../../src/paymasters/SponsorPaymaster.sol";
 
 import "../../test/helpers/AASetup.sol";
 import "../../test/helpers/UserOp.sol";

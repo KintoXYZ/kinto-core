@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";

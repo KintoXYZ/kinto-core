@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import "../../src/interfaces/IKintoWallet.sol";
-import "../../src/interfaces/ISponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "../../src/Faucet.sol";
 

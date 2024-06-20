@@ -3,7 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";

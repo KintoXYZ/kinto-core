@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {EntryPoint} from "@aa-v7/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import {Create2} from "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
