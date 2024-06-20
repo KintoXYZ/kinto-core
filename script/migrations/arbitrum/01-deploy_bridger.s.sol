@@ -35,7 +35,6 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         // Set wstEth to zero, as staking is not supported on Arbitrum.
         // Set USDe and sUSDe to zero, as staking USDe is not supported on Arbitrum.
         impl = create2(
-            "BridgerV1-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
                 abi.encode(EXCHANGE_PROXY, CURVE_USDM_POOL, USDC, WETH, address(0), address(0), address(0), address(0))
@@ -44,7 +43,7 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         console2.log("Bridger implementation deployed at", address(impl));
         // deploy proxy contract and point it to implementation
         address proxy =
-            create2("Bridger", abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
+            create2( abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
         bridger = Bridger(payable(address(proxy)));
         console2.log("Bridger proxy deployed at ", address(bridger));
         // Initialize proxy

@@ -29,7 +29,7 @@ contract UpgradeBridgedWethScript is MigrationHelper {
 
         vm.broadcast(deployerPrivateKey);
         BridgedWeth newImpl = BridgedWeth(
-            payable(create2("BridgedWethV1-impl", abi.encodePacked(type(BridgedWeth).creationCode, abi.encode(18))))
+            payable(create2(abi.encodePacked(type(BridgedWeth).creationCode, abi.encode(18))))
         );
 
         uint256[] memory privKeys = new uint256[](1);

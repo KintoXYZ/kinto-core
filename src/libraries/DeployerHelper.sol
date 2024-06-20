@@ -34,11 +34,11 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         revert(string.concat("No WETH address for chainid:", vm.toString(block.chainid)));
     }
 
-    function create2(string memory contractName, bytes memory creationCodeWithArgs) internal returns (address addr) {
-        return create2(0, contractName, creationCodeWithArgs);
+    function create2(bytes memory creationCodeWithArgs) internal returns (address addr) {
+        return create2(creationCodeWithArgs, 0);
     }
 
-    function create2(bytes32 salt, string memory contractName, bytes memory creationCodeWithArgs)
+    function create2(bytes memory creationCodeWithArgs, bytes32 salt)
         internal
         returns (address addr)
     {
@@ -48,8 +48,6 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
         if (!isContract(addr)) {
             address deployed = deploy(salt, creationCodeWithArgs);
             require(deployed == addr, "Deployed and compute addresses do not match");
-
-            saveContractAddress(contractName, addr);
         }
     }
 

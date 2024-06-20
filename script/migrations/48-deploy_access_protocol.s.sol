@@ -42,30 +42,27 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
         }
 
         address dummyAccessPointImpl = create2(
-            "DummyAccessPoint-impl",
             abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, address(0)))
         );
         beacon = UpgradeableBeacon(
             create2(
-                "AccessRegistryBeacon",
                 abi.encodePacked(
                     type(UpgradeableBeacon).creationCode, abi.encode(dummyAccessPointImpl, address(deployer))
                 )
             )
         );
         address accessRegistryImpl =
-            create2("AccessRegistry-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+            create2(abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
         // salt to get a nice address for the registry
         address accessRegistryProxy = create2(
-            0x8bfc284f7f8858599004b8c4dd784dc4134a9128417ed118d6d482209eb26d31,
-            "AccessRegistry",
-            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, ""))
+            abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(accessRegistryImpl, "")),
+            0x8bfc284f7f8858599004b8c4dd784dc4134a9128417ed118d6d482209eb26d31
         );
 
         registry = AccessRegistry(address(accessRegistryProxy));
         UpgradeableBeacon(beacon).transferOwnership(address(registry));
         address accessPointImpl = create2(
-            "AccessPoint-impl", abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
+             abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
         );
 
         registry.initialize();
@@ -78,19 +75,18 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
         console2.log("SafeBeaconProxy at: %s", address(safeBeaconProxy));
 
         withdrawWorkflow =
-            WithdrawWorkflow(create2("WithdrawWorkflow", abi.encodePacked(type(WithdrawWorkflow).creationCode)));
+            WithdrawWorkflow(create2( abi.encodePacked(type(WithdrawWorkflow).creationCode)));
         registry.allowWorkflow(address(withdrawWorkflow));
 
         wethWorkflow = WethWorkflow(
             create2(
-                "WethWorkflow",
                 abi.encodePacked(type(WethWorkflow).creationCode, abi.encode(getWethByChainId(block.chainid)))
             )
         );
         registry.allowWorkflow(address(wethWorkflow));
 
         swapWorkflow = SwapWorkflow(
-            create2("SwapWorkflow", abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY)))
+            create2( abi.encodePacked(type(SwapWorkflow).creationCode, abi.encode(EXCHANGE_PROXY)))
         );
         registry.allowWorkflow(address(swapWorkflow));
 

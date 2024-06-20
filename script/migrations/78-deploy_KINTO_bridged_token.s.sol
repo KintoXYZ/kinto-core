@@ -12,16 +12,19 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
 
+contract InitKintoScript {
+    constructor(BridgedToken token, string memory name, string memory symbol, address adminWallet ) {
+        token.initialize(name, symbol, adminWallet, adminWallet, adminWallet);
+        selfdestruct(payable(msg.sender));
+    }
+}
+
 contract DeployKintoScript is MigrationHelper {
     using LibString for *;
     using Strings for string;
     using stdJson for string;
 
-    // KINTO_WALLET will be the admin, minter and upgrader of every BridgedKinto
-    address kintoWallet = vm.envAddress("ADMIN_KINTO_WALLET");
-    address admin = kintoWallet;
-    address minter = admin;
-    address upgrader = admin;
+    address adminWallet = vm.envAddress("ADMIN_KINTO_WALLET");
 
     function run() public override {
         super.run();
@@ -43,38 +46,16 @@ contract DeployKintoScript is MigrationHelper {
         console2.log("Expected address: %s", expectedAddress);
         assertEq(proxy, expectedAddress);
 
-        {
-            // whitelist app & initialize
-            address wallet = 0x7403542bF2aF061eBF0DC16cAfA3068b90Fc1e75; // fede's kinto wallet
-            uint256[] memory privKeys = new uint256[](1);
-            privKeys[0] = deployerPrivateKey;
-
-            // whitelist
-            address[] memory apps = new address[](1);
-            apps[0] = proxy;
-            bool[] memory flags = new bool[](1);
-            flags[0] = true;
-            bytes memory selectorAndParams = abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags);
-            _handleOps(selectorAndParams, wallet, wallet, 0, address(0), privKeys);
-
-            // initialize
-            privKeys = new uint256[](2);
-            privKeys[0] = deployerPrivateKey;
-            privKeys[1] = LEDGER;
-
-            selectorAndParams =
-                abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, admin, admin);
-            _handleOps(selectorAndParams, wallet, proxy, 0, address(0), privKeys);
-        }
+        create2(abi.encodePacked(type(InitKintoScript).creationCode, abi.encode(proxy, name, symbol, adminWallet)));
 
         BridgedKinto bridgedToken = BridgedKinto(proxy);
 
         require(bridgedToken.name().equal("Kinto Token"), "");
         require(bridgedToken.symbol().equal("KINTO"), "");
         require(bridgedToken.decimals() == 18, "");
-        require(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), admin), "Admin role not set");
-        require(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), admin), "Minter role not set");
-        require(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), admin), "Upgrader role not set");
+        require(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), adminWallet), "adminWallet role not set");
+        require(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), adminWallet), "Minter role not set");
+        require(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), adminWallet), "Upgrader role not set");
 
         console2.log("All checks passed!");
 
