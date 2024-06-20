@@ -5,8 +5,9 @@ import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {BridgedToken} from "../../src/tokens/bridged/BridgedToken.sol";
-import {IKintoWallet} from "../../src/interfaces/IKintoWallet.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
@@ -16,7 +17,7 @@ contract DeployKintoScript is MigrationHelper {
     using Strings for string;
     using stdJson for string;
 
-    // KINTO_WALLET will be the admin, minter and upgrader of every BridgedToken
+    // KINTO_WALLET will be the admin, minter and upgrader of every BridgedKinto
     address kintoWallet = vm.envAddress("ADMIN_KINTO_WALLET");
     address admin = kintoWallet;
     address minter = admin;
@@ -27,16 +28,15 @@ contract DeployKintoScript is MigrationHelper {
 
         string memory symbol = 'KINTO';
         string memory name = 'Kinto Token';
-        uint256 decimals = 18;
 
         // deploy token
-        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
-        address implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+        bytes memory bytecode = abi.encodePacked(type(BridgedKinto).creationCode);
+        address implementation = _deployImplementation("BridgedKinto", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "010700");
 
-        address proxy = _deployProxy("BridgedToken", implementation, salt);
+        address proxy = _deployProxy("BridgedKinto", implementation, salt);
 
         console2.log("Proxy deployed @%s", proxy);
         console2.log("Expected address: %s", expectedAddress);
@@ -66,7 +66,7 @@ contract DeployKintoScript is MigrationHelper {
             _handleOps(selectorAndParams, wallet, proxy, 0, address(0), privKeys);
         }
 
-        BridgedToken bridgedToken = BridgedToken(proxy);
+        BridgedKinto bridgedToken = BridgedKinto(proxy);
 
         require(bridgedToken.name().equal("Kinto Token"), "");
         require(bridgedToken.symbol().equal("KINTO"), "");
