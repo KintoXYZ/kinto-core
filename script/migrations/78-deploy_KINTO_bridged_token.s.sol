@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {BridgedToken} from "../../src/tokens/bridged/BridgedToken.sol";
 import {IKintoWallet} from "../../src/interfaces/IKintoWallet.sol";
@@ -12,8 +13,8 @@ import {console2} from "forge-std/console2.sol";
 
 contract DeployKintoScript is MigrationHelper {
     using LibString for *;
+    using Strings for string;
     using stdJson for string;
-
 
     // KINTO_WALLET will be the admin, minter and upgrader of every BridgedToken
     address kintoWallet = vm.envAddress("ADMIN_KINTO_WALLET");
@@ -26,15 +27,16 @@ contract DeployKintoScript is MigrationHelper {
 
         string memory symbol = 'KINTO';
         string memory name = 'Kinto Token';
+        uint256 decimals = 18;
 
         // deploy token
         bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
-        implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+        address implementation = _deployImplementation("BridgedToken", "V1", bytecode, keccak256(abi.encodePacked(symbol)));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "010700");
 
-        proxy = _deployProxy("BridgedToken", implementation, salt);
+        address proxy = _deployProxy("BridgedToken", implementation, salt);
 
         console2.log("Proxy deployed @%s", proxy);
         console2.log("Expected address: %s", expectedAddress);
@@ -60,24 +62,25 @@ contract DeployKintoScript is MigrationHelper {
             privKeys[1] = LEDGER;
 
             selectorAndParams =
-                abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, minter, upgrader);
+                abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, admin, admin);
             _handleOps(selectorAndParams, wallet, proxy, 0, address(0), privKeys);
         }
 
-        BridgedToken bridgedToken = BridgedToken(token);
+        BridgedToken bridgedToken = BridgedToken(proxy);
 
-        require(bridgedToken.name() == 18, "");
-        require(bridgedToken.symbol() == 18, "KINTO");
-        require(bridgedToken.decimals() == 18, "Kinto Token");
+        require(bridgedToken.name().equal("Kinto Token"), "");
+        require(bridgedToken.symbol().equal("KINTO"), "");
+        require(bridgedToken.decimals() == 18, "");
         require(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), admin), "Admin role not set");
-        require(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), minter), "Minter role not set");
-        require(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), upgrader), "Upgrader role not set");
+        require(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), admin), "Minter role not set");
+        require(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), admin), "Upgrader role not set");
+
         console2.log("All checks passed!");
 
-        console2.log("%s implementation deployed @%s", symbol, impl);
-        console2.log("%s deployed @%s", symbol, bridgedToken);
+        console2.log("%s implementation deployed @%s", symbol, implementation);
+        console2.log("%s deployed @%s", symbol, address(bridgedToken));
 
-        saveContractAddress(string.concat(symbol, "-impl"), impl);
-        saveContractAddress(symbol, bridgedToken);
+        saveContractAddress(string.concat(symbol, "-impl"), implementation);
+        saveContractAddress(symbol, address(bridgedToken));
     }
 }
