@@ -28,12 +28,7 @@ contract UpgradeAccessPointScript is Script, MigrationHelper {
         }
 
         newImpl = AccessPoint(
-            payable(
-                create2(
-                    "AccessPointV3-impl",
-                    abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
-                )
-            )
+            payable(create2(abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))))
         );
         registry.upgradeAll(newImpl);
 

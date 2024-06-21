@@ -31,7 +31,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
 
         // Deploy implementation
         newImpl = create2(
-            "BridgerV6-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
                 abi.encode(EXCHANGE_PROXY, address(0), address(0), WETH, DAI, USDe, sUSDe, wstETH, address(0))

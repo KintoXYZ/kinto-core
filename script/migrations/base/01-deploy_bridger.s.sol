@@ -33,7 +33,6 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         // Set wstEth to zero, as staking is not supported on Base.
         // Set USDe and sUSDe to zero, as staking USDe is not supported on Base.
         impl = create2(
-            "BridgerV1-impl",
             abi.encodePacked(
                 type(Bridger).creationCode,
                 abi.encode(EXCHANGE_PROXY, address(0), address(0), WETH, address(0), address(0), address(0), address(0))
@@ -41,8 +40,7 @@ contract DeployBridgerScript is Constants, Test, MigrationHelper {
         );
         console2.log("Bridger implementation deployed at", address(impl));
         // deploy proxy contract and point it to implementation
-        address proxy =
-            create2("Bridger", abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
+        address proxy = create2(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), "")));
         bridger = Bridger(payable(address(proxy)));
         console2.log("Bridger proxy deployed at ", address(bridger));
         // Initialize proxy

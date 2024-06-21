@@ -24,8 +24,7 @@ contract UpgradeAccessProtocolScript is Script, MigrationHelper {
 
         address beacon = _getChainDeployment("AccessRegistryBeacon");
 
-        newImpl =
-            create2("AccessRegistryV3-impl", abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
+        newImpl = create2(abi.encodePacked(type(AccessRegistry).creationCode, abi.encode(beacon)));
 
         registry.upgradeToAndCall(address(newImpl), bytes(""));
 
