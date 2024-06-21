@@ -18,6 +18,7 @@ import {RewardsDistributor} from "@kinto-core/RewardsDistributor.sol";
 contract RewardsDistributorTest is ForkTest {
     RewardsDistributor internal distributor;
     ERC20Mock internal kinto;
+    ERC20Mock internal engen;
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
     bytes32 internal leaf;
     uint256 internal baseAmount = 600_000e18;
@@ -28,13 +29,14 @@ contract RewardsDistributorTest is ForkTest {
         super.setUp();
 
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
+        engen = new ERC20Mock("Engen Token", "ENGEN", 18);
 
         vm.prank(_owner);
-        distributor = new RewardsDistributor(kinto, root, baseAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, baseAmount, maxRatePerSecond, startTime);
     }
 
     function testUp() public override {
-        distributor = new RewardsDistributor(kinto, root, baseAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, baseAmount, maxRatePerSecond, startTime);
 
         assertEq(distributor.startTime(), START_TIMESTAMP);
         assertEq(address(distributor.KINTO()), address(kinto));
@@ -145,7 +147,7 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testClaim_RevertWhen_MaxLimitExceeded() public {
-        distributor = new RewardsDistributor(kinto, root, 0, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, 0, maxRatePerSecond, startTime);
         uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](2);

@@ -44,6 +44,8 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      */
     event UserClaimed(address indexed user, uint256 indexed amount);
 
+    event UserEngenClaimed(address indexed user, uint256 indexed amount);
+
     /* ============ Errors ============ */
 
     /**
@@ -65,8 +67,17 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice Starting time of the mining program.
     uint256 public immutable startTime;
 
-    /// @notice The address of Kinto token to distribute.
+    /// @notice The address of Kinto token.
     IERC20 public immutable KINTO;
+
+    /// @notice The address of ENGEN token.
+    IERC20 public immutable ENGEN;
+
+    /// @notice The multiplier to convert Engen tokens to Kinto tokens.
+    uint256 public constant ENGEN_MULTIPLIER = 22e16;
+
+    /// @notice The bonus given to Engen holders.
+    uint256 public constant ENGEN_HOLDER_BONUS = 25e16;
 
     /* ============ State Variables ============ */
 
@@ -85,6 +96,12 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice The maximum rate of token per second which can be distributed.
     uint256 public maxRatePerSecond;
 
+    /// @notice Engen users which kept the capital.
+    mapping(address => bool) public engenHolders;
+
+    /// @notice Total amount of Kinto claimed tokens from Engen program.
+    uint256 public totalKintoFromEngenClaimed;
+
     /* ============ Constructor ============ */
 
     /**
@@ -95,10 +112,11 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @param maxRatePerSecond_ The maximum rate of tokens per second.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, bytes32 root_, uint256 baseAmount_, uint256 maxRatePerSecond_, uint256 startTime_)
+    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 baseAmount_, uint256 maxRatePerSecond_, uint256 startTime_)
         Ownable(msg.sender)
     {
         KINTO = kinto_;
+        ENGEN = engen_;
         root = root_;
         baseAmount = baseAmount_;
         maxRatePerSecond = maxRatePerSecond_;
@@ -136,6 +154,22 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
 
         // Emit an event indicating that the user has claimed tokens
         emit UserClaimed(user, amount);
+    }
+
+    function claimEngen() external nonReentrant {
+        // Amount of Kinto tokens to claim is EngenBalance * multiplier
+        uint256 amount = ENGEN.balanceOf(msg.sender) * ENGEN_MULTIPLIER / 1e18;
+
+        // Engen holder get an extra holder bonus
+        amount = engenHolders[msg.sender] ? amount * ENGEN_HOLDER_BONUS / 1e18 : amount;
+
+        totalKintoFromEngenClaimed += amount;
+
+        // Transfer Kinto tokens to the user
+        KINTO.safeTransfer(msg.sender, amount);
+
+        // Emit an event indicating that the user has claimed tokens
+        emit UserEngenClaimed(msg.sender, amount);
     }
 
     /**
