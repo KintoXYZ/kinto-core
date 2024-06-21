@@ -21,7 +21,7 @@ contract RewardsDistributorTest is ForkTest {
     ERC20Mock internal engen;
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
     bytes32 internal leaf;
-    uint256 internal baseAmount = 600_000e18;
+    uint256 internal bonusAmount = 600_000e18;
     uint256 internal maxRatePerSecond = 1e16;
     uint256 internal startTime = START_TIMESTAMP;
 
@@ -32,20 +32,20 @@ contract RewardsDistributorTest is ForkTest {
         engen = new ERC20Mock("Engen Token", "ENGEN", 18);
 
         vm.prank(_owner);
-        distributor = new RewardsDistributor(kinto, engen, root, baseAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, maxRatePerSecond, startTime);
     }
 
     function testUp() public override {
-        distributor = new RewardsDistributor(kinto, engen, root, baseAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, maxRatePerSecond, startTime);
 
         assertEq(distributor.startTime(), START_TIMESTAMP);
         assertEq(address(distributor.KINTO()), address(kinto));
         assertEq(distributor.root(), root);
         assertEq(distributor.totalClaimed(), 0);
-        assertEq(distributor.baseAmount(), baseAmount);
+        assertEq(distributor.bonusAmount(), bonusAmount);
         assertEq(distributor.maxRatePerSecond(), maxRatePerSecond);
-        assertEq(distributor.getTotalLimit(), baseAmount);
-        assertEq(distributor.getUnclaimedLimit(), baseAmount);
+        assertEq(distributor.getTotalLimit(), bonusAmount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount);
     }
 
     function testClaim() public {
@@ -68,15 +68,15 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(kinto.balanceOf(_user), amount);
         assertEq(distributor.totalClaimed(), amount);
         assertEq(distributor.claimedByUser(_user), amount);
-        assertEq(distributor.getTotalLimit(), baseAmount);
-        assertEq(distributor.getUnclaimedLimit(), baseAmount - amount);
+        assertEq(distributor.getTotalLimit(), bonusAmount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount - amount);
     }
 
     function testClaim_WhenTimePass() public {
         uint256 amount = 1e18;
 
         vm.prank(_owner);
-        distributor.updateBaseAmount(0);
+        distributor.updateBonusAmount(0);
 
         kinto.mint(address(distributor), amount);
 
@@ -117,8 +117,8 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(kinto.balanceOf(_user), amount);
         assertEq(distributor.totalClaimed(), amount);
         assertEq(distributor.claimedByUser(_user), amount);
-        assertEq(distributor.getTotalLimit(), baseAmount);
-        assertEq(distributor.getUnclaimedLimit(), baseAmount - amount);
+        assertEq(distributor.getTotalLimit(), bonusAmount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount - amount);
 
         kinto.mint(address(distributor), amount);
 
@@ -131,8 +131,8 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(kinto.balanceOf(_user), 2 * amount);
         assertEq(distributor.totalClaimed(), 2 * amount);
         assertEq(distributor.claimedByUser(_user), 2 * amount);
-        assertEq(distributor.getTotalLimit(), baseAmount);
-        assertEq(distributor.getUnclaimedLimit(), baseAmount - 2 * amount);
+        assertEq(distributor.getTotalLimit(), bonusAmount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount - 2 * amount);
     }
 
     function testClaim_RevertWhen_InvalidProof() public {
@@ -176,22 +176,22 @@ contract RewardsDistributorTest is ForkTest {
         distributor.updateRoot(newRoot);
     }
 
-    function testUpdateBaseAmount() public {
-        uint256 newBaseAmount = 1_000_000e18;
+    function testUpdateBonusAmount() public {
+        uint256 newBonusAmount = 1_000_000e18;
 
         vm.expectEmit(true, true, true, true);
-        emit RewardsDistributor.BaseAmountUpdated(newBaseAmount, baseAmount);
+        emit RewardsDistributor.BonusAmountUpdated(newBonusAmount, bonusAmount);
         vm.prank(_owner);
-        distributor.updateBaseAmount(newBaseAmount);
+        distributor.updateBonusAmount(newBonusAmount);
 
-        assertEq(distributor.baseAmount(), newBaseAmount);
+        assertEq(distributor.bonusAmount(), newBonusAmount);
     }
 
-    function testUpdateBaseAmount_RevertWhen_NotOwner() public {
-        uint256 newBaseAmount = 1_000_000e18;
+    function testUpdateBonusAmount_RevertWhen_NotOwner() public {
+        uint256 newBonusAmount = 1_000_000e18;
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        distributor.updateBaseAmount(newBaseAmount);
+        distributor.updateBonusAmount(newBonusAmount);
     }
 
     function testUpdateMaxRatePerSecond() public {

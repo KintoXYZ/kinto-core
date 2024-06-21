@@ -17,11 +17,11 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /* ============ Events ============ */
 
     /**
-     * @notice Emitted when the base amount is updated.
-     * @param newBaseAmount The new base amount.
-     * @param oldBaseAmount The old base amount.
+     * @notice Emitted when the bonus amount is updated.
+     * @param newBonusAmount The new bonus amount.
+     * @param oldBonusAmount The old bonus amount.
      */
-    event BaseAmountUpdated(uint256 indexed newBaseAmount, uint256 indexed oldBaseAmount);
+    event BonusAmountUpdated(uint256 indexed newBonusAmount, uint256 indexed oldBonusAmount);
 
     /**
      * @notice Emitted when the maximum rate per second is updated.
@@ -91,7 +91,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     mapping(address => uint256) public claimedByUser;
 
     /// @notice Amount of funds preloaded at the start.
-    uint256 public baseAmount;
+    uint256 public bonusAmount;
 
     /// @notice The maximum rate of token per second which can be distributed.
     uint256 public maxRatePerSecond;
@@ -108,17 +108,17 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @notice Initializes the contract with the given parameters.
      * @param kinto_ The address of the Kinto token.
      * @param root_ The initial root of the Merkle tree.
-     * @param baseAmount_ The initial base amount of tokens.
+     * @param bonusAmount_ The initial bonus amount of tokens.
      * @param maxRatePerSecond_ The maximum rate of tokens per second.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 baseAmount_, uint256 maxRatePerSecond_, uint256 startTime_)
+    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 bonusAmount_, uint256 maxRatePerSecond_, uint256 startTime_)
         Ownable(msg.sender)
     {
         KINTO = kinto_;
         ENGEN = engen_;
         root = root_;
-        baseAmount = baseAmount_;
+        bonusAmount = bonusAmount_;
         maxRatePerSecond = maxRatePerSecond_;
         startTime = startTime_;
     }
@@ -182,12 +182,12 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice Updates the base amount of tokens.
-     * @param newBaseAmount The new base amount.
+     * @notice Updates the bonus amount of tokens.
+     * @param newBonusAmount The new bonus amount.
      */
-    function updateBaseAmount(uint256 newBaseAmount) external onlyOwner {
-        emit BaseAmountUpdated(newBaseAmount, baseAmount);
-        baseAmount = newBaseAmount;
+    function updateBonusAmount(uint256 newBonusAmount) external onlyOwner {
+        emit BonusAmountUpdated(newBonusAmount, bonusAmount);
+        bonusAmount = newBonusAmount;
     }
 
     /**
@@ -206,7 +206,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @return The total limit of tokens.
      */
     function getTotalLimit() public view returns (uint256) {
-        return maxRatePerSecond * (block.timestamp - startTime) + baseAmount;
+        return maxRatePerSecond * (block.timestamp - startTime) + bonusAmount;
     }
 
     /**
@@ -214,6 +214,6 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @return The remaining unclaimed limit of tokens.
      */
     function getUnclaimedLimit() external view returns (uint256) {
-        return maxRatePerSecond * (block.timestamp - startTime) + baseAmount - totalClaimed;
+        return maxRatePerSecond * (block.timestamp - startTime) + bonusAmount - totalClaimed;
     }
 }
