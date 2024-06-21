@@ -72,8 +72,11 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice The bonus given to Engen holders.
     uint256 public constant ENGEN_HOLDER_BONUS = 25e16;
 
-    uint256 public constant totalTokens = 4_000_000 * 1e18; // 4 million tokens in wei
-    uint256 public constant quarters = 10 * 4; // 10 years in quarters
+    /// @notice Total amount of tokens to give away during liquidity mining. 4 million tokens.
+    uint256 public constant totalTokens = 4_000_000 * 1e18;
+
+    /// @notice Total number of quarters 40 == 10 years.
+    uint256 public constant quarters = 10 * 4;
 
     /* ============ State Variables ============ */
 
@@ -95,6 +98,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice Total amount of Kinto claimed tokens from Engen program.
     uint256 public totalKintoFromEngenClaimed;
 
+    /// @notice Rewards per quarter for liquidity mining.
     mapping(uint256 => uint256) public rewardsPerQuarter;
 
     /* ============ Constructor ============ */
