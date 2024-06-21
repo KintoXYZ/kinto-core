@@ -15,7 +15,6 @@ import {console2} from "forge-std/console2.sol";
 contract InitKintoScript {
     constructor(BridgedToken token, string memory name, string memory symbol, address adminWallet) {
         token.initialize(name, symbol, adminWallet, adminWallet, adminWallet);
-        selfdestruct(payable(msg.sender));
     }
 }
 
@@ -24,10 +23,10 @@ contract DeployKintoScript is MigrationHelper {
     using Strings for string;
     using stdJson for string;
 
-    address adminWallet = vm.envAddress("ADMIN_KINTO_WALLET");
-
     function run() public override {
         super.run();
+
+        address adminWallet = _getChainDeployment("KintoWallet-admin");
 
         string memory symbol = "KINTO";
         string memory name = "Kinto Token";
@@ -46,6 +45,7 @@ contract DeployKintoScript is MigrationHelper {
         console2.log("Expected address: %s", expectedAddress);
         assertEq(proxy, expectedAddress);
 
+        vm.broadcast(deployerPrivateKey);
         create2(abi.encodePacked(type(InitKintoScript).creationCode, abi.encode(proxy, name, symbol, adminWallet)));
 
         BridgedKinto bridgedToken = BridgedKinto(proxy);
