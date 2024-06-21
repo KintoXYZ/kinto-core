@@ -119,15 +119,28 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         bonusAmount = bonusAmount_;
         startTime = startTime_;
 
-        uint256 rewardsSpentUntilE; // Tracks the total rewards spent until the current quarter
+        // Initialize the variable to track the total rewards spent until the current quarter
+        uint256 rewardsSpentUntilE;
+        // Loop through each quarter from 1 to the total number of quarters
         for (uint256 e = 1; e <= quarters; e++) {
+            // Initialize the diminishing factor to 1e18
             uint256 diminishingFactor = 1e18;
+
+            // Apply the diminishing factor for each previous quarter
             for (uint256 i = 0; i < e; i++) {
                 diminishingFactor = (diminishingFactor * 100) / 105;
             }
+
+            // Calculate the reward factor for the current quarter
             uint256 rpFactor = totalTokens * diminishingFactor / 1e18;
+
+            // Calculate the rewards for the current quarter by subtracting the reward factor and previously spent rewards from the total tokens
             uint256 rewardsForQuarter = totalTokens - rpFactor - rewardsSpentUntilE;
+
+            // Store the calculated rewards for the current quarter in the rewardsPerQuarter mapping
             rewardsPerQuarter[e - 1] = rewardsForQuarter;
+
+            // Update the total rewards spent until the current quarter
             rewardsSpentUntilE += rewardsForQuarter;
         }
     }
