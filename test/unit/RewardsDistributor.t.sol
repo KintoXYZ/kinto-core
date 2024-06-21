@@ -22,7 +22,6 @@ contract RewardsDistributorTest is ForkTest {
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
     bytes32 internal leaf;
     uint256 internal bonusAmount = 600_000e18;
-    uint256 internal maxRatePerSecond = 1e16;
     uint256 internal startTime = START_TIMESTAMP;
 
     function setUp() public override {
@@ -32,18 +31,17 @@ contract RewardsDistributorTest is ForkTest {
         engen = new ERC20Mock("Engen Token", "ENGEN", 18);
 
         vm.prank(_owner);
-        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, startTime);
     }
 
     function testUp() public override {
-        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, startTime);
 
         assertEq(distributor.startTime(), START_TIMESTAMP);
         assertEq(address(distributor.KINTO()), address(kinto));
         assertEq(distributor.root(), root);
         assertEq(distributor.totalClaimed(), 0);
         assertEq(distributor.bonusAmount(), bonusAmount);
-        assertEq(distributor.maxRatePerSecond(), maxRatePerSecond);
         assertEq(distributor.getTotalLimit(), bonusAmount);
         assertEq(distributor.getUnclaimedLimit(), bonusAmount);
     }
@@ -87,7 +85,8 @@ contract RewardsDistributorTest is ForkTest {
         proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
         proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
 
-        vm.warp(START_TIMESTAMP + amount / maxRatePerSecond);
+        console2.log("distributor.rewardsPerQuarter(0):", distributor.rewardsPerQuarter(0));
+        vm.warp(START_TIMESTAMP + amount / (distributor.rewardsPerQuarter(0) / (90 days)) + 1);
 
         distributor.claim(proof, _user, amount);
 
@@ -95,8 +94,8 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(kinto.balanceOf(_user), amount);
         assertEq(distributor.totalClaimed(), amount);
         assertEq(distributor.claimedByUser(_user), amount);
-        assertEq(distributor.getTotalLimit(), amount);
-        assertEq(distributor.getUnclaimedLimit(), 0);
+        assertEq(distributor.getTotalLimit(), 1004311189496374701);
+        assertEq(distributor.getUnclaimedLimit(), 4311189496374701);
     }
 
     function testClaimMultiple() public {
@@ -147,7 +146,7 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testClaim_RevertWhen_MaxLimitExceeded() public {
-        distributor = new RewardsDistributor(kinto, engen, root, 0, maxRatePerSecond, startTime);
+        distributor = new RewardsDistributor(kinto, engen, root, 0, startTime);
         uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](2);
@@ -194,24 +193,6 @@ contract RewardsDistributorTest is ForkTest {
         distributor.updateBonusAmount(newBonusAmount);
     }
 
-    function testUpdateMaxRatePerSecond() public {
-        uint256 newMaxRatePerSecond = 5e16; // 0.05 tokens per second
-
-        vm.expectEmit(true, true, true, true);
-        emit RewardsDistributor.MaxRatePerSecondUpdated(newMaxRatePerSecond, maxRatePerSecond);
-        vm.prank(_owner);
-        distributor.updateMaxRatePerSecond(newMaxRatePerSecond);
-
-        assertEq(distributor.maxRatePerSecond(), newMaxRatePerSecond);
-    }
-
-    function testUpdateMaxRatePerSecond_RevertWhen_NotOwner() public {
-        uint256 newMaxRatePerSecond = 5e16; // 0.05 tokens per second
-
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
-        distributor.updateMaxRatePerSecond(newMaxRatePerSecond);
-    }
-
     function testClaimEngen() public {
         uint256 amount = 1e18;
 
@@ -226,7 +207,7 @@ contract RewardsDistributorTest is ForkTest {
         emit RewardsDistributor.UserEngenClaimed(_user, amount);
         distributor.claimEngen();
 
-        uint256 claimedEngenAmount = amount * 22e16/1e18;
+        uint256 claimedEngenAmount = amount * 22e16 / 1e18;
 
         assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
         assertEq(kinto.balanceOf(_user), claimedEngenAmount);

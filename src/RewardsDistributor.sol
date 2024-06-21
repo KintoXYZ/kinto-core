@@ -24,13 +24,6 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     event BonusAmountUpdated(uint256 indexed newBonusAmount, uint256 indexed oldBonusAmount);
 
     /**
-     * @notice Emitted when the maximum rate per second is updated.
-     * @param newMaxRatePerSecond The new maximum rate per second.
-     * @param oldMaxRatePerSecond The old maximum rate per second.
-     */
-    event MaxRatePerSecondUpdated(uint256 indexed newMaxRatePerSecond, uint256 indexed oldMaxRatePerSecond);
-
-    /**
      * @notice Updates a root of the merkle tree.
      * @param newRoot The new root.
      * @param oldRoot The old root.
@@ -79,6 +72,9 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice The bonus given to Engen holders.
     uint256 public constant ENGEN_HOLDER_BONUS = 25e16;
 
+    uint256 public constant totalTokens = 4_000_000 * 1e18; // 4 million tokens in wei
+    uint256 public constant quarters = 10 * 4; // 10 years in quarters
+
     /* ============ State Variables ============ */
 
     /// @notice The root of the merkle tree for Kinto token distribition.
@@ -93,14 +89,13 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /// @notice Amount of funds preloaded at the start.
     uint256 public bonusAmount;
 
-    /// @notice The maximum rate of token per second which can be distributed.
-    uint256 public maxRatePerSecond;
-
     /// @notice Engen users which kept the capital.
     mapping(address => bool) public engenHolders;
 
     /// @notice Total amount of Kinto claimed tokens from Engen program.
     uint256 public totalKintoFromEngenClaimed;
+
+    mapping(uint256 => uint256) public rewardsPerQuarter;
 
     /* ============ Constructor ============ */
 
@@ -109,18 +104,28 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
      * @param kinto_ The address of the Kinto token.
      * @param root_ The initial root of the Merkle tree.
      * @param bonusAmount_ The initial bonus amount of tokens.
-     * @param maxRatePerSecond_ The maximum rate of tokens per second.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 bonusAmount_, uint256 maxRatePerSecond_, uint256 startTime_)
+    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 bonusAmount_, uint256 startTime_)
         Ownable(msg.sender)
     {
         KINTO = kinto_;
         ENGEN = engen_;
         root = root_;
         bonusAmount = bonusAmount_;
-        maxRatePerSecond = maxRatePerSecond_;
         startTime = startTime_;
+
+        uint256 rewardsSpentUntilE; // Tracks the total rewards spent until the current quarter
+        for (uint256 e = 1; e <= quarters; e++) {
+            uint256 diminishingFactor = 1e18;
+            for (uint256 i = 0; i < e; i++) {
+                diminishingFactor = (diminishingFactor * 100) / 105;
+            }
+            uint256 rpFactor = totalTokens * diminishingFactor / 1e18;
+            uint256 rewardsForQuarter = totalTokens - rpFactor - rewardsSpentUntilE;
+            rewardsPerQuarter[e - 1] = rewardsForQuarter;
+            rewardsSpentUntilE += rewardsForQuarter;
+        }
     }
 
     /* ============ External ============ */
@@ -141,7 +146,7 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         }
 
         // Check if the total claimed amount exceeds the allowable limit
-        if (totalClaimed + amount > getTotalLimit()) {
+        if (amount > getUnclaimedLimit()) {
             revert MaxLimitReached(totalClaimed + amount, getTotalLimit());
         }
 
@@ -207,30 +212,53 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         bonusAmount = newBonusAmount;
     }
 
-    /**
-     * @notice Updates the maximum rate of tokens per second.
-     * @param newMaxRatePerSecond The new maximum rate per second.
-     */
-    function updateMaxRatePerSecond(uint256 newMaxRatePerSecond) external onlyOwner {
-        emit MaxRatePerSecondUpdated(newMaxRatePerSecond, maxRatePerSecond);
-        maxRatePerSecond = newMaxRatePerSecond;
-    }
-
     /* ============ View ============ */
 
     /**
-     * @notice Returns the total limit of tokens that can be distributed.
+     * @notice Returns the total limit of tokens that can be distributed based on quarterly rewards.
      * @return The total limit of tokens.
      */
     function getTotalLimit() public view returns (uint256) {
-        return maxRatePerSecond * (block.timestamp - startTime) + bonusAmount;
+        if (block.timestamp < startTime) {
+            return 0;
+        }
+
+        // Calculate the number of seconds since the start of the program
+        uint256 elapsedTime = block.timestamp - startTime;
+
+        // Calculate the current quarter based on the elapsed time
+        uint256 currentQuarter = elapsedTime / (90 days); // Approximate each quarter as 90 days
+
+        // Ensure we do not exceed the total number of quarters
+        if (currentQuarter >= quarters) {
+            currentQuarter = quarters - 1;
+        }
+
+        // Sum the rewards up to the previous quarter
+        uint256 totalLimit = 0;
+        for (uint256 i = 0; i < currentQuarter; i++) {
+            totalLimit += rewardsPerQuarter[i];
+        }
+
+        // Calculate the time passed in the current quarter
+        uint256 timePassedInCurrentQuarter = elapsedTime % (90 days);
+        uint256 currentQuarterReward = rewardsPerQuarter[currentQuarter];
+        uint256 currentQuarterLimit = (currentQuarterReward * timePassedInCurrentQuarter) / (90 days);
+
+        // Add the partial reward for the current quarter
+        totalLimit += currentQuarterLimit;
+
+        // Add the bonus amount
+        totalLimit += bonusAmount;
+
+        return totalLimit;
     }
 
     /**
      * @notice Returns the remaining unclaimed limit of tokens.
      * @return The remaining unclaimed limit of tokens.
      */
-    function getUnclaimedLimit() external view returns (uint256) {
-        return maxRatePerSecond * (block.timestamp - startTime) + bonusAmount - totalClaimed;
+    function getUnclaimedLimit() public view returns (uint256) {
+        return getTotalLimit() - totalClaimed;
     }
 }
