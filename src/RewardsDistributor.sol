@@ -156,6 +156,11 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         emit UserClaimed(user, amount);
     }
 
+    /**
+     * @notice Allows a user to claim Kinto tokens based on their Engen token balance.
+     * @dev The amount of Kinto tokens claimed is calculated based on the user's Engen token balance and a multiplier.
+     *      Engen holders receive an additional bonus if they are marked as such.
+     */
     function claimEngen() external nonReentrant {
         // Amount of Kinto tokens to claim is EngenBalance * multiplier
         uint256 amount = ENGEN.balanceOf(msg.sender) * ENGEN_MULTIPLIER / 1e18;
@@ -170,6 +175,18 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
 
         // Emit an event indicating that the user has claimed tokens
         emit UserEngenClaimed(msg.sender, amount);
+    }
+
+    /**
+     * @notice Updates the list of Engen holders and their status.
+     * @dev Only the contract owner can call this function.
+     * @param users The list of user addresses to update.
+     * @param values The corresponding list of boolean values indicating whether each user is an Engen holder.
+     */
+    function updateEngenHolders(address[] memory users, bool[] memory values) external onlyOwner {
+        for (uint256 index = 0; index < users.length; index++) {
+            engenHolders[users[index]] = values[index];
+        }
     }
 
     /**

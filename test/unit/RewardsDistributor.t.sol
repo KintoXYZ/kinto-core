@@ -211,4 +211,54 @@ contract RewardsDistributorTest is ForkTest {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         distributor.updateMaxRatePerSecond(newMaxRatePerSecond);
     }
+
+    function testClaimEngen() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), amount);
+        engen.mint(address(_user), amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), amount);
+        assertEq(kinto.balanceOf(_user), 0);
+        assertEq(engen.balanceOf(_user), amount);
+
+        vm.prank(_user);
+        emit RewardsDistributor.UserEngenClaimed(_user, amount);
+        distributor.claimEngen();
+
+        uint256 claimedEngenAmount = amount * 22e16/1e18;
+
+        assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
+        assertEq(kinto.balanceOf(_user), claimedEngenAmount);
+        assertEq(distributor.totalKintoFromEngenClaimed(), claimedEngenAmount);
+    }
+
+    function testUpdateEngenHolders() public {
+        address[] memory users = new address[](2);
+        bool[] memory values = new bool[](2);
+
+        users[0] = address(0x123);
+        users[1] = address(0x456);
+        values[0] = true;
+        values[1] = false;
+
+        vm.prank(_owner);
+        distributor.updateEngenHolders(users, values);
+
+        assertEq(distributor.engenHolders(address(0x123)), true);
+        assertEq(distributor.engenHolders(address(0x456)), false);
+    }
+
+    function testUpdateEngenHolders_RevertWhen_NotOwner() public {
+        address[] memory users = new address[](2);
+        bool[] memory values = new bool[](2);
+
+        users[0] = address(0x123);
+        users[1] = address(0x456);
+        values[0] = true;
+        values[1] = false;
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        distributor.updateEngenHolders(users, values);
+    }
 }
