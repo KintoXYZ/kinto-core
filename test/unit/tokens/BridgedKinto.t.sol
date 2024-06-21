@@ -76,4 +76,10 @@ contract BridgedKintoTest is SharedSetup {
         token.transfer(_user2, 500);
         assertEq(token.balanceOf(_user2), 500);
     }
+
+    function testTransfer_RevertWhenToNotAllowedEOA() public {
+        vm.prank(_user);
+        vm.expectRevert(abi.encodeWithSelector(BridgedKinto.TransferIsNotAllowed.selector, _user, _user2, 500));
+        token.transfer(_user2, 500);
+    }
 }
