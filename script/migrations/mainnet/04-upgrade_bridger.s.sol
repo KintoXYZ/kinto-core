@@ -30,11 +30,9 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         }
 
         // Deploy implementation
-        newImpl = create2(
-            abi.encodePacked(
-                type(Bridger).creationCode,
-                abi.encode(EXCHANGE_PROXY, address(0), address(0), WETH, DAI, USDe, sUSDe, wstETH, address(0))
-            )
+        vm.broadcast(deployerPrivateKey);
+        newImpl = address(
+            new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, DAI, USDe, sUSDe, wstETH)
         );
         // Stop broadcast because the Owner is Safe account
 
@@ -47,6 +45,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Safe Account
         assertEq(bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82, "Invalid Owner");
 
-        console.log("BridgerV6-impl at: %s", address(newImpl));
+        console.log("BridgerV7-impl at: %s", address(newImpl));
     }
 }
