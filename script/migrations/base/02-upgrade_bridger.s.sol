@@ -41,6 +41,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Checks
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.owner(), deployer, "Invalid Owner");
-        saveContractAddress('BridgerV2-impl', newImpl);
+        saveContractAddress("BridgerV2-impl", newImpl);
     }
 }
