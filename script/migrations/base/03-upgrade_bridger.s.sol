@@ -19,6 +19,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     function run() public override {
         super.run();
 
+        vm.startBroadcast(deployerPrivateKey);
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
         bridger.upgradeTo(0x49B3ca4A91F5aF84855A9dd2E27EFeb3D693Cb3d);
         bridger.transferOwnership(0x45e9deAbb4FdD048Ae38Fce9D9E8d68EC6f592a2);
