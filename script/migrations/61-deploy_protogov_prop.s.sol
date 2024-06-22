@@ -24,7 +24,7 @@ contract KintoMigration61DeployScript is MigrationHelper {
         selectorAndParams = abi.encodeWithSelector(EngenCredits.setCredits.selector, wallets, amounts);
         _handleOps(selectorAndParams, address(credits), deployerPrivateKey);
 
-        _whitelistApp(_getChainDeployment("EngenGovernance"), deployerPrivateKey, true);
+        _whitelistApp(_getChainDeployment("EngenGovernance"), true);
 
         address[] memory targets;
         bytes[] memory data;

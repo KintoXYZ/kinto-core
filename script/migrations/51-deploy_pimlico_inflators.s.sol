@@ -32,7 +32,7 @@ contract KintoMigration51DeployScript is MigrationHelper {
         BundleBulker(_getChainDeployment("BundleBulker")).registerInflator(1, IInflator(perOpInflator));
         console2.log("PerOpInflator registered on BundleBulker");
 
-        _whitelistApp(perOpInflator, deployerPrivateKey, true);
+        _whitelistApp(perOpInflator, true);
         console2.log("PerOpInflator whitelisted on KintoWallet-admin");
 
         // register Kinto's Inflator in PerOpInflator via handleOps

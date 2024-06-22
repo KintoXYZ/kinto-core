@@ -15,7 +15,7 @@ contract KintoMigration25DeployScript is MigrationHelper {
         address implementation = _deployImplementation("KYCViewer", "V4", bytecode);
         address proxy = _deployProxy("KYCViewer", implementation);
 
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
     }
 }

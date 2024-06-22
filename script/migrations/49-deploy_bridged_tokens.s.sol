@@ -105,7 +105,7 @@ contract KintoMigration49DeployScript is MigrationHelper {
 
         assertEq(proxy, expectedAddress);
 
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
 
         // initialize
         bytes memory selectorAndParams =
