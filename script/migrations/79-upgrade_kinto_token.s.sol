@@ -26,8 +26,6 @@ contract KintoMigration77DeployScript is MigrationHelper {
         address proxy = _getChainDeployment("KINTO");
 
         BridgedKinto bridgedToken = BridgedKinto(proxy);
-        IKintoWallet adminWallet = IKintoWallet(_getChainDeployment("KintoWallet-admin"));
-        replaceOwner(adminWallet, 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
         _whitelistApp(proxy);
         _upgradeTo(proxy, impl, deployerPrivateKey);
 

@@ -214,7 +214,14 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = 0; // Ledger
 
-        _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _wallet, _wallet, 0, address(0), privKeys);
+        _handleOps(
+            abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
+            _wallet,
+            _wallet,
+            0,
+            address(0),
+            privKeys
+        );
     }
 
     function _whitelistApp(address _app, address _wallet, uint256 _signerPk, bool _whitelist) internal {
