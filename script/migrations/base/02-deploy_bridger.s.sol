@@ -20,7 +20,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         super.run();
 
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
-        bridger.upgradeTo(0x51be166199e39805ac68b758a2236a5b3c358b01);
+        bridger.upgradeTo(0x49B3ca4A91F5aF84855A9dd2E27EFeb3D693Cb3d);
         bridger.transferOwnership(0x45e9deAbb4FdD048Ae38Fce9D9E8d68EC6f592a2);
 
         // Checks
