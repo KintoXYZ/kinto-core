@@ -13,26 +13,34 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
-import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
+import {Constants} from "@kinto-core-script/migrations/base/const.sol";
 
 contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     function run() public override {
         super.run();
 
+        if (block.chainid != BASE_CHAINID) {
+            console2.log("This script is meant to be run on the chain: %s", BASE_CHAINID);
+            return;
+        }
+
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
 
+        // Set DAI to zero, as it has a normal `permit` on Base.
+        // Set wstEth to zero, as staking is not supported on Base.
+        // Set USDe and sUSDe to zero, as staking USDe is not supported on Base.
+        // Set Curve pool and USDC to zero as we do not support USDM on Base.
         vm.broadcast(deployerPrivateKey);
         address newImpl = address(
-            new Bridger(EXCHANGE_PROXY, CURVE_USDM_POOL, USDC, WETH, address(0), address(0), address(0), address(0))
+            new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, address(0), address(0), address(0), address(0))
         );
 
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
 
         // Checks
-        assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
-        assertEq(bridger.usdmCurvePool(), CURVE_USDM_POOL, "Invalid USDM Curve Pool");
+        assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         assertEq(bridger.owner(), deployer, "Invalid Owner");
-        console.log("BridgerV3-impl at: %s", address(newImpl));
+        saveContractAddress('BridgerV2-impl', newImpl);
     }
 }
