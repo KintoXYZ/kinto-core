@@ -251,11 +251,9 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
 
         // Ensure we do not exceed the total number of quarters
         if (currentQuarter < quarters) {
-
             for (uint256 i = 0; i < currentQuarter; i++) {
                 totalLimit += rewardsPerQuarter[i];
             }
-
 
             // Calculate the time passed in the current quarter
             uint256 timePassedInCurrentQuarter = elapsedTime % (90 days);
