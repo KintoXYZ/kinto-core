@@ -85,7 +85,6 @@ contract RewardsDistributorTest is ForkTest {
         proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
         proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
 
-        console2.log("distributor.rewardsPerQuarter(0):", distributor.rewardsPerQuarter(0));
         vm.warp(START_TIMESTAMP + amount / (distributor.rewardsPerQuarter(0) / (90 days)) + 1);
 
         distributor.claim(proof, _user, amount);
@@ -146,7 +145,7 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testClaim_RevertWhen_MaxLimitExceeded() public {
-        distributor = new RewardsDistributor(kinto, engen, root, 0, startTime);
+        RewardsDistributor distr = new RewardsDistributor(kinto, engen, root, 0, startTime);
         uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](2);
@@ -154,7 +153,7 @@ contract RewardsDistributorTest is ForkTest {
         proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
 
         vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.MaxLimitReached.selector, amount, 0));
-        distributor.claim(proof, _user, amount);
+        distr.claim(proof, _user, amount);
     }
 
     function testUpdateRoot() public {
@@ -241,5 +240,70 @@ contract RewardsDistributorTest is ForkTest {
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         distributor.updateEngenHolders(users, values);
+    }
+
+    function testTotalLimitPerQuarter() public {
+        RewardsDistributor distr = new RewardsDistributor(kinto, engen, root, 0, startTime);
+
+        uint256[] memory values = new uint256[](40);
+        values[0] = 190_476190476190480000000; // 190_476.19047619048
+        values[1] = 181_405895691609980000000;
+        values[2] = 172_767519706295220000000;
+        values[3] = 164_540494958376400000000;
+        values[4] = 156_705233293691808000000;
+        values[5] = 149_243079327325532000000;
+        values[6] = 142_136266026024316000000;
+        values[7] = 135_367872405737444000000;
+        values[8] = 128_921783243559468000000;
+        values[9] = 122_782650708151876000000;
+        values[10] = 116_935857817287500000000;
+        values[11] = 111_367483635511904000000;
+        values[12] = 106_064270129058956000000;
+        values[13] = 101_013590599103768000000;
+        values[14] = 962_03419618194068000000;
+        values[15] = 916_22304398280064000000;
+        values[16] = 87_259337522171488000000;
+        values[17] = 83_104130973496656000000;
+        values[18] = 79_146791403330148000000;
+        values[19] = 75_377896574600140000000;
+        values[20] = 71_788472928190612000000;
+        values[21] = 68_369974217324392000000;
+        values[22] = 65_114261159356564000000;
+        values[23] = 62_013582056530060000000;
+        values[24] = 59_060554339552436000000;
+        values[25] = 56_248146990049940000000;
+        values[26] = 53_569663800047564000000;
+        values[27] = 51_018727428616728000000;
+        values[28] = 48_589264217730216000000;
+        values[29] = 46_275489731171632000000;
+        values[30] = 44_071894982068224000000;
+        values[31] = 41_973233316255452000000;
+        values[32] = 39_974507920243284000000;
+        values[33] = 38_070959924041224000000;
+        values[34] = 36_258057070515452000000;
+        values[35] = 34_531482924300432000000;
+        values[36] = 32_887126594571840000000;
+        values[37] = 31_321072947211276000000;
+        values[38] = 29_829593283058356000000;
+        values[39] = 28_409136460055580000000; // 28_409.13646005558
+
+        for (uint256 e = 0; e < distr.quarters(); e++) {
+            vm.warp(START_TIMESTAMP + (90 days) * (e + 1));
+            assertEq(distr.rewardsPerQuarter(e), values[e]);
+
+            uint256 expectedTotalLimit;
+            for (uint256 i = 0; i <= e; i++) {
+                expectedTotalLimit += distr.rewardsPerQuarter(i);
+            }
+            if (e != 39) {
+                assertEq(distr.getTotalLimit(), expectedTotalLimit);
+            } else {
+                assertEq(distr.getTotalLimit(), 4_000_000 * 1e18);
+            }
+        }
+
+        // check that limit is 4mil even after 10 years.
+        vm.warp(START_TIMESTAMP + (365 days) * 10);
+        assertEq(distr.getTotalLimit(), 4_000_000 * 1e18);
     }
 }

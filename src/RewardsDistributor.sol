@@ -246,24 +246,27 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
         // Calculate the current quarter based on the elapsed time
         uint256 currentQuarter = elapsedTime / (90 days); // Approximate each quarter as 90 days
 
-        // Ensure we do not exceed the total number of quarters
-        if (currentQuarter >= quarters) {
-            currentQuarter = quarters - 1;
-        }
-
         // Sum the rewards up to the previous quarter
-        uint256 totalLimit = 0;
-        for (uint256 i = 0; i < currentQuarter; i++) {
-            totalLimit += rewardsPerQuarter[i];
+        uint256 totalLimit;
+
+        // Ensure we do not exceed the total number of quarters
+        if (currentQuarter < quarters) {
+
+            for (uint256 i = 0; i < currentQuarter; i++) {
+                totalLimit += rewardsPerQuarter[i];
+            }
+
+
+            // Calculate the time passed in the current quarter
+            uint256 timePassedInCurrentQuarter = elapsedTime % (90 days);
+            uint256 currentQuarterReward = rewardsPerQuarter[currentQuarter];
+            uint256 currentQuarterLimit = (currentQuarterReward * timePassedInCurrentQuarter) / (90 days);
+            // Add the partial reward for the current quarter
+            totalLimit += currentQuarterLimit;
+        } else {
+            // if we are past 10 years, just return the total number of tokens for liquidity mining program.
+            totalLimit += totalTokens;
         }
-
-        // Calculate the time passed in the current quarter
-        uint256 timePassedInCurrentQuarter = elapsedTime % (90 days);
-        uint256 currentQuarterReward = rewardsPerQuarter[currentQuarter];
-        uint256 currentQuarterLimit = (currentQuarterReward * timePassedInCurrentQuarter) / (90 days);
-
-        // Add the partial reward for the current quarter
-        totalLimit += currentQuarterLimit;
 
         // Add the bonus amount
         totalLimit += bonusAmount;
