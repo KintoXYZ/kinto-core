@@ -12,6 +12,7 @@ import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 import {RewardsDistributor} from "@kinto-core/RewardsDistributor.sol";
 
@@ -30,12 +31,21 @@ contract RewardsDistributorTest is ForkTest {
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
         engen = new ERC20Mock("Engen Token", "ENGEN", 18);
 
-        vm.prank(_owner);
-        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, startTime);
+        vm.startPrank(_owner);
+        distributor = RewardsDistributor(
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+        );
+        distributor.initialize(root, bonusAmount);
+        vm.stopPrank();
     }
 
     function testUp() public override {
-        distributor = new RewardsDistributor(kinto, engen, root, bonusAmount, startTime);
+        vm.startPrank(_owner);
+        distributor = RewardsDistributor(
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+        );
+        distributor.initialize(root, bonusAmount);
+        vm.stopPrank();
 
         assertEq(distributor.startTime(), START_TIMESTAMP);
         assertEq(address(distributor.KINTO()), address(kinto));
@@ -145,7 +155,12 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testClaim_RevertWhen_MaxLimitExceeded() public {
-        RewardsDistributor distr = new RewardsDistributor(kinto, engen, root, 0, startTime);
+        vm.startPrank(_owner);
+        RewardsDistributor distr = RewardsDistributor(
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+        );
+        distr.initialize(root, 0);
+        vm.stopPrank();
         uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](2);
@@ -243,7 +258,12 @@ contract RewardsDistributorTest is ForkTest {
     }
 
     function testTotalLimitPerQuarter() public {
-        RewardsDistributor distr = new RewardsDistributor(kinto, engen, root, 0, startTime);
+        vm.startPrank(_owner);
+        RewardsDistributor distr = RewardsDistributor(
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+        );
+        distr.initialize(root, 0);
+        vm.stopPrank();
 
         uint256[] memory values = new uint256[](40);
         values[0] = 190_476190476190480000000; // 190_476.19047619048

@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleProof} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MerkleProof.sol";
-import {ReentrancyGuard} from "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
-import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
  * @title Rewards Distributor
  * @notice Distributes rewards using a Merkle tree for verification.
  */
-contract RewardsDistributor is ReentrancyGuard, Ownable {
+contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
@@ -106,18 +109,28 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
     /**
      * @notice Initializes the contract with the given parameters.
      * @param kinto_ The address of the Kinto token.
-     * @param root_ The initial root of the Merkle tree.
-     * @param bonusAmount_ The initial bonus amount of tokens.
+     * @param engen_ The address of the Engen token.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, IERC20 engen_, bytes32 root_, uint256 bonusAmount_, uint256 startTime_)
-        Ownable(msg.sender)
-    {
+    constructor(IERC20 kinto_, IERC20 engen_, uint256 startTime_) {
+        _disableInitializers();
+
         KINTO = kinto_;
         ENGEN = engen_;
+        startTime = startTime_;
+    }
+
+    /**
+     * @notice Initialize the proxy.
+     * @param root_ The initial root of the Merkle tree.
+     * @param bonusAmount_ The initial bonus amount of tokens.
+     */
+    function initialize(bytes32 root_, uint256 bonusAmount_) external virtual initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+
         root = root_;
         bonusAmount = bonusAmount_;
-        startTime = startTime_;
 
         // Initialize the variable to track the total rewards spent until the current quarter
         uint256 rewardsSpentUntilE;
@@ -143,6 +156,15 @@ contract RewardsDistributor is ReentrancyGuard, Ownable {
             // Update the total rewards spent until the current quarter
             rewardsSpentUntilE += rewardsForQuarter;
         }
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the factory is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        (newImplementation);
     }
 
     /* ============ External ============ */
