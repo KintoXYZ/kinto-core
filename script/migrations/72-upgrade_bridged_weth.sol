@@ -28,9 +28,8 @@ contract UpgradeBridgedWethScript is MigrationHelper {
         // replaceOwner(adminWallet, 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
 
         vm.broadcast(deployerPrivateKey);
-        BridgedWeth newImpl = BridgedWeth(
-            payable(create2("BridgedWethV1-impl", abi.encodePacked(type(BridgedWeth).creationCode, abi.encode(18))))
-        );
+        BridgedWeth newImpl =
+            BridgedWeth(payable(create2(abi.encodePacked(type(BridgedWeth).creationCode, abi.encode(18)))));
 
         uint256[] memory privKeys = new uint256[](1);
         privKeys[0] = deployerPrivateKey;

@@ -85,6 +85,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
             execPayload: EXEC_PAYLOAD,
             options: OPTIONS
         });
+
+        vm.etch(address(bridger.PERMIT2()), vm.readFileBinary("./test/data/permit2-bytecode-binary.data"));
     }
 
     /* ============ depositBySig ============ */
@@ -191,6 +193,123 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, uint256(0)));
         vm.prank(_owner);
         bridger.depositBySig(permitSignature, sigdata, bytes(""), mockBridgerData);
+    }
+
+    /* ============ depositPermit2 ============ */
+
+    function testDepositPermit2() public {
+        uint256 amountToDeposit = 1e18;
+        address assetToDeposit = address(sDAI);
+        deal(address(sDAI), _user, amountToDeposit);
+        deal(_user, GAS_FEE);
+        address PERMIT2 = address(bridger.PERMIT2());
+
+        vm.prank(_user);
+        sDAI.approve(PERMIT2, type(uint256).max);
+
+        IBridger.SignatureData memory sigData = _auxCreateBridgeSignature(
+            kintoWallet,
+            bridger,
+            _user,
+            assetToDeposit,
+            assetToDeposit,
+            amountToDeposit,
+            amountToDeposit,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
+
+        bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
+
+        vm.prank(_owner);
+        vm.expectCall(
+            address(vault),
+            GAS_FEE,
+            abi.encodeCall(
+                vault.bridge, (kintoWallet, amountToDeposit, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+            )
+        );
+        bridger.depositPermit2{value: GAS_FEE}(permitSingle, permitSignature, sigData, bytes(""), mockBridgerData);
+
+        assertEq(sDAI.balanceOf(_user), 0);
+        assertEq(sDAI.balanceOf(address(bridger)), amountToDeposit);
+    }
+
+    function testDepositPermit2_RevertWhen_NotOwner() public {
+        uint256 amountToDeposit = 1e18;
+        address assetToDeposit = address(sDAI);
+        deal(address(sDAI), _user, amountToDeposit);
+        deal(_user, GAS_FEE);
+        address PERMIT2 = address(bridger.PERMIT2());
+
+        vm.prank(_user);
+        sDAI.approve(PERMIT2, type(uint256).max);
+
+        IBridger.SignatureData memory sigData = _auxCreateBridgeSignature(
+            kintoWallet,
+            bridger,
+            _user,
+            assetToDeposit,
+            assetToDeposit,
+            amountToDeposit,
+            amountToDeposit,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
+
+        bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
+
+        vm.expectRevert(IBridger.OnlyOwner.selector);
+        vm.prank(_user);
+        bridger.depositPermit2{value: GAS_FEE}(permitSingle, permitSignature, sigData, bytes(""), mockBridgerData);
+    }
+
+    function testDepositPermit2_RevertWhen_InvalidSigner() public {
+        uint256 amountToDeposit = 1e18;
+        address assetToDeposit = address(sDAI);
+        deal(address(sDAI), _user, amountToDeposit);
+        deal(_user, GAS_FEE);
+        address PERMIT2 = address(bridger.PERMIT2());
+
+        vm.prank(_user);
+        sDAI.approve(PERMIT2, type(uint256).max);
+
+        IBridger.SignatureData memory sigData = _auxCreateBridgeSignature(
+            kintoWallet,
+            bridger,
+            _user,
+            assetToDeposit,
+            assetToDeposit,
+            amountToDeposit,
+            amountToDeposit,
+            _userPk,
+            block.timestamp + 1000
+        );
+        sigData.signature = hex"dead";
+
+        IAllowanceTransfer.PermitSingle memory permitSingle = IAllowanceTransfer.PermitSingle(
+            IAllowanceTransfer.PermitDetails(address(sDAI), uint160(amountToDeposit), type(uint48).max, 0),
+            address(bridger),
+            type(uint256).max
+        );
+
+        bytes memory permitSignature = _auxPermit2Signature(permitSingle, _userPk, bridger.PERMIT2().DOMAIN_SEPARATOR());
+
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidSigner.selector, sigData.signer));
+        vm.prank(_owner);
+        bridger.depositPermit2{value: GAS_FEE}(permitSingle, permitSignature, sigData, bytes(""), mockBridgerData);
     }
 
     /* ============ depositERC20 ============ */

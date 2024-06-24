@@ -14,6 +14,8 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
 import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
@@ -66,6 +68,8 @@ contract Bridger is
 
     /* ============ Constants & Immutables ============ */
 
+    /// @notice The address of the PERMIT2 contract. The same on all chains.
+    IAllowanceTransfer public immutable PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
     /// @notice The address of the USDM token. The same on all chains.
     address public constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
     /// @notice The address of the wrapped USDM token. The same on all chains.
@@ -221,6 +225,45 @@ contract Bridger is
             permitSig
         );
 
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(depositData.inputAsset).safeTransferFrom(depositData.signer, address(this), depositData.amount);
+
+        // Perform the deposit operation
+        return _deposit(
+            depositData.signer,
+            depositData.inputAsset,
+            depositData.amount,
+            depositData.kintoWallet,
+            depositData.finalAsset,
+            depositData.minReceive,
+            swapCallData,
+            bridgeData
+        );
+    }
+
+    /// @inheritdoc IBridger
+    function depositPermit2(
+        IAllowanceTransfer.PermitSingle calldata permitSingle,
+        bytes calldata permit2Signature,
+        IBridger.SignatureData calldata depositData,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    )
+        external
+        payable
+        override
+        whenNotPaused
+        nonReentrant
+        onlyPrivileged
+        onlySignerVerified(depositData)
+        returns (uint256)
+    {
+        // Permit the contract to spend the tokens on behalf of the signer.
+        PERMIT2.permit(depositData.signer, permitSingle, permit2Signature);
+
+        // Transfer tokens from the user to the Bridger.
+        PERMIT2.transferFrom(depositData.signer, address(this), uint160(depositData.amount), permitSingle.details.token);
+
         // Perform the deposit operation
         return _deposit(
             depositData.signer,
@@ -244,6 +287,9 @@ contract Bridger is
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
+
         return _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 
@@ -303,9 +349,6 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
-
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(inputAsset).safeTransferFrom(user, address(this), amount);
 
         amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
@@ -513,7 +556,7 @@ contract Bridger is
         bytes32 digest = MessageHashUtils.toTypedDataHash(domainSeparator, _hashSignatureData(args));
 
         // Verify if the signer is valid
-        if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner();
+        if (!args.signer.isValidSignatureNow(digest, args.signature)) revert InvalidSigner(args.signer);
 
         // Increment the nonce to prevent replay attacks
         nonces[args.signer]++;

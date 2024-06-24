@@ -42,3 +42,7 @@
 	path = lib/account-abstraction-0.7.0
 	url = https://github.com/eth-infinitism/account-abstraction
   ignore = dirty
+[submodule "lib/permit2"]
+	path = lib/permit2
+	url = https://github.com/Uniswap/permit2
+  ignore = dirty

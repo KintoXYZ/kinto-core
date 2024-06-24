@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 /**
  * @title IDAI
@@ -61,7 +62,8 @@ interface IBridger {
     error InvalidNonce();
 
     /// @notice The signer is invalid.
-    error InvalidSigner();
+    /// @param signer The signer.
+    error InvalidSigner(address signer);
 
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
@@ -155,6 +157,23 @@ interface IBridger {
     function depositBySig(
         bytes calldata permitSignature,
         IBridger.SignatureData calldata signatureData,
+        bytes calldata swapCallData,
+        BridgeData calldata bridgeData
+    ) external payable returns (uint256);
+
+    /**
+     * @notice Deposits the specified amount of tokens into the Kinto L2.
+     * @param permitSingle Signature data for permit2.
+     * @param permit2Signature Signature for permit2.
+     * @param depositData Data for the deposit.
+     * @param swapCallData Data required for the swap.
+     * @param bridgeData Data required for the bridge.
+     * @return The amount of the final asset deposited.
+     */
+    function depositPermit2(
+        IAllowanceTransfer.PermitSingle calldata permitSingle,
+        bytes calldata permit2Signature,
+        IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
     ) external payable returns (uint256);
