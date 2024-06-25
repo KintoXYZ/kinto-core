@@ -456,6 +456,39 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
     }
 
+    // SolvBTC to SolvBTC
+    function testDepositERC20_WhenSolvBtcToSolvBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        address assetToDeposit = SOLV_BTC_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 solvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit, bytes(""), data
+        );
+
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + amountToDeposit,
+            "Invalid balance of the Vault"
+        );
+    }
+
     /* ============ Bridger ETH Deposit ============ */
 
     function testDepositETH() public {
