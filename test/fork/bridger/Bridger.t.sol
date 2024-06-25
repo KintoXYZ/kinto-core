@@ -386,6 +386,43 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
+    // USDC to SolvBTC
+    function testDepositERC20_WhenUsdcToSolvBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        address assetToDeposit = USDC_ARBITRUM;
+        uint256 amountToDeposit = 1e6;
+        uint256 solvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // USDC to WBTC quote's swapData
+        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f&sellToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellAmount=1000000' --header '0x-api-key: key' | jq > ./test/data/swap-usdc-to-wbtc-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-usdc-to-wbtc-arb.json").readBytes(".data");
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, 1618e10, swapCalldata, data
+        );
+
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + 1618e10,
+            "Invalid balance of the Vault"
+        );
+    }
+
     // WBTC to SolvBTC
     function testDepositERC20_WhenWBtcToSolvBtc() public {
         setUpArbitrumFork();
