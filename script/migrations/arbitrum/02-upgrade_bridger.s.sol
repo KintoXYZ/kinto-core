@@ -19,6 +19,11 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
     function run() public override {
         super.run();
 
+        if (block.chainid != ARBITRUM_CHAINID) {
+            console2.log("This script is meant to be run on the chain: %s", ARBITRUM_CHAINID);
+            return;
+        }
+
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
 
         vm.broadcast(deployerPrivateKey);
@@ -32,7 +37,11 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Checks
         assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
         assertEq(bridger.usdmCurvePool(), CURVE_USDM_POOL, "Invalid USDM Curve Pool");
-        assertEq(bridger.owner(), deployer, "Invalid Owner");
-        console.log("BridgerV3-impl at: %s", address(newImpl));
+        assertEq(bridger.owner(), MAMORI_SAFE, "Invalid Owner");
+        assertEq(bridger.SOLV_BTC(), 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0, "Invalid SolvBtc address");
+
+        // Save address
+        console.log("BridgerV5-impl at: %s", address(newImpl));
+        saveContractAddress("BridgerV5-impl", newImpl);
     }
 }
