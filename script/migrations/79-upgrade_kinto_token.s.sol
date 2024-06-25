@@ -14,7 +14,7 @@ import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
 import {console2} from "forge-std/console2.sol";
 
-contract KintoMigration77DeployScript is MigrationHelper {
+contract KintoMigration79DeployScript is MigrationHelper {
     using LibString for *;
     using Strings for string;
 
