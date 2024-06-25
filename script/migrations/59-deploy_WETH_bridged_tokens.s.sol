@@ -83,7 +83,7 @@ contract KintoMigration59DeployScript is MigrationHelper {
         console2.log("Expected address: %s", expectedAddress);
         assertEq(proxy, expectedAddress);
 
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
 
         // initialize
         bytes memory selectorAndParams =

@@ -202,9 +202,26 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     /// @notice whitelists an app in the KintoWallet
-    function _whitelistApp(address _app, uint256 _signerPk, bool _whitelist) internal {
-        address payable _wallet = payable(_getChainDeployment("KintoWallet-admin"));
-        _whitelistApp(_app, _wallet, _signerPk, _whitelist);
+    function _whitelistApp(address _app, bool _whitelist) internal {
+        address _wallet = _getChainDeployment("KintoWallet-admin");
+        address[] memory apps = new address[](1);
+        apps[0] = _app;
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = _whitelist;
+
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = deployerPrivateKey;
+        privKeys[1] = 0; // Ledger
+
+        _handleOps(
+            abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
+            _wallet,
+            _wallet,
+            0,
+            address(0),
+            privKeys
+        );
     }
 
     function _whitelistApp(address _app, address _wallet, uint256 _signerPk, bool _whitelist) internal {
@@ -217,8 +234,8 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _wallet, _wallet, _signerPk);
     }
 
-    function _whitelistApp(address _app, uint256 _signerPk) internal {
-        _whitelistApp(_app, _signerPk, true);
+    function _whitelistApp(address _app) internal {
+        _whitelistApp(_app, true);
     }
 
     // @notice handles ops with KintoWallet-admin as the from address

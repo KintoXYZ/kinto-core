@@ -14,7 +14,7 @@ contract KintoMigration31DeployScript is MigrationHelper {
         address proxy = _deployProxy("KintoInflator", implementation);
 
         // whitelist the new KintoInflator & initialize
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
 
         // set Kinto contracts to inflator

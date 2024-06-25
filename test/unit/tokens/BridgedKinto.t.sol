@@ -35,11 +35,11 @@ contract BridgedKintoTest is SharedSetup {
         super.testUp();
 
         token = BridgedKinto(payable(address(new UUPSProxy(address(new BridgedKinto()), ""))));
-        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
+        token.initialize("Kinto Token", "K", admin, minter, upgrader);
 
         assertEq(token.totalSupply(), 0);
-        assertEq(token.name(), "KINTO TOKEN");
-        assertEq(token.symbol(), "KINTO");
+        assertEq(token.name(), "Kinto Token");
+        assertEq(token.symbol(), "K");
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));

@@ -29,7 +29,7 @@ contract KintoMigration46DeployScript is MigrationHelper {
         implementation = _deployImplementation("WalletViewer", "V1", bytecode);
         address proxy = _deployProxy("WalletViewer", implementation);
 
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
     }
 }
