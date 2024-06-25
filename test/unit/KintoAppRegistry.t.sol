@@ -76,7 +76,11 @@ contract KintoAppRegistryTest is SharedSetup {
 
         vm.prank(_user);
         _kintoAppRegistry.registerApp(
-            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            [address(0), address(0), address(0), address(0), address(0)]
         );
 
         assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
@@ -123,7 +127,9 @@ contract KintoAppRegistryTest is SharedSetup {
         // register app
         vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
         vm.prank(_user);
-        _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            "app", address(123), appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
     }
 
     function testRegisterApp_RevertWhen_AlreadyRegistered() public {
@@ -134,12 +140,16 @@ contract KintoAppRegistryTest is SharedSetup {
         address[] memory appContracts = new address[](0);
 
         vm.prank(_owner);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            name, parentContract, appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // try to register again
         vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
         vm.prank(_owner);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            name, parentContract, appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
     }
 
     function testRegisterApp_RevertWhen_ParentIsChild() public {
@@ -151,14 +161,18 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(2);
 
         vm.prank(_owner);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            name, parentContract, appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // registering app "app2" with parent address 2 should revert
         parentContract = address(2);
         appContracts = new address[](0);
         vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
         vm.prank(_owner);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            name, parentContract, appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
     }
 
     function testRegisterApp_RevertWhen_CallerIsNotKYCd() public {
@@ -170,7 +184,9 @@ contract KintoAppRegistryTest is SharedSetup {
         // register app
         vm.expectRevert(IKintoAppRegistry.KYCRequired.selector);
         vm.prank(_user);
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.registerApp(
+            name, parentContract, appContracts, appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
     }
 
     function testUpdateMetadata() public {
@@ -191,13 +207,21 @@ contract KintoAppRegistryTest is SharedSetup {
         // register app
         vm.prank(_user);
         _kintoAppRegistry.registerApp(
-            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            [address(0), address(0), address(0), address(0), address(0)]
         );
 
         // update app
         vm.prank(_user);
         _kintoAppRegistry.updateMetadata(
-            "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)]
+            "test2",
+            parentContract,
+            appContracts,
+            [uint256(1), uint256(1), uint256(1), uint256(1)],
+            [address(0), address(0), address(0), address(0), address(0)]
         );
 
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
@@ -212,20 +236,24 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {
-        registerApp(_owner, "app", address(0));
+        registerApp(_owner, "app", address(0), [address(0), address(0), address(0), address(0), address(0)]);
 
         // update app
         vm.prank(_user);
         vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
         _kintoAppRegistry.updateMetadata(
-            "app", address(0), new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)]
+            "app",
+            address(0),
+            new address[](0),
+            [uint256(1), uint256(1), uint256(1), uint256(1)],
+            [address(0), address(0), address(0), address(0), address(0)]
         );
     }
 
     /* ============ DSA Test ============ */
 
     function testEnableDSA_WhenCallerIsOwner() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
 
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
@@ -235,14 +263,14 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testEnableDSA_RevertWhen_CallerIsNotOwner() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
 
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
     function testEnableDSA_RevertWhen_AlreadyEnabled() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
@@ -254,7 +282,7 @@ contract KintoAppRegistryTest is SharedSetup {
     /* ============ Sponsored Contracts Test ============ */
 
     function testSetSponsoredContracts() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
 
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -273,7 +301,7 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testSetSponsoredContracts_RevertWhen_CallerIsNotCreator() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
 
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -289,7 +317,7 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testSetSponsoredContracts_RevertWhen_LengthMismatch() public {
-        registerApp(_owner, "app", address(_engenCredits));
+        registerApp(_owner, "app", address(_engenCredits), [address(0), address(0), address(0), address(0), address(0)]);
 
         address[] memory contracts = new address[](1);
         contracts[0] = address(8);
@@ -320,7 +348,11 @@ contract KintoAppRegistryTest is SharedSetup {
 
         vm.prank(_user);
         _kintoAppRegistry.registerApp(
-            "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            "",
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            [address(0), address(0), address(0), address(0), address(0)]
         );
 
         uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(_user, 0);
