@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 contract Constants {
+    address internal constant MAMORI_SAFE = 0x8bFe32Ac9C21609F45eE6AE44d4E326973700614;
     address internal constant L2_VAULT = 0x26181Dfc530d96523350e895180b09BAf3d816a0;
     address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address internal constant CURVE_USDM_POOL = 0x4bD135524897333bec344e50ddD85126554E58B4;
