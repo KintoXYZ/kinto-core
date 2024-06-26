@@ -14,7 +14,7 @@ import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-import {RewardsDistributor} from "@kinto-core/RewardsDistributor.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 
 contract RewardsDistributorTest is ForkTest {
     RewardsDistributor internal distributor;
