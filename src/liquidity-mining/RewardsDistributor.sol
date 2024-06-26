@@ -7,6 +7,7 @@ import {MerkleProof} from "@openzeppelin-5.0.1/contracts/utils/cryptography/Merk
 import {ReentrancyGuardUpgradeable} from
     "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -14,7 +15,7 @@ import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/u
  * @title Rewards Distributor
  * @notice Distributes rewards using a Merkle tree for verification.
  */
-contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
 
     /* ============ Events ============ */
@@ -59,6 +60,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     error InvalidProof(bytes32[] proof, bytes32 leaf);
 
     /* ============ Constants & Immutables ============ */
+
+    /// @notice Role to update the root.
+    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE ");
 
     /// @notice Starting time of the mining program.
     uint256 public immutable startTime;
@@ -126,8 +130,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param bonusAmount_ The initial bonus amount of tokens.
      */
     function initialize(bytes32 root_, uint256 bonusAmount_) external virtual initializer {
-        __Ownable_init(msg.sender);
+        __AccessControl_init();
         __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(UPDATER_ROLE, msg.sender);
 
         root = root_;
         bonusAmount = bonusAmount_;
@@ -163,7 +170,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+    function _authorizeUpgrade(address newImplementation) internal view override onlyRole(DEFAULT_ADMIN_ROLE) {
         (newImplementation);
     }
 
@@ -227,7 +234,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param users The list of user addresses to update.
      * @param values The corresponding list of boolean values indicating whether each user is an Engen holder.
      */
-    function updateEngenHolders(address[] memory users, bool[] memory values) external onlyOwner {
+    function updateEngenHolders(address[] memory users, bool[] memory values) external onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 index = 0; index < users.length; index++) {
             engenHolders[users[index]] = values[index];
         }
@@ -237,7 +244,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @notice Updates the root of the Merkle tree.
      * @param newRoot The new root.
      */
-    function updateRoot(bytes32 newRoot) external onlyOwner {
+    function updateRoot(bytes32 newRoot) external onlyRole(UPDATER_ROLE) {
         emit RootUpdated(newRoot, root);
         root = newRoot;
     }
@@ -246,7 +253,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @notice Updates the bonus amount of tokens.
      * @param newBonusAmount The new bonus amount.
      */
-    function updateBonusAmount(uint256 newBonusAmount) external onlyOwner {
+    function updateBonusAmount(uint256 newBonusAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit BonusAmountUpdated(newBonusAmount, bonusAmount);
         bonusAmount = newBonusAmount;
     }

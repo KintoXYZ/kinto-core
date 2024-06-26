@@ -19,7 +19,7 @@ contract MiningAdaptor {
     address public constant VAULT = 0x2f87464d5F5356dB350dcb302FE28040986783a7;
     address public constant CONNECTOR = 0xA7384185a6428e6B0D33199256fE67b6fA5D8e40;
 
-    function bridge() payable external {
+    function bridge() external payable {
         // Bridge entire balance
         uint256 balance = IERC20(KINTO).balanceOf(address(this));
         // Approve max allowance to save on gas for future transfers
@@ -29,13 +29,7 @@ contract MiningAdaptor {
 
         // Bridge the tokens to Kinto
         IBridge(VAULT).bridge{value: msg.value}(
-            KINTO_MINING_CONTRACT,
-            balance,
-            MSG_GAS_LIMIT,
-            CONNECTOR,
-            bytes(''),
-            bytes('')
+            KINTO_MINING_CONTRACT, balance, MSG_GAS_LIMIT, CONNECTOR, bytes(""), bytes("")
         );
     }
 }
-

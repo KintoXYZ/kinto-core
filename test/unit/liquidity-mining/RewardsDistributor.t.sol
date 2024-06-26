@@ -8,7 +8,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
-import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
@@ -185,7 +185,11 @@ contract RewardsDistributorTest is ForkTest {
     function testUpdateRoot_RevertWhen_NotOwner() public {
         bytes32 newRoot = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), distributor.UPDATER_ROLE()
+            )
+        );
         distributor.updateRoot(newRoot);
     }
 
@@ -203,7 +207,13 @@ contract RewardsDistributorTest is ForkTest {
     function testUpdateBonusAmount_RevertWhen_NotOwner() public {
         uint256 newBonusAmount = 1_000_000e18;
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(this),
+                distributor.DEFAULT_ADMIN_ROLE()
+            )
+        );
         distributor.updateBonusAmount(newBonusAmount);
     }
 
@@ -253,7 +263,13 @@ contract RewardsDistributorTest is ForkTest {
         values[0] = true;
         values[1] = false;
 
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(this),
+                distributor.DEFAULT_ADMIN_ROLE()
+            )
+        );
         distributor.updateEngenHolders(users, values);
     }
 
