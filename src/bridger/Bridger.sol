@@ -21,7 +21,10 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
-import {ICurveStableSwapNG} from "@kinto-core/interfaces/ICurveStableSwapNG.sol";
+import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
+import {ISftWrapRouter} from "@kinto-core/interfaces/external/ISftWrapRouter.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title Bridger
@@ -76,6 +79,14 @@ contract Bridger is
     address public constant wUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
     /// @notice The address representing ETH.
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    /// @notice WBTC address on Arbitrum.
+    address public constant WBTC = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
+    /// @notice SolvBTC address on Arbitrum.
+    address public constant SOLV_BTC = 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0;
+    /// @notice Solv Router address on Arbitrum.
+    address public constant SOLV_SFT_WRAP_ROUTER = 0x6Ea88D4D0c4bC06F6A51f427eF295c93e10D0b36;
+    /// @notice SolvBTC pool id on Arbitrum.
+    bytes32 public constant SOLV_BTC_POOL_ID = 0x488def4a346b409d5d57985a160cd216d29d4f555e1b716df4e04e2374d2d9f6;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -437,6 +448,14 @@ contract Bridger is
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
+
+        // If the final asset is SolvBTC, then wrap WBTC to SolvBTC.
+        if (finalAsset == SOLV_BTC) {
+            uint256 balance = IERC20(WBTC).balanceOf(address(this));
+            IERC20(WBTC).safeApprove(SOLV_SFT_WRAP_ROUTER, balance);
+            amountBought = ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createSubscription(SOLV_BTC_POOL_ID, balance);
+        }
+
         if (amountBought < minReceive) revert SlippageError(amountBought, minReceive);
     }
 
@@ -446,6 +465,9 @@ contract Bridger is
         }
         if (finalAsset == wUSDM) {
             return USDC;
+        }
+        if (finalAsset == SOLV_BTC) {
+            return WBTC;
         }
         return finalAsset;
     }

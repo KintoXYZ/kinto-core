@@ -31,10 +31,10 @@ contract KintoMigration29DeployScript is MigrationHelper {
         address proxy = _deployProxy("EngenCredits", implementation);
 
         // remove the old EngenCredits from the whitelist
-        _whitelistApp(_getChainDeployment("EngenCredits"), deployerPrivateKey, false);
+        _whitelistApp(_getChainDeployment("EngenCredits"), false);
 
         // whitelist the new EngenCredits & initialize
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
 
         bytecode = abi.encodePacked(

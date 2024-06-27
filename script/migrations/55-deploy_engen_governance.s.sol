@@ -27,7 +27,7 @@ contract KintoMigration55DeployScript is MigrationHelper {
         address governance = _deployImplementation("EngenGovernance", "V1", bytecode);
 
         _fundPaymaster(governance, deployerPrivateKey);
-        _whitelistApp(governance, deployerPrivateKey);
+        _whitelistApp(governance);
 
         require(EngenGovernance(payable(governance)).votingDelay() == 1 days, "governance failed to deploy");
         require(

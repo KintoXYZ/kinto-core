@@ -92,6 +92,15 @@ abstract contract BridgeDataHelper is Constants {
             execPayload: bytes(""),
             options: bytes("")
         });
+
+        bridgeData[ARBITRUM_CHAINID][SOLV_BTC_ARBITRUM] = IBridger.BridgeData({
+            vault: 0x25a1baC7314Ff40Ee8CD549251924D066D7d5bC6,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x5817bF28f6f0B0215f310837BAB88A127d29aBF3,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 }
 
@@ -350,7 +359,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     }
 
     // ETH to wUSDM
-    function testDepositBySig_WhenEthToWUSDM() public {
+    function testDepositETH_WhenEthToWUSDM() public {
         setUpArbitrumFork();
         vm.rollFork(221170245); // block number in which the 0x API data was fetched
         upgradeBridger();
@@ -375,6 +384,109 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         uint256 shares = ERC4626(wUSDM).previewDeposit(3577796244115359404856);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
+    }
+
+    // USDC to SolvBTC
+    function testDepositERC20_WhenUsdcToSolvBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        address assetToDeposit = USDC_ARBITRUM;
+        uint256 amountToDeposit = 1e6;
+        uint256 solvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // USDC to WBTC quote's swapData
+        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f&sellToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellAmount=1000000' --header '0x-api-key: key' | jq > ./test/data/swap-usdc-to-wbtc-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-usdc-to-wbtc-arb.json").readBytes(".data");
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, 1618e10, swapCalldata, data
+        );
+
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + 1618e10,
+            "Invalid balance of the Vault"
+        );
+    }
+
+    // WBTC to SolvBTC
+    function testDepositERC20_WhenWBtcToSolvBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        address assetToDeposit = WBTC_ARBITRUM;
+        uint256 amountToDeposit = 1e8;
+        uint256 solvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit * 1e10, bytes(""), data
+        );
+
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + amountToDeposit * 1e10,
+            "Invalid balance of the Vault"
+        );
+    }
+
+    // SolvBTC to SolvBTC
+    function testDepositERC20_WhenSolvBtcToSolvBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        address assetToDeposit = SOLV_BTC_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 solvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit, bytes(""), data
+        );
+
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + amountToDeposit,
+            "Invalid balance of the Vault"
+        );
     }
 
     /* ============ Bridger ETH Deposit ============ */

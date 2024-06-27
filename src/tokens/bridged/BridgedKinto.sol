@@ -50,4 +50,12 @@ contract BridgedKinto is BridgedToken {
             revert TransferIsNotAllowed(from, to, amount);
         }
     }
+
+    function symbol() public pure override returns (string memory) {
+        return "K";
+    }
+
+    function name() public pure override returns (string memory) {
+        return "Kinto Token";
+    }
 }
