@@ -38,6 +38,7 @@ contract DeployRewardsDistributorScript is MigrationHelper {
         // initialize
         bytes memory selectorAndParams =
             abi.encodeWithSelector(RewardsDistributor.initialize.selector, bytes(""), 0);
+        console2.log('EOOOO');
         _handleOps(selectorAndParams, proxy, deployerPrivateKey);
 
         console2.log("Proxy deployed @%s", proxy);
