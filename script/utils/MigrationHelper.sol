@@ -13,8 +13,8 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 
-import "@kinto-core-test/helpers/Create2Helper.sol";
-import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
+import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
