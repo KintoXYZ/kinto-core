@@ -23,8 +23,8 @@ contract DeployRewardsDistributorScript is MigrationHelper {
         address ENGEN = _getChainDeployment("EngenCredits");
 
         vm.broadcast(deployerPrivateKey);
-        uint256 LIQUIDITY_MINING_START_DATE = 1718690400;
-        address impl = address(new RewardsDistributor{salt: 0}(IERC20(KINTO), IERC20(ENGEN), LIQUIDITY_MINING_START_DATE));
+        uint256 LIQUIDITY_MINING_START_DATE = 1718690400; // June 18th 2024
+        address impl = address(new RewardsDistributor{salt: keccak256('0')}(IERC20(KINTO), IERC20(ENGEN), LIQUIDITY_MINING_START_DATE));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(impl, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "d15790");
@@ -32,6 +32,13 @@ contract DeployRewardsDistributorScript is MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         address proxy = address(new UUPSProxy{salt: salt}(address(impl), ""));
         RewardsDistributor distr = RewardsDistributor(proxy);
+
+        _whitelistApp(proxy);
+
+        // initialize
+        bytes memory selectorAndParams =
+            abi.encodeWithSelector(RewardsDistributor.initialize.selector, bytes(""), 0);
+        _handleOps(selectorAndParams, proxy, deployerPrivateKey);
 
         console2.log("Proxy deployed @%s", proxy);
 
