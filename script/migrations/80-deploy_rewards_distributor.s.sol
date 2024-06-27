@@ -6,6 +6,7 @@ import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {stdJson} from "forge-std/StdJson.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -24,7 +25,9 @@ contract DeployRewardsDistributorScript is MigrationHelper {
 
         vm.broadcast(deployerPrivateKey);
         uint256 LIQUIDITY_MINING_START_DATE = 1718690400; // June 18th 2024
-        address impl = address(new RewardsDistributor{salt: keccak256('0')}(IERC20(KINTO), IERC20(ENGEN), LIQUIDITY_MINING_START_DATE));
+        address impl = address(
+            new RewardsDistributor{salt: keccak256("0")}(IERC20(KINTO), IERC20(ENGEN), LIQUIDITY_MINING_START_DATE)
+        );
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(impl, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "d15790");
@@ -33,13 +36,13 @@ contract DeployRewardsDistributorScript is MigrationHelper {
         address proxy = address(new UUPSProxy{salt: salt}(address(impl), ""));
         RewardsDistributor distr = RewardsDistributor(proxy);
 
+        // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        // hardwareWalletType = 1;
+
         _whitelistApp(proxy);
 
         // initialize
-        bytes memory selectorAndParams =
-            abi.encodeWithSelector(RewardsDistributor.initialize.selector, bytes(""), 0);
-        console2.log('EOOOO');
-        _handleOps(selectorAndParams, proxy, deployerPrivateKey);
+        _handleOps(abi.encodeWithSelector(RewardsDistributor.initialize.selector, bytes(""), 0), proxy);
 
         console2.log("Proxy deployed @%s", proxy);
 
@@ -52,6 +55,5 @@ contract DeployRewardsDistributorScript is MigrationHelper {
 
         saveContractAddress(string.concat("RewardsDistributor", "-impl"), impl);
         saveContractAddress("RewardsDistributor", proxy);
-
     }
 }
