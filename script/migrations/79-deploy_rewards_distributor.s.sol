@@ -23,7 +23,7 @@ contract DeployRewardsDistributorScript is MigrationHelper {
         address ENGEN = _getChainDeployment("EngenCredits");
 
         vm.broadcast(deployerPrivateKey);
-        address impl = address(new RewardsDistributor(IERC20(KINTO), IERC20(ENGEN), 0));
+        address impl = address(new RewardsDistributor{salt: 0}(IERC20(KINTO), IERC20(ENGEN), 0));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(impl, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "d15790");
