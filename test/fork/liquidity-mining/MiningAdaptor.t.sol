@@ -44,6 +44,5 @@ contract MiningAdaptorTest is SignatureHelper, ForkTest, ArtifactsReader {
         miningAdaptor.bridge{value: 0.01 ether}();
 
         assertEq(kintoToken.balanceOf(miningAdaptor.VAULT()), 1e18);
-
     }
 }

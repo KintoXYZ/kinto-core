@@ -13,7 +13,6 @@ import "forge-std/console.sol";
 import "forge-std/Test.sol";
 
 contract DeployMiningAdaptorScript is Create2Helper, ArtifactsReader, DeployerHelper, Test {
-
     function run() public {
         if (block.chainid != 1) {
             console.log("This script is meant to be run on the mainnet");
