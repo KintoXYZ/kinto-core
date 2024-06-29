@@ -24,12 +24,15 @@ contract SetUpdateRoleDistributorScript is MigrationHelper {
         RewardsDistributor rewardsDistributor = RewardsDistributor(0xD157904639E89df05e89e0DabeEC99aE3d74F9AA);
         address relayer = 0x0ED31428E4bCb3cdf8A1fCD4656Ee965f4241711;
 
-        replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
-        hardwareWalletType = 1;
+        // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        // hardwareWalletType = 1;
 
         _whitelistApp(address(rewardsDistributor));
 
-        _handleOps(abi.encodeWithSelector(IAccessControl.grantRole.selector, rewardsDistributor.UPDATER_ROLE(), relayer), address(rewardsDistributor));
+        _handleOps(
+            abi.encodeWithSelector(IAccessControl.grantRole.selector, rewardsDistributor.UPDATER_ROLE(), relayer),
+            address(rewardsDistributor)
+        );
 
         assertTrue(rewardsDistributor.hasRole(rewardsDistributor.UPDATER_ROLE(), relayer));
 
