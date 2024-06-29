@@ -6,6 +6,9 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 abstract contract BaseTest is Test {
+    // Reasonable block.timestamp `MAY_1_2023`
+    uint32 internal constant START_TIMESTAMP = 1_682_899_200;
+
     // private keys
     uint256 internal _ownerPk = 111;
     uint256 internal _secondownerPk = 2;
@@ -30,7 +33,12 @@ abstract contract BaseTest is Test {
     address payable internal _verifier = payable(vm.addr(_verifierPk));
     address payable internal _noKyc = payable(vm.addr(_noKycPk));
 
-    function setUp() public virtual {}
+    function setUp() public virtual {
+        if (block.chainid == 31337) {
+            // Set block.timestamp to something better than 0
+            vm.warp(START_TIMESTAMP);
+        }
+    }
 
     function testUp() public virtual {}
 

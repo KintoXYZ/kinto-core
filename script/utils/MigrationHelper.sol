@@ -13,14 +13,13 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 
-import "@kinto-core-test/helpers/Create2Helper.sol";
-import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
+import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
 import {Constants} from "@kinto-core-script/migrations/const.sol";
-
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
 import "forge-std/console2.sol";
@@ -35,10 +34,12 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
-    bool testMode;
-    uint256 deployerPrivateKey;
-    address deployer;
-    KintoWalletFactory factory;
+    bool internal testMode;
+    uint256 internal deployerPrivateKey;
+    address internal deployer;
+    address internal kintoAdminWallet;
+    uint256 internal hardwareWalletType;
+    KintoWalletFactory internal factory;
 
     function run() public virtual {
         try vm.envBool("TEST_MODE") returns (bool _testMode) {
@@ -49,6 +50,9 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         deployer = vm.addr(deployerPrivateKey);
         console2.log("Deployer:", deployer);
+
+        kintoAdminWallet = _getChainDeployment("KintoWallet-admin");
+        hardwareWalletType = LEDGER;
 
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
@@ -117,7 +121,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
                 _upgradeWallet(_impl, deployerPrivateKey);
             } else {
                 try Ownable(proxy).owner() returns (address owner) {
-                    if (owner != _getChainDeployment("KintoWallet-admin")) {
+                    if (owner != kintoAdminWallet) {
                         console.log(
                             "%s contract is not owned by the KintoWallet-admin, its owner is %s",
                             contractName,
@@ -145,10 +149,10 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     function _upgradeWallet(address _impl, uint256 _signerPk) internal {
-        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+        address payable from = payable(kintoAdminWallet);
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = _signerPk;
-        privKeys[1] = 0; // Ledger
+        privKeys[1] = hardwareWalletType;
 
         bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, _impl);
 
@@ -156,10 +160,10 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     function _upgradeTo(address proxy, address _newImpl, uint256 _signerPk) internal {
-        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+        address payable from = payable(kintoAdminWallet);
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = _signerPk;
-        privKeys[1] = 0; // Ledger
+        privKeys[1] = hardwareWalletType;
 
         // if UUPS contract has UPGRADE_INTERFACE_VERSION set to 5.0.0, we use upgradeToAndCall
         bytes memory data = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl));
@@ -203,7 +207,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
 
     /// @notice whitelists an app in the KintoWallet
     function _whitelistApp(address _app, bool _whitelist) internal {
-        address _wallet = _getChainDeployment("KintoWallet-admin");
+        address _wallet = kintoAdminWallet;
         address[] memory apps = new address[](1);
         apps[0] = _app;
 
@@ -212,7 +216,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
 
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
-        privKeys[1] = 0; // Ledger
+        privKeys[1] = hardwareWalletType;
 
         _handleOps(
             abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
@@ -238,22 +242,21 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         _whitelistApp(_app, true);
     }
 
-    // @notice handles ops with KintoWallet-admin as the from address
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, address(0), _signerPk);
+    function _handleOps(bytes memory _selectorAndParams, address _to) internal {
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = deployerPrivateKey;
+        privateKeys[1] = hardwareWalletType;
+        _handleOps(_selectorAndParams, payable(kintoAdminWallet), _to, 0, address(0), privateKeys);
     }
 
-    // @notice handles ops with custom from address
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
+    function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        _handleOps(_selectorAndParams, payable(kintoAdminWallet), _to, address(0), _signerPk);
+    }
+
     function _handleOps(bytes memory _selectorAndParams, address _from, address _to, uint256 _signerPk) internal {
         _handleOps(_selectorAndParams, _from, _to, address(0), _signerPk);
     }
 
-    // @notice handles ops with KintoWallet-admin as the from address
-    // @dev does not use a hardware wallet
     function _handleOps(
         bytes memory _selectorAndParams,
         address _from,
@@ -264,6 +267,18 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
         _handleOps(_selectorAndParams, _from, _to, 0, _sponsorPaymaster, privateKeys);
+    }
+
+    function _handleOps(bytes[] memory _selectorAndParams, address[] memory _tos, uint256 _signerPk) internal {
+        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
+    }
+
+    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
+        address[] memory _tos;
+        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+            _tos[i] = _to;
+        }
+        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
     }
 
     // @notice handles ops with custom params
@@ -293,24 +308,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     // @notice handles ops with multiple ops and destinations
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes[] memory _selectorAndParams, address[] memory _tos, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
-    }
-
-    // @notice handles ops with multiple ops but same destinations
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        address[] memory _tos;
-        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
-            _tos[i] = _to;
-        }
-        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
-    }
-
-    // @notice handles ops with multiple ops and destinations
     // @dev uses a sponsorPaymaster
     // @dev does not use a hardware wallet
     function _handleOps(
@@ -320,7 +317,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         uint256 _signerPk
     ) internal {
         require(_selectorAndParams.length == _tos.length, "_selectorAndParams and _tos mismatch");
-        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        address payable _from = payable(kintoAdminWallet);
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = _signerPk;
 
