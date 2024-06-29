@@ -37,12 +37,14 @@ contract MiningAdaptorTest is SignatureHelper, ForkTest, ArtifactsReader {
         vm.prank(kintoToken.owner());
         kintoToken.setMiningContract(address(miningAdaptor));
 
+        uint256 vaultBalanceBefore = kintoToken.balanceOf(miningAdaptor.VAULT());
+
         // deal some K to mining contract
         deal(miningAdaptor.KINTO(), address(miningAdaptor), 1e18);
 
         // bridge to Kinto chain
         miningAdaptor.bridge{value: 0.01 ether}();
 
-        assertEq(kintoToken.balanceOf(miningAdaptor.VAULT()), 1e18);
+        assertEq(kintoToken.balanceOf(miningAdaptor.VAULT()) - vaultBalanceBefore, 1e18);
     }
 }
