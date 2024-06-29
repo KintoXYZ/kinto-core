@@ -43,6 +43,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
     address internal constant BRIDGER_ARBITRUM = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
     address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
+    address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
 
     /* ============ State Variables ============ */
 
@@ -297,8 +298,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         address app = appRegistry.getSponsor(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
-        // todo: remove this once the app key flow and pimlico errors are gone
-        if ((app == SOCKET && address(this) != ADMIN_WALLET)) {
+        // todo: remove socket once the app key flow and pimlico errors are gone
+        if ((app == SOCKET || app == REWARDS_DISTRIBUTOR) && address(this) != ADMIN_WALLET) {
             return _verifySingleSignature(owners[0], hashData, userOp.signature);
         }
 
@@ -457,7 +458,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _executeInner(address dest, uint256 value, bytes calldata func) internal {
         // if target is a contract, check if it's whitelisted
         address sponsor = appRegistry.getSponsor(dest);
-        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != SOCKET) {
+        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR) {
             revert AppNotWhitelisted();
         }
 
@@ -489,7 +490,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV22 is KintoWallet {
+contract KintoWalletV23 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
