@@ -541,4 +541,39 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
             "Invalid Vault assetOut balance"
         );
     }
+
+    function testDepositETH_WhenSwapEthToSolveBtc() public {
+        setUpArbitrumFork();
+        vm.rollFork(226326185); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        address assetOut = SOLV_BTC_ARBITRUM;
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
+        amountIn = 1 ether;
+        // top-up `_user` ETH balance
+        vm.deal(_user, amountIn + data.gasFee);
+
+        // WETH to WBTC quote's swapData
+        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=1000000000000000000' --header '0x-api-key: key' | jq > ./test/data/swap-weth-to-wbtc-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-wbtc-arb.json").readBytes(".data");
+
+        uint256 bridgerBalanceBefore = address(bridger).balance;
+        uint256 vaultAssetOutBalanceBefore = ERC20(assetOut).balanceOf(data.vault);
+        uint256 amountOut = 55832490000000000;
+
+        vm.prank(_user);
+        bridger.depositETH{value: amountIn + data.gasFee}(
+            amountIn, kintoWalletL2, assetOut, amountOut, swapCalldata, data
+        );
+
+        assertEq(_user.balance, 0, "User balance should be zero");
+        assertEq(address(bridger).balance, bridgerBalanceBefore); // there's no ETH since it was swapped
+        // sDai should be sent to the vault
+        assertEq(
+            ERC20(assetOut).balanceOf(data.vault),
+            vaultAssetOutBalanceBefore + amountOut,
+            "Invalid Vault assetOut balance"
+        );
+    }
 }
