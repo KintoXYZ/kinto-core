@@ -21,12 +21,15 @@ contract KintoMigration79DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
+        vm.startBroadcast(deployerPrivateKey);
+        console2.log("Executing with address", msg.sender);
         // deploy token
         address impl = address(new BridgedKinto{salt: keccak256(abi.encodePacked("K"))}());
+        vm.stopBroadcast();
+        vm.startBroadcast();
         address proxy = _getChainDeployment("KINTO");
 
         BridgedKinto bridgedToken = BridgedKinto(proxy);
-        _whitelistApp(proxy);
         _upgradeTo(proxy, impl, deployerPrivateKey);
 
         require(bridgedToken.decimals() == 18, "Decimals mismatch");

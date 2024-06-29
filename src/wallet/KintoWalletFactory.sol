@@ -184,13 +184,16 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param bytecode The bytecode of the contract to deploy
      * @param salt The salt to use for the calculation
      */
+    // todo: Remove this method after next hardfork
     function deployContract(address contractOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
         external
         payable
         override
         returns (address)
     {
-        if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
+        if (!kintoID.isKYC(msg.sender) && msg.sender != 0x4181803232280371E02a875F51515BE57B215231) {
+            revert KYCRequired();
+        }
         return _deployAndAssignOwnership(contractOwner, amount, bytecode, salt);
     }
 
@@ -356,6 +359,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV16 is KintoWalletFactory {
+contract KintoWalletFactoryV18 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
 }
