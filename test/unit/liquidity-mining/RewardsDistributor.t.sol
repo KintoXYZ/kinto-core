@@ -231,7 +231,37 @@ contract RewardsDistributorTest is ForkTest {
         emit RewardsDistributor.UserEngenClaimed(_user, amount);
         distributor.claimEngen();
 
-        uint256 claimedEngenAmount = amount * 22e16 / 1e18;
+        uint256 claimedEngenAmount = 22e16;
+
+        assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
+        assertEq(kinto.balanceOf(_user), claimedEngenAmount);
+        assertEq(distributor.totalKintoFromEngenClaimed(), claimedEngenAmount);
+    }
+
+    function testClaimEngenWithBonus() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), amount);
+        engen.mint(address(_user), amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), amount);
+        assertEq(kinto.balanceOf(_user), 0);
+        assertEq(engen.balanceOf(_user), amount);
+
+        address[] memory users = new address[](1);
+        bool[] memory values = new bool[](1);
+
+        users[0] = _user;
+        values[0] = true;
+
+        vm.prank(_owner);
+        distributor.updateEngenHolders(users, values);
+
+        vm.prank(_user);
+        emit RewardsDistributor.UserEngenClaimed(_user, amount);
+        distributor.claimEngen();
+
+        uint256 claimedEngenAmount = 275e15;
 
         assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
         assertEq(kinto.balanceOf(_user), claimedEngenAmount);
