@@ -70,6 +70,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     error EngenAlreadyClaimed(address user);
 
+    /**
+     * @notice Thrown when the current root already claimed by the user.
+     * @param user The user address.
+     */
+    error RootAlreadyClaimed(address user);
+
     /* ============ Constants & Immutables ============ */
 
     /// @notice Role to update the root.
@@ -121,6 +127,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
     /// @notice Whenever user claimed Engen rewards or not.
     mapping(address => bool) public hasClaimedEngen;
+
+    // Mapping to track which root a user has claimed for.
+    mapping(address => bytes32) public claimedRoot;
 
     /* ============ Constructor ============ */
 
@@ -197,6 +206,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param amount The amount of tokens to claim.
      */
     function claim(bytes32[] memory proof, address user, uint256 amount) external nonReentrant {
+        // Do not allow to claim from the same root twice.
+        if (claimedRoot[user] == root) {
+            revert RootAlreadyClaimed(user);
+        }
+
         // Generate the leaf node from the user's address and the amount they are claiming
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, amount))));
 
@@ -213,6 +227,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         // Update the total claimed amount and the amount claimed by the user
         totalClaimed += amount;
         claimedByUser[user] += amount;
+
+        // Mark current root as claimed for the user
+        claimedRoot[user] = root;
 
         // Transfer the claimed tokens to the user
         KINTO.safeTransfer(user, amount);

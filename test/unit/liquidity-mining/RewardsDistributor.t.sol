@@ -78,6 +78,25 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.claimedByUser(_user), amount);
         assertEq(distributor.getTotalLimit(), bonusAmount);
         assertEq(distributor.getUnclaimedLimit(), bonusAmount - amount);
+        assertEq(distributor.claimedRoot(_user), distributor.root());
+    }
+
+    function testClaim_RevertWhenClaimedTwice() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), 2 * amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), 2 * amount);
+        assertEq(kinto.balanceOf(_user), 0);
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
+
+        distributor.claim(proof, _user, amount);
+
+        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.RootAlreadyClaimed.selector, _user));
+        distributor.claim(proof, _user, amount);
     }
 
     function testClaim_WhenTimePass() public {
@@ -128,19 +147,25 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.getTotalLimit(), bonusAmount);
         assertEq(distributor.getUnclaimedLimit(), bonusAmount - amount);
 
-        kinto.mint(address(distributor), amount);
+        uint256 secondAmount = 2500000000000000000;
+        address second = 0x2222222222222222222222222222222222222222;
+        kinto.mint(address(distributor), secondAmount);
 
         proof[0] = 0xf99b282683659c94d424bb86cf2a97562a08a76b5aee76ae401a001c75ca8f02;
-        proof[1] = 0xf5d3a04b6083ba8077d903785b3001db5b9077f1a3af3e06d27a8a9fa3567546;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
 
-        distributor.claim(proof, _user, amount);
+        distributor.claim(proof, second, secondAmount);
 
         assertEq(kinto.balanceOf(address(distributor)), 0);
-        assertEq(kinto.balanceOf(_user), 2 * amount);
-        assertEq(distributor.totalClaimed(), 2 * amount);
-        assertEq(distributor.claimedByUser(_user), 2 * amount);
+        assertEq(kinto.balanceOf(_user), amount);
+        assertEq(kinto.balanceOf(second), secondAmount);
+        assertEq(distributor.totalClaimed(), amount + secondAmount);
+        assertEq(distributor.claimedByUser(_user), amount);
+        assertEq(distributor.claimedByUser(second), secondAmount);
         assertEq(distributor.getTotalLimit(), bonusAmount);
-        assertEq(distributor.getUnclaimedLimit(), bonusAmount - 2 * amount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount - (amount + secondAmount));
+        assertEq(distributor.claimedRoot(_user), distributor.root());
+        assertEq(distributor.claimedRoot(second), distributor.root());
     }
 
     function testClaim_RevertWhenInvalidProof() public {
