@@ -143,7 +143,7 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.getUnclaimedLimit(), bonusAmount - 2 * amount);
     }
 
-    function testClaim_RevertWhen_InvalidProof() public {
+    function testClaim_RevertWhenInvalidProof() public {
         uint256 amount = 1e18;
 
         bytes32[] memory proof = new bytes32[](1);
@@ -154,7 +154,7 @@ contract RewardsDistributorTest is ForkTest {
         distributor.claim(proof, _user, amount);
     }
 
-    function testClaim_RevertWhen_MaxLimitExceeded() public {
+    function testClaim_RevertWhenMaxLimitExceeded() public {
         vm.startPrank(_owner);
         RewardsDistributor distr = RewardsDistributor(
             address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
@@ -182,7 +182,7 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.root(), newRoot);
     }
 
-    function testUpdateRoot_RevertWhen_NotOwner() public {
+    function testUpdateRoot_RevertWhenNotOwner() public {
         bytes32 newRoot = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
 
         vm.expectRevert(
@@ -204,7 +204,7 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.bonusAmount(), newBonusAmount);
     }
 
-    function testUpdateBonusAmount_RevertWhen_NotOwner() public {
+    function testUpdateBonusAmount_RevertWhenNotOwner() public {
         uint256 newBonusAmount = 1_000_000e18;
 
         vm.expectRevert(
@@ -236,6 +236,24 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
         assertEq(kinto.balanceOf(_user), claimedEngenAmount);
         assertEq(distributor.totalKintoFromEngenClaimed(), claimedEngenAmount);
+    }
+
+    function testClaimEngen_RevertWhenClaimTwice() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), amount);
+        engen.mint(address(_user), amount);
+
+        assertEq(kinto.balanceOf(address(distributor)), amount);
+        assertEq(kinto.balanceOf(_user), 0);
+        assertEq(engen.balanceOf(_user), amount);
+
+        vm.prank(_user);
+        distributor.claimEngen();
+
+        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.EngenAlreadyClaimed.selector, _user));
+        vm.prank(_user);
+        distributor.claimEngen();
     }
 
     function testUpdateEngenHolders() public {
