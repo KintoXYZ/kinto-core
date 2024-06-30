@@ -5405,6 +5405,25 @@
         },
         {
           "type": "function",
+          "name": "claimedRoot",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "engenHolders",
           "inputs": [
             {
@@ -5484,6 +5503,25 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "hasClaimedEngen",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -5992,6 +6030,17 @@
         },
         {
           "type": "error",
+          "name": "EngenAlreadyClaimed",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "FailedInnerCall",
           "inputs": []
         },
@@ -6041,6 +6090,17 @@
           "type": "error",
           "name": "ReentrancyGuardReentrantCall",
           "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "RootAlreadyClaimed",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
