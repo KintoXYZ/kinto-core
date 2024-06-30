@@ -16,11 +16,11 @@ contract SetEngenHoldersScript is MigrationHelper {
 
         RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
 
-        replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
-        hardwareWalletType = 1;
+        // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        // hardwareWalletType = 1;
 
-        // string memory json = vm.readFile("./script/data/engen-holders.json");
-        // address[] memory users = json.readAddressArray("$");
+        string memory json = vm.readFile("./script/data/engen-holders.json");
+        address[] memory users = json.readAddressArray("$");
 
         uint256 batchSize = 100;
         uint256 totalBatches = (users.length + batchSize - 1) / batchSize;
