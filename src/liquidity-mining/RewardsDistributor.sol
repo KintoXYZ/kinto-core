@@ -41,6 +41,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     event UserClaimed(address indexed user, uint256 indexed amount);
 
+    /**
+     * @notice Emitted once `user` claims Engen rewards.
+     * @param user The user which claimed.
+     * @param amount Amount of tokens claimed.
+     */
     event UserEngenClaimed(address indexed user, uint256 indexed amount);
 
     /* ============ Errors ============ */
@@ -58,6 +63,18 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param leaf The leaf node.
      */
     error InvalidProof(bytes32[] proof, bytes32 leaf);
+
+    /**
+     * @notice Thrown when the Engen rewards already claimed by the user.
+     * @param user The user address.
+     */
+    error EngenAlreadyClaimed(address user);
+
+    /**
+     * @notice Thrown when the current root already claimed by the user.
+     * @param user The user address.
+     */
+    error RootAlreadyClaimed(address user);
 
     /* ============ Constants & Immutables ============ */
 
@@ -107,6 +124,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
     /// @notice Rewards per quarter for liquidity mining.
     mapping(uint256 => uint256) public rewardsPerQuarter;
+
+    /// @notice Whenever user claimed Engen rewards or not.
+    mapping(address => bool) public hasClaimedEngen;
+
+    // Mapping to track which root a user has claimed for.
+    mapping(address => bytes32) public claimedRoot;
 
     /* ============ Constructor ============ */
 
@@ -183,6 +206,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param amount The amount of tokens to claim.
      */
     function claim(bytes32[] memory proof, address user, uint256 amount) external nonReentrant {
+        // Do not allow to claim from the same root twice.
+        if (claimedRoot[user] == root) {
+            revert RootAlreadyClaimed(user);
+        }
+
         // Generate the leaf node from the user's address and the amount they are claiming
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, amount))));
 
@@ -200,6 +228,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         totalClaimed += amount;
         claimedByUser[user] += amount;
 
+        // Mark current root as claimed for the user
+        claimedRoot[user] = root;
+
         // Transfer the claimed tokens to the user
         KINTO.safeTransfer(user, amount);
 
@@ -213,13 +244,24 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      *      Engen holders receive an additional bonus if they are marked as such.
      */
     function claimEngen() external nonReentrant {
+        // Do not allow to claim more than once
+        if (hasClaimedEngen[msg.sender]) {
+            revert EngenAlreadyClaimed(msg.sender);
+        }
+
         // Amount of Kinto tokens to claim is EngenBalance * multiplier
         uint256 amount = ENGEN.balanceOf(msg.sender) * ENGEN_MULTIPLIER / 1e18;
 
         // Engen holder get an extra holder bonus
-        amount = engenHolders[msg.sender] ? amount * ENGEN_HOLDER_BONUS / 1e18 : amount;
+        if (engenHolders[msg.sender]) {
+            amount = amount + amount * ENGEN_HOLDER_BONUS / 1e18;
+        }
 
+        // Tracked the total amount of Engen rewards claimed
         totalKintoFromEngenClaimed += amount;
+
+        // Mark that user has claimed Engen rewards
+        hasClaimedEngen[msg.sender] = true;
 
         // Transfer Kinto tokens to the user
         KINTO.safeTransfer(msg.sender, amount);
