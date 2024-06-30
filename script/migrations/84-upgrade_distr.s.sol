@@ -13,11 +13,7 @@ contract UpgradeDistributorScript is MigrationHelper {
 
         bytes memory bytecode = abi.encodePacked(
             type(RewardsDistributor).creationCode,
-            abi.encode(
-                _getChainDeployment("KINTO"),
-                _getChainDeployment("EngenCredits"),
-               LIQUIDITY_MINING_START_DATE 
-            )
+            abi.encode(_getChainDeployment("KINTO"), _getChainDeployment("EngenCredits"), LIQUIDITY_MINING_START_DATE)
         );
 
         // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
