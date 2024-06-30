@@ -236,7 +236,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         uint256 amount = ENGEN.balanceOf(msg.sender) * ENGEN_MULTIPLIER / 1e18;
 
         // Engen holder get an extra holder bonus
-        amount = engenHolders[msg.sender] ? (amount + amount * ENGEN_HOLDER_BONUS / 1e18) : amount;
+        if (engenHolders[msg.sender]) {
+            amount = amount + amount * ENGEN_HOLDER_BONUS / 1e18;
+        }
 
         // Tracked the total amount of Engen rewards claimed
         totalKintoFromEngenClaimed += amount;
