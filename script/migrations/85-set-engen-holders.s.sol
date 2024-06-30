@@ -6,7 +6,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
-import 'forge-std/console2.sol';
+import "forge-std/console2.sol";
 
 contract SetEngenHoldersScript is MigrationHelper {
     using stdJson for string;
