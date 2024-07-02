@@ -37,7 +37,11 @@ contract KintoMigration55DeployScript is MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         KintoAppRegistry registry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         registry.registerApp(
-            "EngenGovernance", address(governance), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]
+            "EngenGovernance",
+            address(governance),
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            new address[](0)
         );
     }
 }

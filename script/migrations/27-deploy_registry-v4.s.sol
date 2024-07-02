@@ -20,8 +20,9 @@ contract KintoMigration27DeployScript is MigrationHelper {
         require(address(registry.kintoID()) == _getChainDeployment("KintoID"), "KintoID not set on Registry");
 
         // check we can't call registerApp without being KYC'd
-        try registry.registerApp("test", address(0), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)])
-        {
+        try registry.registerApp(
+            "test", address(0), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)], new address[](0)
+        ) {
             revert("registerApp should revert");
         } catch Error(string memory reason) {
             require(

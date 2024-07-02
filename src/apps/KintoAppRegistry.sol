@@ -48,6 +48,10 @@ contract KintoAppRegistry is
 
     IKintoID public immutable kintoID;
 
+    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+
+    mapping(address => address) public override eoaToApp;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
@@ -112,12 +116,14 @@ contract KintoAppRegistry is
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
+     * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function registerApp(
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[] calldata devEOAs
     ) external override {
         if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
         if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
@@ -125,7 +131,7 @@ contract KintoAppRegistry is
         if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
 
         appCount++;
-        _updateMetadata(appCount, _name, parentContract, appContracts, appLimits);
+        _updateMetadata(appCount, _name, parentContract, appContracts, appLimits, devEOAs);
         _safeMint(msg.sender, appCount);
 
         emit AppRegistered(parentContract, msg.sender, block.timestamp);
@@ -137,16 +143,18 @@ contract KintoAppRegistry is
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
+     * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function updateMetadata(
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[] calldata devEOAs
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
         if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
-        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
+        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits, devEOAs);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
@@ -250,7 +258,8 @@ contract KintoAppRegistry is
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[] calldata devEOAs
     ) internal {
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             tokenId: tokenId,
@@ -259,15 +268,30 @@ contract KintoAppRegistry is
             rateLimitPeriod: appLimits[0],
             rateLimitNumber: appLimits[1],
             gasLimitPeriod: appLimits[2],
-            gasLimitCost: appLimits[3]
+            gasLimitCost: appLimits[3],
+            devEOAs: devEOAs
         });
 
         tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
 
+        // Cleanup old childToParentContract
+        for (uint256 i = 0; i < appContracts.length; i++) {
+            childToParentContract[appContracts[i]] = address(0);
+        }
+
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
             childToParentContract[appContracts[i]] = parentContract;
+        }
+
+        // Cleanup old devEOAs
+        for (uint256 i = 0; i < metadata.devEOAs.length; i++) {
+            eoaToApp[metadata.devEOAs[i]] = address(0);
+        }
+
+        for (uint256 i = 0; i < devEOAs.length; i++) {
+            eoaToApp[devEOAs[i]] = parentContract;
         }
     }
 
@@ -282,11 +306,13 @@ contract KintoAppRegistry is
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
-        if (from != address(0) || to == address(0)) revert OnlyMintingAllowed();
+        if ((from != address(0) && from != ADMIN_DEPLOYER && from != owner()) || to == address(0)) {
+            revert OnlyMintingAllowed();
+        }
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 }
 
-contract KintoAppRegistryV5 is KintoAppRegistry {
+contract KintoAppRegistryV6 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }

@@ -20,7 +20,7 @@ contract EngenBadgesTest is SharedSetup {
         fundSponsorForApp(_owner, address(_engenBadges));
         fundSponsorForApp(_owner, address(_kintoWallet));
 
-        registerApp(_owner, "engen badges", address(_engenBadges));
+        registerApp(_owner, "engen badges", address(_engenBadges), new address[](0));
         alice = createUser("alice");
 
         whitelistApp(address(_engenBadges));
