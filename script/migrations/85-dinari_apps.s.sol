@@ -64,7 +64,7 @@ contract KintoMigration85DeployScript is MigrationHelper {
         eoas[8] = address(0xAa0ed80DE46CF02bde4493A84FE22Af8fE79c01f); // relayer
 
         vm.startBroadcast(deployerPrivateKey);
-        kintoAppRegistry.registerApp("Dinari", parentContract, appContracts, appLimits);
+        kintoAppRegistry.registerApp("Dinari", parentContract, appContracts, appLimits, eoas);
         uint256 tokenID = kintoAppRegistry.getAppMetadata(parentContract).tokenId;
         kintoAppRegistry.safeTransferFrom(deployer, dinariWallet, tokenID);
         _paymaster.addDepositFor{value: 1e16}(parentContract);
@@ -98,13 +98,13 @@ contract KintoMigration85DeployScript is MigrationHelper {
         eoas[6] = address(0xf4ce0c560dEbcA25F1daA0B082Ffb6B3E3B66B3C); // minter
         eoas[7] = address(0xECC40Cf598B1e98846267F274559062aE4cd3F9D); // relayer
 
-        kintoAppRegistry.registerApp("Dinari-stage", parentContract, appContracts, appLimits);
+        kintoAppRegistry.registerApp("Dinari-stage", parentContract, appContracts, appLimits, eoas);
         tokenID = kintoAppRegistry.getAppMetadata(parentContract).tokenId;
         kintoAppRegistry.safeTransferFrom(deployer, dinariWallet, tokenID);
         _paymaster.addDepositFor{value: 1e16}(parentContract);
 
         vm.stopBroadcast();
-        assertEq(kintoAppRegistry.balanceOf(dinariWallet) == 2);
-        assertEq(_paymaster.balances(parentContract) == 1e16);
+        assertEq(kintoAppRegistry.balanceOf(dinariWallet), 2);
+        assertEq(_paymaster.balances(parentContract), 1e16);
     }
 }
