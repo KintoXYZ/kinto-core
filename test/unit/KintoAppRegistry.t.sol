@@ -74,17 +74,23 @@ contract KintoAppRegistryTest is SharedSetup {
         uint256 balanceBefore = _kintoAppRegistry.balanceOf(_user);
         uint256 appsCountBefore = _kintoAppRegistry.appCount();
 
+        address[] memory eoas = new address[](1);
+        eoas[0] = address(44);
+
         vm.prank(_user);
         _kintoAppRegistry.registerApp(
             name,
             parentContract,
             appContracts,
             [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
-            new address[](0)
+            eoas
         );
 
         assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
         assertEq(_kintoAppRegistry.appCount(), appsCountBefore + 1);
+
+        // check eoas
+        assertEq(_kintoAppRegistry.eoaToApp(address(44)), parentContract);
 
         // check app metadata
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
@@ -97,6 +103,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.gasLimitCost, appLimits[3]);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), true);
         assertEq(_kintoAppRegistry.getSponsor(address(7)), parentContract);
+        assertEq(metadata.devEOAs[0], eoas[0]);
 
         // check child limits
         uint256[4] memory limits = _kintoAppRegistry.getContractLimits(address(7));
