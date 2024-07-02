@@ -28,7 +28,7 @@ contract KintoMigration85DeployScript is MigrationHelper {
 
         address parentContract = address(0xB2eEc63Cdc175d6d07B8f69804C0Ab5F66aCC3cb); // Transfer restrictor DShares
         address[] memory appContracts = new address[](12);
-        address [] memory eoas = new address[](9);
+        address[] memory eoas = new address[](9);
 
         // dshares
         appContracts[0] = address(0xa9a60Ccc6363e440eeEaa8Ad015607c7a34360CE); // DshareBeacon
