@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.18;
 
-import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+import {console2} from "forge-std/console2.sol";
+import {AssertionHelper} from "./AssertionHelper.sol";
 
-abstract contract BaseTest is Test {
+abstract contract BaseTest is AssertionHelper {
     // Reasonable block.timestamp `MAY_1_2023`
     uint32 internal constant START_TIMESTAMP = 1_682_899_200;
 

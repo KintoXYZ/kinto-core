@@ -11,27 +11,22 @@ import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
 
-import "@kinto-core-test/helpers/AASetup.sol";
-import "@kinto-core-test/helpers/SignatureHelper.sol";
-import "@kinto-core-test/helpers/UserOp.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 // This script is used to test the wallet creation
-contract KintoDeployTestWalletScript is AASetup, SignatureHelper {
+contract KintoDeployTestWalletScript is MigrationHelper {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         uint256 recipientKey = vm.envUint("TEST_PRIVATE_KEY");
         address recipientWallet = vm.rememberKey(recipientKey);
@@ -65,7 +60,7 @@ contract KintoDeployTestWalletScript is AASetup, SignatureHelper {
 }
 
 // This script is used to test the monitor function of the KintoID
-contract KintoMonitoringTest is AASetup, SignatureHelper, UserOp {
+contract KintoMonitoringTest is MigrationHelper {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -74,12 +69,9 @@ contract KintoMonitoringTest is AASetup, SignatureHelper, UserOp {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         console.log("Deployer is", vm.addr(deployerPrivateKey));
 
@@ -95,7 +87,7 @@ contract KintoMonitoringTest is AASetup, SignatureHelper, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployTestCounter is AASetup, SignatureHelper, UserOp {
+contract KintoDeployTestCounter is MigrationHelper {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -104,12 +96,9 @@ contract KintoDeployTestCounter is AASetup, SignatureHelper, UserOp {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -202,7 +191,7 @@ contract KintoDeployTestCounter is AASetup, SignatureHelper, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract KintoDeployETHPriceIsRight is AASetup, SignatureHelper, UserOp {
+contract KintoDeployETHPriceIsRight is MigrationHelper {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -211,12 +200,9 @@ contract KintoDeployETHPriceIsRight is AASetup, SignatureHelper, UserOp {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -310,7 +296,7 @@ contract KintoDeployETHPriceIsRight is AASetup, SignatureHelper, UserOp {
 }
 
 // This script is used to test the deployment of a contract through the factory and further interaction with it
-contract SendHanldeOps is AASetup, SignatureHelper, UserOp {
+contract SendHanldeOps is MigrationHelper {
     using SignatureChecker for address;
 
     KintoID _kintoID;
@@ -319,12 +305,9 @@ contract SendHanldeOps is AASetup, SignatureHelper, UserOp {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         KintoWallet kintoWallet = KintoWallet(payable(vm.envAddress("TEST_KINTO_WALLET")));
         bytes memory bytesOp = vm.envBytes("TEST_BYTESOP");
         if (bytesOp.length == 0) {
