@@ -128,7 +128,7 @@ contract KintoMigration64DeployScript is MigrationHelper {
             selectorsAndParams[i] = selectorAndParams;
             tos[i] = allContracts[i];
         }
-        _handleOps(selectorsAndParams, tos, deployerPrivateKey);
+        _handleOpsBatch(selectorsAndParams, tos, deployerPrivateKey);
 
         // validate Safe can claim ownership
         vm.startPrank(SAFE_ADDRESS);
@@ -177,7 +177,7 @@ contract KintoMigration64DeployScript is MigrationHelper {
                 console2.log("- Role already revoked from %s on %s", KINTO_DEPLOYER, contracts[i]);
             }
         }
-        _handleOps(selectorAndParams, tos, deployerPrivateKey);
+        _handleOpsBatch(selectorAndParams, tos, deployerPrivateKey);
 
         console2.log("Granting roles...");
         selectorAndParams = new bytes[](contracts.length);
@@ -198,7 +198,7 @@ contract KintoMigration64DeployScript is MigrationHelper {
                 tos[i] = contracts[i];
             }
         }
-        _handleOps(selectorAndParams, tos, deployerPrivateKey);
+        _handleOpsBatch(selectorAndParams, tos, deployerPrivateKey);
 
         // check roles
         console2.log("\nValidating roles...");

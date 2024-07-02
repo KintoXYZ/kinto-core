@@ -35,7 +35,7 @@ contract KintoMigration31DeployScript is MigrationHelper {
         selectorsAndParams[5] =
             abi.encodeWithSelector(KintoInflator.setKintoContract.selector, "EC", _getChainDeployment("EngenCredits"));
 
-        _handleOps(selectorsAndParams, proxy, deployerPrivateKey);
+        _handleOpsBatch(selectorsAndParams, proxy, deployerPrivateKey);
 
         // sanity check
         KintoInflator inflator = KintoInflator(proxy);
