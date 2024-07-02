@@ -57,11 +57,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         internal
         returns (address proxy)
     {
-        bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
-        bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
-
-        if (isWallet || isEntryPoint) revert("EntryPoint and KintoWallet do not use UUPPS Proxy");
-
         // deploy Proxy contract
         vm.broadcast(deployerPrivateKey);
         proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
@@ -82,7 +77,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         bytes32 salt
     ) internal returns (address impl) {
         // deploy new implementation via factory
-        // vm.stopBroadcast();
         vm.broadcast(deployerPrivateKey);
         impl = factory.deployContract(msg.sender, 0, bytecode, salt);
 
@@ -112,7 +106,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         impl = _deployImplementation(contractName, version, bytecode);
         // (2). call upgradeTo to set new implementation
         if (isWallet) {
-            _upgradeWallet(impl, deployerPrivateKey);
+            _upgradeWallet(impl);
         } else {
             try Ownable(proxy).owner() returns (address owner) {
                 if (owner != kintoAdminWallet) {
@@ -130,10 +124,10 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         }
     }
 
-    function _upgradeWallet(address impl, uint256 signerPk) internal {
+    function _upgradeWallet(address impl) internal {
         address payable from = payable(kintoAdminWallet);
         uint256[] memory privKeys = new uint256[](2);
-        privKeys[0] = signerPk;
+        privKeys[0] = deployerPrivateKey;
         privKeys[1] = hardwareWalletType;
 
         bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, impl);
@@ -187,6 +181,8 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         }
     }
 
+    /// _whitelistApp
+
     /// @notice whitelists an app in the KintoWallet
     function _whitelistApp(address app, bool whitelist) internal {
         address wallet = kintoAdminWallet;
@@ -224,6 +220,8 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         _whitelistApp(app, true);
     }
 
+    /// _handleOps
+
     function _handleOps(bytes memory selectorAndParams, address to) internal {
         uint256[] memory privateKeys = new uint256[](2);
         privateKeys[0] = deployerPrivateKey;
@@ -249,18 +247,6 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = signerPk;
         _handleOps(selectorAndParams, from, to, 0, sponsorPaymaster, privateKeys);
-    }
-
-    function _handleOps(bytes[] memory selectorAndParams, address[] memory tos, uint256 signerPk) internal {
-        _handleOps(selectorAndParams, tos, address(0), signerPk);
-    }
-
-    function _handleOps(bytes[] memory selectorAndParams, address to, uint256 signerPk) internal {
-        address[] memory tos;
-        for (uint256 i = 0; i < selectorAndParams.length; i++) {
-            tos[i] = to;
-        }
-        _handleOps(selectorAndParams, tos, address(0), signerPk);
     }
 
     // @notice handles ops with custom params
@@ -289,10 +275,24 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
     }
 
+    /// _handleOpsBatch
+
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address[] memory tos, uint256 signerPk) internal {
+        _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
+    }
+
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address to, uint256 signerPk) internal {
+        address[] memory tos;
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            tos[i] = to;
+        }
+        _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
+    }
+
     // @notice handles ops with multiple ops and destinations
     // @dev uses a sponsorPaymaster
     // @dev does not use a hardware wallet
-    function _handleOps(
+    function _handleOpsBatch(
         bytes[] memory selectorAndParams,
         address[] memory tos,
         address sponsorPaymaster,
