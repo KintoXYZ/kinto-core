@@ -5,6 +5,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {UUPSUpgradeable as UUPSUpgradeable5} from
     "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {ECDSAUpgradeable} from
+"@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
@@ -12,12 +14,14 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
 
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
-import "@kinto-core-test/helpers/UserOp.sol";
-import "@kinto-core-test/helpers/UUPSProxy.sol";
+import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
 
 import {Constants} from "@kinto-core-script/migrations/const.sol";
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
@@ -30,7 +34,7 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constants {
+contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, SaltHelper, Constants {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
@@ -61,7 +65,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         vm.broadcast(deployerPrivateKey);
         proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
 
-        console.log(string.concat(contractName, ": ", vm.toString(address(proxy))));
+        console2.log(string.concat(contractName, ": ", vm.toString(address(proxy))));
     }
 
     function _deployProxy(string memory contractName, address implementation) internal returns (address proxy) {
@@ -80,7 +84,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         vm.broadcast(deployerPrivateKey);
         impl = factory.deployContract(msg.sender, 0, bytecode, salt);
 
-        console.log(string.concat(contractName, version, "-impl: ", vm.toString(address(impl))));
+        console2.log(string.concat(contractName, version, "-impl: ", vm.toString(address(impl))));
     }
 
     function _deployImplementation(string memory contractName, string memory version, bytes memory bytecode)
@@ -110,7 +114,7 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         } else {
             try Ownable(proxy).owner() returns (address owner) {
                 if (owner != kintoAdminWallet) {
-                    console.log(
+                    console2.log(
                         "%s contract is not owned by the KintoWallet-admin, its owner is %s",
                         contractName,
                         vm.toString(owner)
@@ -339,10 +343,12 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
                 return true;
             }
         }
+
+        return false;
     }
 
     function etchWallet(address wallet) internal {
-        console.log("etching wallet:", vm.toString(wallet));
+        console2.log("etching wallet:", vm.toString(wallet));
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),

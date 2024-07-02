@@ -6,26 +6,22 @@ import "@aa/core/EntryPoint.sol";
 import "../../src/sample/ETHPriceIsRight.sol";
 import "../../src/interfaces/IKintoWallet.sol";
 import "../../src/paymasters/SponsorPaymaster.sol";
-
-import "../../test/helpers/AASetup.sol";
-import "../../test/helpers/UserOp.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script deploys an `ETHPriceIsRight` contract (skips deployment if already exists) and executes a user operation that calls the `enterGuess()` function using your smart account.
-contract KintoGuesserScript is AASetup, UserOp {
+contract KintoGuesserScript is MigrationHelper {
     EntryPoint _entryPoint;
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
     KintoWalletFactory _walletFactory;
 
     function setUp() public {
-        (, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
     }
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
