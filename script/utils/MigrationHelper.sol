@@ -5,8 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {UUPSUpgradeable as UUPSUpgradeable5} from
     "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import {ECDSAUpgradeable} from
-"@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";

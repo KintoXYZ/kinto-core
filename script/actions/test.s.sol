@@ -24,8 +24,7 @@ contract KintoDeployTestWalletScript is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -70,8 +69,7 @@ contract KintoMonitoringTest is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -98,8 +96,7 @@ contract KintoDeployTestCounter is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -203,8 +200,7 @@ contract KintoDeployETHPriceIsRight is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -309,8 +305,7 @@ contract SendHanldeOps is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         KintoWallet kintoWallet = KintoWallet(payable(vm.envAddress("TEST_KINTO_WALLET")));

@@ -16,8 +16,7 @@ contract KintoCreateWalletScript is MigrationHelper {
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 recipientKey = vm.envUint("TEST_PRIVATE_KEY");

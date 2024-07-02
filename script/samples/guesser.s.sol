@@ -18,8 +18,7 @@ contract KintoGuesserScript is MigrationHelper {
     IKintoWallet _newWallet;
     KintoWalletFactory _walletFactory;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");

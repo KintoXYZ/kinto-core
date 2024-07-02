@@ -20,8 +20,7 @@ contract KintoCounterScript is MigrationHelper {
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-    }
+    function setUp() public {}
 
     function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
