@@ -79,11 +79,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
         vm.prank(_user);
         _kintoAppRegistry.registerApp(
-            name,
-            parentContract,
-            appContracts,
-            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
-            eoas
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], eoas
         );
 
         assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
