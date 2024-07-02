@@ -545,7 +545,7 @@ contract SponsorPaymasterTest is SharedSetup {
             100e18,
             100e18,
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            0.000000000001 ether //
+            1 wei
         ];
         updateMetadata(_owner, "counter", address(counter), appLimits, new address[](0));
 
@@ -569,7 +569,7 @@ contract SponsorPaymasterTest is SharedSetup {
             100e18,
             100e18,
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            0.000000000001 ether //
+            1 wei
         ];
         updateMetadata(_owner, "counter", address(counter), appLimits, new address[](0));
 
