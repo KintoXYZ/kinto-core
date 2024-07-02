@@ -27,6 +27,7 @@ interface IKintoAppRegistry {
         uint256 gasLimitPeriod;
         uint256 gasLimitCost; // in eth
         string name;
+        address[5] devEOAs;
     }
 
     /* ============ State Change ============ */
@@ -35,7 +36,8 @@ interface IKintoAppRegistry {
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[5] calldata devEOAs
     ) external;
 
     function enableDSA(address app) external;
@@ -46,7 +48,8 @@ interface IKintoAppRegistry {
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[5] calldata devEOAs
     ) external;
 
     /* ============ Basic Viewers ============ */

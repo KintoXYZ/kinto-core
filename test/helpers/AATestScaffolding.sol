@@ -98,7 +98,9 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
 
     // register app helpers
     // fixme: these should go through entrypoint
-    function registerApp(address _owner, string memory name, address parentContract) public {
+    function registerApp(address _owner, string memory name, address parentContract, address[5] memory devEOAs)
+        public
+    {
         address[] memory appContracts = new address[](0);
         uint256[4] memory appLimits = [
             _kintoAppRegistry.RATE_LIMIT_PERIOD(),
@@ -106,26 +108,34 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
-    function registerApp(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
-        public
-    {
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        uint256[4] memory appLimits,
+        address[5] memory devEOAs
+    ) public {
         address[] memory appContracts = new address[](0);
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
-    function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
-        public
-    {
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        address[5] memory devEOAs
+    ) public {
         uint256[4] memory appLimits = [
             _kintoAppRegistry.RATE_LIMIT_PERIOD(),
             _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     // fixme: this should go through entrypoint
@@ -134,17 +144,22 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         string memory name,
         address parentContract,
         address[] memory appContracts,
-        uint256[4] memory appLimits
+        uint256[4] memory appLimits,
+        address[5] memory devEOAs
     ) public {
         vm.prank(_owner);
         _kintoAppRegistry.registerApp(
-            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], devEOAs
         );
     }
 
-    function updateMetadata(address _owner, string memory name, address parentContract, address[] memory appContracts)
-        public
-    {
+    function updateMetadata(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        address[5] memory devEOAs
+    ) public {
         uint256[4] memory appLimits = [
             _kintoAppRegistry.RATE_LIMIT_PERIOD(),
             _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
@@ -152,15 +167,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
         vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
-    }
-
-    function updateMetadata(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
-        public
-    {
-        address[] memory appContracts = new address[](0);
-        vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     function updateMetadata(
@@ -168,10 +175,23 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         string memory name,
         address parentContract,
         uint256[4] memory appLimits,
-        address[] memory appContracts
+        address[5] memory devEOAs
+    ) public {
+        address[] memory appContracts = new address[](0);
+        vm.prank(_owner);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
+    }
+
+    function updateMetadata(
+        address _owner,
+        string memory name,
+        address parentContract,
+        uint256[4] memory appLimits,
+        address[] memory appContracts,
+        address[5] memory devEOAs
     ) public {
         vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     function setSponsoredContracts(address _owner, address _app, address[] memory _contracts, bool[] memory _sponsored)

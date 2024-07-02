@@ -400,7 +400,9 @@ contract SponsorPaymasterTest is SharedSetup {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
         _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -422,7 +424,9 @@ contract SponsorPaymasterTest is SharedSetup {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
         _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -449,7 +453,9 @@ contract SponsorPaymasterTest is SharedSetup {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // generate ops until reaching the threshold
         UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -466,7 +472,9 @@ contract SponsorPaymasterTest is SharedSetup {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // generate ops until reaching the threshold and assert that it reverts
         UserOperation[] memory userOps =
@@ -541,8 +549,15 @@ contract SponsorPaymasterTest is SharedSetup {
         /// fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
         /// @dev create app with high app limits and low gas limit so we assert that the one used
         // in the test is the gas limit
-        uint256[4] memory appLimits = [100e18, 100e18, _kintoAppRegistry.GAS_LIMIT_PERIOD(), 1 wei];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        uint256[4] memory appLimits = [
+            100e18,
+            100e18,
+            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
+            0.000000000001 ether //
+        ];
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // execute transactions (with one user op per tx) one by one until reaching the gas limit
         _incrementCounterTxsUntilGasLimit(address(counter));
@@ -566,7 +581,9 @@ contract SponsorPaymasterTest is SharedSetup {
             _kintoAppRegistry.GAS_LIMIT_PERIOD(),
             0.000000000001 ether //
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(
+            _owner, "counter", address(counter), appLimits, [address(0), address(0), address(0), address(0), address(0)]
+        );
 
         // execute transactions until reaching gas limit and save the amount of apps that reached the threshold
         uint256 amt = _incrementCounterTxsUntilGasLimit(address(counter));

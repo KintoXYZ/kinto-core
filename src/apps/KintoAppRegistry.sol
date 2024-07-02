@@ -114,12 +114,14 @@ contract KintoAppRegistry is
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
+     * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function registerApp(
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[5] calldata devEOAs
     ) external override {
         if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
         if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
@@ -127,7 +129,7 @@ contract KintoAppRegistry is
         if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
 
         appCount++;
-        _updateMetadata(appCount, _name, parentContract, appContracts, appLimits);
+        _updateMetadata(appCount, _name, parentContract, appContracts, appLimits, devEOAs);
         _safeMint(msg.sender, appCount);
 
         emit AppRegistered(parentContract, msg.sender, block.timestamp);
@@ -139,16 +141,18 @@ contract KintoAppRegistry is
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
+     * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function updateMetadata(
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[5] calldata devEOAs
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
         if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
-        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits);
+        _updateMetadata(tokenId, _name, parentContract, appContracts, appLimits, devEOAs);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
@@ -252,7 +256,8 @@ contract KintoAppRegistry is
         string calldata _name,
         address parentContract,
         address[] calldata appContracts,
-        uint256[4] calldata appLimits
+        uint256[4] calldata appLimits,
+        address[5] calldata devEOAs
     ) internal {
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             tokenId: tokenId,
@@ -261,7 +266,8 @@ contract KintoAppRegistry is
             rateLimitPeriod: appLimits[0],
             rateLimitNumber: appLimits[1],
             gasLimitPeriod: appLimits[2],
-            gasLimitCost: appLimits[3]
+            gasLimitCost: appLimits[3],
+            devEOAs: devEOAs
         });
 
         tokenIdToApp[tokenId] = parentContract;
