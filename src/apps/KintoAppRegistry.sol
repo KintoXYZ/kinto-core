@@ -50,6 +50,8 @@ contract KintoAppRegistry is
 
     address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
 
+    mapping(address => address) public override eoaToApp;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
@@ -121,7 +123,7 @@ contract KintoAppRegistry is
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
-        address[5] calldata devEOAs
+        address[] calldata devEOAs
     ) external override {
         if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
         if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
@@ -148,7 +150,7 @@ contract KintoAppRegistry is
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
-        address[5] calldata devEOAs
+        address[] calldata devEOAs
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
         if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
@@ -257,7 +259,7 @@ contract KintoAppRegistry is
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
-        address[5] calldata devEOAs
+        address[] calldata devEOAs
     ) internal {
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             tokenId: tokenId,
@@ -276,6 +278,10 @@ contract KintoAppRegistry is
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
             childToParentContract[appContracts[i]] = parentContract;
+        }
+
+        for (uint256 i = 0; i < devEOAs.length; i++) {
+            eoaToApp[devEOAs[i]] = parentContract;
         }
     }
 

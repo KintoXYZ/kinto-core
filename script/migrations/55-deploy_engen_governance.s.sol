@@ -41,7 +41,7 @@ contract KintoMigration55DeployScript is MigrationHelper {
             address(governance),
             new address[](0),
             [uint256(0), uint256(0), uint256(0), uint256(0)],
-            [address(0), address(0), address(0), address(0), address(0)]
+            new address[](0)
         );
     }
 }

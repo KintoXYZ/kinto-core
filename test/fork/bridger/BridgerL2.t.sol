@@ -31,9 +31,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         _bridgerL2.upgradeTo(address(_newImpl));
 
         fundSponsorForApp(_owner, address(_bridgerL2));
-        registerApp(
-            _owner, "bridger", address(_bridgerL2), [address(0), address(0), address(0), address(0), address(0)]
-        );
+        registerApp(_owner, "bridger", address(_bridgerL2), new address[](0));
     }
 
     function setUpChain() public virtual override {

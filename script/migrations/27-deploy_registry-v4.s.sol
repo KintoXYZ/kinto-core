@@ -21,11 +21,7 @@ contract KintoMigration27DeployScript is MigrationHelper {
 
         // check we can't call registerApp without being KYC'd
         try registry.registerApp(
-            "test",
-            address(0),
-            new address[](0),
-            [uint256(0), uint256(0), uint256(0), uint256(0)],
-            [address(0), address(0), address(0), address(0), address(0)]
+            "test", address(0), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)], new address[](0)
         ) {
             revert("registerApp should revert");
         } catch Error(string memory reason) {

@@ -268,9 +268,8 @@ contract ValidateSignatureTest is SharedSetup {
         // update app's metadata adding child
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(child);
-        updateMetadata(
-            _owner, "test", address(counter), appContracts, [address(0), address(0), address(0), address(0), address(0)]
-        );
+
+        updateMetadata(_owner, "test", address(counter), appContracts, new address[](0));
 
         address[] memory targets = new address[](3);
         targets[0] = address(_kintoWallet);
@@ -358,9 +357,7 @@ contract ValidateSignatureTest is SharedSetup {
         // update app's metadata passing a child
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(child);
-        updateMetadata(
-            _owner, "test", address(counter), appContracts, [address(0), address(0), address(0), address(0), address(0)]
-        );
+        updateMetadata(_owner, "test", address(counter), appContracts, new address[](0));
 
         address[] memory targets = new address[](4);
         targets[0] = address(_kintoWallet);

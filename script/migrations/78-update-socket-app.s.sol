@@ -54,6 +54,6 @@ contract KintoMigration78DeployScript is MigrationHelper {
         ];
 
         vm.broadcast(deployerPrivateKey);
-        kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits);
+        kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits, new address[](0));
     }
 }

@@ -52,12 +52,6 @@ contract KintoMigration66DeployScript is MigrationHelper {
         ];
 
         vm.broadcast(deployerPrivateKey);
-        kintoAppRegistry.registerApp(
-            "Socket",
-            parentContract,
-            appContracts,
-            appLimits,
-            [address(0), address(0), address(0), address(0), address(0)]
-        );
+        kintoAppRegistry.registerApp("Socket", parentContract, appContracts, appLimits, new address[](0));
     }
 }
