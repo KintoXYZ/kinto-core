@@ -48,6 +48,8 @@ contract KintoAppRegistry is
 
     IKintoID public immutable kintoID;
 
+    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
@@ -282,11 +284,13 @@ contract KintoAppRegistry is
         virtual
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
     {
-        if (from != address(0) || to == address(0)) revert OnlyMintingAllowed();
+        if ((from != address(0) && from != ADMIN_DEPLOYER && from != owner()) || to == address(0)) {
+            revert OnlyMintingAllowed();
+        }
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 }
 
-contract KintoAppRegistryV5 is KintoAppRegistry {
+contract KintoAppRegistryV6 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
