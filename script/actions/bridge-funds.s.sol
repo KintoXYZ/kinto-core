@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
 import {stdJson} from "forge-std/StdJson.sol";
 import "forge-std/Script.sol";
@@ -15,7 +16,7 @@ contract BridgeFundsScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        string memory json = vm.readFile("./script/data/weEthKintoToEthereumBridge.json");
+        string memory json = vm.readFile(vm.envString("BRIDGE_FILE"));
 
         address from = json.readAddress(string.concat(".", "from"));
         address vault = json.readAddress(string.concat(".", "vault"));
@@ -27,8 +28,13 @@ contract BridgeFundsScript is MigrationHelper {
         bytes memory options = json.readBytes(string.concat(".", "options"));
         uint256 gasFee = json.readUint(string.concat(".", "gasFee"));
 
-        uint256[] memory privKeys = new uint256[](1);
+        // etchWallet(0xa158e30099C6F7D9546eF2a519F2118E46039307);
+        replaceOwner(IKintoWallet(from), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        hardwareWalletType = 1;
+
+        uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
+        privKeys[1] = hardwareWalletType;
         _handleOps(
             abi.encodeWithSelector(
                 IBridge.bridge.selector, receiver, amount, msgGasLimit, connector, execPayload, options
