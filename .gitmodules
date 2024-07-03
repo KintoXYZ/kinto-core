@@ -46,3 +46,6 @@
 	path = lib/permit2
 	url = https://github.com/Uniswap/permit2
   ignore = dirty
+[submodule "lib/forge-safe"]
+	path = lib/forge-safe
+	url = https://github.com/ind-igo/forge-safe
