@@ -11,6 +11,8 @@ import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeabl
 import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title Rewards Distributor
  * @notice Distributes rewards using a Merkle tree for verification.
@@ -303,16 +305,29 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /* ============ View ============ */
 
     /**
+     * @notice Returns the total limit of tokens that can be distributed based on quarterly rewards at the specific time.
+     * @param time The time at which rewards are calculated.
+     * @return The total limit of tokens.
+     */
+    function getTotalLimit(uint256 time) public view returns (uint256) {
+        return getRewards(time) + bonusAmount;
+    }
+
+    /**
      * @notice Returns the total limit of tokens that can be distributed based on quarterly rewards.
      * @return The total limit of tokens.
      */
     function getTotalLimit() public view returns (uint256) {
-        if (block.timestamp < startTime) {
+        return getTotalLimit(block.timestamp);
+    }
+
+    function getRewards(uint256 time) public view returns (uint256) {
+        if (time < startTime) {
             return 0;
         }
 
         // Calculate the number of seconds since the start of the program
-        uint256 elapsedTime = block.timestamp - startTime;
+        uint256 elapsedTime = time - startTime;
 
         // Calculate the current quarter based on the elapsed time
         uint256 currentQuarter = elapsedTime / (90 days); // Approximate each quarter as 90 days
@@ -337,10 +352,16 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
             totalLimit += totalTokens;
         }
 
-        // Add the bonus amount
-        totalLimit += bonusAmount;
-
         return totalLimit;
+    }
+
+    /**
+     * @notice
+     * @return
+     */
+    function getRewards(uint256 fromTime, uint256 toTime) public view returns (uint256) {
+        console2.log("getTotalLimit(fromTime):", getTotalLimit(fromTime));
+        return getTotalLimit(toTime) - getTotalLimit(fromTime);
     }
 
     /**
