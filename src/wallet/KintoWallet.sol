@@ -106,7 +106,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        _executeInner(dest, value, func);
+        _executeInner(dest, value, func, dest);
         // If can transact, cancel recovery
         inRecovery = 0;
     }
@@ -121,7 +121,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
         for (uint256 i = 0; i < dest.length; i++) {
-            _executeInner(dest[i], values[i], func[i]);
+            _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
         }
         // if can transact, cancel recovery
         inRecovery = 0;
@@ -455,10 +455,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
     }
 
-    function _executeInner(address dest, uint256 value, bytes calldata func) internal {
+    function _executeInner(address dest, uint256 value, bytes calldata func, address lastAddress) internal {
         // if target is a contract, check if it's whitelisted
-        address sponsor = appRegistry.getSponsor(dest);
-        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR) {
+        address sponsor = appRegistry.getSponsor(lastAddress);
+        bool validChild = dest == lastAddress || appRegistry.isSponsored(dest, lastAddress);
+        bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
+        bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
+        if (isNotAppSponsored && isNotSystemApproved) {
             revert AppNotWhitelisted();
         }
 
