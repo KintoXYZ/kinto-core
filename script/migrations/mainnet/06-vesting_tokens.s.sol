@@ -157,7 +157,7 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
 
         // Populate arrays with data
         (amounts[0], beneficiaries[0], durations[0]) = (579500 * 1e18, 0x848003ba498c36AdF7232b1f1e8c2AbF6d31B017, calculateDuration(1688169600, commonStartTimestamp)); // 7/1/2023
-        (amounts[1], beneficiaries[1], durations[1]) = (579500 * 1e18, address(2), calculateDuration(1688169600, commonStartTimestamp)); // 7/1/2023
+        (amounts[1], beneficiaries[1], durations[1]) = (579500 * 1e18, 0x0e157F26E66cA4dB3aE6f81393e581a8880ADeb4, calculateDuration(1688169600, commonStartTimestamp)); // 7/1/2023
         (amounts[2], beneficiaries[2], durations[2]) = (150000 * 1e18, 0xb3A91e43Fc97424033fA71fd3a63ecf101424538, calculateDuration(1714521600, commonStartTimestamp)); // 5/1/2024
         (amounts[3], beneficiaries[3], durations[3]) = (15000 * 1e18, 0x7D20E87743d92bf1Ff8e6Da28184f22d06a02834, calculateDuration(1696204800, commonStartTimestamp)); // 10/2/2023
         (amounts[4], beneficiaries[4], durations[4]) = (50000 * 1e18, 0x5ECE593a2D1724A58Ef179c75C9b4e93e4239E67, calculateDuration(1698796800, commonStartTimestamp)); // 11/1/2023
@@ -165,14 +165,14 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         (amounts[6], beneficiaries[6], durations[6]) = (20000 * 1e18, 0x04284c8406f1E9c3FF852EE333f8AC69f24A3D3f, calculateDuration(1712016000, commonStartTimestamp)); // 4/2/2024
         (amounts[7], beneficiaries[7], durations[7]) = (1250 * 1e18, 0xa3cB7E901d10A25bf66B0060013845A26361c04f, calculateDuration(1693267200, commonStartTimestamp)); // 8/29/2023
         (amounts[8], beneficiaries[8], durations[8]) = (3750 * 1e18, 0xeabcd9895f21e3ca87e4d96a84d69fd43d879a7b, calculateDuration(1693267200, commonStartTimestamp)); // 8/29/2023
-        (amounts[9], beneficiaries[9], durations[9]) = (3750 * 1e18, address(3), calculateDuration(1693872000, commonStartTimestamp)); // 9/5/2023
+        (amounts[9], beneficiaries[9], durations[9]) = (3750 * 1e18, address(2), calculateDuration(1693872000, commonStartTimestamp)); // 9/5/2023
         (amounts[10], beneficiaries[10], durations[10]) = (10000 * 1e18, 0x77cDC679E06039006e9dfC073EaF995D2208F7cC, calculateDuration(1707350400, commonStartTimestamp)); // 2/8/2024
         (amounts[11], beneficiaries[11], durations[11]) = (2000 * 1e18, 0x10cCD4136471c7c266a9Fc4569622989Fb4caB99, calculateDuration(1708905600, commonStartTimestamp)); // 2/26/2024
         (amounts[12], beneficiaries[12], durations[12]) = (2500 * 1e18, 0x05B478931F983FF0F7783A1cE4940f9a06E2888e, calculateDuration(1706054400, commonStartTimestamp)); // 1/24/2024
         (amounts[13], beneficiaries[13], durations[13]) = (2000 * 1e18, 0x51305Da5A03D71De4160b3a5219d1f2c4Cc50be5, calculateDuration(1707955200, commonStartTimestamp)); // 2/15/2024
         (amounts[14], beneficiaries[14], durations[14]) = (2000 * 1e18, 0xd689B3E677A5b48e4FD6967D9fEF1e9Bc66A20d0, calculateDuration(1706745600, commonStartTimestamp)); // 2/1/2024
         (amounts[15], beneficiaries[15], durations[15]) = (4000 * 1e18, 0xb1Ead992a109ef5720Cc61aaE15c2cD71d827f0c, calculateDuration(1714521600, commonStartTimestamp)); // 4/30/2024
-        (amounts[16], beneficiaries[16], durations[16]) = (50000 * 1e18, address(4), calculateDuration(1714521600, commonStartTimestamp)); // 5/1/2024
+        (amounts[16], beneficiaries[16], durations[16]) = (50000 * 1e18, 0x2E336836Cf0365E899bD511170A7fA57f05E2D9D, calculateDuration(1714521600, commonStartTimestamp)); // 5/1/2024
 
         for (uint i = 0; i < beneficiaries.length; i++) {
             startTimestamps[i] = commonStartTimestamp;
