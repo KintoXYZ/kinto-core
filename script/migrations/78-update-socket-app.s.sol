@@ -12,7 +12,7 @@ contract KintoMigration78DeployScript is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
         address parentContract = address(0x3e9727470C66B1e77034590926CDe0242B5A3dCc); // Socket-DL contract
-        address[] memory appContracts = new address[](28);
+        address[] memory appContracts = new address[](14);
 
         // controllers
         appContracts[0] = address(0xaBc64E84c653e0f077c0178E4b1fAC01Bfcc20b0); // DAI controller
@@ -29,22 +29,6 @@ contract KintoMigration78DeployScript is MigrationHelper {
         appContracts[11] = address(0xC7FCA8aB6D1E1142790454e7e5655d93c3b03ed6); // weETH controller
         appContracts[12] = address(0x24f287b474a05E48627846148cCdA3D05de03953); // ETHFI controller
         appContracts[13] = address(0xA2a13094baB725D6D9dd8b9B5c01F1a1bF67F986); // SolvBTC controller
-
-        // tokens
-        appContracts[14] = _getChainDeployment("DAI");
-        appContracts[15] = _getChainDeployment("wstETH");
-        appContracts[16] = _getChainDeployment("WETH");
-        appContracts[17] = _getChainDeployment("USDC");
-        appContracts[18] = _getChainDeployment("ENA");
-        appContracts[19] = _getChainDeployment("USDe");
-        appContracts[20] = _getChainDeployment("EIGEN");
-        appContracts[21] = _getChainDeployment("eETH");
-        appContracts[22] = _getChainDeployment("sDAI");
-        appContracts[23] = _getChainDeployment("sUSDe");
-        appContracts[24] = _getChainDeployment("wUSDM");
-        appContracts[25] = _getChainDeployment("weETH");
-        appContracts[26] = _getChainDeployment("ETHFI");
-        appContracts[27] = _getChainDeployment("SolvBTC");
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),

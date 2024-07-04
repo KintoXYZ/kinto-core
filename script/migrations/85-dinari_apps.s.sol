@@ -27,7 +27,7 @@ contract KintoMigration85DeployScript is MigrationHelper {
         console2.log("create apps");
 
         address parentContract = address(0xB2eEc63Cdc175d6d07B8f69804C0Ab5F66aCC3cb); // Transfer restrictor DShares
-        address[] memory appContracts = new address[](12);
+        address[] memory appContracts = new address[](11);
         address[] memory eoas = new address[](9);
 
         // dshares
@@ -44,7 +44,6 @@ contract KintoMigration85DeployScript is MigrationHelper {
         appContracts[8] = address(0x6F086dB0f6A621a915bC90295175065c9e5d9b8c); // USD+ Proxy
         appContracts[9] = address(0xeDA274898ED364Bd346fA74cf6eCAB4BF8f1665f); // UsdPlusMinte
         appContracts[10] = address(0x931C5dC9eA13b0F6B4768a98AFfEA773b888e978); // USDPlus Redeeemer
-        appContracts[11] = address(0x05DC0010C9902EcF6CBc921c6A4bd971c69E5A2E); // USDC
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),
@@ -86,7 +85,6 @@ contract KintoMigration85DeployScript is MigrationHelper {
         appContracts[8] = address(0x0a511eC63c836037F0A2CcC0A81984247E27783b); // USD+ Proxy
         appContracts[9] = address(0xa7D259925f951b674bCDbcF7a63Ab2f5923483dB); // USD+ minter
         appContracts[10] = address(0x2eeBEa5eb4a0feA2ec20FD48A2289D87E2882C71); // USD+ redeemer
-        appContracts[11] = address(0x90AB5E52Dfcce749CA062f4e04292fd8a67E86b3); // Mock USDC
 
         // eoas
         eoas[0] = address(0x09E365aCDB0d936DD250351aD0E7de3Dad8706E5); // Treasury
