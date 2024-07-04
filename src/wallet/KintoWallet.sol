@@ -454,7 +454,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _executeInner(address dest, uint256 value, bytes calldata func, address lastAddress) internal {
         // if target is a contract, check if it's whitelisted
         address sponsor = appRegistry.getSponsor(lastAddress);
-        bool validChild = dest == lastAddress || appRegistry.isSponsored(dest, sponsor);
+        bool validChild = dest == lastAddress || appRegistry.isSponsored(sponsor, dest);
         bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
         bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
         if (isNotAppSponsored && isNotSystemApproved) {
@@ -489,7 +489,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV25 is KintoWallet {
+contract KintoWalletV26 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

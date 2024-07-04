@@ -20,7 +20,7 @@ contract KintoMigration87DeployScript is MigrationHelper {
                 _getChainDeployment("KintoAppRegistry")
             )
         );
-        _deployImplementationAndUpgrade("KintoWallet", "V25", bytecode);
+        _deployImplementationAndUpgrade("KintoWallet", "V26", bytecode);
 
         bytecode = abi.encodePacked(
             type(KintoAppRegistryV7).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory"))
