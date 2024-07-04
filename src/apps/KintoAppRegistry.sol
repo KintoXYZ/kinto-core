@@ -170,7 +170,7 @@ contract KintoAppRegistry is
         override
     {
         if (_contracts.length != _flags.length) revert LengthMismatch();
-        if (_appMetadata[_app].tokenId == 0 || msg.sender != ownerOf(_appMetadata[_app].tokenId)) {
+        if (_appMetadata[_app].tokenId == 0 || (msg.sender != ownerOf(_appMetadata[_app].tokenId) && msg.sender != owner())) {
             revert InvalidSponsorSetter();
         }
         for (uint256 i = 0; i < _contracts.length; i++) {

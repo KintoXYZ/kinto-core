@@ -291,6 +291,16 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         }
         _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
     }
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address to) internal {
+        address[] memory tos = new address[](selectorAndParams.length);
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = deployerPrivateKey;
+        privateKeys[1] = hardwareWalletType;
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            tos[i] = to;
+        }
+        _handleOpsBatch(selectorAndParams, tos, address(0), privateKeys);
+    }
 
     // @notice handles ops with multiple ops and destinations
     // @dev uses a sponsorPaymaster
@@ -317,6 +327,29 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         vm.broadcast(deployerPrivateKey);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(signerPk)));
     }
+
+    function _handleOpsBatch(
+        bytes[] memory selectorAndParams,
+        address[] memory tos,
+        address sponsorPaymaster,
+        uint256[] memory privateKeys
+    ) internal {
+        require(selectorAndParams.length == tos.length, "selectorAndParams and tos mismatch");
+        address payable from = payable(kintoAdminWallet);
+
+        UserOperation[] memory userOps = new UserOperation[](selectorAndParams.length);
+        uint256 nonce = IKintoWallet(from).getNonce();
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            userOps[i] = _createUserOperation(
+                block.chainid, from, tos[i], 0, nonce, privateKeys, selectorAndParams[i], sponsorPaymaster
+            );
+            nonce++;
+        }
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
+    }
+
+
 
     function _fundPaymaster(address proxy, uint256 signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
