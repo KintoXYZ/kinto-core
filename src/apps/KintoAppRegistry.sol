@@ -275,11 +275,6 @@ contract KintoAppRegistry is
         tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
 
-        // Cleanup old childToParentContract
-        for (uint256 i = 0; i < appContracts.length; i++) {
-            childToParentContract[appContracts[i]] = address(0);
-        }
-
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
             childToParentContract[appContracts[i]] = parentContract;
