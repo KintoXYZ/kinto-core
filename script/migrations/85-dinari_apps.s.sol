@@ -18,7 +18,7 @@ contract KintoMigration85DeployScript is MigrationHelper {
 
         console2.log("wallet factory address", _getChainDeployment("KintoWalletFactory"));
         bytes memory bytecode = abi.encodePacked(
-            type(KintoAppRegistryV6).creationCode, abi.encode(address(_getChainDeployment("KintoWalletFactory")))
+            type(KintoAppRegistry).creationCode, abi.encode(address(_getChainDeployment("KintoWalletFactory")))
         );
 
         _deployImplementationAndUpgrade("KintoAppRegistry", "V6", bytecode);
