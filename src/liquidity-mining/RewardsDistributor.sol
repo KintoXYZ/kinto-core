@@ -16,6 +16,7 @@ import "forge-std/console2.sol";
 /**
  * @title Rewards Distributor
  * @notice Distributes rewards using a Merkle tree for verification.
+ * @dev This contract handles the distribution of Kinto tokens as rewards and manages Engen token conversions.
  */
 contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
@@ -321,6 +322,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         return getTotalLimit(block.timestamp);
     }
 
+    /**
+     * @notice Calculates the total rewards available at a specific time.
+     * @param time The time at which to calculate the rewards.
+     * @return The total rewards available.
+     */
     function getRewards(uint256 time) public view returns (uint256) {
         if (time < startTime) {
             return 0;
@@ -356,12 +362,13 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     }
 
     /**
-     * @notice
-     * @return
+     * @notice Calculates the rewards accrued between two time points.
+     * @param fromTime The starting time for the calculation.
+     * @param toTime The ending time for the calculation.
+     * @return The rewards accrued between fromTime and toTime.
      */
     function getRewards(uint256 fromTime, uint256 toTime) public view returns (uint256) {
-        console2.log("getTotalLimit(fromTime):", getTotalLimit(fromTime));
-        return getTotalLimit(toTime) - getTotalLimit(fromTime);
+        return getRewards(toTime) - getRewards(fromTime);
     }
 
     /**

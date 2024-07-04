@@ -291,6 +291,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         }
         _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
     }
+
     function _handleOpsBatch(bytes[] memory selectorAndParams, address to) internal {
         address[] memory tos = new address[](selectorAndParams.length);
         uint256[] memory privateKeys = new uint256[](2);
@@ -348,8 +349,6 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         vm.broadcast(deployerPrivateKey);
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
     }
-
-
 
     function _fundPaymaster(address proxy, uint256 signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));

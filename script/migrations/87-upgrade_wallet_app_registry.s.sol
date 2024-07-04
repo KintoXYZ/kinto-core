@@ -30,26 +30,53 @@ contract KintoMigration87DeployScript is MigrationHelper {
         // Cleanup tokens
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         bytes[] memory data = new bytes[](15);
-        data[0] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("DAI"), address(0));
-        data[1] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("wstETH"), address(0));
-        data[2] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("WETH"), address(0));
-        data[3] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDC"), address(0));
-        data[4] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("ENA"), address(0));
-        data[5] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDe"), address(0));
-        data[6] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("EIGEN"), address(0));
-        data[7] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("eETH"), address(0));
-        data[8] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("sDAI"), address(0));
-        data[9] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("sUSDe"), address(0));
-        data[10] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("wUSDM"), address(0));
-        data[11] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("weETH"), address(0));
-        data[12] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("ETHFI"), address(0));
-        data[13] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("SolvBTC"), address(0));
-        data[14] = abi.encodeWithSelector(KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDC"), address(0));
-
-        _handleOpsBatch(
-            data,
-            _getChainDeployment("KintoAppRegistry")
+        data[0] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("DAI"), address(0)
         );
+        data[1] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("wstETH"), address(0)
+        );
+        data[2] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("WETH"), address(0)
+        );
+        data[3] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDC"), address(0)
+        );
+        data[4] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("ENA"), address(0)
+        );
+        data[5] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDe"), address(0)
+        );
+        data[6] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("EIGEN"), address(0)
+        );
+        data[7] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("eETH"), address(0)
+        );
+        data[8] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("sDAI"), address(0)
+        );
+        data[9] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("sUSDe"), address(0)
+        );
+        data[10] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("wUSDM"), address(0)
+        );
+        data[11] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("weETH"), address(0)
+        );
+        data[12] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("ETHFI"), address(0)
+        );
+        data[13] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("SolvBTC"), address(0)
+        );
+        data[14] = abi.encodeWithSelector(
+            KintoAppRegistry.overrideChildToParentContract.selector, _getChainDeployment("USDC"), address(0)
+        );
+
+        _handleOpsBatch(data, _getChainDeployment("KintoAppRegistry"));
         assertEq(kintoAppRegistry.childToParentContract(_getChainDeployment("USDC")), address(0));
         // setup socket sponsored tokens
         address[] memory tokens = new address[](14);
@@ -75,7 +102,12 @@ contract KintoMigration87DeployScript is MigrationHelper {
         }
 
         _handleOps(
-            abi.encodeWithSelector(KintoAppRegistry.setSponsoredContracts.selector, 0x3e9727470C66B1e77034590926CDe0242B5A3dCc, tokens, flags),
+            abi.encodeWithSelector(
+                KintoAppRegistry.setSponsoredContracts.selector,
+                0x3e9727470C66B1e77034590926CDe0242B5A3dCc,
+                tokens,
+                flags
+            ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
@@ -130,7 +162,12 @@ contract KintoMigration87DeployScript is MigrationHelper {
         dinariFlags[0] = true;
 
         _handleOps(
-            abi.encodeWithSelector(KintoAppRegistry.setSponsoredContracts.selector, 0xB2eEc63Cdc175d6d07B8f69804C0Ab5F66aCC3cb, dinariTokens, dinariFlags),
+            abi.encodeWithSelector(
+                KintoAppRegistry.setSponsoredContracts.selector,
+                0xB2eEc63Cdc175d6d07B8f69804C0Ab5F66aCC3cb,
+                dinariTokens,
+                dinariFlags
+            ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
@@ -142,7 +179,12 @@ contract KintoMigration87DeployScript is MigrationHelper {
         dinariTokens[0] = 0x90AB5E52Dfcce749CA062f4e04292fd8a67E86b3;
 
         _handleOps(
-            abi.encodeWithSelector(KintoAppRegistry.setSponsoredContracts.selector, 0xF34f9C994E28254334C83AcE353d814E5fB90815, dinariTokens, dinariFlags),
+            abi.encodeWithSelector(
+                KintoAppRegistry.setSponsoredContracts.selector,
+                0xF34f9C994E28254334C83AcE353d814E5fB90815,
+                dinariTokens,
+                dinariFlags
+            ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
         assertEq(
