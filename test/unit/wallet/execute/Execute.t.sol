@@ -3,6 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core-test/SharedSetup.t.sol";
+import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 
 contract ExecuteTest is SharedSetup {
     function testExecute_WhenPaymaster() public {
@@ -107,5 +108,54 @@ contract ExecuteTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
         assertEq(counter.count(), 0);
+    }
+
+    function testExecute_WhenAppSponsor() public {
+        // remove any balance from the wallet
+        vm.deal(address(_kintoWallet), 0);
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        // execute the transactions via the entry point
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(counter.count(), 1);
+    }
+
+    function testExecute_RevertWhenNoSponsor() public {
+        // remove any balance from the wallet
+        vm.deal(address(_kintoWallet), 0);
+
+        Counter other = new Counter();
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(other),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEntryPoint.FailedOpWithRevert.selector,
+                uint256(0),
+                "AA33 reverted",
+                abi.encodePacked(ISponsorPaymaster.DepositTooLow.selector)
+            )
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+
+        assertEq(other.count(), 0);
     }
 }

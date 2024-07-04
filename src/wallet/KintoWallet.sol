@@ -106,7 +106,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        _executeInner(dest, value, func);
+        _executeInner(dest, value, func, dest);
         // If can transact, cancel recovery
         inRecovery = 0;
     }
@@ -121,7 +121,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _requireFromEntryPoint();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
         for (uint256 i = 0; i < dest.length; i++) {
-            _executeInner(dest[i], values[i], func[i]);
+            _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
         }
         // if can transact, cancel recovery
         inRecovery = 0;
@@ -204,7 +204,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function setAppKey(address app, address signer) public override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
         if (app == address(0)) revert InvalidApp();
-        if (!appWhitelist[app]) revert AppNotWhitelisted();
+        if (!appWhitelist[app]) revert AppNotWhitelisted(app, address(0));
         if (appSigner[app] == signer) revert InvalidSigner();
         appSigner[app] = signer;
         emit AppKeyCreated(app, signer);
@@ -341,7 +341,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is true, ensure its rules are respected (no wallet calls are allowed and all targets are sponsored or child)
         if (appKey) {
             for (uint256 i = 0; i < targets.length; i++) {
-                if (targets[i] == address(this) || !_isSponsoredOrChild(sponsor, targets[i])) {
+                if (targets[i] == address(this) || !appRegistry.isSponsored(sponsor, targets[i])) {
                     return false;
                 }
             }
@@ -353,16 +353,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                     if (walletCalls > WALLET_TARGET_LIMIT) {
                         return false;
                     }
-                } else if (!_isSponsoredOrChild(sponsor, targets[i])) {
+                } else if (!appRegistry.isSponsored(sponsor, targets[i])) {
                     return false;
                 }
             }
         }
         return true;
-    }
-
-    function _isSponsoredOrChild(address sponsor, address target) private view returns (bool) {
-        return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
     }
 
     // @notice ensures signer has signed the hash
@@ -455,11 +451,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
     }
 
-    function _executeInner(address dest, uint256 value, bytes calldata func) internal {
+    function _executeInner(address dest, uint256 value, bytes calldata func, address lastAddress) internal {
         // if target is a contract, check if it's whitelisted
-        address sponsor = appRegistry.getSponsor(dest);
-        if (!appWhitelist[sponsor] && dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR) {
-            revert AppNotWhitelisted();
+        address sponsor = appRegistry.getSponsor(lastAddress);
+        bool validChild = dest == lastAddress || appRegistry.isSponsored(dest, lastAddress);
+        bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
+        bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
+        if (isNotAppSponsored && isNotSystemApproved) {
+            revert AppNotWhitelisted(sponsor, dest);
         }
 
         dest.functionCallWithValue(func, value);
@@ -490,7 +489,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV23 is KintoWallet {
+contract KintoWalletV24 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

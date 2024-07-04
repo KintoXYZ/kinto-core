@@ -134,7 +134,7 @@ contract ExecuteBatchTest is SharedSetup {
         assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
     }
 
-    function testExecuteBatch_RevertWhen_LenghtMismatch() public {
+    function testExecuteBatch_RevertWhen_LengthMismatch() public {
         // remove app from whitelist
         whitelistApp(address(counter), false);
 
@@ -165,7 +165,7 @@ contract ExecuteBatchTest is SharedSetup {
         assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
     }
 
-    function testExecuteBatch_RevertWhen_LenghtMismatch2() public {
+    function testExecuteBatch_RevertWhen_LengthMismatch2() public {
         // remove app from whitelist
         whitelistApp(address(counter), false);
 
