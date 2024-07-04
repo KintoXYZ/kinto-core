@@ -222,7 +222,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isSponsored(parentContract, address(8)), true);
     }
 
-    function testRegisterAppWithSameChildDoesNotOverrideChildToParent() public {
+    function testRegisterApp_RevertWithSameChildDoesNotOverrideChildToParent() public {
         string memory name = "app";
         address parentContract = address(123);
 
@@ -248,6 +248,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         vm.prank(_user);
+        vm.expectRevert(IKintoAppRegistry.ChildAlreadyRegistered.selector);
         _kintoAppRegistry.registerApp(
             "test 5",
             address(2),
@@ -255,10 +256,6 @@ contract KintoAppRegistryTest is SharedSetup {
             [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
             new address[](0)
         );
-
-        IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(address(2));
-        assertEq(metadata.name, "test 5");
-        assertEq(_kintoAppRegistry.getSponsor(appContracts[0]), parentContract);
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {

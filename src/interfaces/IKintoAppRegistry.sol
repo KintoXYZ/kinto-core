@@ -10,6 +10,7 @@ interface IKintoAppRegistry {
     error KYCRequired(); // KYC Required
     error AlreadyRegistered(); // App already registered
     error ParentAlreadyChild(); // Parent contract is already registered as a child
+    error ChildAlreadyRegistered(); // Children already registered
     error CannotRegisterWallet(); // Wallets can not be registered
     error OnlyAppDeveloper(); // Only app developer can update metadata
     error LengthMismatch();
@@ -28,6 +29,7 @@ interface IKintoAppRegistry {
         uint256 gasLimitCost; // in eth
         string name;
         address[] devEOAs;
+        address[] appContracts;
     }
 
     /* ============ State Change ============ */

@@ -341,7 +341,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         // if app key is true, ensure its rules are respected (no wallet calls are allowed and all targets are sponsored or child)
         if (appKey) {
             for (uint256 i = 0; i < targets.length; i++) {
-                if (targets[i] == address(this) || !_isSponsoredOrChild(sponsor, targets[i])) {
+                if (targets[i] == address(this) || !appRegistry.isSponsored(sponsor, targets[i])) {
                     return false;
                 }
             }
@@ -353,16 +353,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                     if (walletCalls > WALLET_TARGET_LIMIT) {
                         return false;
                     }
-                } else if (!_isSponsoredOrChild(sponsor, targets[i])) {
+                } else if (!appRegistry.isSponsored(sponsor, targets[i])) {
                     return false;
                 }
             }
         }
         return true;
-    }
-
-    function _isSponsoredOrChild(address sponsor, address target) private view returns (bool) {
-        return appRegistry.isSponsored(sponsor, target) || appRegistry.childToParentContract(target) == sponsor;
     }
 
     // @notice ensures signer has signed the hash

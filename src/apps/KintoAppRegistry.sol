@@ -270,6 +270,18 @@ contract KintoAppRegistry is
         uint256[4] calldata appLimits,
         address[] calldata devEOAs
     ) internal {
+        // Cleanup old devEOAs
+        address[] memory oldArray = _appMetadata[parentContract].devEOAs;
+        for (uint256 i = 0; i < oldArray.length; i++) {
+            eoaToApp[oldArray[i]] = address(0);
+        }
+
+        // Cleanup old appContracts
+        oldArray = _appMetadata[parentContract].appContracts;
+        for (uint256 i = 0; i < oldArray.length; i++) {
+            childToParentContract[oldArray[i]] = address(0);
+        }
+
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             tokenId: tokenId,
             name: _name,
@@ -278,28 +290,18 @@ contract KintoAppRegistry is
             rateLimitNumber: appLimits[1],
             gasLimitPeriod: appLimits[2],
             gasLimitCost: appLimits[3],
-            devEOAs: devEOAs
+            devEOAs: devEOAs,
+            appContracts: appContracts
         });
 
         tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
 
-        // Sets sponsored contracts
-        for (uint256 i = 0; i < appContracts.length; i++) {
-            _sponsoredContracts[parentContract][appContracts[i]] = true;
-        }
-
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
-            if (childToParentContract[appContracts[i]] == address(0)) {
-                childToParentContract[appContracts[i]] = parentContract;
-            }
-        }
-
-        // Cleanup old devEOAs
-        for (uint256 i = 0; i < metadata.devEOAs.length; i++) {
-            eoaToApp[metadata.devEOAs[i]] = address(0);
+            if (childToParentContract[appContracts[i]] != address(0)) revert ChildAlreadyRegistered();
+            childToParentContract[appContracts[i]] = parentContract;
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {
