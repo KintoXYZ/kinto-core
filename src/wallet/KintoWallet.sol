@@ -204,7 +204,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function setAppKey(address app, address signer) public override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
         if (app == address(0)) revert InvalidApp();
-        if (!appWhitelist[app]) revert AppNotWhitelisted();
+        if (!appWhitelist[app]) revert AppNotWhitelisted(app, address(0));
         if (appSigner[app] == signer) revert InvalidSigner();
         appSigner[app] = signer;
         emit AppKeyCreated(app, signer);
@@ -458,7 +458,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
         bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
         if (isNotAppSponsored && isNotSystemApproved) {
-            revert AppNotWhitelisted();
+            revert AppNotWhitelisted(sponsor, dest);
         }
 
         dest.functionCallWithValue(func, value);

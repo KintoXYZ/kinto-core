@@ -13,7 +13,7 @@ interface IKintoWallet {
     error InvalidPolicy(uint8 policy);
     error InvalidSigner();
     error InvalidApp();
-    error AppNotWhitelisted();
+    error AppNotWhitelisted(address sponsor, address addr);
     error RecoveryNotStarted();
     error RecoveryTimeNotElapsed();
     error OwnerKYCMustBeBurned();
