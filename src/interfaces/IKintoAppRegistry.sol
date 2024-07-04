@@ -52,6 +52,8 @@ interface IKintoAppRegistry {
         address[] calldata devEOAs
     ) external;
 
+    function overrideChildToParentContract(address child, address parent) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);

@@ -251,6 +251,15 @@ contract KintoAppRegistry is
         return _contract;
     }
 
+    /**
+     * @dev Allows the owner to override the parent contract of a child contract
+     * @param child The address of the child contract
+     * @param parent The address of the parent contract
+     */
+    function overrideChildToParentContract(address child, address parent) external override onlyOwner {
+        childToParentContract[child] = parent;
+    }
+
     /* =========== Internal methods =========== */
 
     function _updateMetadata(
@@ -275,9 +284,17 @@ contract KintoAppRegistry is
         tokenIdToApp[tokenId] = parentContract;
         _appMetadata[parentContract] = metadata;
 
+        // Sets sponsored contracts
+        for (uint256 i = 0; i < appContracts.length; i++) {
+            _sponsoredContracts[parentContract][appContracts[i]] = true;
+        }
+
+        // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
-            childToParentContract[appContracts[i]] = parentContract;
+            if (childToParentContract[appContracts[i]] == address(0)) {
+                childToParentContract[appContracts[i]] = parentContract;
+            }
         }
 
         // Cleanup old devEOAs
