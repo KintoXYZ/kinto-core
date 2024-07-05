@@ -10,7 +10,7 @@ import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
 import "forge-std/Script.sol";
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
 import "forge-std/Test.sol";
 
 contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelper, Test {
@@ -21,14 +21,31 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         }
         // Set the environment variable
         vm.setEnv("CHAIN", "mainnet");
-        vm.setEnv("WALLET_TYPE", "local");
+        vm.setEnv("WALLET_TYPE", "ledger");
+        vm.setEnv("MNEMONIC_INDEX", "0xc1f4D15C16A1f3555E0a5F7AeFD1e17AD4aaf40B");
+        // address panamaSafe = 0x4108162ADC07c627eb575c6e54a00F898c7b3e18;
+        // bytes memory data = abi.encodeWithSignature(
+        //     "mint(address,uint256)",
+        //     _getChainDeployment("VestingContract", 1),
+        //     276_000 * 1e18
+        // );
+        // // Add the encoded transaction to the batch
+        // addToBatch(_getChainDeployment("KintoToken", 1), data);
+        // executeBatch(panamaSafe, true);
         address mamoriSafe = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
+        KintoToken kintoToken = KintoToken(_getChainDeployment("KintoToken", 1));
+        console2.log(kintoToken.balanceOf(_getChainDeployment("VestingContract", 1)));
         _addInvestors();
         _addTeamAdvisors();
-        executeBatch(mamoriSafe, false);
+        executeBatch(mamoriSafe, true);
     }
 
-    function _addBeneficiaries(address[] memory beneficiaries, uint256[] memory grantAmounts, uint256[] memory startTimestamps, uint256[] memory durationSeconds) private {
+    function _addBeneficiaries(
+        address[] memory beneficiaries,
+        uint256[] memory grantAmounts,
+        uint256[] memory startTimestamps,
+        uint256[] memory durationSeconds
+    ) private {
         // Encode the function call
         bytes memory data = abi.encodeWithSignature(
             "addBeneficiaries(address[],uint256[],uint256[],uint256[])",
@@ -44,8 +61,8 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
     // 1 year lock from July1st 2024
     function _addInvestors() private {
         // Data from the spreadsheet
-        uint256[] memory amounts = new uint256[](39);
-        address[] memory beneficiaries = new address[](39);
+        uint256[] memory amounts = new uint256[](41);
+        address[] memory beneficiaries = new address[](41);
 
         // Set start timestamp to July 1st 00:00 UTC 2024
         uint256 startTimestamp = 1719792000; // Unix timestamp for July 1, 2024 00:00:00 UTC
@@ -57,13 +74,13 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         uint256[] memory startTimestamps = new uint256[](beneficiaries.length);
         uint256[] memory durations = new uint256[](beneficiaries.length);
 
-        for (uint i = 0; i < beneficiaries.length; i++) {
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
             startTimestamps[i] = startTimestamp;
             durations[i] = durationSeconds;
         }
 
         // Populate arrays with data (all entries, amounts multiplied by 1e18)
-        amounts[0] = 750000 * 1e18;
+        amounts[0] = 250000 * 1e18;
         amounts[1] = 2500 * 1e18;
         amounts[2] = 6250 * 1e18;
         amounts[3] = 25000 * 1e18;
@@ -102,6 +119,8 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         amounts[36] = 165000 * 1e18; //aj
         amounts[37] = 165000 * 1e18; //ak
         amounts[38] = 5000 * 1e18; //fede
+        amounts[39] = 250000 * 1e18; //kyber 2
+        amounts[40] = 250000 * 1e18; // kyber 3
 
         beneficiaries[0] = 0xb59A51D0eEa34F3903785fb2e2bab4F752D18008;
         beneficiaries[1] = 0xf0FD3082F54AddD6ef234aF8D3Ffd3F3c66942D0;
@@ -115,7 +134,7 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         beneficiaries[9] = 0x5d2815E07Ed95Aea5e4E154C13e0BF89815167a3;
         beneficiaries[10] = 0x346112BCb0819A0fe2a6f1D16217ADE6Ceb49b36;
         beneficiaries[11] = 0xDB06bdBdE4470B3350524CE3FAf7e36e487b53A4;
-        beneficiaries[12] = address(1);//set to dummy
+        beneficiaries[12] = address(1); //set to dummy
         beneficiaries[13] = 0xE08CB49c6D533E2787EC0ff35cd9Eb0ADAD60cbB;
         beneficiaries[14] = 0x6c06923E2B909f3D942dEFd6c4276b53C8B4E462;
         beneficiaries[15] = 0xbB3Cb5Ffc56Ad59cb192333B63C0cfFd745E7D49;
@@ -142,12 +161,21 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         beneficiaries[36] = 0x6B1ee65d342067918cC009f7CB933304a280a827;
         beneficiaries[37] = 0x2A6325DB9c9294aDef1123FA85AFdb10f0aba6Dd;
         beneficiaries[38] = 0x2708A58F4Ab71cFD296C8A8d983831e6DffadD67;
+        beneficiaries[39] = 0x14951816f149918a5FEC806dEFA9Be550Ef3ecf3;
+        beneficiaries[40] = 0xC0568B93a872c29a587c200b160E1d4E851b51C5;
+
+        // log total amount
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            totalAmount += amounts[i];
+        }
+        console2.log("Total amount to be vested by investors: ", totalAmount);
 
         _addBeneficiaries(beneficiaries, amounts, startTimestamps, durations);
     }
 
     function _addTeamAdvisors() private {
-       uint256[] memory amounts = new uint256[](17);
+        uint256[] memory amounts = new uint256[](17);
         address[] memory beneficiaries = new address[](17);
         uint256[] memory startTimestamps = new uint256[](17);
         uint256[] memory durations = new uint256[](17);
@@ -156,31 +184,93 @@ contract DeployVestingTokensScript is BatchScript, ArtifactsReader, DeployerHelp
         uint256 commonStartTimestamp = 1719792000;
 
         // Populate arrays with data
-        (amounts[0], beneficiaries[0], durations[0]) = (579500 * 1e18, 0x848003ba498c36AdF7232b1f1e8c2AbF6d31B017, calculateDuration(1688169600, commonStartTimestamp)); // 7/1/2023
-        (amounts[1], beneficiaries[1], durations[1]) = (579500 * 1e18, 0x0e157F26E66cA4dB3aE6f81393e581a8880ADeb4, calculateDuration(1688169600, commonStartTimestamp)); // 7/1/2023
-        (amounts[2], beneficiaries[2], durations[2]) = (150000 * 1e18, 0xb3A91e43Fc97424033fA71fd3a63ecf101424538, calculateDuration(1714521600, commonStartTimestamp)); // 5/1/2024
-        (amounts[3], beneficiaries[3], durations[3]) = (15000 * 1e18, 0x7D20E87743d92bf1Ff8e6Da28184f22d06a02834, calculateDuration(1696204800, commonStartTimestamp)); // 10/2/2023
-        (amounts[4], beneficiaries[4], durations[4]) = (50000 * 1e18, 0x5ECE593a2D1724A58Ef179c75C9b4e93e4239E67, calculateDuration(1698796800, commonStartTimestamp)); // 11/1/2023
-        (amounts[5], beneficiaries[5], durations[5]) = (30000 * 1e18, 0x8b8a9bb77206977742a5bB2fd136e9F580395910, calculateDuration(1711065600, commonStartTimestamp)); // 3/21/2024
-        (amounts[6], beneficiaries[6], durations[6]) = (20000 * 1e18, 0x04284c8406f1E9c3FF852EE333f8AC69f24A3D3f, calculateDuration(1712016000, commonStartTimestamp)); // 4/2/2024
-        (amounts[7], beneficiaries[7], durations[7]) = (1250 * 1e18, 0xa3cB7E901d10A25bf66B0060013845A26361c04f, calculateDuration(1693267200, commonStartTimestamp)); // 8/29/2023
-        (amounts[8], beneficiaries[8], durations[8]) = (3750 * 1e18, 0xeabcd9895f21e3ca87e4d96a84d69fd43d879a7b, calculateDuration(1693267200, commonStartTimestamp)); // 8/29/2023
-        (amounts[9], beneficiaries[9], durations[9]) = (3750 * 1e18, address(2), calculateDuration(1693872000, commonStartTimestamp)); // 9/5/2023
-        (amounts[10], beneficiaries[10], durations[10]) = (10000 * 1e18, 0x77cDC679E06039006e9dfC073EaF995D2208F7cC, calculateDuration(1707350400, commonStartTimestamp)); // 2/8/2024
-        (amounts[11], beneficiaries[11], durations[11]) = (2000 * 1e18, 0x10cCD4136471c7c266a9Fc4569622989Fb4caB99, calculateDuration(1708905600, commonStartTimestamp)); // 2/26/2024
-        (amounts[12], beneficiaries[12], durations[12]) = (2500 * 1e18, 0x05B478931F983FF0F7783A1cE4940f9a06E2888e, calculateDuration(1706054400, commonStartTimestamp)); // 1/24/2024
-        (amounts[13], beneficiaries[13], durations[13]) = (2000 * 1e18, 0x51305Da5A03D71De4160b3a5219d1f2c4Cc50be5, calculateDuration(1707955200, commonStartTimestamp)); // 2/15/2024
-        (amounts[14], beneficiaries[14], durations[14]) = (2000 * 1e18, 0xd689B3E677A5b48e4FD6967D9fEF1e9Bc66A20d0, calculateDuration(1706745600, commonStartTimestamp)); // 2/1/2024
-        (amounts[15], beneficiaries[15], durations[15]) = (4000 * 1e18, 0xb1Ead992a109ef5720Cc61aaE15c2cD71d827f0c, calculateDuration(1714521600, commonStartTimestamp)); // 4/30/2024
-        (amounts[16], beneficiaries[16], durations[16]) = (50000 * 1e18, 0x2E336836Cf0365E899bD511170A7fA57f05E2D9D, calculateDuration(1714521600, commonStartTimestamp)); // 5/1/2024
+        (amounts[0], beneficiaries[0], durations[0]) = (
+            579500 * 1e18,
+            0x848003ba498c36AdF7232b1f1e8c2AbF6d31B017,
+            calculateDuration(1688169600, commonStartTimestamp)
+        ); // 7/1/2023
+        (amounts[1], beneficiaries[1], durations[1]) = (
+            579500 * 1e18,
+            0x0e157F26E66cA4dB3aE6f81393e581a8880ADeb4,
+            calculateDuration(1688169600, commonStartTimestamp)
+        ); // 7/1/2023
+        (amounts[2], beneficiaries[2], durations[2]) = (
+            150000 * 1e18,
+            0xb3A91e43Fc97424033fA71fd3a63ecf101424538,
+            calculateDuration(1714521600, commonStartTimestamp)
+        ); // 5/1/2024
+        (amounts[3], beneficiaries[3], durations[3]) = (
+            15000 * 1e18,
+            0x7D20E87743d92bf1Ff8e6Da28184f22d06a02834,
+            calculateDuration(1696204800, commonStartTimestamp)
+        ); // 10/2/2023
+        (amounts[4], beneficiaries[4], durations[4]) = (
+            50000 * 1e18,
+            0x5ECE593a2D1724A58Ef179c75C9b4e93e4239E67,
+            calculateDuration(1698796800, commonStartTimestamp)
+        ); // 11/1/2023
+        (amounts[5], beneficiaries[5], durations[5]) = (
+            30000 * 1e18,
+            0x8b8a9bb77206977742a5bB2fd136e9F580395910,
+            calculateDuration(1711065600, commonStartTimestamp)
+        ); // 3/21/2024
+        (amounts[6], beneficiaries[6], durations[6]) = (
+            20000 * 1e18,
+            0x04284c8406f1E9c3FF852EE333f8AC69f24A3D3f,
+            calculateDuration(1712016000, commonStartTimestamp)
+        ); // 4/2/2024
+        (amounts[7], beneficiaries[7], durations[7]) = (
+            1250 * 1e18, 0xa3cB7E901d10A25bf66B0060013845A26361c04f, calculateDuration(1693267200, commonStartTimestamp)
+        ); // 8/29/2023
+        (amounts[8], beneficiaries[8], durations[8]) = (
+            3750 * 1e18, 0xeAbcD9895F21e3CA87e4D96A84D69fD43d879a7B, calculateDuration(1693267200, commonStartTimestamp)
+        ); // 8/29/2023
+        (amounts[9], beneficiaries[9], durations[9]) =
+            (3750 * 1e18, address(2), calculateDuration(1693872000, commonStartTimestamp)); // 9/5/2023
+        (amounts[10], beneficiaries[10], durations[10]) = (
+            10000 * 1e18,
+            0x77cDC679E06039006e9dfC073EaF995D2208F7cC,
+            calculateDuration(1707350400, commonStartTimestamp)
+        ); // 2/8/2024
+        (amounts[11], beneficiaries[11], durations[11]) = (
+            2000 * 1e18, 0x10cCD4136471c7c266a9Fc4569622989Fb4caB99, calculateDuration(1708905600, commonStartTimestamp)
+        ); // 2/26/2024
+        (amounts[12], beneficiaries[12], durations[12]) = (
+            2500 * 1e18, 0x05B478931F983FF0F7783A1cE4940f9a06E2888e, calculateDuration(1706054400, commonStartTimestamp)
+        ); // 1/24/2024
+        (amounts[13], beneficiaries[13], durations[13]) = (
+            2000 * 1e18, 0x51305Da5A03D71De4160b3a5219d1f2c4Cc50be5, calculateDuration(1707955200, commonStartTimestamp)
+        ); // 2/15/2024
+        (amounts[14], beneficiaries[14], durations[14]) = (
+            2000 * 1e18, 0xd689B3E677A5b48e4FD6967D9fEF1e9Bc66A20d0, calculateDuration(1706745600, commonStartTimestamp)
+        ); // 2/1/2024
+        (amounts[15], beneficiaries[15], durations[15]) = (
+            4000 * 1e18, 0xb1Ead992a109ef5720Cc61aaE15c2cD71d827f0c, calculateDuration(1714521600, commonStartTimestamp)
+        ); // 4/30/2024
+        (amounts[16], beneficiaries[16], durations[16]) = (
+            50000 * 1e18,
+            0x2E336836Cf0365E899bD511170A7fA57f05E2D9D,
+            calculateDuration(1714521600, commonStartTimestamp)
+        ); // 5/1/2024
 
-        for (uint i = 0; i < beneficiaries.length; i++) {
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
             startTimestamps[i] = commonStartTimestamp;
         }
+        // log total amount
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            totalAmount += amounts[i];
+        }
+        console2.log("Total amount to be vested by team: ", totalAmount);
+
         _addBeneficiaries(beneficiaries, amounts, startTimestamps, durations);
     }
 
-    function calculateDuration(uint256 originalStartTimestamp, uint256 newStartTimestamp) internal pure returns (uint256) {
+    function calculateDuration(uint256 originalStartTimestamp, uint256 newStartTimestamp)
+        internal
+        pure
+        returns (uint256)
+    {
         if (originalStartTimestamp >= newStartTimestamp) {
             return 4 * 365 days; // Full 4 years if original start is after or equal to new start
         }
