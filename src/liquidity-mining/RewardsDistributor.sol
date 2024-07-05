@@ -11,9 +11,12 @@ import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeabl
 import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title Rewards Distributor
  * @notice Distributes rewards using a Merkle tree for verification.
+ * @dev This contract handles the distribution of Kinto tokens as rewards and manages Engen token conversions.
  */
 contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
@@ -303,16 +306,34 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /* ============ View ============ */
 
     /**
+     * @notice Returns the total limit of tokens that can be distributed based on quarterly rewards at the specific time.
+     * @param time The time at which rewards are calculated.
+     * @return The total limit of tokens.
+     */
+    function getTotalLimit(uint256 time) public view returns (uint256) {
+        return getRewards(time) + bonusAmount;
+    }
+
+    /**
      * @notice Returns the total limit of tokens that can be distributed based on quarterly rewards.
      * @return The total limit of tokens.
      */
     function getTotalLimit() public view returns (uint256) {
-        if (block.timestamp < startTime) {
+        return getTotalLimit(block.timestamp);
+    }
+
+    /**
+     * @notice Calculates the total rewards available at a specific time.
+     * @param time The time at which to calculate the rewards.
+     * @return The total rewards available.
+     */
+    function getRewards(uint256 time) public view returns (uint256) {
+        if (time < startTime) {
             return 0;
         }
 
         // Calculate the number of seconds since the start of the program
-        uint256 elapsedTime = block.timestamp - startTime;
+        uint256 elapsedTime = time - startTime;
 
         // Calculate the current quarter based on the elapsed time
         uint256 currentQuarter = elapsedTime / (90 days); // Approximate each quarter as 90 days
@@ -337,10 +358,17 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
             totalLimit += totalTokens;
         }
 
-        // Add the bonus amount
-        totalLimit += bonusAmount;
-
         return totalLimit;
+    }
+
+    /**
+     * @notice Calculates the rewards accrued between two time points.
+     * @param fromTime The starting time for the calculation.
+     * @param toTime The ending time for the calculation.
+     * @return The rewards accrued between fromTime and toTime.
+     */
+    function getRewards(uint256 fromTime, uint256 toTime) public view returns (uint256) {
+        return getRewards(toTime) - getRewards(fromTime);
     }
 
     /**

@@ -415,4 +415,18 @@ contract RewardsDistributorTest is ForkTest {
         vm.warp(START_TIMESTAMP + (365 days) * 10);
         assertEq(distr.getTotalLimit(), 4_000_000 * 1e18);
     }
+
+    function testGetRewards() public {
+        assertEq(distributor.getRewards(0, START_TIMESTAMP), 0);
+        assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP), 0);
+        assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP + 24 * 3600), 2116402116402116444444); // 2116 for a day
+        assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP + 30 * 24 * 3600), 63492063492063493333333); // 63k for a first 30 days
+        assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP + 90 * 24 * 3600), 190476190476190480000000); // 190k for a first 90 days
+        assertEq(
+            distributor.getRewards(
+                START_TIMESTAMP + 10 * 90 * 24 * 3600, START_TIMESTAMP + 10 * 90 * 24 * 3600 + 30 * 24 * 3600
+            ),
+            38978619272429166666666
+        ); // 39k for a 30 days in 11'th quarter
+    }
 }

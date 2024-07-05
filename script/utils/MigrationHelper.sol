@@ -93,20 +93,29 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         return _deployImplementation(contractName, version, bytecode, bytes32(0));
     }
 
-    /// @notice deploys implementation contracts via factory from deployer address and upgrades them
-    /// @dev if contract is KintoWallet we call upgradeAllWalletImplementations
-    /// @dev if contract is allowed to receive EOA calls, we call upgradeTo directly. Otherwise, we use EntryPoint to upgrade
     function _deployImplementationAndUpgrade(string memory contractName, string memory version, bytes memory bytecode)
         internal
         returns (address impl)
     {
+        return _deployImplementationAndUpgrade(contractName, version, bytecode, bytes32(0));
+    }
+
+    /// @notice deploys implementation contracts via factory from deployer address and upgrades them
+    /// @dev if contract is KintoWallet we call upgradeAllWalletImplementations
+    /// @dev if contract is allowed to receive EOA calls, we call upgradeTo directly. Otherwise, we use EntryPoint to upgrade
+    function _deployImplementationAndUpgrade(
+        string memory contractName,
+        string memory version,
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal returns (address impl) {
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         address proxy = _getChainDeployment(contractName);
 
         if (!isWallet) require(proxy != address(0), "Need to execute main deploy script first");
 
         // (1). deploy new implementation via wallet factory
-        impl = _deployImplementation(contractName, version, bytecode);
+        impl = _deployImplementation(contractName, version, bytecode, salt);
         // (2). call upgradeTo to set new implementation
         if (isWallet) {
             _upgradeWallet(impl);
