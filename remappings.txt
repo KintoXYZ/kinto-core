@@ -1,5 +1,6 @@
 ds-test/=lib/forge-std/lib/ds-test/src/
 forge-std/=lib/forge-std/src/
+forge-safe/=lib/forge-safe/src/
 
 @kinto-core-script/=script/
 @kinto-core-test/=test/
