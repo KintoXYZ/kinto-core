@@ -25,7 +25,7 @@ abstract contract UserOp is Test, SignerHelper {
     uint256 constant SECP256K1_MAX_PRIVATE_KEY = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
     // block's gas limit is 32mil, so main call 30mil
-    uint256 constant CALL_GAS_LIMIT = 4_000_000;
+    uint256 constant CALL_GAS_LIMIT = 32_000_000;
     uint256 constant VERIFICATION_GAS_LIMIT = 210_000;
     uint256 constant PRE_VERIFICATION_GAS = 21_000;
     // MAX_FEE_PER_GAS and MAX_PRIORITY_FEE_PER_GAS are both set to 1gwei

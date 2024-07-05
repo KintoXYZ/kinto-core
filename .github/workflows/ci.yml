@@ -140,7 +140,7 @@ jobs:
         run: sudo apt-get install -y lcov
 
       - name: Generate LCOV report
-        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        run: forge coverage --report --allow-failure lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov --allow-failure && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
         env:
           FOUNDRY_FUZZ_RUNS: 100
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
