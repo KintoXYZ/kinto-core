@@ -19,7 +19,7 @@ contract UpgradeDistributorScript is MigrationHelper {
         // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
         // hardwareWalletType = 1;
 
-        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V3", bytecode);
+        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V3", bytecode, keccak256("V3"));
 
         RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
 
