@@ -770,7 +770,7 @@ contract ValidateSignatureTest is SharedSetup {
         owners[0] = _owner;
         owners[1] = _user;
         owners[2] = _user2;
-        resetSigners(owners, _kintoWallet.MINUS_ONE_SIGNER());
+        resetSigners(owners, _kintoWallet.TWO_SIGNERS());
 
         // create user op with owners 1 and 2 as signers
         privateKeys = new uint256[](2);

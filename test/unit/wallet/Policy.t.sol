@@ -160,7 +160,7 @@ contract ResetSignerTest is SharedSetup {
             address(_kintoWallet),
             nonce,
             privateKeys,
-            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.MINUS_ONE_SIGNER()),
+            abi.encodeWithSignature("resetSigners(address[],uint8)", owners, _kintoWallet.TWO_SIGNERS()),
             address(_paymaster)
         );
         UserOperation[] memory userOps = new UserOperation[](1);
@@ -168,7 +168,7 @@ contract ResetSignerTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.owners(1), _user);
         assertEq(_kintoWallet.owners(2), _user2);
-        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.MINUS_ONE_SIGNER());
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.TWO_SIGNERS());
         vm.stopPrank();
     }
 

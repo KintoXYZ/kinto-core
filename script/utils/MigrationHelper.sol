@@ -392,7 +392,6 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         return false;
     }
 
-
     /// @dev By calling upgrade again with the old implementation, we ensure
     /// that the new implementation is at least capable of upgrading itself to
     /// an old version, which is sufficient to fix any issues.

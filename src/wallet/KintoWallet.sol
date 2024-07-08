@@ -33,7 +33,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     uint8 public constant override MAX_SIGNERS = 3;
     uint8 public constant override SINGLE_SIGNER = 1;
-    uint8 public constant override MINUS_ONE_SIGNER = 2;
+    uint8 public constant override TWO_SIGNERS = 2;
     uint8 public constant override ALL_SIGNERS = 3;
     uint256 public constant override RECOVERY_TIME = 7 days;
     uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
@@ -381,7 +381,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             requiredSigners = owners.length;
         } else if (signerPolicy == SINGLE_SIGNER) {
             requiredSigners = 1;
-        } else if (signerPolicy == MINUS_ONE_SIGNER) {
+        } else if (signerPolicy == TWO_SIGNERS) {
             requiredSigners = 2;
         }
         if (signature.length != 65 * requiredSigners) return false;
@@ -410,9 +410,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function _setSignerPolicy(uint8 newPolicy) internal {
-        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) {
+            revert InvalidPolicy(newPolicy, owners.length);
+        }
         if (newPolicy != SINGLE_SIGNER && owners.length == 1) revert InvalidPolicy(newPolicy, owners.length);
-        if (newPolicy != MINUS_ONE_SIGNER && newPolicy != ALL_SIGNERS && owners.length >= 2) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy != TWO_SIGNERS && newPolicy != ALL_SIGNERS && owners.length >= 2) {
+            revert InvalidPolicy(newPolicy, owners.length);
+        }
 
         emit WalletPolicyChanged(newPolicy, signerPolicy);
         signerPolicy = newPolicy;
@@ -440,7 +444,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         owners = newSigners;
 
         // change policy, if needed
-        if(newPolicy != signerPolicy){
+        if (newPolicy != signerPolicy) {
             _setSignerPolicy(newPolicy);
         }
 

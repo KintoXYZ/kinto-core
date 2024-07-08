@@ -20,8 +20,8 @@ contract UpgradeWalletDeployScript is MigrationHelper {
             )
         );
 
-        replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
-        hardwareWalletType = 1;
+        // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
+        // hardwareWalletType = 1;
 
         address impl = _deployImplementationAndUpgrade("KintoWallet", "V27", bytecode);
 
@@ -33,11 +33,15 @@ contract UpgradeWalletDeployScript is MigrationHelper {
         signers[1] = IKintoWallet(kintoAdminWallet).owners(1);
         signers[2] = 0x08E674c4538caE03B6c05405881dDCd95DcaF5a8;
 
-        _handleOps(abi.encodeWithSelector(IKintoWallet.resetSigners.selector, signers, 2), kintoAdminWallet);
-
+        _handleOps(
+            abi.encodeWithSelector(
+                IKintoWallet.resetSigners.selector, signers, IKintoWallet(kintoAdminWallet).TWO_SIGNERS()
+            ),
+            kintoAdminWallet
+        );
 
         // Make sure we still can sign
-        _whitelistApp(_getChainDeployment('Counter'), true);
-        _handleOps(abi.encodeWithSignature("increment()"), _getChainDeployment('Counter'));
+        _whitelistApp(_getChainDeployment("Counter"), true);
+        _handleOps(abi.encodeWithSignature("increment()"), _getChainDeployment("Counter"));
     }
 }

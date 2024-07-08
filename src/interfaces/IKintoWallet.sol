@@ -85,7 +85,7 @@ interface IKintoWallet {
 
     function SINGLE_SIGNER() external view returns (uint8);
 
-    function MINUS_ONE_SIGNER() external view returns (uint8);
+    function TWO_SIGNERS() external view returns (uint8);
 
     function ALL_SIGNERS() external view returns (uint8);
 
