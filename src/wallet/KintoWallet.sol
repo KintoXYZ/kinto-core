@@ -31,7 +31,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     IKintoID public immutable override kintoID;
     IEntryPoint private immutable _entryPoint;
 
-    uint8 public constant override MAX_SIGNERS = 3;
+    uint8 public constant override MAX_SIGNERS = 4;
     uint8 public constant override SINGLE_SIGNER = 1;
     uint8 public constant override MINUS_ONE_SIGNER = 2;
     uint8 public constant override ALL_SIGNERS = 3;
