@@ -376,8 +376,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     // @notice ensures required signers have signed the hash
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (bool) {
         // calculate required signers
-        uint256 requiredSigners =
-            signerPolicy == ALL_SIGNERS ? owners.length : (signerPolicy == SINGLE_SIGNER ? 1 : owners.length - 1);
+        uint256 requiredSigners;
+        if (signerPolicy == ALL_SIGNERS) {
+            requiredSigners = owners.length;
+        } else if (signerPolicy == SINGLE_SIGNER) {
+            requiredSigners = 1;
+        } else if (signerPolicy == MINUS_ONE_SIGNER) {
+            requiredSigners = 2;
+        }
         if (signature.length != 65 * requiredSigners) return false;
 
         // check if all required signers have signed
@@ -404,18 +410,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function _setSignerPolicy(uint8 newPolicy) internal {
-        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) {
-            revert InvalidPolicy(newPolicy);
-        }
-        if (newPolicy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy(newPolicy);
+        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy != SINGLE_SIGNER && owners.length == 1) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy != MINUS_ONE_SIGNER && owners.length == 2) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy(newPolicy, owners.length);
+
         emit WalletPolicyChanged(newPolicy, signerPolicy);
         signerPolicy = newPolicy;
     }
 
     // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
     // Any "extra" owners won't be considered when validating the signature.
-    function _resetSigners(address[] calldata newSigners, uint8 _policy) internal {
-        if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded();
+    function _resetSigners(address[] calldata newSigners, uint8 newPolicy) internal {
+        if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded(newSigners.length);
         if (newSigners[0] == address(0) || !kintoID.isKYC(newSigners[0])) revert KYCRequired();
 
         // ensure no duplicate signers
@@ -430,12 +437,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             if (newSigners[i] == address(0)) revert InvalidSigner();
         }
 
+        // set new owners
         owners = newSigners;
 
-        // change policy if needed
-        if (_policy != SINGLE_SIGNER && newSigners.length == 1) revert InvalidSingleSignerPolicy();
-        if (_policy != signerPolicy) {
-            _setSignerPolicy(_policy);
+        // change policy, if needed
+        if(newPolicy != signerPolicy){
+            _setSignerPolicy(newPolicy);
         }
 
         emit SignersChanged(newSigners, owners);

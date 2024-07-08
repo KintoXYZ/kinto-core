@@ -10,7 +10,7 @@ interface IKintoWallet {
     /* ============ Errors ============ */
 
     error LengthMismatch();
-    error InvalidPolicy(uint8 policy);
+    error InvalidPolicy(uint8 newPolicy, uint256 newSigners);
     error InvalidSigner();
     error InvalidApp();
     error AppNotWhitelisted(address sponsor, address addr);
@@ -18,10 +18,9 @@ interface IKintoWallet {
     error RecoveryTimeNotElapsed();
     error OwnerKYCMustBeBurned();
     error InvalidRecoverer();
-    error MaxSignersExceeded();
+    error MaxSignersExceeded(uint256 newSigners);
     error KYCRequired();
     error DuplicateSigner();
-    error InvalidSingleSignerPolicy();
     error OnlySelf();
     error OnlyFactory();
     error EmptySigners();
