@@ -417,8 +417,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newPolicy == 0 || newPolicy > 4 || newPolicy == signerPolicy) {
             revert InvalidPolicy(newPolicy, owners.length);
         }
-        if (newPolicy != SINGLE_SIGNER && owners.length == 1) revert InvalidPolicy(newPolicy, owners.length);
-        if (newPolicy != TWO_SIGNERS && newPolicy != ALL_SIGNERS && owners.length >= 2) {
+        if (newPolicy != SINGLE_SIGNER && owners.length == 1) {
+            revert InvalidPolicy(newPolicy, owners.length);
+        }
+        if (newPolicy != MINUS_ONE_SIGNER && newPolicy != TWO_SIGNERS && newPolicy != ALL_SIGNERS && owners.length >= 2)
+        {
             revert InvalidPolicy(newPolicy, owners.length);
         }
 

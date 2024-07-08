@@ -80,6 +80,24 @@ contract ResetSignerTest is SharedSetup {
         assertEq(_kintoWallet.signerPolicy(), _kintoWallet.ALL_SIGNERS());
     }
 
+    function testResetSigners_WhenChangingPolicy_WhenMinusOneSigner() public {
+        address[] memory owners = new address[](3);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+        uint8 policy = _kintoWallet.MINUS_ONE_SIGNER();
+
+        vm.expectEmit();
+        emit WalletPolicyChanged(_kintoWallet.MINUS_ONE_SIGNER(), _kintoWallet.SINGLE_SIGNER());
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.resetSigners(owners, policy);
+
+        assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_kintoWallet.owners(1), _user);
+        assertEq(_kintoWallet.owners(2), _user2);
+        assertEq(_kintoWallet.signerPolicy(), _kintoWallet.MINUS_ONE_SIGNER());
+    }
+
     function testResetSigners_WhenChangingPolicy_WhenThreeSigners() public {
         address[] memory owners = new address[](3);
         owners[0] = _owner;
