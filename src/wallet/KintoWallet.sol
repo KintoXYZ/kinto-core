@@ -33,8 +33,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     uint8 public constant override MAX_SIGNERS = 3;
     uint8 public constant override SINGLE_SIGNER = 1;
-    uint8 public constant override TWO_SIGNERS = 2;
+    uint8 public constant override MINUS_ONE_SIGNER = 2;
     uint8 public constant override ALL_SIGNERS = 3;
+    uint8 public constant override TWO_SIGNERS = 4;
     uint256 public constant override RECOVERY_TIME = 7 days;
     uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
     uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
@@ -384,6 +385,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         } else if (signerPolicy == TWO_SIGNERS) {
             requiredSigners = 2;
         }
+        if (signerPolicy == MINUS_ONE_SIGNER) {
+            requiredSigners = owners.length - 1;
+        }
         if (signature.length != 65 * requiredSigners) return false;
 
         // check if all required signers have signed
@@ -410,7 +414,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function _setSignerPolicy(uint8 newPolicy) internal {
-        if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) {
+        if (newPolicy == 0 || newPolicy > 4 || newPolicy == signerPolicy) {
             revert InvalidPolicy(newPolicy, owners.length);
         }
         if (newPolicy != SINGLE_SIGNER && owners.length == 1) revert InvalidPolicy(newPolicy, owners.length);

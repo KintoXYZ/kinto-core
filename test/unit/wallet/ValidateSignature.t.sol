@@ -106,8 +106,6 @@ contract ValidateSignatureTest is SharedSetup {
 
     /* ============ multi-signer ops ============ */
 
-    // todo: make these tests with fuzzing
-
     function testValidateSignature_When2Owners_WhenAllSignersPolicy() public {
         // generate resetSigners UserOp to set 2 owners
         address[] memory owners = new address[](2);
