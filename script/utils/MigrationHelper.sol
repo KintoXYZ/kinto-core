@@ -6,6 +6,8 @@ import {UUPSUpgradeable as UUPSUpgradeable5} from
     "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {KintoID} from "@kinto-core/KintoID.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
@@ -42,6 +44,9 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
     address internal kintoAdminWallet;
     uint256 internal hardwareWalletType;
     KintoWalletFactory internal factory;
+    EntryPoint internal entryPoint;
+    SponsorPaymaster internal paymaster;
+    KintoID internal kintoID;
 
     function run() public virtual {
         console2.log("Running on chain with id:", vm.toString(block.chainid));
@@ -53,6 +58,9 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         hardwareWalletType = LEDGER;
 
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
+        entryPoint = EntryPoint(payable(_getChainDeployment("EntryPoint")));
+        paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
+        kintoID = KintoID(payable(_getChainDeployment("KintoID")));
     }
 
     /// @dev deploys proxy contract via factory from deployer address
