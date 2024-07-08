@@ -52,11 +52,14 @@ contract KintoAppRegistry is
 
     mapping(address => address) public override eoaToApp;
 
+    address[] public systemContracts;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
     event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
     event AppDSAEnabled(address indexed _app, uint256 _timestamp);
+    event SystemContractsUpdated(address[] newSystemContracts);
 
     /* ============ Constructor & Initializers ============ */
 
@@ -261,6 +264,15 @@ contract KintoAppRegistry is
      */
     function overrideChildToParentContract(address child, address parent) external override onlyOwner {
         childToParentContract[child] = parent;
+    }
+
+    /**
+     * @dev Updates the system contracts array
+     * @param _systemContracts The new array of system contracts
+     */
+    function updateSystemContracts(address[] calldata _systemContracts) external onlyOwner {
+        systemContracts = _systemContracts;
+        emit SystemContractsUpdated(systemContracts);
     }
 
     /* =========== Internal methods =========== */

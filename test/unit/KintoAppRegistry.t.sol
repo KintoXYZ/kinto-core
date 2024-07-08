@@ -388,4 +388,101 @@ contract KintoAppRegistryTest is SharedSetup {
 
         assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
     }
+
+/* ============ System Contracts Test ============ */
+
+function getSystemContracts() public view returns (address[] memory) {
+    uint256 count = 0;
+    address[] memory tempArray = new address[](100); // Arbitrary large size
+
+    for (uint256 i = 0; i < 100; i++) {
+        try _kintoAppRegistry.systemContracts(i) returns (address addr) {
+            tempArray[count] = addr;
+            count++;
+        } catch {
+            break;
+        }
+    }
+
+    address[] memory result = new address[](count);
+    for (uint256 i = 0; i < count; i++) {
+        result[i] = tempArray[i];
+    }
+
+    return result;
+}
+
+function testUpdateSystemContracts() public {
+    // Initial empty system contracts array
+    address[] memory initialSystemContracts = getSystemContracts();
+    assertEq(initialSystemContracts.length, 0);
+
+    // Update system contracts array
+    address[] memory newSystemContracts = new address[](2);
+    newSystemContracts[0] = address(1);
+    newSystemContracts[1] = address(2);
+
+    vm.prank(_owner);
+    _kintoAppRegistry.updateSystemContracts(newSystemContracts);
+
+    // Verify the system contracts array is updated
+    address[] memory updatedSystemContracts = getSystemContracts();
+    assertEq(updatedSystemContracts.length, newSystemContracts.length);
+    assertEq(updatedSystemContracts[0], newSystemContracts[0]);
+    assertEq(updatedSystemContracts[1], newSystemContracts[1]);
+}
+
+function testUpdateSystemContractsWithDifferentLength() public {
+    // Initial update with 2 contracts
+    address[] memory initialContracts = new address[](2);
+    initialContracts[0] = address(1);
+    initialContracts[1] = address(2);
+
+    vm.prank(_owner);
+    _kintoAppRegistry.updateSystemContracts(initialContracts);
+
+    // Verify initial update
+    address[] memory updatedContracts = getSystemContracts();
+    assertEq(updatedContracts.length, 2);
+    assertEq(updatedContracts[0], address(1));
+    assertEq(updatedContracts[1], address(2));
+
+    // Update with 3 contracts (increasing length)
+    address[] memory newContracts = new address[](3);
+    newContracts[0] = address(3);
+    newContracts[1] = address(4);
+    newContracts[2] = address(5);
+
+    vm.prank(_owner);
+    _kintoAppRegistry.updateSystemContracts(newContracts);
+
+    // Verify update with increased length
+    updatedContracts = getSystemContracts();
+    assertEq(updatedContracts.length, 3);
+    assertEq(updatedContracts[0], address(3));
+    assertEq(updatedContracts[1], address(4));
+    assertEq(updatedContracts[2], address(5));
+
+    // Update with 1 contract (decreasing length)
+    address[] memory finalContracts = new address[](1);
+    finalContracts[0] = address(6);
+
+    vm.prank(_owner);
+    _kintoAppRegistry.updateSystemContracts(finalContracts);
+
+    // Verify update with decreased length
+    updatedContracts = getSystemContracts();
+    assertEq(updatedContracts.length, 1);
+    assertEq(updatedContracts[0], address(6));
+}
+
+function testUpdateSystemContracts_RevertWhen_CallerIsNotOwner() public {
+    address[] memory newSystemContracts = new address[](2);
+    newSystemContracts[0] = address(1);
+    newSystemContracts[1] = address(2);
+
+    vm.prank(_user);
+    vm.expectRevert("Ownable: caller is not the owner");
+    _kintoAppRegistry.updateSystemContracts(newSystemContracts);
+}
 }
