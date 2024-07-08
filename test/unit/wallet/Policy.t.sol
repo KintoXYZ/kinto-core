@@ -117,6 +117,8 @@ contract ResetSignerTest is SharedSetup {
     }
 
     function testResetSigners_RevertWhen_ChangingPolicy_WhenNotRightSigners() public {
+        // allows AllSigner for singe signer
+        vm.skip(true);
         address[] memory owners = new address[](1);
         owners[0] = _owner;
         uint8 policy = _kintoWallet.ALL_SIGNERS();
