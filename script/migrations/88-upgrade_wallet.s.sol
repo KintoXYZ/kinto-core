@@ -26,5 +26,18 @@ contract UpgradeWalletDeployScript is MigrationHelper {
         address impl = _deployImplementationAndUpgrade("KintoWallet", "V27", bytecode);
 
         saveContractAddress("KintoWalletV27-impl", impl);
+
+        // Add a new signer
+        address[] memory signers = new address[](3);
+        signers[0] = IKintoWallet(kintoAdminWallet).owners(0);
+        signers[1] = IKintoWallet(kintoAdminWallet).owners(1);
+        signers[2] = 0x08E674c4538caE03B6c05405881dDCd95DcaF5a8;
+
+        _handleOps(abi.encodeWithSelector(IKintoWallet.resetSigners.selector, signers, 2), kintoAdminWallet);
+
+
+        // Make sure we still can sign
+        _whitelistApp(_getChainDeployment('Counter'), true);
+        _handleOps(abi.encodeWithSignature("increment()"), _getChainDeployment('Counter'));
     }
 }
