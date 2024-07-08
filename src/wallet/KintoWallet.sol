@@ -412,8 +412,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function _setSignerPolicy(uint8 newPolicy) internal {
         if (newPolicy == 0 || newPolicy >= 4 || newPolicy == signerPolicy) revert InvalidPolicy(newPolicy, owners.length);
         if (newPolicy != SINGLE_SIGNER && owners.length == 1) revert InvalidPolicy(newPolicy, owners.length);
-        if (newPolicy != MINUS_ONE_SIGNER && owners.length == 2) revert InvalidPolicy(newPolicy, owners.length);
-        if (newPolicy != SINGLE_SIGNER && owners.length <= 1) revert InvalidPolicy(newPolicy, owners.length);
+        if (newPolicy != MINUS_ONE_SIGNER && newPolicy != ALL_SIGNERS && owners.length >= 2) revert InvalidPolicy(newPolicy, owners.length);
 
         emit WalletPolicyChanged(newPolicy, signerPolicy);
         signerPolicy = newPolicy;
