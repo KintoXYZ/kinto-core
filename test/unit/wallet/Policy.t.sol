@@ -40,15 +40,16 @@ contract ResetSignerTest is SharedSetup {
     }
 
     function testResetSigners_RevertWhen_ManyOwners() public {
-        address[] memory owners = new address[](4);
+        address[] memory owners = new address[](5);
         owners[0] = _owner;
         owners[1] = _user;
         owners[2] = _user;
         owners[3] = _user;
+        owners[4] = _user;
         uint8 policy = _kintoWallet.signerPolicy();
 
         vm.prank(address(_kintoWallet));
-        vm.expectRevert(abi.encodeWithSelector(IKintoWallet.MaxSignersExceeded.selector, 4));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWallet.MaxSignersExceeded.selector, 5));
         _kintoWallet.resetSigners(owners, policy);
     }
 

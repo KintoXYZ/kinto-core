@@ -384,8 +384,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             requiredSigners = 1;
         } else if (signerPolicy == TWO_SIGNERS) {
             requiredSigners = 2;
-        }
-        if (signerPolicy == MINUS_ONE_SIGNER) {
+        } else if (signerPolicy == MINUS_ONE_SIGNER) {
             requiredSigners = owners.length - 1;
         }
         if (signature.length != 65 * requiredSigners) return false;
