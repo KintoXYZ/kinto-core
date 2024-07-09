@@ -135,10 +135,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function setSignerPolicy(uint8 newPolicy) public override onlySelf {
-        // reverting to SingleSigner is not allowed for security reasons
-        if (newPolicy == signerPolicy || newPolicy == SINGLE_SIGNER) {
-            revert InvalidPolicy(newPolicy, owners.length);
-        }
+        _checkSingleSignerPolicy(newPolicy, owners.length);
         _setSignerPolicy(newPolicy);
     }
 
@@ -149,10 +146,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function resetSigners(address[] calldata newSigners, uint8 newPolicy) external override onlySelf {
         if (newSigners.length == 0) revert EmptySigners();
         if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
-        // reverting to SingleSigner is not allowed for security reasons
-        if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
-            revert InvalidPolicy(newPolicy, newSigners.length);
-        }
+        _checkSingleSignerPolicy(newPolicy, newSigners.length);
 
         _resetSigners(newSigners, newPolicy);
     }
@@ -462,6 +456,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
 
         emit SignersChanged(newSigners, owners);
+    }
+
+    function _checkSingleSignerPolicy(uint8 newPolicy, uint256 newSigners) internal {
+        // reverting to SingleSigner is not allowed for security reasons
+        if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
+            revert InvalidPolicy(newPolicy, newSigners);
+        }
     }
 
     function _onlySelf() internal view {
