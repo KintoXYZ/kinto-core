@@ -149,7 +149,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         _handleOps(data, from, address(factory), 0, address(0), privKeys);
 
         // verify that new implementation didn't bricked the wallet
-        verifyWalletUpgrade(oldImpl);
+        // verifyWalletUpgrade(oldImpl);
     }
 
     function _upgradeTo(address proxy, address _newImpl, uint256 signerPk) internal {

@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
+import "../../src/sample/Counter.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract UpgradeWalletDeployScript is MigrationHelper {
@@ -25,7 +26,7 @@ contract UpgradeWalletDeployScript is MigrationHelper {
 
         address impl = _deployImplementationAndUpgrade("KintoWallet", "V27", bytecode);
 
-        saveContractAddress("KintoWalletV27-impl", impl);
+        // saveContractAddress("KintoWalletV27-impl", impl);
 
         // Add a new signer
         address[] memory signers = new address[](3);
@@ -35,13 +36,16 @@ contract UpgradeWalletDeployScript is MigrationHelper {
 
         _handleOps(
             abi.encodeWithSelector(
-                IKintoWallet.resetSigners.selector, signers, IKintoWallet(kintoAdminWallet).TWO_SIGNERS()
+                IKintoWallet.resetSigners.selector, signers, IKintoWallet(impl).TWO_SIGNERS()
             ),
             kintoAdminWallet
         );
 
         // Make sure we still can sign
+        Counter counter = Counter(_getChainDeployment("Counter"));
         _whitelistApp(_getChainDeployment("Counter"), true);
+        uint count = counter.count();
         _handleOps(abi.encodeWithSignature("increment()"), _getChainDeployment("Counter"));
+        assertEq(counter.count(), count + 1);
     }
 }
