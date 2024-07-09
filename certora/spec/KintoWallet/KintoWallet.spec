@@ -5,6 +5,7 @@ import "../Initializable.spec";
 invariant AllowedSignerPolicy()
     signerPolicy() == SINGLE_SIGNER() ||
     signerPolicy() == MINUS_ONE_SIGNER() ||
+    signerPolicy() == TWO_SIGNERS() ||
     signerPolicy() == ALL_SIGNERS();
 
 /// @title The appSigner() of the zero address is the zero address.
@@ -48,6 +49,7 @@ invariant SignerPolicyCannotExceedOwnerCount()
     (initialized != MAX_VERSION()) => (
         (signerPolicy() == SINGLE_SIGNER() => getOwnersCount() >= 1) &&
         (signerPolicy() == MINUS_ONE_SIGNER() => getOwnersCount() > 1) &&
+        (signerPolicy() == TWO_SIGNERS() => getOwnersCount() > 1) &&
         (signerPolicy() == ALL_SIGNERS() => getOwnersCount() >= 1)
     )
     {
@@ -213,6 +215,17 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
         }
         else {
             assert isOwner_0 && isOwner_1 && isOwner_2;
+        }
+    else if(policy == TWO_SIGNERS()) {
+        assert signaturesLength == assert_uint256(65 * 2);
+        if(ownersCount == 1) {
+            assert false;
+        }
+        else if(ownersCount == 2) {
+            assert isOwner_0 && isOwner_1;
+        }
+        else {
+            assert (isOwner_0 && isOwner_1) || (isOwner_1 && isOwner_2)  || (isOwner_0 && isOwner_2);
         }
     }
     assert true;
