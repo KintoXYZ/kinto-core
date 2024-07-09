@@ -14,6 +14,7 @@ abstract contract BaseTest is AssertionHelper {
     uint256 internal _secondownerPk = 2;
     uint256 internal _userPk = 3;
     uint256 internal _user2Pk = 4;
+    uint256 internal _user3Pk = 33;
     uint256 internal _upgraderPk = 5;
     uint256 internal _kycProviderPk = 6;
     uint256 internal _recovererPk = 7;
@@ -26,6 +27,7 @@ abstract contract BaseTest is AssertionHelper {
     address payable internal _secondowner = payable(vm.addr(_secondownerPk));
     address payable internal _user = payable(vm.addr(_userPk));
     address payable internal _user2 = payable(vm.addr(_user2Pk));
+    address payable internal _user3 = payable(vm.addr(_user3Pk));
     address payable internal _upgrader = payable(vm.addr(_upgraderPk));
     address payable internal _kycProvider = payable(vm.addr(_kycProviderPk));
     address payable internal _recoverer = payable(vm.addr(_recovererPk));

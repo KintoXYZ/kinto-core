@@ -106,8 +106,6 @@ contract ValidateSignatureTest is SharedSetup {
 
     /* ============ multi-signer ops ============ */
 
-    // todo: make these tests with fuzzing
-
     function testValidateSignature_When2Owners_WhenAllSignersPolicy() public {
         // generate resetSigners UserOp to set 2 owners
         address[] memory owners = new address[](2);
@@ -763,8 +761,59 @@ contract ValidateSignatureTest is SharedSetup {
 
     /* ============ special cases ============ */
 
-    // special case 1: requiredSigners == 2, owners.length == 3 and the owners 1 and 2 provided their signatures.
-    function testValidateSignature_SpecialCase1() public {
+    function testValidateSignature_WhenTwoSigner_When4Owners() public {
+        // reset signers & change policy
+        address[] memory owners = new address[](4);
+        owners[0] = _owner;
+        owners[1] = _user;
+        owners[2] = _user2;
+        owners[3] = _user3;
+        resetSigners(owners, _kintoWallet.TWO_SIGNERS());
+
+        // create user op with owners 1 and 2 as signers
+        privateKeys = new uint256[](2);
+        privateKeys[0] = _ownerPk;
+        privateKeys[1] = _userPk;
+
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+
+        // create user op with owners 3 and 4 as signers
+        privateKeys[0] = _user2Pk;
+        privateKeys[1] = _user3Pk;
+
+        userOp = _createUserOperation(
+            address(_kintoWallet),
+            address(counter),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    // requiredSigners == 2, owners.length == 3 and the owners 1 and 2 provided their signatures.
+    function testValidateSignature_MinusOneSigner() public {
         // reset signers & change policy
         address[] memory owners = new address[](3);
         owners[0] = _owner;
@@ -817,7 +866,7 @@ contract ValidateSignatureTest is SharedSetup {
     // special case 2: requiredSigners == 1, owners.length == 3 and the owner 2 is the signer.
     // validation should fail since SINGLE_SIGNER policy only works with the first owner, any extra
     // owners are ignored
-    function testValidateSignature_SpecialCase2() public {
+    function testValidateSignature_WhenSingleSigner_When3Owners() public {
         // reset signers & change policy
         address[] memory owners = new address[](3);
         owners[0] = _owner;
@@ -848,7 +897,7 @@ contract ValidateSignatureTest is SharedSetup {
 
     // special case 2: requiredSigners == 3, owners.length == 3 and only owners[0] is KYCd
     // should validate the signature since we don't care about the other owners being KYC'd
-    function testValidateSignature_SpecialCase3() public {
+    function testValidateSignature_WhenAllSigners3Owners() public {
         assertEq(_kintoID.isKYC(_user), false);
         assertEq(_kintoID.isKYC(_user2), false);
 

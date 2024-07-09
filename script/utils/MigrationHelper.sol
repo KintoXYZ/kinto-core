@@ -143,9 +143,14 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = hardwareWalletType;
 
+        address oldImpl = factory.beacon().implementation();
+
         bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, impl);
 
         _handleOps(data, from, address(factory), 0, address(0), privKeys);
+
+        // verify that new implementation didn't bricked the wallet
+        // verifyWalletUpgrade(oldImpl);
     }
 
     function _upgradeTo(address proxy, address _newImpl, uint256 signerPk) internal {
@@ -386,6 +391,15 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         }
 
         return false;
+    }
+
+    /// @dev By calling upgrade again with the old implementation, we ensure
+    /// that the new implementation is at least capable of upgrading itself to
+    /// an old version, which is sufficient to fix any issues.
+    function verifyWalletUpgrade(address oldImpl) internal {
+        vm.startPrank(kintoAdminWallet);
+        factory.upgradeAllWalletImplementations(IKintoWallet(oldImpl));
+        vm.stopPrank();
     }
 
     function etchWallet(address wallet) internal {
