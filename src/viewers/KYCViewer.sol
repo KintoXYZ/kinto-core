@@ -109,7 +109,9 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             engenCreditsEarned: engenCredits.earnedCredits(_wallet),
             engenCreditsClaimed: IERC20(address(engenCredits)).balanceOf(_wallet),
             isKYC: kintoID.isKYC(_account),
-            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0
+            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0,
+            insurancePolicy: hasWallet ? IKintoWallet(_wallet).insurancePolicy() : 0,
+            hasValidInsurance: hasWallet ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) < block.timestamp : false
         });
     }
 

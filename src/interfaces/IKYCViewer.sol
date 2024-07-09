@@ -13,6 +13,7 @@ interface IKYCViewer {
     /* ============ Structs ============ */
 
     struct UserInfo {
+        uint256 insurancePolicy;
         uint256 ownerBalance;
         uint256 walletBalance;
         uint256 walletPolicy;
@@ -23,6 +24,7 @@ interface IKYCViewer {
         bool claimedFaucet;
         bool hasNFT;
         bool isKYC;
+        bool hasValidInsurance;
     }
 
     /* ============ Basic Viewers ============ */
