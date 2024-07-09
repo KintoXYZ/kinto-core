@@ -485,4 +485,33 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
     }
+
+    function testIsContractCallAllowedFromEOA() public {
+        // Update system contracts array
+        address[] memory newSystemContracts = new address[](2);
+        newSystemContracts[0] = address(1);
+        newSystemContracts[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemContracts(newSystemContracts);
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(1)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(2)), true);
+
+        address[] memory appContracts = new address[](2);
+        appContracts[0] = address(11);
+        appContracts[1] = address(22);
+
+        address[] memory devEOAs = new address[](2);
+        devEOAs[0] = _user;
+        devEOAs[1] = _user2;
+
+        updateMetadata(_owner, "", address(counter), appContracts, devEOAs);
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
+
+        // can't call random contract
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
+    }
 }
