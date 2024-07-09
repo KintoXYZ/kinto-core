@@ -23,9 +23,6 @@ contract TransferDclmScript is MigrationHelper {
         uint256 amount = 85_000e18;
         address DCLM = 0x26E508D5d63499e549D958B42c4e2630272Ce2a2;
 
-        // replaceOwner(IKintoWallet(kintoAdminWallet), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
-        // hardwareWalletType = 1;
-
         address kintoToken = _getChainDeployment("KINTO");
 
         // Burn tokens from RD
