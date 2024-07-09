@@ -35,16 +35,14 @@ contract UpgradeWalletDeployScript is MigrationHelper {
         signers[2] = 0x08E674c4538caE03B6c05405881dDCd95DcaF5a8;
 
         _handleOps(
-            abi.encodeWithSelector(
-                IKintoWallet.resetSigners.selector, signers, IKintoWallet(impl).TWO_SIGNERS()
-            ),
+            abi.encodeWithSelector(IKintoWallet.resetSigners.selector, signers, IKintoWallet(impl).TWO_SIGNERS()),
             kintoAdminWallet
         );
 
         // Make sure we still can sign
         Counter counter = Counter(_getChainDeployment("Counter"));
         _whitelistApp(_getChainDeployment("Counter"), true);
-        uint count = counter.count();
+        uint256 count = counter.count();
         _handleOps(abi.encodeWithSignature("increment()"), _getChainDeployment("Counter"));
         assertEq(counter.count(), count + 1);
     }
