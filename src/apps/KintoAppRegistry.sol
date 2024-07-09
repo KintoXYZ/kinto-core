@@ -52,14 +52,15 @@ contract KintoAppRegistry is
 
     mapping(address => address) public override eoaToApp;
 
-    address[] public systemContracts;
+    address[] public override systemContracts;
+    mapping(address => bool) public override isSystemContract;
 
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
     event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
     event AppDSAEnabled(address indexed _app, uint256 _timestamp);
-    event SystemContractsUpdated(address[] newSystemContracts);
+    event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
 
     /* ============ Constructor & Initializers ============ */
 
@@ -195,6 +196,32 @@ contract KintoAppRegistry is
     }
 
     /**
+     * @dev Allows the owner to override the parent contract of a child contract
+     * @param child The address of the child contract
+     * @param parent The address of the parent contract
+     */
+    function overrideChildToParentContract(address child, address parent) external override onlyOwner {
+        childToParentContract[child] = parent;
+    }
+
+    /**
+     * @dev Updates the system contracts array
+     * @param newSystemContracts The new array of system contracts
+     */
+    function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
+        emit SystemContractsUpdated(systemContracts, newSystemContracts);
+        for (uint256 index = 0; index < systemContracts.length; index++) {
+            isSystemContract[systemContracts[index]] = false;
+        }
+        for (uint256 index = 0; index < newSystemContracts.length; index++) {
+            isSystemContract[newSystemContracts[index]] = true;
+        }
+        systemContracts = newSystemContracts;
+    }
+
+    /* ============ Getters ============ */
+
+    /**
      * @dev Returns whether the contract implements the interface defined by the id
      * @param interfaceId id of the interface to be checked.
      * @return true if the contract implements the interface defined by the id.
@@ -207,8 +234,6 @@ contract KintoAppRegistry is
     {
         return super.supportsInterface(interfaceId);
     }
-
-    /* ============ Getters ============ */
 
     /**
      * @dev Returns the metadata of the app
@@ -258,21 +283,16 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @dev Allows the owner to override the parent contract of a child contract
-     * @param child The address of the child contract
-     * @param parent The address of the parent contract
+     * @notice
      */
-    function overrideChildToParentContract(address child, address parent) external override onlyOwner {
-        childToParentContract[child] = parent;
-    }
-
-    /**
-     * @dev Updates the system contracts array
-     * @param _systemContracts The new array of system contracts
-     */
-    function updateSystemContracts(address[] calldata _systemContracts) external onlyOwner {
-        systemContracts = _systemContracts;
-        emit SystemContractsUpdated(systemContracts);
+    function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
+        if (isSystemContract[to]) return true;
+        address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
+        // EOA has to be from the same app
+        if (eoaToApp[from] != app) {
+            return false;
+        }
+        return true;
     }
 
     /* =========== Internal methods =========== */

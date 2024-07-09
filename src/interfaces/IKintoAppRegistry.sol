@@ -56,6 +56,8 @@ interface IKintoAppRegistry {
 
     function overrideChildToParentContract(address child, address parent) external;
 
+    function updateSystemContracts(address[] calldata newSystemContracts) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);
@@ -81,6 +83,10 @@ interface IKintoAppRegistry {
     function tokenIdToApp(uint256 _tokenId) external view returns (address);
 
     function eoaToApp(address _eoa) external view returns (address);
+
+    function systemContracts(uint256 index) external view returns (address);
+
+    function isSystemContract(address addr) external view returns (bool);
 
     /* ============ Constants and attrs ============ */
 
