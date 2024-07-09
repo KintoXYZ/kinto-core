@@ -1,0 +1,952 @@
+{
+  data: [
+    {
+      date: 1720353600,
+      totalValueUSD: 132968.42524924304,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720332000,
+      totalValueUSD: 132968.42524924304,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720310400,
+      totalValueUSD: 131851.92024035376,
+      kDailyRewards: 1.175037871351817E19,
+      kTotalRewards: 1.3360884674993701E20
+    },
+    {
+      date: 1720288800,
+      totalValueUSD: 131851.92024035376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720267200,
+      totalValueUSD: 131851.92024035376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720245600,
+      totalValueUSD: 131851.92024035376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720224000,
+      totalValueUSD: 133230.91667638966,
+      kDailyRewards: 1.1863775735706765E19,
+      kTotalRewards: 1.2185846803641885E20
+    },
+    {
+      date: 1720202400,
+      totalValueUSD: 133230.91667638966,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720180800,
+      totalValueUSD: 133230.91667638966,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720159200,
+      totalValueUSD: 133230.91667638966,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720137600,
+      totalValueUSD: 134981.9794990458,
+      kDailyRewards: 1.1680117772498086E19,
+      kTotalRewards: 1.0999469230071208E20
+    },
+    {
+      date: 1720116000,
+      totalValueUSD: 134981.9794990458,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720094400,
+      totalValueUSD: 134981.9794990458,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720072800,
+      totalValueUSD: 134981.9794990458,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720051200,
+      totalValueUSD: 134981.9794990458,
+      kDailyRewards: 1.1281678373307183E19,
+      kTotalRewards: 9.831457452821399E19
+    },
+    {
+      date: 1720029600,
+      totalValueUSD: 136446.87489502082,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1720008000,
+      totalValueUSD: 136446.87489502082,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719986400,
+      totalValueUSD: 136446.87489502082,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719964800,
+      totalValueUSD: 136446.87489502082,
+      kDailyRewards: 1.1222563128202885E19,
+      kTotalRewards: 8.70328961549068E19
+    },
+    {
+      date: 1719943200,
+      totalValueUSD: 136652.73854225565,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719921600,
+      totalValueUSD: 136652.73854225565,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719900000,
+      totalValueUSD: 136652.73854225565,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719878400,
+      totalValueUSD: 136652.73854225565,
+      kDailyRewards: 1.1122481193986445E19,
+      kTotalRewards: 7.581033302670392E19
+    },
+    {
+      date: 1719856800,
+      totalValueUSD: 136457.98539428637,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719856800,
+      totalValueUSD: 136457.98539428637,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719835200,
+      totalValueUSD: 136457.98539428637,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719813600,
+      totalValueUSD: 136457.98539428637,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719792000,
+      totalValueUSD: 136457.98539428637,
+      kDailyRewards: 1.1088302297880904E19,
+      kTotalRewards: 6.4687851832717476E19
+    },
+    {
+      date: 1719770400,
+      totalValueUSD: 135839.12364760163,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719748800,
+      totalValueUSD: 135839.12364760163,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719727200,
+      totalValueUSD: 135839.12364760163,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719727200,
+      totalValueUSD: 135839.12364760163,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719705600,
+      totalValueUSD: 135845.44114077205,
+      kDailyRewards: 1.1125275983937962E19,
+      kTotalRewards: 5.359954953483657E19
+    },
+    {
+      date: 1719684000,
+      totalValueUSD: 135845.44114077205,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719662400,
+      totalValueUSD: 135845.44114077205,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719640800,
+      totalValueUSD: 135845.44114077205,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719619200,
+      totalValueUSD: 135845.44114077205,
+      kDailyRewards: 1.1134851921962879E19,
+      kTotalRewards: 4.247427355089861E19
+    },
+    {
+      date: 1719597600,
+      totalValueUSD: 136422.27669034342,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719576000,
+      totalValueUSD: 35032.18144742607,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719554400,
+      totalValueUSD: 35032.18144742607,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719532800,
+      totalValueUSD: 35032.18144742607,
+      kDailyRewards: 2.703382443829654E18,
+      kTotalRewards: 3.133942162893573E19
+    },
+    {
+      date: 1719511200,
+      totalValueUSD: 34327.57508043135,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719489600,
+      totalValueUSD: 34327.57508043135,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719446400,
+      totalValueUSD: 34327.57508043135,
+      kDailyRewards: 2.6846172261271818E18,
+      kTotalRewards: 2.8636039185106076E19
+    },
+    {
+      date: 1719424800,
+      totalValueUSD: 34588.00320468665,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719403200,
+      totalValueUSD: 34588.00320468665,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719360000,
+      totalValueUSD: 34588.00320468665,
+      kDailyRewards: 3.3174512209220844E18,
+      kTotalRewards: 2.595142195897889E19
+    },
+    {
+      date: 1719338400,
+      totalValueUSD: 33940.85523456056,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719316800,
+      totalValueUSD: 33940.85523456056,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719295200,
+      totalValueUSD: 33940.85523456056,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719273600,
+      totalValueUSD: 33940.85523456056,
+      kDailyRewards: 3.3007777404444826E18,
+      kTotalRewards: 2.2633970738056806E19
+    },
+    {
+      date: 1719252000,
+      totalValueUSD: 35054.5394946142,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719230400,
+      totalValueUSD: 35021.45369065884,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719208800,
+      totalValueUSD: 35021.45369065884,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719187200,
+      totalValueUSD: 35021.45369065884,
+      kDailyRewards: 3.3458430373425812E18,
+      kTotalRewards: 1.9333192997612323E19
+    },
+    {
+      date: 1719165600,
+      totalValueUSD: 35517.67396469745,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719144000,
+      totalValueUSD: 35517.67396469745,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719122400,
+      totalValueUSD: 35517.67396469745,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719100800,
+      totalValueUSD: 35517.67396469745,
+      kDailyRewards: 3.3547868187535314E18,
+      kTotalRewards: 1.5987349960269742E19
+    },
+    {
+      date: 1719079200,
+      totalValueUSD: 35718.18338689524,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719057600,
+      totalValueUSD: 35718.18338689524,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719036000,
+      totalValueUSD: 35718.18338689524,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1719014400,
+      totalValueUSD: 35718.18338689524,
+      kDailyRewards: 3.3632159997245322E18,
+      kTotalRewards: 1.263256314151621E19
+    },
+    {
+      date: 1718928000,
+      totalValueUSD: 35276.83491117881,
+      kDailyRewards: 3.3706716879242465E18,
+      kTotalRewards: 9.269347141791678E18
+    },
+    {
+      date: 1718884800,
+      totalValueUSD: 36143.40840658622,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718863200,
+      totalValueUSD: 36143.40840658622,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718863200,
+      totalValueUSD: 36143.40840658622,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718841600,
+      totalValueUSD: 35276.83491117881,
+      kDailyRewards: 5.8986754538674319E18,
+      kTotalRewards: 5.8986754538674319E18
+    },
+    {
+      date: 1718820000,
+      totalValueUSD: 35276.83491117881,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718798400,
+      totalValueUSD: 35276.83491117881,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718776800,
+      totalValueUSD: 35276.83491117881,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718755200,
+      totalValueUSD: 35794.70989582449,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718733600,
+      totalValueUSD: 35794.70989582449,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718712000,
+      totalValueUSD: 35794.70989582449,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718690400,
+      totalValueUSD: 35794.70989582449,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718668800,
+      totalValueUSD: 36651.02094745437,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718604000,
+      totalValueUSD: 36630.96001639563,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718582400,
+      totalValueUSD: 36105.56123641867,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718560800,
+      totalValueUSD: 36105.56123641867,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718539200,
+      totalValueUSD: 36105.56123641867,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718517600,
+      totalValueUSD: 36105.56123641867,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718496000,
+      totalValueUSD: 35298.14397173802,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718452800,
+      totalValueUSD: 35298.14397173802,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718431200,
+      totalValueUSD: 35298.14397173802,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718388000,
+      totalValueUSD: 35198.7755564713,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718366400,
+      totalValueUSD: 35198.7755564713,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718344800,
+      totalValueUSD: 35198.7755564713,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718323200,
+      totalValueUSD: 36080.72935745558,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718258400,
+      totalValueUSD: 36060.6676505152,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718236800,
+      totalValueUSD: 35413.10627292079,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718193600,
+      totalValueUSD: 35144.52365630048,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718172000,
+      totalValueUSD: 35144.52365630048,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718150400,
+      totalValueUSD: 36893.033446138,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718128800,
+      totalValueUSD: 36893.033446138,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718107200,
+      totalValueUSD: 36893.033446138,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718085600,
+      totalValueUSD: 36893.033446138,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718064000,
+      totalValueUSD: 37190.59290824532,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718042400,
+      totalValueUSD: 37190.59290824532,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1718020800,
+      totalValueUSD: 37190.59290824532,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717999200,
+      totalValueUSD: 37190.59290824532,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717977600,
+      totalValueUSD: 36986.27099417191,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717956000,
+      totalValueUSD: 36986.27099417191,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717934400,
+      totalValueUSD: 36986.27099417191,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717912800,
+      totalValueUSD: 36986.27099417191,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717891200,
+      totalValueUSD: 37050.934525851946,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717869600,
+      totalValueUSD: 37050.934525851946,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717761600,
+      totalValueUSD: 38302.73963246884,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717740000,
+      totalValueUSD: 38302.73963246884,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717718400,
+      totalValueUSD: 38655.345046149516,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717696800,
+      totalValueUSD: 38655.345046149516,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717675200,
+      totalValueUSD: 38655.345046149516,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717653600,
+      totalValueUSD: 38655.345046149516,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717632000,
+      totalValueUSD: 38324.943429101266,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717610400,
+      totalValueUSD: 38324.943429101266,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717502400,
+      totalValueUSD: 37904.320509039535,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717480800,
+      totalValueUSD: 37904.320509039535,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717459200,
+      totalValueUSD: 38002.7118420935,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717437600,
+      totalValueUSD: 38002.7118420935,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717416000,
+      totalValueUSD: 38002.7118420935,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717394400,
+      totalValueUSD: 38002.7118420935,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717372800,
+      totalValueUSD: 38283.164862451435,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717351200,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717329600,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717308000,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717286400,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717264800,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717243200,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717221600,
+      totalValueUSD: 37846.180716634386,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717200000,
+      totalValueUSD: 37656.30281315038,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717156800,
+      totalValueUSD: 37656.30281315038,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717135200,
+      totalValueUSD: 37656.30281315038,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717113600,
+      totalValueUSD: 37830.42405278445,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717092000,
+      totalValueUSD: 37830.42405278445,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717070400,
+      totalValueUSD: 37830.42405278445,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717048800,
+      totalValueUSD: 37830.42405278445,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717027200,
+      totalValueUSD: 38613.523680002494,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1717005600,
+      totalValueUSD: 38613.523680002494,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716984000,
+      totalValueUSD: 38613.523680002494,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716962400,
+      totalValueUSD: 38613.523680002494,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716940800,
+      totalValueUSD: 39165.2180838415,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716919200,
+      totalValueUSD: 39165.2180838415,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716897600,
+      totalValueUSD: 39165.2180838415,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716876000,
+      totalValueUSD: 39165.2180838415,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716854400,
+      totalValueUSD: 38519.8170536996,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716832800,
+      totalValueUSD: 38519.8170536996,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716811200,
+      totalValueUSD: 38519.8170536996,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716789600,
+      totalValueUSD: 38519.8170536996,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716768000,
+      totalValueUSD: 38519.8170536996,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716746400,
+      totalValueUSD: 37633.56557472376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716724800,
+      totalValueUSD: 37633.56557472376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716703200,
+      totalValueUSD: 37633.56557472376,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716681600,
+      totalValueUSD: 37486.57097119127,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716660000,
+      totalValueUSD: 37486.57097119127,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716638400,
+      totalValueUSD: 37486.57097119127,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716616800,
+      totalValueUSD: 37486.57097119127,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716595200,
+      totalValueUSD: 37486.57097119127,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716573600,
+      totalValueUSD: 37584.528742226714,
+      kDailyRewards: null,
+      kTotalRewards: null
+    },
+    {
+      date: 1716552000,
+      totalValueUSD: 33003.26,
+      kDailyRewards: null,
+      kTotalRewards: null
+    }
+  ]
+}

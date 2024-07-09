@@ -46,12 +46,13 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
     function run() public virtual {
         console2.log("Running on chain with id:", vm.toString(block.chainid));
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        try vm.envUint("HARDWARE_WALLET_TYPE") returns (uint256 hwType) {
+            hardwareWalletType = hwType;
+        } catch {}
         deployer = vm.addr(deployerPrivateKey);
         console2.log("Deployer:", deployer);
 
         kintoAdminWallet = _getChainDeployment("KintoWallet-admin");
-        hardwareWalletType = LEDGER;
-
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
     }
 
