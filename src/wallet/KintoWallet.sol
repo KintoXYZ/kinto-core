@@ -135,6 +135,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function setSignerPolicy(uint8 newPolicy) public override onlySelf {
+        // reverting to SingleSigner is not allowed for security reasons
+        if (newPolicy == signerPolicy || newPolicy == SINGLE_SIGNER) {
+            revert InvalidPolicy(newPolicy, owners.length);
+        }
         _setSignerPolicy(newPolicy);
     }
 
@@ -142,10 +146,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @dev Change signers and policy (if new)
      * @param newSigners new signers array
      */
-    function resetSigners(address[] calldata newSigners, uint8 policy) external override onlySelf {
+    function resetSigners(address[] calldata newSigners, uint8 newPolicy) external override onlySelf {
         if (newSigners.length == 0) revert EmptySigners();
         if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
-        _resetSigners(newSigners, policy);
+        // reverting to SingleSigner is not allowed for security reasons
+        if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
+            revert InvalidPolicy(newPolicy, newSigners.length);
+        }
+
+        _resetSigners(newSigners, newPolicy);
     }
 
     /* ============ Whitelist Management ============ */
