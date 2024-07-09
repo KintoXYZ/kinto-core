@@ -20,9 +20,9 @@ import "forge-std/Script.sol";
 contract KintoDeployTestWalletScript is MigrationHelper {
     IKintoWallet _newWallet;
 
-    function setUp() public {}
-
     function run() public override {
+        super.run();
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         uint256 recipientKey = vm.envUint("TEST_PRIVATE_KEY");
         address recipientWallet = vm.rememberKey(recipientKey);
@@ -61,9 +61,9 @@ contract KintoMonitoringTest is MigrationHelper {
 
     IKintoWallet _newWallet;
 
-    function setUp() public {}
-
     function run() public override {
+        super.run();
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         console.log("Deployer is", vm.addr(deployerPrivateKey));
 
@@ -84,9 +84,9 @@ contract KintoDeployTestCounter is MigrationHelper {
 
     IKintoWallet _newWallet;
 
-    function setUp() public {}
-
     function run() public override {
+        super.run();
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -183,9 +183,9 @@ contract KintoDeployETHPriceIsRight is MigrationHelper {
 
     IKintoWallet _newWallet;
 
-    function setUp() public {}
-
     function run() public override {
+        super.run();
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -283,9 +283,8 @@ contract SendHanldeOps is MigrationHelper {
 
     IKintoWallet _newWallet;
 
-    function setUp() public {}
-
     function run() public override {
+        super.run();
         KintoWallet kintoWallet = KintoWallet(payable(vm.envAddress("TEST_KINTO_WALLET")));
         bytes memory bytesOp = vm.envBytes("TEST_BYTESOP");
         if (bytesOp.length == 0) {
