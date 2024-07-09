@@ -216,6 +216,7 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
         else {
             assert isOwner_0 && isOwner_1 && isOwner_2;
         }
+    }
     else if(policy == TWO_SIGNERS()) {
         assert signaturesLength == assert_uint256(65 * 2);
         if(ownersCount == 1) {
