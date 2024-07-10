@@ -45,6 +45,8 @@ interface IKYCViewer {
 
     function getUserInfo(address _account, address payable _wallet) external view returns (UserInfo memory);
 
+    function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
