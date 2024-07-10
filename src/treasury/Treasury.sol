@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
+import {IERC20} from "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "../interfaces/ITreasury.sol";
 
 /**
@@ -17,7 +17,7 @@ import "../interfaces/ITreasury.sol";
  * Contract that will receive the fees earned by the chain.
  * Governance will be able to send funds from the treasury.
  */
-contract Treasury is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, ITreasury {
+contract Treasury is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable, ITreasury {
     using SafeERC20 for IERC20;
     using Address for address;
 
@@ -35,9 +35,8 @@ contract Treasury is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentra
      * @dev Upgrade calling `upgradeTo()`
      */
     function initialize() external initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        _transferOwnership(msg.sender);
     }
 
     /**
