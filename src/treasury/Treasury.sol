@@ -8,7 +8,8 @@ import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/u
 import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
  * @title Kinto Treasury
@@ -43,7 +44,7 @@ contract Treasury is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentra
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner { }
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {}
 
     /* ============ External Functions ============ */
 

@@ -22,7 +22,7 @@ contract DeployTreasuryScript is MigrationHelper {
         super.run();
 
         vm.broadcast(deployerPrivateKey);
-        address impl = address( new Treasury{salt: keccak256("0")}());
+        address impl = address(new Treasury{salt: keccak256("0")}());
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(impl, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, "793500");
