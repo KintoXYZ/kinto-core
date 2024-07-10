@@ -63,15 +63,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override appWhitelist;
     IKintoAppRegistry public immutable override appRegistry;
 
-    uint8 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
+    uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
+    uint256 public override insuranceTimestamp;
 
     /* ============ Events ============ */
+
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
     event AppKeyCreated(address indexed appKey, address indexed signer);
-    event InsurancePolicyChanged(uint8 newPolicy, uint8 oldPolicy);
+    event InsurancePolicyChanged(uint256 indexed newPolicy, uint256 indexed oldPolicy);
 
     /* ============ Modifiers ============ */
 
@@ -285,8 +287,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      * @param paymentToken token to pay for the policy
      */
-    function setPremiumPolicy(uint8 newPolicy, address paymentToken) external override onlySelf {
-        if (paymentToken != WETH && paymentToken != KINTO_TOKEN) revert InvalidInsurancePayment();
+    function setInsurancePolicy(uint256 newPolicy, address paymentToken) external override onlySelf {
+        if (paymentToken != WETH && paymentToken != KINTO_TOKEN) revert InvalidInsurancePayment(paymentToken);
         if (newPolicy > 2 || newPolicy == insurancePolicy) revert InvalidInsurancePolicy(newPolicy);
 
         uint256 paymentAmount = getInsurancePrice(newPolicy, paymentToken);
@@ -301,7 +303,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      * @param paymentToken token to pay for the policy
      */
-    function getInsurancePrice(uint8 newPolicy, address paymentToken) public pure override returns (uint256) {
+    function getInsurancePrice(uint256 newPolicy, address paymentToken) public pure override returns (uint256) {
         uint256 basicPrice = 10e18;
         if (paymentToken == WETH) {
             basicPrice = 0.03e18;
