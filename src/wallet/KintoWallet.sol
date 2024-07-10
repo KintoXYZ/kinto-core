@@ -49,7 +49,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant WETH = 0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8;
-    address internal constant KINTO_TREASURY = address(0);
+    address internal constant KINTO_TREASURY = address(0x793500709506652Fcc61F0d2D0fDa605638D4293);
 
     /* ============ State Variables ============ */
 
@@ -555,7 +555,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV27 is KintoWallet {
+contract KintoWalletV28 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}
