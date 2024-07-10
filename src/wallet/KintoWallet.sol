@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
@@ -25,6 +26,7 @@ import "../libraries/ByteSignature.sol";
  */
 contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKintoWallet {
     using ECDSA for bytes32;
+    using SafeERC20 for IERC20;
     using Address for address;
 
     /* ============ Constants & Immutables ============ */
@@ -45,6 +47,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address internal constant BRIDGER_ARBITRUM = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
     address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
     address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
+    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
+    address internal constant WETH = 0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8;
+    address internal constant KINTO_TREASURY = address(0x793500709506652Fcc61F0d2D0fDa605638D4293);
 
     /* ============ State Variables ============ */
 
@@ -58,12 +63,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override appWhitelist;
     IKintoAppRegistry public immutable override appRegistry;
 
+    uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
+    uint256 public override insuranceTimestamp;
+
     /* ============ Events ============ */
+
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
     event AppKeyCreated(address indexed appKey, address indexed signer);
+    event InsurancePolicyChanged(uint256 indexed newPolicy, uint256 indexed oldPolicy);
 
     /* ============ Modifiers ============ */
 
@@ -270,6 +280,38 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
+    /* ============ Insurance Policy ============ */
+
+    /**
+     * @dev Set the premium policy
+     * @param newPolicy new policy
+     * @param paymentToken token to pay for the policy
+     */
+    function setInsurancePolicy(uint256 newPolicy, address paymentToken) external override onlySelf {
+        if (paymentToken != WETH && paymentToken != KINTO_TOKEN) revert InvalidInsurancePayment(paymentToken);
+        if (newPolicy > 2 || newPolicy == insurancePolicy) revert InvalidInsurancePolicy(newPolicy);
+
+        uint256 paymentAmount = getInsurancePrice(newPolicy, paymentToken);
+        IERC20(paymentToken).safeTransferFrom(msg.sender, KINTO_TREASURY, paymentAmount);
+
+        emit InsurancePolicyChanged(newPolicy, insurancePolicy);
+        insurancePolicy = newPolicy;
+        insuranceTimestamp = block.timestamp;
+    }
+
+    /**
+     * @dev Get the price of the policy
+     * @param newPolicy new policy
+     * @param paymentToken token to pay for the policy
+     */
+    function getInsurancePrice(uint256 newPolicy, address paymentToken) public pure override returns (uint256) {
+        uint256 basicPrice = 10e18;
+        if (paymentToken == WETH) {
+            basicPrice = 0.03e18;
+        }
+        return newPolicy == 1 ? basicPrice : basicPrice * 8;
+    }
+
     /* ============ View Functions ============ */
 
     // @inheritdoc BaseAccount
@@ -458,7 +500,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         emit SignersChanged(newSigners, owners);
     }
 
-    function _checkSingleSignerPolicy(uint8 newPolicy, uint256 newSigners) internal {
+    function _checkSingleSignerPolicy(uint8 newPolicy, uint256 newSigners) internal view {
         // reverting to SingleSigner is not allowed for security reasons
         if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
             revert InvalidPolicy(newPolicy, newSigners);
@@ -513,7 +555,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 }
 
 // Upgradeable version of KintoWallet
-contract KintoWalletV27 is KintoWallet {
+contract KintoWalletV28 is KintoWallet {
     constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
         KintoWallet(_entryPoint, _kintoID, _appRegistry)
     {}

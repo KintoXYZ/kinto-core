@@ -151,7 +151,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = hardwareWalletType;
 
-        address oldImpl = factory.beacon().implementation();
+        // address oldImpl = factory.beacon().implementation();
 
         bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, impl);
 
