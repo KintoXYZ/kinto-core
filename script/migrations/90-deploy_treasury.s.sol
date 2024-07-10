@@ -32,8 +32,9 @@ contract DeployTreasuryScript is MigrationHelper {
 
         _whitelistApp(proxy);
 
-        // initialize
         _handleOps(abi.encodeWithSelector(Treasury.initialize.selector), proxy);
+
+        _transferOwnership(proxy, deployerPrivateKey, kintoAdminWallet);
 
         console2.log("Proxy deployed @%s", proxy);
 
