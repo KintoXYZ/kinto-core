@@ -296,6 +296,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
         emit InsurancePolicyChanged(newPolicy, insurancePolicy);
         insurancePolicy = newPolicy;
+        insuranceTimestamp = block.timestamp;
     }
 
     /**
