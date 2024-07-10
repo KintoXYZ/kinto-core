@@ -45,10 +45,7 @@ contract Treasury is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentra
      * @param newImplementation address of the new implementation
      */
     // This function is called by the proxy contract when the factory is upgraded
-    function _authorizeUpgrade(address newImplementation) internal view override {
-        (newImplementation);
-        if (msg.sender != owner()) revert OnlyOwner();
-    }
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner { }
 
     /* ============ External Functions ============ */
 

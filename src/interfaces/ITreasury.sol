@@ -2,9 +2,6 @@
 pragma solidity ^0.8.18;
 
 interface ITreasury {
-    /* ============ Errors ============ */
-    error OnlyOwner();
-
     /* ============ Functions ============ */
 
     function sendTreasuryFunds(address _asset, uint256 _amount, address _to) external;
