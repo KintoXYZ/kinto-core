@@ -96,6 +96,8 @@ interface IKintoWallet {
 
     function appRegistry() external view returns (IKintoAppRegistry);
 
+    function factory() external view returns (IKintoWalletFactory);
+
     function signerPolicy() external view returns (uint8);
 
     function MAX_SIGNERS() external view returns (uint8);

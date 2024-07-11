@@ -499,7 +499,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(2)), true);
     }
 
-    function testIsContractCallAllowedFromEOA_WhenRandomEOA() public {
+    function testIsContractCallAllowedFromEOA_WhenRandomEOA() public view {
         // can't call random contract
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
     }

@@ -11,7 +11,7 @@ contract UpgradeTest is SharedSetup {
     // an upgrade function. The upgrade function is in the UUPSUpgradeable.sol contract and the wallet uses the Beacon proxy.
     function test_RevertWhen_OwnerCannotUpgrade() public {
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
 
         // try calling upgradeTo from _owner wallet to upgrade _owner wallet
         UserOperation memory userOp = _createUserOperation(
@@ -42,7 +42,7 @@ contract UpgradeTest is SharedSetup {
         IKintoWallet userWallet = _walletFactory.createAccount(_user, _recoverer, 0);
 
         // deploy a new implementation
-        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry);
+        KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
 
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         privateKeys[0] = _userPk;

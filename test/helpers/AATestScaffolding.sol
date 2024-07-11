@@ -228,7 +228,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     }
 
     function useHarness() public {
-        KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoID, _kintoAppRegistry);
+        KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
         vm.prank(_walletFactory.owner());
         _walletFactory.upgradeAllWalletImplementations(_impl);
 

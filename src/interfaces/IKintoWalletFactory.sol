@@ -39,6 +39,8 @@ interface IKintoWalletFactory {
 
     function startWalletRecovery(address payable wallet) external;
 
+    function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) external ;
+
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external;
 
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external;
