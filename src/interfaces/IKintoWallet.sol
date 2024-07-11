@@ -12,6 +12,7 @@ interface IKintoWallet {
     error LengthMismatch();
     error InvalidPolicy(uint8 newPolicy, uint256 newSigners);
     error InvalidInsurancePolicy(uint256 newPolicy);
+    error InvalidDevMode(uint256 newDevMode);
     error InvalidInsurancePayment(address token);
     error InvalidSigner();
     error InvalidApp();
@@ -55,11 +56,15 @@ interface IKintoWallet {
 
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
+    function setDevMode(uint256 newPolicy) external;
+
     function setInsurancePolicy(uint256 newPolicy, address paymentToken) external;
 
     /* ============ Basic Viewers ============ */
 
     function getOwnersCount() external view returns (uint256);
+
+    function getOwners() external view returns (address[] memory);
 
     function getNonce() external view returns (uint256);
 
@@ -70,6 +75,8 @@ interface IKintoWallet {
     function kintoID() external view returns (IKintoID);
 
     function insurancePolicy() external view returns (uint256);
+
+    function devMode() external view returns (uint256);
 
     function insuranceTimestamp() external view returns (uint256);
 

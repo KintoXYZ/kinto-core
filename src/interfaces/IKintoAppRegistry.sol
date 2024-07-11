@@ -82,7 +82,7 @@ interface IKintoAppRegistry {
 
     function tokenIdToApp(uint256 _tokenId) external view returns (address);
 
-    function eoaToApp(address _eoa) external view returns (address);
+    function devEoaToApp(address _eoa) external view returns (address);
 
     function systemContracts(uint256 index) external view returns (address);
 

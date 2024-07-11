@@ -36,6 +36,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
     mapping(address => bool) public override adminApproved;
+    // Mapping from signer address to an array of wallet addresses
+    mapping(address => address[]) private signerToWallets;
 
     /* ============ Events ============ */
 
@@ -267,7 +269,36 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (!sent) revert SendFailed();
     }
 
+    // Function to set all signers for a wallet at once
+    function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) public {
+        address wallet = msg.sender;
+        if (walletTs[wallet] == 0) revert InvalidWallet();
+
+        // Remove old relationships
+        for (uint256 i = 0; i < oldSigners.length; i++) {
+            address[] storage wallets = signerToWallets[oldSigners[i]];
+            for (uint256 j = 0; j < wallets.length; j++) {
+                if (wallets[j] == wallet) {
+                    wallets[j] = wallets[wallets.length - 1];
+                    wallets.pop();
+                    break;
+                }
+            }
+        }
+
+        // Add new relationships
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            signerToWallets[newSigners[i]].push(wallet);
+
+        }
+    }
+
     /* ============ Getters ============ */
+
+    // Function to get all wallets for a signer
+    function getSignerWallets(address signer) public view override returns (address[] memory) {
+        return signerToWallets[signer];
+    }
 
     /**
      * @dev Gets the creation timestamp of a current wallet

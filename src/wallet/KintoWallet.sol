@@ -32,6 +32,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Constants & Immutables ============ */
     IKintoID public immutable override kintoID;
     IEntryPoint private immutable _entryPoint;
+    IKintoAppRegistry public immutable override appRegistry;
+    IKintoWalletFactory public immutable override factory;
 
     uint8 public constant override MAX_SIGNERS = 4;
     uint8 public constant override SINGLE_SIGNER = 1;
@@ -61,15 +63,17 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override funderWhitelist;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
-    IKintoAppRegistry public immutable override appRegistry;
 
     uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
     uint256 public override insuranceTimestamp;
+
+    uint256 public override devMode; // 0 = non-dev, 1 = dev
 
     /* ============ Events ============ */
 
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
+    event DevModeChanged(uint256 newDevMode, uint256 oldDevMode);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
     event AppKeyCreated(address indexed appKey, address indexed signer);
@@ -89,10 +93,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp) {
+    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp, IKintoWalletFactory _factory) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
         appRegistry = _kintoApp;
+        factory = _factory;
         _disableInitializers();
     }
 
@@ -159,6 +164,19 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _checkSingleSignerPolicy(newPolicy, newSigners.length);
 
         _resetSigners(newSigners, newPolicy);
+    }
+
+    /* ============ Dev Mode ============ */
+
+    /**
+     * @notice Change dev mode
+     * @param newDevMode new dev mode
+     */
+    function setDevMode(uint256 newDevMode) public override onlySelf {
+        if (newDevMode > 1) revert InvalidDevMode(newDevMode);
+
+        emit DevModeChanged(newDevMode, devMode);
+        devMode = newDevMode;
     }
 
     /* ============ Whitelist Management ============ */
@@ -327,7 +345,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return owners.length;
     }
 
-    /* ============ IAccountOverrides ============ */
+    function getOwners() external view override returns (address[] memory) {
+        return owners;
+    }
+
+    /* ============ ValidateSignature ============ */
 
     /// implement template method of BaseAccount
     /// @dev we don't want to do requires here as it would revert the whole transaction
@@ -489,6 +511,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             if (newSigners[i] == address(0)) revert InvalidSigner();
         }
 
+        factory.setWalletSigners(newSigners, owners);
         // set new owners
         owners = newSigners;
 

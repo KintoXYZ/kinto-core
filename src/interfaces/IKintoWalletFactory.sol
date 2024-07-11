@@ -57,6 +57,8 @@ interface IKintoWalletFactory {
 
     /* ============ Basic Viewers ============ */
 
+    function getSignerWallets(address signer) external view returns (address[] memory) ;
+
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
 
     function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);

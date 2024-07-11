@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../interfaces/IKintoID.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../interfaces/IKintoWalletFactory.sol";
+import "../interfaces/IKintoWallet.sol";
 
 /**
  * @title KintoAppRegistry
@@ -29,6 +30,8 @@ contract KintoAppRegistry is
     uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
     uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
     uint256 public constant override GAS_LIMIT_THRESHOLD = 0.01 ether;
+
+    address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     /* ============ State Variables ============ */
 
@@ -50,7 +53,7 @@ contract KintoAppRegistry is
 
     address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
 
-    mapping(address => address) public override eoaToApp;
+    mapping(address => address) public override devEoaToApp;
 
     address[] public override systemContracts;
     mapping(address => bool) public override isSystemContract;
@@ -286,13 +289,34 @@ contract KintoAppRegistry is
      * @notice
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
+        // Calls to system contracts are allwed for any EOA.
         if (isSystemContract[to]) return true;
-        address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
-        // EOA has to be from the same app
-        if (eoaToApp[from] != app) {
-            return false;
+
+        // Find the wallet of the `from` EOA.
+        address[] memory wallets = walletFactory.getSignerWallets(from);
+        // Deny if there is no wallet linked to EOA.
+        if(wallets.length == 0) return false;
+        address wallet = wallets[0];
+
+        // Deny if dev mode is not enabled on the wallet.
+        if(IKintoWallet(wallet).devMode() == 0) return false;
+
+        // Deny if wallet has no KYC
+        if(!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
+
+        // Signers of dev wallets are allowed to use CREATE and CREATE2.
+        if (to == address(0) || to == CREATE2) {
+            // Permit if EOA have a wallet, dev mode and KYC.
+            return true;
         }
-        return true;
+
+        // Contract calls are allowed only to dev EOAs.
+        address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
+        // Dev EOAs are allowed to call their respective apps.
+        if (devEoaToApp[from] == app) {
+            return true;
+        }
+        return false;
     }
 
     /* =========== Internal methods =========== */
@@ -308,7 +332,7 @@ contract KintoAppRegistry is
         // Cleanup old devEOAs
         address[] memory oldArray = _appMetadata[parentContract].devEOAs;
         for (uint256 i = 0; i < oldArray.length; i++) {
-            eoaToApp[oldArray[i]] = address(0);
+            devEoaToApp[oldArray[i]] = address(0);
         }
 
         // Cleanup old appContracts
@@ -340,7 +364,7 @@ contract KintoAppRegistry is
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {
-            eoaToApp[devEOAs[i]] = parentContract;
+            devEoaToApp[devEOAs[i]] = parentContract;
         }
     }
 

@@ -86,7 +86,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.appCount(), appsCountBefore + 1);
 
         // check eoas
-        assertEq(_kintoAppRegistry.eoaToApp(address(44)), parentContract);
+        assertEq(_kintoAppRegistry.devEoaToApp(address(44)), parentContract);
 
         // check app metadata
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
@@ -486,7 +486,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
     }
 
-    function testIsContractCallAllowedFromEOA() public {
+    function testIsContractCallAllowedFromEOA_WhenSystemContract() public {
         // Update system contracts array
         address[] memory newSystemContracts = new address[](2);
         newSystemContracts[0] = address(1);
@@ -497,7 +497,14 @@ contract KintoAppRegistryTest is SharedSetup {
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(1)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(2)), true);
+    }
 
+    function testIsContractCallAllowedFromEOA_WhenRandomEOA() public {
+        // can't call random contract
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenDevEAO() public {
         address[] memory appContracts = new address[](2);
         appContracts[0] = address(11);
         appContracts[1] = address(22);
@@ -510,8 +517,5 @@ contract KintoAppRegistryTest is SharedSetup {
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
-
-        // can't call random contract
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
     }
 }
