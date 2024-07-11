@@ -111,7 +111,10 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             isKYC: kintoID.isKYC(_account),
             recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0,
             insurancePolicy: hasWallet ? IKintoWallet(_wallet).insurancePolicy() : 0,
-            hasValidInsurance: hasWallet ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) < block.timestamp : false
+            hasValidInsurance: hasWallet
+                ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) >= block.timestamp
+                : false,
+            insuranceTimestamp: hasWallet ? IKintoWallet(_wallet).insuranceTimestamp() : 0
         });
     }
 
@@ -144,7 +147,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV10 is KYCViewer {
+contract KYCViewerV11 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
         KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
     {}
