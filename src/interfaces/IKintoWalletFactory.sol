@@ -39,7 +39,7 @@ interface IKintoWalletFactory {
 
     function startWalletRecovery(address payable wallet) external;
 
-    function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) external ;
+    function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) external;
 
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external;
 
@@ -59,7 +59,7 @@ interface IKintoWalletFactory {
 
     /* ============ Basic Viewers ============ */
 
-    function getSignerWallets(address signer) external view returns (address[] memory) ;
+    function getSignerWallets(address signer) external view returns (address[] memory);
 
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
 

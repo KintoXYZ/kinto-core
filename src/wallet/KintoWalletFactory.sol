@@ -289,7 +289,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         // Add new relationships
         for (uint256 i = 0; i < newSigners.length; i++) {
             signerToWallets[newSigners[i]].push(wallet);
-
         }
     }
 

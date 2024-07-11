@@ -18,6 +18,8 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
 }
 
 contract KintoAppRegistryTest is SharedSetup {
+    address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+
     function testUp() public override {
         super.testUp();
         useHarness();
@@ -499,22 +501,68 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(2)), true);
     }
 
+    function testIsContractCallAllowedFromEOA_WhenRandomEOACreate2() public view {
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(CREATE2)), false);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenRandomEOACreate() public view {
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0)), false);
+    }
+
     function testIsContractCallAllowedFromEOA_WhenRandomEOA() public view {
-        // can't call random contract
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
     }
 
-    function testIsContractCallAllowedFromEOA_WhenDevEAO() public {
+    function testIsContractCallAllowedFromEOA_WhenCreate2() public {
+        address[] memory signers = new address[](3);
+        signers[0] = _owner;
+        signers[1] = _user;
+        signers[2] = _user2;
+
+        resetSigners(signers, 1);
+
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setDevMode(1);
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(CREATE2)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(CREATE2)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(CREATE2)), true);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenCreate() public {
+        address[] memory signers = new address[](3);
+        signers[0] = _owner;
+        signers[1] = _user;
+        signers[2] = _user2;
+
+        resetSigners(signers, 1);
+
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setDevMode(1);
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(0)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(0)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0)), true);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenDevEOA() public {
         address[] memory appContracts = new address[](2);
         appContracts[0] = address(11);
         appContracts[1] = address(22);
 
-        address[] memory devEOAs = new address[](2);
-        devEOAs[0] = _user;
-        devEOAs[1] = _user2;
+        address[] memory devEOAs = new address[](3);
+        devEOAs[0] = _owner;
+        devEOAs[1] = _user;
+        devEOAs[2] = _user2;
+
+        resetSigners(devEOAs, 1);
+
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setDevMode(1);
 
         updateMetadata(_owner, "", address(counter), appContracts, devEOAs);
 
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(11)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
     }

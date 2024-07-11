@@ -15,9 +15,12 @@ import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract KintoWalletUpgrade is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoAppRegistry, IKintoWalletFactory _factory)
-        KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry, _factory)
-    {}
+    constructor(
+        IEntryPoint _entryPoint,
+        IKintoID _kintoID,
+        IKintoAppRegistry _kintoAppRegistry,
+        IKintoWalletFactory _factory
+    ) KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry, _factory) {}
 
     function walletFunction() public pure returns (uint256) {
         return 1;
@@ -105,11 +108,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.startPrank(_owner);
 
         // Deploy a new wallet implementation
-        _kintoWalletImpl =
-            KintoWallet(payable(address(new KintoWalletUpgrade(_entryPoint,
-                                                               _kintoID,
-                                                               _kintoAppRegistry,
-                                                              _walletFactory))));
+        _kintoWalletImpl = KintoWallet(
+            payable(address(new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory)))
+        );
 
         // deploy walletv1 through wallet factory and initializes it
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
@@ -124,8 +125,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUpgradeAllWalletImplementations_RevertWhen_CallerIsNotOwner() public {
         // deploy a new wallet implementation
-        _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoID,
-                                                  _kintoAppRegistry, _walletFactory);
+        _kintoWalletImpl = new KintoWalletUpgrade(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
 
         // deploy walletv1 through wallet factory and initializes it
         vm.broadcast(_owner);

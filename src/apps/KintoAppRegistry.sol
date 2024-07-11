@@ -295,14 +295,14 @@ contract KintoAppRegistry is
         // Find the wallet of the `from` EOA.
         address[] memory wallets = walletFactory.getSignerWallets(from);
         // Deny if there is no wallet linked to EOA.
-        if(wallets.length == 0) return false;
+        if (wallets.length == 0) return false;
         address wallet = wallets[0];
 
         // Deny if dev mode is not enabled on the wallet.
-        if(IKintoWallet(wallet).devMode() == 0) return false;
+        if (IKintoWallet(wallet).devMode() == 0) return false;
 
         // Deny if wallet has no KYC
-        if(!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
+        if (!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
 
         // Signers of dev wallets are allowed to use CREATE and CREATE2.
         if (to == address(0) || to == CREATE2) {

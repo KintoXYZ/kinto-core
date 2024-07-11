@@ -236,9 +236,12 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     {
         // deploy a dummy KintoWallet that will be then replaced by the factory
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        KintoWallet dummy =
-            new KintoWallet{salt: 0}(IEntryPoint(address(0)), IKintoID(address(0)), IKintoAppRegistry(address(0)),IKintoWalletFactory(address(0))
-                                    );
+        KintoWallet dummy = new KintoWallet{salt: 0}(
+            IEntryPoint(address(0)),
+            IKintoID(address(0)),
+            IKintoAppRegistry(address(0)),
+            IKintoWalletFactory(address(0))
+        );
 
         // deploy factory implementation
         bytes memory creationCode = type(KintoWalletFactory).creationCode;
@@ -260,8 +263,9 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
     function deployKintoWallet() public returns (KintoWallet _kintoWallet) {
         bytes memory creationCode = type(KintoWallet).creationCode;
-        bytes memory bytecode =
-            abi.encodePacked(creationCode, abi.encode(address(entryPoint), address(kintoID), address(kintoRegistry), address(factory)));
+        bytes memory bytecode = abi.encodePacked(
+            creationCode, abi.encode(address(entryPoint), address(kintoID), address(kintoRegistry), address(factory))
+        );
         address implementation = _deployImplementation("KintoWallet", creationCode, bytecode, false);
         _kintoWallet = KintoWallet(payable(implementation));
 

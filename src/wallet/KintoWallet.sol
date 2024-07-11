@@ -93,7 +93,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp, IKintoWalletFactory _factory) {
+    constructor(
+        IEntryPoint __entryPoint,
+        IKintoID _kintoID,
+        IKintoAppRegistry _kintoApp,
+        IKintoWalletFactory _factory
+    ) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
         appRegistry = _kintoApp;
@@ -579,7 +584,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV28 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry, IKintoWalletFactory _factory)
-        KintoWallet(_entryPoint, _kintoID, _appRegistry, _factory)
-    {}
+    constructor(
+        IEntryPoint _entryPoint,
+        IKintoID _kintoID,
+        IKintoAppRegistry _appRegistry,
+        IKintoWalletFactory _factory
+    ) KintoWallet(_entryPoint, _kintoID, _appRegistry, _factory) {}
 }
