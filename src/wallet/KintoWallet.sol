@@ -127,8 +127,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
-        // update SignerWallets mapping if needed
-        _updateSignerWallets();
         _executeInner(dest, value, func, dest);
         // If can transact, cancel recovery
         inRecovery = 0;
@@ -142,8 +140,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         override
     {
         _requireFromEntryPoint();
-        // update SignerWallets mapping if needed
-        _updateSignerWallets();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
@@ -186,6 +182,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
         emit DevModeChanged(newDevMode, devMode);
         devMode = newDevMode;
+        // TODO: Remove once all the wallets are backfilled
+        updateSignerWallets();
     }
 
     /* ============ Whitelist Management ============ */
@@ -586,7 +584,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     /// @dev Updates signerToWallets mapping if needed
-    function _updateSignerWallets() private {
+    function updateSignerWallets() public {
         if (factory.getSignerWallets(owners[0]).length == 0) {
             factory.setWalletSigners(owners, owners);
         }
