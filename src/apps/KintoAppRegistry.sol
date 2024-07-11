@@ -286,7 +286,17 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @notice
+     * @notice Determines if a contract call is allowed from an EOA (Externally Owned Account)
+     * @dev This function checks various conditions to decide if an EOA can call a specific contract:
+     *      1. Allows calls to system contracts from any EOA
+     *      2. Checks if the EOA has a linked wallet
+     *      3. Verifies if dev mode is enabled on the wallet
+     *      4. Ensures the wallet owner has completed KYC
+     *      5. Permits CREATE and CREATE2 operations for eligible EOAs
+     *      6. Allows dev EOAs to call their respective apps
+     * @param from The address of the EOA initiating the call
+     * @param to The address of the contract being called
+     * @return A boolean indicating whether the contract call is allowed (true) or not (false)
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
         // Calls to system contracts are allwed for any EOA.
