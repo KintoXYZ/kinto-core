@@ -127,6 +127,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
+        // update SignerWallets mapping if needed
+        _updateSignerWallets();
         _executeInner(dest, value, func, dest);
         // If can transact, cancel recovery
         inRecovery = 0;
@@ -140,6 +142,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         override
     {
         _requireFromEntryPoint();
+        // update SignerWallets mapping if needed
+        _updateSignerWallets();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
         for (uint256 i = 0; i < dest.length; i++) {
             _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
@@ -352,6 +356,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function getOwners() external view override returns (address[] memory) {
         return owners;
+    }
+
+    function isBridgeContract(address funder) private pure returns (bool) {
+        return funder == BRIDGER_MAINNET || funder == BRIDGER_BASE || funder == BRIDGER_ARBITRUM;
     }
 
     /* ============ ValidateSignature ============ */
@@ -577,8 +585,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
-    function isBridgeContract(address funder) private pure returns (bool) {
-        return funder == BRIDGER_MAINNET || funder == BRIDGER_BASE || funder == BRIDGER_ARBITRUM;
+    /// @dev Updates signerToWallets mapping if needed
+    function _updateSignerWallets() private {
+        if (factory.getSignerWallets(owners[0]).length == 0) {
+            factory.setWalletSigners(owners, owners);
+        }
     }
 }
 

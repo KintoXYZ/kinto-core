@@ -269,7 +269,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (!sent) revert SendFailed();
     }
 
-    // Function to set all signers for a wallet at once
+    /**
+     * @notice Updates the signers associated with a wallet
+     * @dev This function can only be called by a valid Kinto wallet. It removes old signer associations and adds new ones.
+     * @param newSigners An array of addresses representing the new signers for the wallet
+     * @param oldSigners An array of addresses representing the old signers to be removed from the wallet
+     */
     function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) public {
         address wallet = msg.sender;
         if (walletTs[wallet] == 0) revert InvalidWallet();
@@ -294,7 +299,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Getters ============ */
 
-    // Function to get all wallets for a signer
+    /**
+     * @notice Retrieves all wallets associated with a specific signer
+     * @dev This function returns an array of wallet addresses that the given signer is associated with
+     * @param signer The address of the signer to query
+     * @return An array of wallet addresses associated with the given signer
+     */
     function getSignerWallets(address signer) public view override returns (address[] memory) {
         return signerToWallets[signer];
     }
