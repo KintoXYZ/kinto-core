@@ -19,6 +19,9 @@ contract BridgedKinto is BridgedToken {
     /// @notice Emmitted when new mining contract is set.
     event MiningContractSet(address indexed miningContract, address oldMiningContract);
 
+    /// @notice Treasure contract address.
+    address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+
     /// @notice Address of the mining contract.
     address public miningContract;
 
@@ -46,7 +49,10 @@ contract BridgedKinto is BridgedToken {
     function _update(address from, address to, uint256 amount) internal override {
         super._update(from, to, amount);
 
-        if (from != address(0) && from != address(miningContract) && to != address(miningContract)) {
+        if (
+            from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
+                && to != TREASURY
+        ) {
             revert TransferIsNotAllowed(from, to, amount);
         }
     }

@@ -22,11 +22,12 @@ import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
+import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
-contract DeployerScript is Create2Helper, ArtifactsReader {
+contract DeployerScript is Create2Helper, DeployerHelper {
     // EntryPoint
     EntryPoint public entryPoint;
 
@@ -410,7 +411,7 @@ contract DeployerScript is Create2Helper, ArtifactsReader {
         // deploy governance
         bytes memory creationCode = type(EngenGovernance).creationCode;
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(engenCredits)));
-        address implementation = _deployImplementation("EngenGovernance", creationCode, bytecode, true);
+        address implementation = _deployImplementation("EngenGovernance", creationCode, bytecode, false);
         _governance = EngenGovernance(payable(implementation));
     }
 

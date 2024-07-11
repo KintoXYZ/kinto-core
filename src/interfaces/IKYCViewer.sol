@@ -13,6 +13,7 @@ interface IKYCViewer {
     /* ============ Structs ============ */
 
     struct UserInfo {
+        uint256 insurancePolicy;
         uint256 ownerBalance;
         uint256 walletBalance;
         uint256 walletPolicy;
@@ -23,6 +24,7 @@ interface IKYCViewer {
         bool claimedFaucet;
         bool hasNFT;
         bool isKYC;
+        bool hasValidInsurance;
     }
 
     /* ============ Basic Viewers ============ */
@@ -42,6 +44,8 @@ interface IKYCViewer {
     function getWalletOwners(address _wallet) external view returns (address[] memory);
 
     function getUserInfo(address _account, address payable _wallet) external view returns (UserInfo memory);
+
+    function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances);
 
     /* ============ Constants and attrs ============ */
 

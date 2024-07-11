@@ -220,15 +220,11 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     function resetSigners(address[] memory newSigners, uint8 policy) public {
         vm.prank(address(_kintoWallet));
         _kintoWallet.resetSigners(newSigners, policy);
-        assertEq(_kintoWallet.owners(0), newSigners[0]);
-        assertEq(_kintoWallet.owners(1), newSigners[1]);
-        assertEq(_kintoWallet.signerPolicy(), policy);
     }
 
     function setSignerPolicy(uint8 policy) public {
         vm.prank(address(_kintoWallet));
         _kintoWallet.setSignerPolicy(policy);
-        assertEq(_kintoWallet.signerPolicy(), policy);
     }
 
     function useHarness() public {

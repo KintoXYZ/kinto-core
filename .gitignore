@@ -23,3 +23,5 @@ certora/munged/*
 # Ignore local chain
 **/31337/**
 
+
+jupyter/.ipynb_checkpoints/

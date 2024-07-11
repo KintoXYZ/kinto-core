@@ -416,7 +416,7 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distr.getTotalLimit(), 4_000_000 * 1e18);
     }
 
-    function testGetRewards() public {
+    function testGetRewards() public view {
         assertEq(distributor.getRewards(0, START_TIMESTAMP), 0);
         assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP), 0);
         assertEq(distributor.getRewards(START_TIMESTAMP, START_TIMESTAMP + 24 * 3600), 2116402116402116444444); // 2116 for a day

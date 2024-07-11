@@ -68,9 +68,9 @@ contract RecoveryTest is SharedSetup {
         signers[0] = _owner;
         signers[1] = _user;
 
-        uint8 MINUS_ONE_SIGNER = _kintoWallet.MINUS_ONE_SIGNER();
+        uint8 TWO_SIGNERS = _kintoWallet.TWO_SIGNERS();
         vm.prank(address(_kintoWallet));
-        _kintoWallet.resetSigners(signers, MINUS_ONE_SIGNER);
+        _kintoWallet.resetSigners(signers, TWO_SIGNERS);
 
         assertEq(_kintoWallet.owners(0), _owner);
 

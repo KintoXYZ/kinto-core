@@ -12,6 +12,7 @@ contract BridgedKintoTest is SharedSetup {
     address upgrader;
 
     BridgedKinto internal token;
+    address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     function setUp() public override {
         super.setUp();
@@ -74,6 +75,23 @@ contract BridgedKintoTest is SharedSetup {
 
         vm.prank(_user);
         token.transfer(_user2, 500);
+        assertEq(token.balanceOf(_user2), 500);
+    }
+
+    function testTransfer_WhenToTreasury() public {
+        vm.prank(_user);
+        token.transfer(TREASURY, 500);
+
+        assertEq(token.balanceOf(TREASURY), 500);
+    }
+
+    function testTransfer_WhenFromTreasury() public {
+        vm.prank(minter);
+        token.mint(TREASURY, 1000);
+
+        vm.prank(TREASURY);
+        token.transfer(_user2, 500);
+
         assertEq(token.balanceOf(_user2), 500);
     }
 

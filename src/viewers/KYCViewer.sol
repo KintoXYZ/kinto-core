@@ -109,8 +109,29 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             engenCreditsEarned: engenCredits.earnedCredits(_wallet),
             engenCreditsClaimed: IERC20(address(engenCredits)).balanceOf(_wallet),
             isKYC: kintoID.isKYC(_account),
-            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0
+            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0,
+            insurancePolicy: hasWallet ? IKintoWallet(_wallet).insurancePolicy() : 0,
+            hasValidInsurance: hasWallet ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) < block.timestamp : false
         });
+    }
+
+    /**
+     * @notice Retrieves the ERC20 token balances for a specific target address.
+     * @dev This view function allows fetching balances for multiple tokens in a single call,
+     *         which can save considerable gas over multiple calls.
+     * @param tokens An array of token addresses to query balances for.
+     * @param target The address whose balances will be queried.
+     * @return balances An array of balances corresponding to the array of tokens provided.
+     */
+    function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances) {
+        balances = new uint256[](tokens.length);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] == address(0) || tokens[i] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+                balances[i] = target.balance;
+            } else {
+                balances[i] = IERC20(tokens[i]).balanceOf(target);
+            }
+        }
     }
 
     /* ============ Helpers ============ */
@@ -123,7 +144,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV8 is KYCViewer {
+contract KYCViewerV10 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
         KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
     {}

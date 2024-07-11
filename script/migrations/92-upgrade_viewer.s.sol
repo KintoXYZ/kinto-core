@@ -4,13 +4,13 @@ pragma solidity ^0.8.18;
 import "../../src/viewers/KYCViewer.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
-contract KintoMigration56DeployScript is MigrationHelper {
+contract KintoMigration92DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
         // generate bytecode for KYCViewer
         bytes memory bytecode = abi.encodePacked(
-            type(KYCViewer).creationCode,
+            type(KYCViewerV10).creationCode,
             abi.encode(
                 _getChainDeployment("KintoWalletFactory"),
                 _getChainDeployment("Faucet"),
@@ -18,7 +18,8 @@ contract KintoMigration56DeployScript is MigrationHelper {
             )
         );
 
-        // upgrade KYCViewer to V8
-        _deployImplementationAndUpgrade("KYCViewer", "V8", bytecode);
+        // upgrade KYCViewer to V9
+        address impl = _deployImplementationAndUpgrade("KYCViewer", "V10", bytecode);
+        saveContractAddress("KYCViewerV10-impl", impl);
     }
 }

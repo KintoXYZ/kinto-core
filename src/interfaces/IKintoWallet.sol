@@ -10,7 +10,9 @@ interface IKintoWallet {
     /* ============ Errors ============ */
 
     error LengthMismatch();
-    error InvalidPolicy(uint8 policy);
+    error InvalidPolicy(uint8 newPolicy, uint256 newSigners);
+    error InvalidInsurancePolicy(uint256 newPolicy);
+    error InvalidInsurancePayment(address token);
     error InvalidSigner();
     error InvalidApp();
     error AppNotWhitelisted(address sponsor, address addr);
@@ -18,10 +20,9 @@ interface IKintoWallet {
     error RecoveryTimeNotElapsed();
     error OwnerKYCMustBeBurned();
     error InvalidRecoverer();
-    error MaxSignersExceeded();
+    error MaxSignersExceeded(uint256 newSigners);
     error KYCRequired();
     error DuplicateSigner();
-    error InvalidSingleSignerPolicy();
     error OnlySelf();
     error OnlyFactory();
     error EmptySigners();
@@ -54,15 +55,23 @@ interface IKintoWallet {
 
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
+    function setInsurancePolicy(uint256 newPolicy, address paymentToken) external;
+
     /* ============ Basic Viewers ============ */
 
     function getOwnersCount() external view returns (uint256);
 
     function getNonce() external view returns (uint256);
 
+    function getInsurancePrice(uint256 newPolicy, address paymentToken) external view returns (uint256);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
+
+    function insurancePolicy() external view returns (uint256);
+
+    function insuranceTimestamp() external view returns (uint256);
 
     function inRecovery() external view returns (uint256);
 
@@ -85,6 +94,8 @@ interface IKintoWallet {
     function MAX_SIGNERS() external view returns (uint8);
 
     function SINGLE_SIGNER() external view returns (uint8);
+
+    function TWO_SIGNERS() external view returns (uint8);
 
     function MINUS_ONE_SIGNER() external view returns (uint8);
 
