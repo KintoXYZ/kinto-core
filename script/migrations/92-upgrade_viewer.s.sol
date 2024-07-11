@@ -10,7 +10,7 @@ contract KintoMigration92DeployScript is MigrationHelper {
 
         // generate bytecode for KYCViewer
         bytes memory bytecode = abi.encodePacked(
-            type(KYCViewerV10).creationCode,
+            type(KYCViewerV11).creationCode,
             abi.encode(
                 _getChainDeployment("KintoWalletFactory"),
                 _getChainDeployment("Faucet"),
@@ -19,7 +19,7 @@ contract KintoMigration92DeployScript is MigrationHelper {
         );
 
         // upgrade KYCViewer to V9
-        address impl = _deployImplementationAndUpgrade("KYCViewer", "V10", bytecode);
-        saveContractAddress("KYCViewerV10-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KYCViewer", "V11", bytecode);
+        saveContractAddress("KYCViewerV11-impl", impl);
     }
 }

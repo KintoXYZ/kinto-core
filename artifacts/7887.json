@@ -10307,6 +10307,11 @@
                   "internalType": "uint256"
                 },
                 {
+                  "name": "insuranceTimestamp",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
                   "name": "walletOwners",
                   "type": "address[]",
                   "internalType": "address[]"

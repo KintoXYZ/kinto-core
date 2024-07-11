@@ -20,6 +20,7 @@ interface IKYCViewer {
         uint256 recoveryTs;
         uint256 engenCreditsEarned;
         uint256 engenCreditsClaimed;
+        uint256 insuranceTimestamp;
         address[] walletOwners;
         bool claimedFaucet;
         bool hasNFT;

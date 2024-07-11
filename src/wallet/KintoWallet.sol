@@ -51,7 +51,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant WETH = 0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8;
-    address internal constant KINTO_TREASURY = address(0x793500709506652Fcc61F0d2D0fDa605638D4293);
+    address internal constant KINTO_TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     /* ============ State Variables ============ */
 
@@ -317,7 +317,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newPolicy > 2 || newPolicy == insurancePolicy) revert InvalidInsurancePolicy(newPolicy);
 
         uint256 paymentAmount = getInsurancePrice(newPolicy, paymentToken);
-        IERC20(paymentToken).safeTransferFrom(msg.sender, KINTO_TREASURY, paymentAmount);
+        IERC20(paymentToken).safeTransfer(KINTO_TREASURY, paymentAmount);
 
         emit InsurancePolicyChanged(newPolicy, insurancePolicy);
         insurancePolicy = newPolicy;
