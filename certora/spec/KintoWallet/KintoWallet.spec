@@ -143,8 +143,8 @@ rule validationSignerIntegrity() {
     bytes32 hash = signedMessageHash(userOpHash);
     /// Hash message signer:
     address signer = recoverCVL(hash, userOp.signature);
-    
-    bool appHasSigner = appRegistry.getSponsor(app) != 0;
+
+    bool appHasSigner = appSigner(app) != 0;
 
     assert !appHasSigner => isOwner(signer), "Owner must be signer of wallet transaction";
     assert (appHasSigner && !isOwner(signer)) => appSigner(app) == signer, "App signer must sign for app transaction";
