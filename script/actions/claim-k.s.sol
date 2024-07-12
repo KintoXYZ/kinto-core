@@ -15,7 +15,7 @@ contract ClaimKintoScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        bytes32[] memory proof  = vm.envOr("PROOF", ",", new bytes32[](0));
+        bytes32[] memory proof = vm.envOr("PROOF", ",", new bytes32[](0));
         address user = vm.envAddress("USER");
         uint256 amount = vm.envUint("AMOUNT");
 
