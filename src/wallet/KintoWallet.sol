@@ -145,7 +145,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * @param newPolicy new policy
      */
     function setSignerPolicy(uint8 newPolicy) public override onlySelf {
-        _checkSingleSignerPolicy(newPolicy, owners.length);
+        _checkSignerPolicy(newPolicy, owners.length);
         _setSignerPolicy(newPolicy);
     }
 
@@ -156,7 +156,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     function resetSigners(address[] calldata newSigners, uint8 newPolicy) external override onlySelf {
         if (newSigners.length == 0) revert EmptySigners();
         if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
-        _checkSingleSignerPolicy(newPolicy, newSigners.length);
+        _checkSignerPolicy(newPolicy, newSigners.length);
 
         _resetSigners(newSigners, newPolicy);
     }
@@ -461,11 +461,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (newPolicy == 0 || newPolicy > 4 || newPolicy == signerPolicy) {
             revert InvalidPolicy(newPolicy, owners.length);
         }
-        // MinusOneSigner and TwoSigners require at least 2 signers
-        // SingleSigner and AllSigners are valid for all number of signers
-        if (((newPolicy == MINUS_ONE_SIGNER || newPolicy == TWO_SIGNERS) && owners.length == 1)) {
-            revert InvalidPolicy(newPolicy, owners.length);
-        }
 
         emit WalletPolicyChanged(newPolicy, signerPolicy);
         signerPolicy = newPolicy;
@@ -500,9 +495,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         emit SignersChanged(newSigners, owners);
     }
 
-    function _checkSingleSignerPolicy(uint8 newPolicy, uint256 newSigners) internal view {
+    function _checkSignerPolicy(uint8 newPolicy, uint256 newSigners) internal view {
         // reverting to SingleSigner is not allowed for security reasons
         if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
+            revert InvalidPolicy(newPolicy, newSigners);
+        }
+        // MinusOneSigner and TwoSigners require at least 2 signers
+        // SingleSigner and AllSigners are valid for all number of signers
+        if (((newPolicy == MINUS_ONE_SIGNER || newPolicy == TWO_SIGNERS) && newSigners == 1)) {
             revert InvalidPolicy(newPolicy, newSigners);
         }
     }
