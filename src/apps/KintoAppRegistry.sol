@@ -33,9 +33,13 @@ contract KintoAppRegistry is
 
     address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-    /* ============ State Variables ============ */
-
     IKintoWalletFactory public immutable override walletFactory;
+
+    IKintoID public immutable kintoID;
+
+    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+
+    /* ============ State Variables ============ */
 
     mapping(address => IKintoAppRegistry.Metadata) private _appMetadata;
 
@@ -49,14 +53,13 @@ contract KintoAppRegistry is
 
     uint256 public override appCount;
 
-    IKintoID public immutable kintoID;
-
-    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
-
     mapping(address => address) public override devEoaToApp;
 
     address[] public override systemContracts;
+
     mapping(address => bool) public override isSystemContract;
+
+    mapping(address => address) public override deployerToWallet;
 
     /* ============ Events ============ */
 
@@ -64,6 +67,7 @@ contract KintoAppRegistry is
     event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
     event AppDSAEnabled(address indexed _app, uint256 _timestamp);
     event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
+    event DeployerSet(address indexed newDeployer);
 
     /* ============ Constructor & Initializers ============ */
 
@@ -222,6 +226,15 @@ contract KintoAppRegistry is
         systemContracts = newSystemContracts;
     }
 
+    function setDeployerEOA(address deployer) external {
+        address wallet = msg.sender;
+        if(walletFactory.walletTs(wallet) == 0) revert InvalidWallet(msg.sender);
+
+        emit DeployerSet(deployer);
+        deployerToWallet[deployer] = wallet;
+
+    }
+
     /* ============ Getters ============ */
 
     /**
@@ -299,33 +312,30 @@ contract KintoAppRegistry is
      * @return A boolean indicating whether the contract call is allowed (true) or not (false)
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
-        // Calls to system contracts are allwed for any EOA.
+        // Calls to system contracts are allwed for any EOA
         if (isSystemContract[to]) return true;
 
-        // Find the wallet of the `from` EOA.
-        address[] memory wallets = walletFactory.getSignerWallets(from);
-        // Deny if there is no wallet linked to EOA.
-        if (wallets.length == 0) return false;
-        address wallet = wallets[0];
-
-        // Deny if dev mode is not enabled on the wallet.
-        if (IKintoWallet(wallet).devMode() == 0) return false;
-
-        // Deny if wallet has no KYC
-        if (!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
-
-        // Signers of dev wallets are allowed to use CREATE and CREATE2.
+        // Deployer EOAs are allowed to use CREATE and CREATE2
         if (to == address(0) || to == CREATE2) {
-            // Permit if EOA have a wallet, dev mode and KYC.
+            address wallet = deployerToWallet[from];
+            // Only dev wallets can deploy
+            if(wallet == address(0)) return false;
+            // Deny if wallet has no KYC
+            if (!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
+            // Permit if EOA have a wallet, dev mode and KYC
             return true;
         }
 
-        // Contract calls are allowed only to dev EOAs.
+        // Contract calls are allowed only from dev EOAs to app's contracts
         address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
-        // Dev EOAs are allowed to call their respective apps.
+
+        // Dev EOAs are allowed to call their respective apps
         if (devEoaToApp[from] == app) {
+            // Deny if wallet has no KYC
+            if (!kintoID.isKYC(ownerOf(_appMetadata[app].tokenId))) return false;
             return true;
         }
+
         return false;
     }
 

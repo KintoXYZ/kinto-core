@@ -36,8 +36,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
     mapping(address => bool) public override adminApproved;
-    // Mapping from signer address to an array of wallet addresses
-    mapping(address => address[]) private signerToWallets;
 
     /* ============ Events ============ */
 
@@ -269,45 +267,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (!sent) revert SendFailed();
     }
 
-    /**
-     * @notice Updates the signers associated with a wallet
-     * @dev This function can only be called by a valid Kinto wallet. It removes old signer associations and adds new ones.
-     * @param newSigners An array of addresses representing the new signers for the wallet
-     * @param oldSigners An array of addresses representing the old signers to be removed from the wallet
-     */
-    function setWalletSigners(address[] calldata newSigners, address[] calldata oldSigners) public {
-        address wallet = msg.sender;
-        if (walletTs[wallet] == 0) revert InvalidWallet();
-
-        // Remove old relationships
-        for (uint256 i = 0; i < oldSigners.length; i++) {
-            address[] storage wallets = signerToWallets[oldSigners[i]];
-            for (uint256 j = 0; j < wallets.length; j++) {
-                if (wallets[j] == wallet) {
-                    wallets[j] = wallets[wallets.length - 1];
-                    wallets.pop();
-                    break;
-                }
-            }
-        }
-
-        // Add new relationships
-        for (uint256 i = 0; i < newSigners.length; i++) {
-            signerToWallets[newSigners[i]].push(wallet);
-        }
-    }
-
     /* ============ Getters ============ */
-
-    /**
-     * @notice Retrieves all wallets associated with a specific signer
-     * @dev This function returns an array of wallet addresses that the given signer is associated with
-     * @param signer The address of the signer to query
-     * @return An array of wallet addresses associated with the given signer
-     */
-    function getSignerWallets(address signer) public view override returns (address[] memory) {
-        return signerToWallets[signer];
-    }
 
     /**
      * @dev Gets the creation timestamp of a current wallet

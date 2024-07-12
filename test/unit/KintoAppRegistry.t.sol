@@ -514,35 +514,17 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testIsContractCallAllowedFromEOA_WhenCreate2() public {
-        address[] memory signers = new address[](3);
-        signers[0] = _owner;
-        signers[1] = _user;
-        signers[2] = _user2;
-
-        resetSigners(signers, 1);
-
         vm.prank(address(_kintoWallet));
-        _kintoWallet.setDevMode(1);
+        _kintoAppRegistry.setDeployerEOA(address(0xde));
 
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(CREATE2)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(CREATE2)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(CREATE2)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(CREATE2)), true);
     }
 
     function testIsContractCallAllowedFromEOA_WhenCreate() public {
-        address[] memory signers = new address[](3);
-        signers[0] = _owner;
-        signers[1] = _user;
-        signers[2] = _user2;
-
-        resetSigners(signers, 1);
-
         vm.prank(address(_kintoWallet));
-        _kintoWallet.setDevMode(1);
+        _kintoAppRegistry.setDeployerEOA(address(0xde));
 
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(0)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(0)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0)), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(0)), true);
     }
 
     function testIsContractCallAllowedFromEOA_WhenDevEOA() public {
@@ -558,8 +540,6 @@ contract KintoAppRegistryTest is SharedSetup {
         resetSigners(devEOAs, 1);
 
         vm.prank(address(_kintoWallet));
-        _kintoWallet.setDevMode(1);
-
         updateMetadata(_owner, "", address(counter), appContracts, devEOAs);
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(11)), true);

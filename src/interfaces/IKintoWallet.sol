@@ -56,8 +56,6 @@ interface IKintoWallet {
 
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external;
 
-    function setDevMode(uint256 newPolicy) external;
-
     function setInsurancePolicy(uint256 newPolicy, address paymentToken) external;
 
     /* ============ Basic Viewers ============ */
@@ -75,8 +73,6 @@ interface IKintoWallet {
     function kintoID() external view returns (IKintoID);
 
     function insurancePolicy() external view returns (uint256);
-
-    function devMode() external view returns (uint256);
 
     function insuranceTimestamp() external view returns (uint256);
 

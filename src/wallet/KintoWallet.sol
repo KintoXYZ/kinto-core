@@ -67,13 +67,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
     uint256 public override insuranceTimestamp;
 
-    uint256 public override devMode; // 0 = non-dev, 1 = dev
-
     /* ============ Events ============ */
 
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
-    event DevModeChanged(uint256 newDevMode, uint256 oldDevMode);
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
     event SignersChanged(address[] newSigners, address[] oldSigners);
     event AppKeyCreated(address indexed appKey, address indexed signer);
@@ -169,21 +166,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _checkSingleSignerPolicy(newPolicy, newSigners.length);
 
         _resetSigners(newSigners, newPolicy);
-    }
-
-    /* ============ Dev Mode ============ */
-
-    /**
-     * @notice Change dev mode
-     * @param newDevMode new dev mode
-     */
-    function setDevMode(uint256 newDevMode) public override onlySelf {
-        if (newDevMode > 1) revert InvalidDevMode(newDevMode);
-
-        emit DevModeChanged(newDevMode, devMode);
-        devMode = newDevMode;
-        // TODO: Remove once all the wallets are backfilled
-        updateSignerWallets();
     }
 
     /* ============ Whitelist Management ============ */
@@ -522,7 +504,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             if (newSigners[i] == address(0)) revert InvalidSigner();
         }
 
-        factory.setWalletSigners(newSigners, owners);
         // set new owners
         owners = newSigners;
 
@@ -580,13 +561,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             batched = true;
         } else if (selector == IKintoWallet.execute.selector) {
             (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
-        }
-    }
-
-    /// @dev Updates signerToWallets mapping if needed
-    function updateSignerWallets() public {
-        if (factory.getSignerWallets(owners[0]).length == 0) {
-            factory.setWalletSigners(owners, owners);
         }
     }
 }

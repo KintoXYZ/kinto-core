@@ -18,8 +18,6 @@ contract ResetSignerTest is SharedSetup {
 
         assertEq(_kintoWallet.owners(0), _owner);
         assertEq(_kintoWallet.owners(1), _user);
-        assertEq(_walletFactory.getSignerWallets(_user)[0], address(_kintoWallet));
-        assertEq(_walletFactory.getSignerWallets(_owner)[0], address(_kintoWallet));
     }
 
     function testResetSigners_WhenRemovingOneSigner() public {
@@ -39,8 +37,6 @@ contract ResetSignerTest is SharedSetup {
         vm.stopPrank();
 
         assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_walletFactory.getSignerWallets(_owner)[0], address(_kintoWallet));
-        assertEq(_walletFactory.getSignerWallets(_user).length, 0);
     }
 
     function testResetSigners_RevertWhen_DuplicateSigner() public {
