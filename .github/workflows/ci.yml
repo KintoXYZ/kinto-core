@@ -233,8 +233,8 @@ jobs:
             await script({ github, context, header, body })
   certora:
     needs:
-      - test-local
-      - test-fork
+      # - test-local
+      # - test-fork
 
     name: Certora
     runs-on: ubuntu-latest
