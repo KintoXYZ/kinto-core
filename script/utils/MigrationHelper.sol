@@ -415,7 +415,8 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),
-            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry")),
+            IKintoWalletFactory(_getChainDeployment("KintoWalletFactory"))
         );
         vm.etch(wallet, address(impl).code);
     }

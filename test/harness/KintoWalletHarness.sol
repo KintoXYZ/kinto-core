@@ -9,8 +9,8 @@ import {KintoWallet} from "../../src/wallet/KintoWallet.sol";
 
 // Harness contract to expose internal functions for testing.
 contract KintoWalletHarness is KintoWallet {
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
-        KintoWallet(__entryPoint, _kintoID, _kintoApp)
+    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp, IKintoWalletFactory _factory)
+        KintoWallet(__entryPoint, _kintoID, _kintoApp, _factory)
     {
         // body intentionally blank
     }

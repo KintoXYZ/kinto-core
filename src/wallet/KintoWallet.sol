@@ -32,6 +32,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /* ============ Constants & Immutables ============ */
     IKintoID public immutable override kintoID;
     IEntryPoint private immutable _entryPoint;
+    IKintoAppRegistry public immutable override appRegistry;
+    IKintoWalletFactory public immutable override factory;
 
     uint8 public constant override MAX_SIGNERS = 4;
     uint8 public constant override SINGLE_SIGNER = 1;
@@ -61,7 +63,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     mapping(address => bool) public override funderWhitelist;
     mapping(address => address) public override appSigner;
     mapping(address => bool) public override appWhitelist;
-    IKintoAppRegistry public immutable override appRegistry;
 
     uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
     uint256 public override insuranceTimestamp;
@@ -89,10 +90,16 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
-    constructor(IEntryPoint __entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp) {
+    constructor(
+        IEntryPoint __entryPoint,
+        IKintoID _kintoID,
+        IKintoAppRegistry _kintoApp,
+        IKintoWalletFactory _factory
+    ) {
         _entryPoint = __entryPoint;
         kintoID = _kintoID;
         appRegistry = _kintoApp;
+        factory = _factory;
         _disableInitializers();
     }
 
@@ -327,7 +334,15 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return owners.length;
     }
 
-    /* ============ IAccountOverrides ============ */
+    function getOwners() external view override returns (address[] memory) {
+        return owners;
+    }
+
+    function isBridgeContract(address funder) private pure returns (bool) {
+        return funder == BRIDGER_MAINNET || funder == BRIDGER_BASE || funder == BRIDGER_ARBITRUM;
+    }
+
+    /* ============ ValidateSignature ============ */
 
     /// implement template method of BaseAccount
     /// @dev we don't want to do requires here as it would revert the whole transaction
@@ -548,15 +563,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
             (target,,) = abi.decode(callData[4:], (address, uint256, bytes)); // decode execute callData
         }
     }
-
-    function isBridgeContract(address funder) private pure returns (bool) {
-        return funder == BRIDGER_MAINNET || funder == BRIDGER_BASE || funder == BRIDGER_ARBITRUM;
-    }
 }
 
 // Upgradeable version of KintoWallet
 contract KintoWalletV28 is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _appRegistry)
-        KintoWallet(_entryPoint, _kintoID, _appRegistry)
-    {}
+    constructor(
+        IEntryPoint _entryPoint,
+        IKintoID _kintoID,
+        IKintoAppRegistry _appRegistry,
+        IKintoWalletFactory _factory
+    ) KintoWallet(_entryPoint, _kintoID, _appRegistry, _factory) {}
 }

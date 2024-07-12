@@ -12,8 +12,8 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletNewVersion is KintoWallet {
-    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp)
-        KintoWallet(_entryPoint, _kintoID, _kintoApp)
+    constructor(IEntryPoint _entryPoint, IKintoID _kintoID, IKintoAppRegistry _kintoApp, IKintoWalletFactory _factory)
+        KintoWallet(_entryPoint, _kintoID, _kintoApp, _factory)
     {}
 }
 
@@ -27,7 +27,8 @@ contract KintoWalletsUpgradeScript is ArtifactsReader {
         KintoWallet _kintoWalletImpl = new KintoWalletNewVersion(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),
-            IKintoAppRegistry(_getChainDeployment("IKintoAppRegistry"))
+            IKintoAppRegistry(_getChainDeployment("IKintoAppRegistry")),
+            IKintoWalletFactory(_getChainDeployment("KintoWalletFactory"))
         );
 
         // upgrade all implementations

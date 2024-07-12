@@ -17,6 +17,7 @@ interface IKintoAppRegistry {
     error InvalidSponsorSetter(); // "Only developer can set sponsored contracts"
     error DSAAlreadyEnabled(); // DSA already enabled
     error OnlyMintingAllowed(); // Only mint transfers are allowed
+    error InvalidWallet(address);
 
     /* ============ Structs ============ */
 
@@ -56,6 +57,8 @@ interface IKintoAppRegistry {
 
     function overrideChildToParentContract(address child, address parent) external;
 
+    function updateSystemContracts(address[] calldata newSystemContracts) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);
@@ -80,7 +83,13 @@ interface IKintoAppRegistry {
 
     function tokenIdToApp(uint256 _tokenId) external view returns (address);
 
-    function eoaToApp(address _eoa) external view returns (address);
+    function devEoaToApp(address _eoa) external view returns (address);
+
+    function systemContracts(uint256 index) external view returns (address);
+
+    function isSystemContract(address addr) external view returns (bool);
+
+    function deployerToWallet(address addr) external view returns (address);
 
     /* ============ Constants and attrs ============ */
 
