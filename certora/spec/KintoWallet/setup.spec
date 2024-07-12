@@ -76,6 +76,7 @@ function isOwner(address account) returns bool {
     if(count == 1) {return account == owners(0);}
     else if(count == 2) {return account == owners(0) || account == owners(1);}
     else if(count == 3) {return account == owners(0) || account == owners(1) || account == owners(2);}
+    else if(count == 4) {return account == owners(0) || account == owners(1) || account == owners(2) || account == owners(3);}
     return false;
 }
 
