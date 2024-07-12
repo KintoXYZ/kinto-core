@@ -546,4 +546,13 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
     }
+
+    function testSetDeployerEOA() public {
+        vm.prank(address(_kintoWallet));
+        vm.expectEmit(true, true, true, true);
+        emit KintoAppRegistry.DeployerSet(address(0xde));
+        _kintoAppRegistry.setDeployerEOA(address(0xde));
+
+        assertEq(_kintoAppRegistry.deployerToWallet(address(0xde)), address(_kintoWallet));
+    }
 }
