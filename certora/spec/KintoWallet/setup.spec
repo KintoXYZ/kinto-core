@@ -19,6 +19,7 @@ methods {
     function MINUS_ONE_SIGNER() external returns (uint8) envfree;
     function ALL_SIGNERS() external returns (uint8) envfree;
     function MAX_SIGNERS() external returns (uint8) envfree;
+    function TWO_SIGNERS() external returns (uint8) envfree;
     function KintoWallet._decodeCallData(bytes calldata) internal returns (address,bool) => randomAppContract();
 
     /// BytesSignature
