@@ -81,6 +81,36 @@ contract RewardsDistributorTest is ForkTest {
         assertEq(distributor.claimedRoot(_user), distributor.root());
     }
 
+    function testClaimTwoRoots() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), amount * 2);
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
+
+        distributor.claim(proof, _user, amount);
+
+        assertEq(distributor.claimedRoot(_user), distributor.root());
+
+        vm.prank(_owner);
+        distributor.updateRoot(0xdf8a56a37f21e52f6b05dc585fd82d58fc6d22def694773b1908e37c01dd956e);
+
+        proof = new bytes32[](1);
+        proof[0] = 0xf99b282683659c94d424bb86cf2a97562a08a76b5aee76ae401a001c75ca8f02;
+
+        distributor.claim(proof, _user, amount * 2);
+
+        assertEq(kinto.balanceOf(address(distributor)), 0);
+        assertEq(kinto.balanceOf(_user), amount * 2);
+        assertEq(distributor.totalClaimed(), amount * 2);
+        assertEq(distributor.claimedByUser(_user), amount * 2);
+        assertEq(distributor.getTotalLimit(), bonusAmount);
+        assertEq(distributor.getUnclaimedLimit(), bonusAmount - amount * 2);
+        assertEq(distributor.claimedRoot(_user), distributor.root());
+    }
+
     function testClaim_RevertWhenClaimedTwice() public {
         uint256 amount = 1e18;
 
@@ -194,6 +224,27 @@ contract RewardsDistributorTest is ForkTest {
 
         vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.MaxLimitReached.selector, amount, 0));
         distr.claim(proof, _user, amount);
+    }
+
+    function testClaim_RevertWhenAlreadyClaimed() public {
+        uint256 amount = 1e18;
+
+        kinto.mint(address(distributor), amount);
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
+
+        distributor.claim(proof, _user, amount);
+
+        vm.prank(_owner);
+        distributor.updateRoot(0xdf8a56a37f21e52f6b05dc585fd82d58fc6d22def694773b1908e37c01dd956e);
+
+        proof[0] = 0xb92c48e9d7abe27fd8dfd6b5dfdbfb1c9a463f80c712b66f3a5180a090cccafc;
+        proof[1] = 0xfe69d275d3541c8c5338701e9b211e3fc949b5efb1d00a410313e7474952967f;
+
+        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.AlreadyClaimed.selector, _user));
+        distributor.claim(proof, _user, amount);
     }
 
     function testUpdateRoot() public {

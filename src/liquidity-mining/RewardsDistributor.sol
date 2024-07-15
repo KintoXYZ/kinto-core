@@ -79,6 +79,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     error RootAlreadyClaimed(address user);
 
+    /**
+     * @notice Thrown when all tokens already claimed by user.
+     * @param user The user address.
+     */
+    error AlreadyClaimed(address user);
+
     /* ============ Constants & Immutables ============ */
 
     /// @notice Role to update the root.
@@ -206,21 +212,28 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @notice Allows a user to claim tokens if they provide a valid proof.
      * @param proof The Merkle proof.
      * @param user The address of the user claiming tokens.
-     * @param amount The amount of tokens to claim.
+     * @param totalUserTokens The total amount of tokens to claim.
      */
-    function claim(bytes32[] memory proof, address user, uint256 amount) external nonReentrant {
+    function claim(bytes32[] memory proof, address user, uint256 totalUserTokens) external nonReentrant {
         // Do not allow to claim from the same root twice.
         if (claimedRoot[user] == root) {
             revert RootAlreadyClaimed(user);
         }
 
+        // Check if user has any tokens to claim.
+        if (totalUserTokens <= claimedByUser[user]) {
+            revert AlreadyClaimed(user);
+        }
+
         // Generate the leaf node from the user's address and the amount they are claiming
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, amount))));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, totalUserTokens))));
 
         // Verify the provided proof against the stored Merkle root
         if (MerkleProof.verify(proof, root, leaf) == false) {
             revert InvalidProof(proof, leaf);
         }
+
+        uint256 amount = totalUserTokens - claimedByUser[user];
 
         // Check if the total claimed amount exceeds the allowable limit
         if (amount > getUnclaimedLimit()) {
