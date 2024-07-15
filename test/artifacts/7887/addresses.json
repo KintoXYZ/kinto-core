@@ -126,6 +126,7 @@
   "RewardsDistributor-impl": "0x44BB06252724657734071eFA256e23FA6Bc6Cf44",
   "RewardsDistributorV2-impl": "0x760aD231ff2CC0DC88006cA8ad5EcA201AF227B5",
   "RewardsDistributorV3-impl": "0x86fcc650ce6ffa75ee1dff98d943e4d1ff16c4fb",
+  "RewardsDistributorV4-impl": "0xD06fA9D33b280eE4BBa113Fb002e2a0e8AA1bc5F",
   "SolvBTC": "0x501B7c581aEf05b8DD6C4924338fCBE8f930ab46",
   "SolvBTC-impl": "0xA70462C429fDCF185CEe43d97D1781738C536AC0",
   "SponsorPaymaster": "0x1842a4EFf3eFd24c50B63c3CF89cECEe245Fc2bd",
