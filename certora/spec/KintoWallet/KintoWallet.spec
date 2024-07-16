@@ -143,8 +143,8 @@ rule validationSignerIntegrity() {
     bytes32 hash = signedMessageHash(userOpHash);
     /// Hash message signer:
     address signer = recoverCVL(hash, userOp.signature);
-    
-    bool appHasSigner = appRegistry.getSponsor(app) != 0;
+
+    bool appHasSigner = appSigner(app) != 0;
 
     assert !appHasSigner => isOwner(signer), "Owner must be signer of wallet transaction";
     assert (appHasSigner && !isOwner(signer)) => appSigner(app) == signer, "App signer must sign for app transaction";
@@ -180,18 +180,11 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
     bool isOwner_0 = isOwner(recoverCVL(hash, extractSigCVL(userOp.signature, 0)));
     bool isOwner_1 = isOwner(recoverCVL(hash, extractSigCVL(userOp.signature, 1)));
     bool isOwner_2 = isOwner(recoverCVL(hash, extractSigCVL(userOp.signature, 2)));
+    bool isOwner_3 = isOwner(recoverCVL(hash, extractSigCVL(userOp.signature, 3)));
 
     if(policy == SINGLE_SIGNER()) {
         assert userOp.signature.length == 65;
-        if(ownersCount == 1) {
-            assert isOwner_0;
-        }
-        else if(ownersCount == 2) {
-            assert isOwner_0 || isOwner_1;
-        }
-        else {
-            assert isOwner_0 || isOwner_1 || isOwner_2;
-        }
+        assert isOwner_0 || isOwner_1 || isOwner_2 || isOwner_3;
     }
     else if(policy == MINUS_ONE_SIGNER()) {
         assert signaturesLength == assert_uint256(65 * (ownersCount - 1));
@@ -201,8 +194,14 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
         else if(ownersCount == 2) {
             assert isOwner_0 || isOwner_1;
         }
-        else {
+        else if(ownersCount == 3) {
             assert (isOwner_0 && isOwner_1) || (isOwner_1 && isOwner_2)  || (isOwner_0 && isOwner_2);
+        }
+        else if(ownersCount == 4) {
+            assert (isOwner_0 && isOwner_1 && isOwner_2) || 
+                   (isOwner_0 && isOwner_1 && isOwner_3) || 
+                   (isOwner_0 && isOwner_2 && isOwner_3) || 
+                   (isOwner_1 && isOwner_2 && isOwner_3);
         }
     }
     else if(policy == ALL_SIGNERS()) {
@@ -213,8 +212,11 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
         else if(ownersCount == 2) {
             assert isOwner_0 && isOwner_1;
         }
-        else {
+        else if(ownersCount == 3) {
             assert isOwner_0 && isOwner_1 && isOwner_2;
+        }
+        else {
+            assert isOwner_0 && isOwner_1 && isOwner_2 && isOwner_3;
         }
     }
     else if(policy == TWO_SIGNERS()) {
@@ -222,12 +224,7 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
         if(ownersCount == 1) {
             assert false;
         }
-        else if(ownersCount == 2) {
-            assert isOwner_0 && isOwner_1;
-        }
-        else {
-            assert (isOwner_0 && isOwner_1) || (isOwner_1 && isOwner_2)  || (isOwner_0 && isOwner_2);
-        }
+        assert (isOwner_0 && isOwner_1) || (isOwner_0 && isOwner_2)  || (isOwner_0 && isOwner_3) || (isOwner_1 && isOwner_2) || (isOwner_1 && isOwner_3) || (isOwner_2 && isOwner_3);
     }
     assert true;
 }

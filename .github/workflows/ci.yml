@@ -232,9 +232,9 @@ jobs:
             const body = process.env.REPORT
             await script({ github, context, header, body })
   certora:
-    needs:
-      - test-local
-      - test-fork
+    # needs:
+      # - test-local
+      # - test-fork
 
     name: Certora
     runs-on: ubuntu-latest
