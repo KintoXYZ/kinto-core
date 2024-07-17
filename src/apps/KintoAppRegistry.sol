@@ -426,7 +426,7 @@ contract KintoAppRegistry is
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
-            if (childToParentContract[appContracts[i]] != address(0)) revert ChildAlreadyRegistered();
+            if (childToParentContract[appContracts[i]] != address(0) && childToParentContract[appContracts[i]] != parentContract) revert ChildAlreadyRegistered();
             childToParentContract[appContracts[i]] = parentContract;
         }
 
@@ -453,6 +453,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV8 is KintoAppRegistry {
+contract KintoAppRegistryV9 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }

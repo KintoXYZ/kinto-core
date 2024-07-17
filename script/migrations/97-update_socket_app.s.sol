@@ -3,16 +3,16 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWallet.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
-import {KintoAppRegistry, KintoAppRegistryV8} from "@kinto-core/apps/KintoAppRegistry.sol";
+import {KintoAppRegistry, KintoAppRegistryV9} from "@kinto-core/apps/KintoAppRegistry.sol";
 
 contract KintoMigration97DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
         bytes memory bytecode = abi.encodePacked(
-            type(KintoAppRegistryV8).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory"))
+            type(KintoAppRegistryV9).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory"))
         );
-        _deployImplementationAndUpgrade("KintoAppRegistry", "V8", bytecode);
+        _deployImplementationAndUpgrade("KintoAppRegistry", "V9", bytecode);
 
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
@@ -62,8 +62,15 @@ contract KintoMigration97DeployScript is MigrationHelper {
           "Socket-batcher", 0x12FF8947a2524303C13ca7dA9bE4914381f6557a, new address[](0), appLimits, batcherEOAs
         );
         kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits, new address[](0));
-        kintoAppRegistry.updateSystemContracts(systemContracts);
+
         vm.stopBroadcast();
+        _handleOps(
+            abi.encodeWithSelector(
+                KintoAppRegistry.updateSystemContracts.selector,
+                systemContracts
+            ),
+            address(_getChainDeployment("KintoAppRegistry"))
+        );
         assertEq(kintoAppRegistry.isSystemContract(systemContracts[0]), true);
     }
 }
