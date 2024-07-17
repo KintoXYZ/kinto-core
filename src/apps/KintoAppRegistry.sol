@@ -158,14 +158,14 @@ contract KintoAppRegistry is
 
     /**
      * @notice Registers a new app and mints the NFT to the creator
-     * @param name The name of the app
+     * @param appName The name of the app
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
      * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function registerApp(
-        string calldata name,
+        string calldata appName,
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
@@ -177,7 +177,7 @@ contract KintoAppRegistry is
         if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
 
         appCount++;
-        _updateMetadata(appCount, name, parentContract, appContracts, appLimits, devEOAs);
+        _updateMetadata(appCount, appName, parentContract, appContracts, appLimits, devEOAs);
         _safeMint(msg.sender, appCount);
 
         emit AppRegistered(parentContract, msg.sender, block.timestamp);
@@ -185,14 +185,14 @@ contract KintoAppRegistry is
 
     /**
      * @notice Allows the developer to update the metadata of the app
-     * @param name The name of the app
+     * @param appName The name of the app
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
      * @param devEOAs The addresses of the developers EOAs to be whitelisted
      */
     function updateMetadata(
-        string calldata name,
+        string calldata appName,
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
@@ -200,7 +200,7 @@ contract KintoAppRegistry is
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
         if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
-        _updateMetadata(tokenId, name, parentContract, appContracts, appLimits, devEOAs);
+        _updateMetadata(tokenId, appName, parentContract, appContracts, appLimits, devEOAs);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
@@ -229,7 +229,7 @@ contract KintoAppRegistry is
 
     /**
      * @notice Allows the app to request PII data
-     * @param app The name of the app
+     * @param app The address of the app
      */
     function enableDSA(address app) external override onlyOwner {
         if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled();
@@ -382,7 +382,7 @@ contract KintoAppRegistry is
     /**
      * @notice Updates the metadata of an app
      * @param tokenId The token ID of the app
-     * @param name The name of the app
+     * @param appName The name of the app
      * @param parentContract The address of the parent contract
      * @param appContracts The addresses of the child contracts
      * @param appLimits The limits of the app
@@ -390,7 +390,7 @@ contract KintoAppRegistry is
      */
     function _updateMetadata(
         uint256 tokenId,
-        string calldata name,
+        string calldata appName,
         address parentContract,
         address[] calldata appContracts,
         uint256[4] calldata appLimits,
@@ -410,7 +410,7 @@ contract KintoAppRegistry is
 
         IKintoAppRegistry.Metadata memory metadata = IKintoAppRegistry.Metadata({
             tokenId: tokenId,
-            name: name,
+            name: appName,
             dsaEnabled: false,
             rateLimitPeriod: appLimits[0],
             rateLimitNumber: appLimits[1],

@@ -16,6 +16,7 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
@@ -432,5 +433,48 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         wallet.resetSigners(owners, policy);
 
         require(wallet.owners(1) == newOwner, "Failed to replace signer");
+    }
+
+    function deployBridgedToken(string memory symbol, string memory name, uint256 decimals, string memory startsWith)
+        internal
+    {
+        // deploy token
+        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
+        address implementation = _deployImplementation(name, "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
+        (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, startsWith);
+
+        address proxy = _deployProxy(name, implementation, salt);
+
+        console2.log("Proxy deployed @%s", proxy);
+        console2.log("Expected address: %s", expectedAddress);
+        assertEq(proxy, expectedAddress);
+
+        _whitelistApp(proxy);
+
+        _handleOps(
+            abi.encodeWithSelector(
+                BridgedToken.initialize.selector, name, symbol, kintoAdminWallet, kintoAdminWallet, kintoAdminWallet
+            ),
+            proxy
+        );
+
+        BridgedToken bridgedToken = BridgedToken(proxy);
+
+        assertEq(bridgedToken.name(), name);
+        assertEq(bridgedToken.symbol(), symbol);
+        assertEq(bridgedToken.decimals(), decimals);
+        assertTrue(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), kintoAdminWallet), "Admin role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), kintoAdminWallet), "Minter role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), kintoAdminWallet), "Upgrader role not set");
+
+        console2.log("All checks passed!");
+
+        console2.log("%s implementation deployed @%s", symbol, implementation);
+        console2.log("%s deployed @%s", symbol, address(bridgedToken));
+
+        saveContractAddress(string.concat(symbol, "-impl"), implementation);
+        saveContractAddress(symbol, address(bridgedToken));
     }
 }
