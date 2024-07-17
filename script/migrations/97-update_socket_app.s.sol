@@ -34,11 +34,11 @@ contract KintoMigration97DeployScript is MigrationHelper {
         appContracts[11] = address(0xC7FCA8aB6D1E1142790454e7e5655d93c3b03ed6); // weETH controller
         appContracts[12] = address(0x24f287b474a05E48627846148cCdA3D05de03953); // ETHFI controller
         appContracts[13] = address(0xA2a13094baB725D6D9dd8b9B5c01F1a1bF67F986); // SolvBTC controller
-        appContracts[14] = address(0); // MKR controller
-        appContracts[15] = address(0); // PAXG controller
-        appContracts[16] = address(0); // XAUT controller
-        appContracts[17] = address(0); // stUSD controller
-        appContracts[18] = address(0); // stEUR controller
+        appContracts[14] = address(0x90128652cF49A44F0374d0EE7d3782df59e72A8C); // MKR controller
+        appContracts[15] = address(0xd17b43d94f0BF2960d285E89de5b9a8369e3eD5b); // PAXG controller
+        appContracts[16] = address(0xf5d3d976872E01b7B7aF7964Ca9cf4D992584726); // XAUT controller
+        appContracts[17] = address(0x7DA5691fB59740cF02CC7dc16743Be9dCBf685b5); // stUSD controller
+        appContracts[18] = address(0xe5b6205CfC03786Fc554c40767A591b8dCBC1E76); // stEUR controller
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),
@@ -59,7 +59,7 @@ contract KintoMigration97DeployScript is MigrationHelper {
 
         vm.startBroadcast(deployerPrivateKey);
         kintoAppRegistry.registerApp(
-            "Socket-batcher", 0x12FF8947a2524303C13ca7dA9bE4914381f6557a, new address[](0), appLimits, batcherEOAs
+          "Socket-batcher", 0x12FF8947a2524303C13ca7dA9bE4914381f6557a, new address[](0), appLimits, batcherEOAs
         );
         kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits, new address[](0));
         kintoAppRegistry.updateSystemContracts(systemContracts);
