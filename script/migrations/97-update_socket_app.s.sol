@@ -59,16 +59,13 @@ contract KintoMigration97DeployScript is MigrationHelper {
 
         vm.startBroadcast(deployerPrivateKey);
         kintoAppRegistry.registerApp(
-          "Socket-batcher", 0x12FF8947a2524303C13ca7dA9bE4914381f6557a, new address[](0), appLimits, batcherEOAs
+            "Socket-batcher", 0x12FF8947a2524303C13ca7dA9bE4914381f6557a, new address[](0), appLimits, batcherEOAs
         );
         kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits, new address[](0));
 
         vm.stopBroadcast();
         _handleOps(
-            abi.encodeWithSelector(
-                KintoAppRegistry.updateSystemContracts.selector,
-                systemContracts
-            ),
+            abi.encodeWithSelector(KintoAppRegistry.updateSystemContracts.selector, systemContracts),
             address(_getChainDeployment("KintoAppRegistry"))
         );
         assertEq(kintoAppRegistry.isSystemContract(systemContracts[0]), true);

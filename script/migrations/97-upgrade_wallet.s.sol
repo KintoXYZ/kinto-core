@@ -18,7 +18,9 @@ contract ResetWalletSignersScript is MigrationHelper {
         signers[3] = 0x94561e98DD5E55271f91A103e4979aa6C493745E;
 
         _handleOps(
-            abi.encodeWithSelector(IKintoWallet.resetSigners.selector, signers, IKintoWallet(kintoAdminWallet).TWO_SIGNERS()),
+            abi.encodeWithSelector(
+                IKintoWallet.resetSigners.selector, signers, IKintoWallet(kintoAdminWallet).TWO_SIGNERS()
+            ),
             kintoAdminWallet
         );
 
