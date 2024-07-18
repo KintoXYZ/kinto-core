@@ -18,6 +18,7 @@ interface IKintoAppRegistry {
     error DSAAlreadyEnabled(); // DSA already enabled
     error OnlyMintingAllowed(); // Only mint transfers are allowed
     error InvalidWallet(address);
+    error DevEoaIsContract(address);
 
     /* ============ Structs ============ */
 

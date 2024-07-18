@@ -368,7 +368,8 @@ contract KintoAppRegistry is
         address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
 
         // Dev EOAs are allowed to call their respective apps
-        if (devEoaToApp[from] == app || devEoaToApp[from] == devEoaToApp[to]) {
+        // Dev EOAs can send ETH to each other
+        if (devEoaToApp[from] == app || (devEoaToApp[from] == devEoaToApp[to] && devEoaToApp[from] != address(0))) {
             // Deny if wallet has no KYC
             if (!kintoID.isKYC(ownerOf(_appMetadata[app].tokenId))) return false;
             return true;
@@ -434,6 +435,7 @@ contract KintoAppRegistry is
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {
+            if(devEOAs[i].code.length > 0) revert DevEoaIsContract(devEOAs[i]);
             devEoaToApp[devEOAs[i]] = parentContract;
         }
     }
