@@ -368,7 +368,7 @@ contract KintoAppRegistry is
         address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
 
         // Dev EOAs are allowed to call their respective apps
-        if (devEoaToApp[from] == app) {
+        if (devEoaToApp[from] == app || devEoaToApp[from] == devEoaToApp[to]) {
             // Deny if wallet has no KYC
             if (!kintoID.isKYC(ownerOf(_appMetadata[app].tokenId))) return false;
             return true;
@@ -456,6 +456,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV9 is KintoAppRegistry {
+contract KintoAppRegistryV10 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
