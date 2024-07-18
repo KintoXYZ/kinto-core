@@ -458,6 +458,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV10 is KintoAppRegistry {
+contract KintoAppRegistryV11 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
