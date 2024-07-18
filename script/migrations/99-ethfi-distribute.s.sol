@@ -16,7 +16,8 @@ contract EthfiDistributeSignersScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        ERC20Multisender sender = new ERC20Multisender();
+        vm.broadcast(deployerPrivateKey);
+        ERC20Multisender sender = new ERC20Multisender{salt: 0}();
         saveContractAddress("ERC20Multisender", address(sender));
 
         _whitelistApp(address(sender));
@@ -34,6 +35,8 @@ contract EthfiDistributeSignersScript is MigrationHelper {
             amounts[index] = amount;
         }
 
+        uint256 total = IERC20(ETHFI).balanceOf(kintoAdminWallet);
+
         uint256 batchSize = 100;
         uint256 totalBatches = (keys.length + batchSize - 1) / batchSize;
 
@@ -49,7 +52,7 @@ contract EthfiDistributeSignersScript is MigrationHelper {
 
             for (uint256 i = start; i < end; i++) {
                 batchUsers[i - start] = users[i];
-                batchAmounts[i - start] = amounts[i];
+                batchAmounts[i - start] = amounts[i] * total / 1e18;
             }
 
             bytes memory selectorAndParams =
@@ -57,7 +60,9 @@ contract EthfiDistributeSignersScript is MigrationHelper {
             _handleOps(selectorAndParams, address(sender));
         }
 
-        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE), 313510000000000000);
-        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9), 10000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE),
+                 total * 313510000000000000 / 1e18);
+        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9),
+                 total * 10000000000000 / 1e18);
     }
 }

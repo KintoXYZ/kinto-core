@@ -9,11 +9,12 @@ contract KintoCoreAppScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        address parentContract =
-            address(0xD157904639E89df05e89e0DabeEC99aE3d74F9AA); // Rewards Distributor
+        address parentContract = address(0xD157904639E89df05e89e0DabeEC99aE3d74F9AA); // Rewards Distributor
         address[] memory appContracts = new address[](2);
 
         appContracts[0] = address(0x793500709506652Fcc61F0d2D0fDa605638D4293); //Treasury
+
+        KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),
@@ -28,8 +29,6 @@ contract KintoCoreAppScript is MigrationHelper {
         devEOAs[3] = address(0x0ED31428E4bCb3cdf8A1fCD4656Ee965f4241711); // Liquidity mining relayer
 
         vm.startBroadcast(deployerPrivateKey);
-        kintoAppRegistry.registerApp(
-            "kinto-core", parentContract, appContracts, appLimits, devEOAs
-        );
+        kintoAppRegistry.registerApp("kinto-core", parentContract, appContracts, appLimits, devEOAs);
     }
 }
