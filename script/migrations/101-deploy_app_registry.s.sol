@@ -9,9 +9,8 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        bytes memory bytecode = abi.encodePacked(
-            type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory"))
-        );
+        bytes memory bytecode =
+            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V11", bytecode);
 
         saveContractAddress("KintoAppRegistryV11-impl", impl);

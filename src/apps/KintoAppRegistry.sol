@@ -435,7 +435,7 @@ contract KintoAppRegistry is
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {
-            if(devEOAs[i].code.length > 0) revert DevEoaIsContract(devEOAs[i]);
+            if (devEOAs[i].code.length > 0) revert DevEoaIsContract(devEOAs[i]);
             devEoaToApp[devEOAs[i]] = parentContract;
         }
     }
