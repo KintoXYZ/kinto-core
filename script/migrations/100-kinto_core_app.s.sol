@@ -26,7 +26,7 @@ contract KintoCoreAppScript is MigrationHelper {
         // Socket-batcher app
         address[] memory devEOAs = new address[](2);
         devEOAs[0] = address(0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c); // Default deployer
-        devEOAs[3] = address(0x0ED31428E4bCb3cdf8A1fCD4656Ee965f4241711); // Liquidity mining relayer
+        devEOAs[1] = address(0x0ED31428E4bCb3cdf8A1fCD4656Ee965f4241711); // Liquidity mining relayer
 
         vm.startBroadcast(deployerPrivateKey);
         kintoAppRegistry.registerApp("kinto-core", parentContract, appContracts, appLimits, devEOAs);
