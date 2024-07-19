@@ -10,7 +10,7 @@ contract KintoCoreAppScript is MigrationHelper {
         super.run();
 
         address parentContract = address(0xD157904639E89df05e89e0DabeEC99aE3d74F9AA); // Rewards Distributor
-        address[] memory appContracts = new address[](2);
+        address[] memory appContracts = new address[](1);
 
         appContracts[0] = address(0x793500709506652Fcc61F0d2D0fDa605638D4293); //Treasury
 
