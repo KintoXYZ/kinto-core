@@ -60,9 +60,7 @@ contract EthfiDistributeSignersScript is MigrationHelper {
             _handleOps(selectorAndParams, address(sender));
         }
 
-        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE),
-                 total * 313510000000000000 / 1e18);
-        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9),
-                 total * 10000000000000 / 1e18);
+        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE), total * 313510000000000000 / 1e18);
+        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9), total * 10000000000000 / 1e18);
     }
 }
