@@ -5,7 +5,7 @@ import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/wallet/KintoWallet.sol";
 import "../../src/sample/Counter.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
-import {ERC20Multisender} from "@kinto-core-script/utils/ERC20Multisender.sol";
+import {ERC20Multisender} from "@kinto-core-script/utils/ERC20MultiSender.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
 contract EthfiDistributeSignersScript is MigrationHelper {
