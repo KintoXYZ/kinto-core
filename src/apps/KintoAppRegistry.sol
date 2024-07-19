@@ -366,7 +366,9 @@ contract KintoAppRegistry is
         }
 
         // Contract calls are allowed only from dev EOAs to app's contracts
-        address app = childToParentContract[to] != address(0) ? childToParentContract[to] : to;
+        address app = childToParentContract[to] != address(0)
+            ? childToParentContract[to]
+            : devEoaToApp[to] != address(0) ? devEoaToApp[to] : to;
 
         // Dev EOAs are allowed to call their respective apps
         // Dev EOAs can send ETH to each other
@@ -459,6 +461,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV12 is KintoAppRegistry {
+contract KintoAppRegistryV13 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
