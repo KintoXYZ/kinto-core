@@ -263,11 +263,12 @@ contract KintoAppRegistry is
 
     /**
      * @notice Sets the deployer EOA for a wallet
+     * @param wallet The address of the wallet
      * @param deployer The address of the deployer EOA
      */
-    function setDeployerEOA(address deployer) external {
-        address wallet = msg.sender;
-        if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(msg.sender);
+    function setDeployerEOA(address wallet, address deployer) external {
+        if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(wallet);
+        if (msg.sender != owner() && msg.sender != wallet) revert InvalidWallet(wallet);
 
         emit DeployerSet(deployer);
         deployerToWallet[deployer] = wallet;
@@ -458,6 +459,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV11 is KintoAppRegistry {
+contract KintoAppRegistryV12 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
