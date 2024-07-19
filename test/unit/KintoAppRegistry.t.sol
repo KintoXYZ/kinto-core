@@ -515,14 +515,14 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testIsContractCallAllowedFromEOA_WhenCreate2() public {
         vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.setDeployerEOA(address(0xde));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(CREATE2)), true);
     }
 
     function testIsContractCallAllowedFromEOA_WhenCreate() public {
         vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.setDeployerEOA(address(0xde));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(0)), true);
     }
@@ -551,7 +551,7 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(address(_kintoWallet));
         vm.expectEmit(true, true, true, true);
         emit KintoAppRegistry.DeployerSet(address(0xde));
-        _kintoAppRegistry.setDeployerEOA(address(0xde));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.deployerToWallet(address(0xde)), address(_kintoWallet));
     }

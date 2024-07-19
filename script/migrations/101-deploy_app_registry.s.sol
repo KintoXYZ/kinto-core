@@ -11,8 +11,9 @@ contract DeployScript is MigrationHelper {
 
         bytes memory bytecode =
             abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
-        address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V11", bytecode);
+        address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V13", bytecode);
 
-        saveContractAddress("KintoAppRegistryV11-impl", impl);
+        saveContractAddress("KintoAppRegistryV13-impl", impl);
+        KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
     }
 }
