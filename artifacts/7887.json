@@ -1851,6 +1851,19 @@
         },
         {
           "type": "function",
+          "name": "CREATE2",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "GAS_LIMIT_PERIOD",
           "inputs": [],
           "outputs": [
@@ -1972,20 +1985,7 @@
         },
         {
           "type": "function",
-          "name": "enableDSA",
-          "inputs": [
-            {
-              "name": "app",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
-        },
-        {
-          "type": "function",
-          "name": "eoaToApp",
+          "name": "deployerToWallet",
           "inputs": [
             {
               "name": "",
@@ -2001,6 +2001,38 @@
             }
           ],
           "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "devEoaToApp",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "enableDSA",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -2158,6 +2190,30 @@
         },
         {
           "type": "function",
+          "name": "isContractCallAllowedFromEOA",
+          "inputs": [
+            {
+              "name": "from",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "to",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "isSponsored",
           "inputs": [
             {
@@ -2167,6 +2223,25 @@
             },
             {
               "name": "_contract",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "isSystemContract",
+          "inputs": [
+            {
+              "name": "",
               "type": "address",
               "internalType": "address"
             }
@@ -2274,7 +2349,7 @@
           "name": "registerApp",
           "inputs": [
             {
-              "name": "_name",
+              "name": "appName",
               "type": "string",
               "internalType": "string"
             },
@@ -2380,6 +2455,24 @@
         },
         {
           "type": "function",
+          "name": "setDeployerEOA",
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "deployer",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "setSponsoredContracts",
           "inputs": [
             {
@@ -2432,6 +2525,25 @@
             }
           ],
           "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "systemContracts",
+          "inputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -2568,7 +2680,7 @@
           "name": "updateMetadata",
           "inputs": [
             {
-              "name": "_name",
+              "name": "appName",
               "type": "string",
               "internalType": "string"
             },
@@ -2589,6 +2701,19 @@
             },
             {
               "name": "devEOAs",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "updateSystemContracts",
+          "inputs": [
+            {
+              "name": "newSystemContracts",
               "type": "address[]",
               "internalType": "address[]"
             }
@@ -2793,6 +2918,19 @@
         },
         {
           "type": "event",
+          "name": "DeployerSet",
+          "inputs": [
+            {
+              "name": "newDeployer",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "Initialized",
           "inputs": [
             {
@@ -2819,6 +2957,25 @@
               "type": "address",
               "indexed": true,
               "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "SystemContractsUpdated",
+          "inputs": [
+            {
+              "name": "oldSystemContracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
+            },
+            {
+              "name": "newSystemContracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
             }
           ],
           "anonymous": false
@@ -2883,8 +3040,30 @@
         },
         {
           "type": "error",
+          "name": "DevEoaIsContract",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "InvalidSponsorSetter",
           "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "InvalidWallet",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
@@ -5444,7 +5623,7 @@
               "internalType": "address"
             },
             {
-              "name": "amount",
+              "name": "totalUserTokens",
               "type": "uint256",
               "internalType": "uint256"
             }
@@ -6144,6 +6323,17 @@
           "inputs": [
             {
               "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AlreadyClaimed",
+          "inputs": [
+            {
+              "name": "user",
               "type": "address",
               "internalType": "address"
             }
@@ -10979,6 +11169,11 @@
               "name": "_kintoApp",
               "type": "address",
               "internalType": "contract IKintoAppRegistry"
+            },
+            {
+              "name": "_factory",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
             }
           ],
           "stateMutability": "nonpayable"
@@ -11223,6 +11418,19 @@
         },
         {
           "type": "function",
+          "name": "factory",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "funderWhitelist",
           "inputs": [
             {
@@ -11273,6 +11481,19 @@
               "name": "",
               "type": "uint256",
               "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getOwners",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
             }
           ],
           "stateMutability": "view"
@@ -11964,6 +12185,17 @@
           "type": "error",
           "name": "InvalidApp",
           "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "InvalidDevMode",
+          "inputs": [
+            {
+              "name": "newDevMode",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
           "type": "error",

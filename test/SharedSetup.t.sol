@@ -69,7 +69,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         counter = new Counter();
         assertEq(counter.count(), 0);
 
-        registerApp(_owner, "test", address(counter), new address[](0));
+        registerApp(address(_kintoWallet), "test", address(counter), new address[](0));
         whitelistApp(address(counter));
         fundSponsorForApp(_owner, address(counter));
     }

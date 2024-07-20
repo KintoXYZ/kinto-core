@@ -171,7 +171,8 @@ contract KintoAppRegistry is
         uint256[4] calldata appLimits,
         address[] calldata devEOAs
     ) external override {
-        if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
+        if (walletFactory.walletTs(msg.sender) == 0) revert InvalidWallet(msg.sender);
+        if (!kintoID.isKYC(IKintoWallet(msg.sender).owners(0))) revert KYCRequired();
         if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
         if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild();
         if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
@@ -374,7 +375,10 @@ contract KintoAppRegistry is
         // Dev EOAs can send ETH to each other
         if (devEoaToApp[from] == app || (devEoaToApp[from] == devEoaToApp[to] && devEoaToApp[from] != address(0))) {
             // Deny if wallet has no KYC
-            if (!kintoID.isKYC(ownerOf(_appMetadata[app].tokenId))) return false;
+            address walletOwner = ownerOf(_appMetadata[app].tokenId);
+            // App owner must be a wallet
+            if (walletFactory.walletTs(walletOwner) == 0) return false;
+            if (!kintoID.isKYC(IKintoWallet(walletOwner).owners(0))) return false;
             return true;
         }
 
@@ -461,6 +465,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV13 is KintoAppRegistry {
+contract KintoAppRegistryV15 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
