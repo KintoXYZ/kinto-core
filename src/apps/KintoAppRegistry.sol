@@ -92,6 +92,9 @@ contract KintoAppRegistry is
     /// @notice Mapping of deployer EOAs to their associated wallet addresses
     mapping(address => address) public override deployerToWallet;
 
+    /// @notice Mapping of wallet addresses to their associated deployer EOAs
+    mapping(address => address) public override walletToDeployer;
+
     /* ============ Events ============ */
 
     event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
@@ -270,8 +273,15 @@ contract KintoAppRegistry is
     function setDeployerEOA(address wallet, address deployer) external {
         if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(wallet);
         if (msg.sender != owner() && msg.sender != wallet) revert InvalidWallet(wallet);
+        if (deployerToWallet[deployer] != address(0)) revert DeployerAlreadySet();
+
+        // cleanup old
+        if (walletToDeployer[wallet] != address(0)) {
+            delete deployerToWallet[walletToDeployer[wallet]];
+        }
 
         emit DeployerSet(deployer);
+        walletToDeployer[wallet] = deployer;
         deployerToWallet[deployer] = wallet;
     }
 

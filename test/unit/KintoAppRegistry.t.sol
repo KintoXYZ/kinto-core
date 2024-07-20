@@ -547,11 +547,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
-            "test",
-            address(99),
-            appContracts,
-            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
-            devEOAs
+            "test", address(99), appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], devEOAs
         );
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(11)), true);

@@ -19,6 +19,7 @@ interface IKintoAppRegistry {
     error OnlyMintingAllowed(); // Only mint transfers are allowed
     error InvalidWallet(address);
     error DevEoaIsContract(address);
+    error DeployerAlreadySet();
 
     /* ============ Structs ============ */
 
@@ -91,6 +92,8 @@ interface IKintoAppRegistry {
     function isSystemContract(address addr) external view returns (bool);
 
     function deployerToWallet(address addr) external view returns (address);
+
+    function walletToDeployer(address addr) external view returns (address);
 
     /* ============ Constants and attrs ============ */
 
