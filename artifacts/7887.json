@@ -2766,6 +2766,25 @@
           "stateMutability": "view"
         },
         {
+          "type": "function",
+          "name": "walletToDeployer",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
           "type": "event",
           "name": "AdminChanged",
           "inputs": [
@@ -3036,6 +3055,11 @@
         {
           "type": "error",
           "name": "DSAAlreadyEnabled",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "DeployerAlreadySet",
           "inputs": []
         },
         {
@@ -10386,6 +10410,11 @@
               "name": "_engenCredits",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "_kintoAppRegistry",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "nonpayable"
@@ -10436,6 +10465,72 @@
               "name": "balances",
               "type": "uint256[]",
               "internalType": "uint256[]"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getDevApps",
+          "inputs": [
+            {
+              "name": "_wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "tuple[]",
+              "internalType": "struct IKintoAppRegistry.Metadata[]",
+              "components": [
+                {
+                  "name": "tokenId",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "dsaEnabled",
+                  "type": "bool",
+                  "internalType": "bool"
+                },
+                {
+                  "name": "rateLimitPeriod",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "rateLimitNumber",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "gasLimitPeriod",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "gasLimitCost",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "name",
+                  "type": "string",
+                  "internalType": "string"
+                },
+                {
+                  "name": "devEOAs",
+                  "type": "address[]",
+                  "internalType": "address[]"
+                },
+                {
+                  "name": "appContracts",
+                  "type": "address[]",
+                  "internalType": "address[]"
+                }
+              ]
             }
           ],
           "stateMutability": "view"
@@ -10525,6 +10620,11 @@
                   "name": "hasValidInsurance",
                   "type": "bool",
                   "internalType": "bool"
+                },
+                {
+                  "name": "deployer",
+                  "type": "address",
+                  "internalType": "address"
                 }
               ]
             }
@@ -10677,6 +10777,19 @@
               "name": "",
               "type": "bool",
               "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "kintoAppRegistry",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoAppRegistry"
             }
           ],
           "stateMutability": "view"
