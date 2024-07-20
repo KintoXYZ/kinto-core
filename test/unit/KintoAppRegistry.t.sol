@@ -73,7 +73,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
         // register app
-        uint256 balanceBefore = _kintoAppRegistry.balanceOf(_user);
+        uint256 balanceBefore = _kintoAppRegistry.balanceOf(address(_kintoWallet));
         uint256 appsCountBefore = _kintoAppRegistry.appCount();
 
         address[] memory eoas = new address[](1);
@@ -84,7 +84,7 @@ contract KintoAppRegistryTest is SharedSetup {
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], eoas
         );
 
-        assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
+        assertEq(_kintoAppRegistry.balanceOf(address(_kintoWallet)), balanceBefore + 1);
         assertEq(_kintoAppRegistry.appCount(), appsCountBefore + 1);
 
         // check eoas
@@ -94,7 +94,7 @@ contract KintoAppRegistryTest is SharedSetup {
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
         assertEq(metadata.dsaEnabled, false);
-        assertEq(_kintoAppRegistry.ownerOf(metadata.tokenId), _user);
+        assertEq(_kintoAppRegistry.ownerOf(metadata.tokenId), address(_kintoWallet));
         assertEq(metadata.rateLimitPeriod, appLimits[0]);
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
@@ -261,10 +261,11 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {
+        vm.prank(address(_kintoWallet));
         registerApp(address(_kintoWallet), "app", address(0), new address[](0));
 
         // update app
-        vm.prank(address(_kintoWallet));
+        vm.prank(_user);
         vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
         _kintoAppRegistry.updateMetadata(
             "app", address(0), new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)], new address[](0)

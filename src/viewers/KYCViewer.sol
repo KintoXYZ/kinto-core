@@ -29,12 +29,13 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     IKintoAppRegistry public immutable override kintoAppRegistry;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits) {
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
         kintoID = walletFactory.kintoID();
         faucet = IFaucet(_faucet);
         engenCredits = IEngenCredits(_engenCredits);
+        kintoAppRegistry = IKintoAppRegistry(_kintoAppRegistry);
     }
 
     /**
@@ -160,7 +161,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 }
 
 contract KYCViewerV11 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
-        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
 }
