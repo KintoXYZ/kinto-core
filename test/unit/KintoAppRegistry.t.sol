@@ -170,15 +170,15 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
 
-    function testRegisterApp_RevertWhen_CallerIsNotKYCd() public {
+    function testRegisterApp_RevertWhen_CallerIsNotWallet() public {
         string memory name = "app";
         address parentContract = address(123);
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](0);
 
         // register app
-        vm.expectRevert(IKintoAppRegistry.KYCRequired.selector);
-        vm.prank(address(_kintoWallet));
+        vm.expectRevert();
+        vm.prank(address(_user));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
 
@@ -275,8 +275,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testEnableDSA_WhenCallerIsOwner() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
-
-        vm.prank(address(_kintoWallet));
+        vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(address(_engenCredits));
@@ -292,11 +291,11 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testEnableDSA_RevertWhen_AlreadyEnabled() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
-        vm.prank(address(_kintoWallet));
+        vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
+        vm.prank(_owner);
         vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
-        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
