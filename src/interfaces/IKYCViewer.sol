@@ -5,6 +5,7 @@ import "./IKintoID.sol";
 import "./IKintoWalletFactory.sol";
 import "./IFaucet.sol";
 import "./IEngenCredits.sol";
+import "./IKintoAppRegistry.sol";
 
 interface IKYCViewer {
     /* ============ Errors ============ */
@@ -26,6 +27,7 @@ interface IKYCViewer {
         bool hasNFT;
         bool isKYC;
         bool hasValidInsurance;
+        address deployer;
     }
 
     /* ============ Basic Viewers ============ */
@@ -48,6 +50,8 @@ interface IKYCViewer {
 
     function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances);
 
+    function getDevApps(address _wallet) external view returns (IKintoAppRegistry.Metadata[] memory);
+
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
@@ -57,4 +61,6 @@ interface IKYCViewer {
     function faucet() external view returns (IFaucet);
 
     function engenCredits() external view returns (IEngenCredits);
+
+    function kintoAppRegistry() external view returns (IKintoAppRegistry);
 }

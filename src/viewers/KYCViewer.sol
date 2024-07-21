@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+import "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import "../interfaces/IKintoID.sol";
@@ -12,7 +12,7 @@ import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKYCViewer.sol";
 import "../interfaces/IFaucet.sol";
 import "../interfaces/IEngenCredits.sol";
-import "forge-std/console.sol";
+import "../interfaces/IKintoAppRegistry.sol";
 
 /**
  * @title KYCViewer
@@ -26,14 +26,16 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     IKintoID public immutable override kintoID;
     IFaucet public immutable override faucet;
     IEngenCredits public immutable override engenCredits;
+    IKintoAppRegistry public immutable override kintoAppRegistry;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits) {
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
         kintoID = walletFactory.kintoID();
         faucet = IFaucet(_faucet);
         engenCredits = IEngenCredits(_engenCredits);
+        kintoAppRegistry = IKintoAppRegistry(_kintoAppRegistry);
     }
 
     /**
@@ -114,8 +116,19 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
             hasValidInsurance: hasWallet
                 ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) >= block.timestamp
                 : false,
-            insuranceTimestamp: hasWallet ? IKintoWallet(_wallet).insuranceTimestamp() : 0
+            insuranceTimestamp: hasWallet ? IKintoWallet(_wallet).insuranceTimestamp() : 0,
+            deployer: hasWallet ? kintoAppRegistry.walletToDeployer(_wallet) : address(0)
         });
+    }
+
+    function getDevApps(address _wallet) external view override returns (IKintoAppRegistry.Metadata[] memory) {
+        uint256 balance = IERC721Enumerable(address(kintoAppRegistry)).balanceOf(_wallet);
+        IKintoAppRegistry.Metadata[] memory apps = new IKintoAppRegistry.Metadata[](balance);
+        for (uint256 i = 0; i < balance; i++) {
+            uint256 tokenId = IERC721Enumerable(address(kintoAppRegistry)).tokenOfOwnerByIndex(_wallet, i);
+            apps[i] = kintoAppRegistry.getAppMetadata(kintoAppRegistry.tokenIdToApp(tokenId));
+        }
+        return apps;
     }
 
     /**
@@ -147,8 +160,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV11 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
-        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+contract KYCViewerV12 is KYCViewer {
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
 }

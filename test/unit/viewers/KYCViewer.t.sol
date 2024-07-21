@@ -14,8 +14,8 @@ contract KYCViewerUpgraded is KYCViewer {
         return 1;
     }
 
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
-        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
 }
 
@@ -31,8 +31,9 @@ contract KYCViewerTest is SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        KYCViewerUpgraded _implementationV2 =
-            new KYCViewerUpgraded(address(_walletFactory), address(_faucet), address(_engenCredits));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(
+            address(_walletFactory), address(_faucet), address(_engenCredits), address(_kintoAppRegistry)
+        );
         vm.prank(_owner);
         _kycViewer.upgradeTo(address(_implementationV2));
         assertEq(KYCViewerUpgraded(address(_kycViewer)).newFunction(), 1);
@@ -40,8 +41,9 @@ contract KYCViewerTest is SharedSetup {
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
-        KYCViewerUpgraded _implementationV2 =
-            new KYCViewerUpgraded(address(_walletFactory), address(_faucet), address(_engenCredits));
+        KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(
+            address(_walletFactory), address(_faucet), address(_engenCredits), address(_kintoAppRegistry)
+        );
         vm.expectRevert(IKYCViewer.OnlyOwner.selector);
         vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));

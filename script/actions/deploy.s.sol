@@ -303,7 +303,6 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         _kintoRegistry = KintoAppRegistry(payable(proxy));
         _kintoRegistryImpl = KintoAppRegistry(payable(implementation));
-
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kintoRegistry.initialize();
     }
@@ -311,14 +310,17 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
         bytes memory creationCode = type(KYCViewer).creationCode;
         bytes memory bytecode = abi.encodePacked(
-            creationCode, abi.encode(address(factory)), abi.encode(address(faucet)), abi.encode(address(engenCredits))
+            creationCode,
+            abi.encode(address(factory)),
+            abi.encode(address(faucet)),
+            abi.encode(address(engenCredits)),
+            abi.encode(address(kintoRegistry))
         );
         address implementation = _deployImplementation("KYCViewer", creationCode, bytecode, false);
         address proxy = _deployProxy("KYCViewer", implementation, false);
 
         _kycViewer = KYCViewer(payable(proxy));
         _kycViewerImpl = KYCViewer(payable(implementation));
-
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _kycViewer.initialize();
     }

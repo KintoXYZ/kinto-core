@@ -73,18 +73,18 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
         // register app
-        uint256 balanceBefore = _kintoAppRegistry.balanceOf(_user);
+        uint256 balanceBefore = _kintoAppRegistry.balanceOf(address(_kintoWallet));
         uint256 appsCountBefore = _kintoAppRegistry.appCount();
 
         address[] memory eoas = new address[](1);
         eoas[0] = address(44);
 
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
             name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], eoas
         );
 
-        assertEq(_kintoAppRegistry.balanceOf(_user), balanceBefore + 1);
+        assertEq(_kintoAppRegistry.balanceOf(address(_kintoWallet)), balanceBefore + 1);
         assertEq(_kintoAppRegistry.appCount(), appsCountBefore + 1);
 
         // check eoas
@@ -94,7 +94,7 @@ contract KintoAppRegistryTest is SharedSetup {
         IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
         assertEq(metadata.name, name);
         assertEq(metadata.dsaEnabled, false);
-        assertEq(_kintoAppRegistry.ownerOf(metadata.tokenId), _user);
+        assertEq(_kintoAppRegistry.ownerOf(metadata.tokenId), address(_kintoWallet));
         assertEq(metadata.rateLimitPeriod, appLimits[0]);
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
@@ -131,7 +131,7 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // register app
         vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits, new address[](0));
     }
 
@@ -142,12 +142,12 @@ contract KintoAppRegistryTest is SharedSetup {
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](0);
 
-        vm.prank(_owner);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
 
         // try to register again
         vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
-        vm.prank(_owner);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
 
@@ -159,26 +159,26 @@ contract KintoAppRegistryTest is SharedSetup {
         address[] memory appContracts = new address[](1);
         appContracts[0] = address(2);
 
-        vm.prank(_owner);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
 
         // registering app "app2" with parent address 2 should revert
         parentContract = address(2);
         appContracts = new address[](0);
         vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
-        vm.prank(_owner);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
 
-    function testRegisterApp_RevertWhen_CallerIsNotKYCd() public {
+    function testRegisterApp_RevertWhen_CallerIsNotWallet() public {
         string memory name = "app";
         address parentContract = address(123);
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](0);
 
         // register app
-        vm.expectRevert(IKintoAppRegistry.KYCRequired.selector);
-        vm.prank(_user);
+        vm.expectRevert();
+        vm.prank(address(_user));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
 
@@ -198,7 +198,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
         // register app
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
             name,
             parentContract,
@@ -208,7 +208,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         // update app
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.updateMetadata(
             "test2", parentContract, appContracts, [uint256(1), uint256(1), uint256(1), uint256(1)], new address[](0)
         );
@@ -240,7 +240,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
         // register app
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
             name,
             parentContract,
@@ -249,7 +249,7 @@ contract KintoAppRegistryTest is SharedSetup {
             new address[](0)
         );
 
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         vm.expectRevert(IKintoAppRegistry.ChildAlreadyRegistered.selector);
         _kintoAppRegistry.registerApp(
             "test 5",
@@ -261,7 +261,8 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {
-        registerApp(_owner, "app", address(0), new address[](0));
+        vm.prank(address(_kintoWallet));
+        registerApp(address(_kintoWallet), "app", address(0), new address[](0));
 
         // update app
         vm.prank(_user);
@@ -274,8 +275,7 @@ contract KintoAppRegistryTest is SharedSetup {
     /* ============ DSA Test ============ */
 
     function testEnableDSA_WhenCallerIsOwner() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
-
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
@@ -284,26 +284,26 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testEnableDSA_RevertWhen_CallerIsNotOwner() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
 
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
     function testEnableDSA_RevertWhen_AlreadyEnabled() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
         vm.prank(_owner);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
-        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
         vm.prank(_owner);
+        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
     /* ============ Sponsored Contracts Test ============ */
 
     function testSetSponsoredContracts() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
 
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -313,7 +313,7 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[0] = false;
         flags[1] = true;
 
-        vm.prank(_owner);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
 
         assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), address(8)), false);
@@ -322,7 +322,7 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testSetSponsoredContracts_RevertWhen_CallerIsNotCreator() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
 
         address[] memory contracts = new address[](2);
         contracts[0] = address(8);
@@ -338,7 +338,7 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testSetSponsoredContracts_RevertWhen_LengthMismatch() public {
-        registerApp(_owner, "app", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
 
         address[] memory contracts = new address[](1);
         contracts[0] = address(8);
@@ -367,15 +367,15 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
-        vm.prank(_user);
+        vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
             "", parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], new address[](0)
         );
 
-        uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(_user, 0);
+        uint256 tokenIdx = _kintoAppRegistry.tokenOfOwnerByIndex(address(_kintoWallet), 0);
         vm.expectRevert(IKintoAppRegistry.OnlyMintingAllowed.selector);
-        vm.prank(_user);
-        _kintoAppRegistry.safeTransferFrom(_user, _user2, tokenIdx);
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.safeTransferFrom(address(_kintoWallet), _user2, tokenIdx);
     }
 
     /* ============ Supports Interface tests ============ */
@@ -537,10 +537,18 @@ contract KintoAppRegistryTest is SharedSetup {
         devEOAs[1] = _user;
         devEOAs[2] = _user2;
 
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
         resetSigners(devEOAs, 1);
 
         vm.prank(address(_kintoWallet));
-        updateMetadata(_owner, "", address(counter), appContracts, devEOAs);
+        _kintoAppRegistry.registerApp(
+            "test", address(99), appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], devEOAs
+        );
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(11)), true);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
