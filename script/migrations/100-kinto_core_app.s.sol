@@ -31,7 +31,9 @@ contract KintoCoreAppScript is MigrationHelper {
         devEOAs[1] = address(0x0ED31428E4bCb3cdf8A1fCD4656Ee965f4241711); // Liquidity mining relayer
 
         _handleOps(
-            abi.encodeWithSelector(KintoAppRegistry.updateMetadata.selector, "kinto-core", parentContract, appContracts, appLimits, devEOAs),
+            abi.encodeWithSelector(
+                KintoAppRegistry.updateMetadata.selector, "kinto-core", parentContract, appContracts, appLimits, devEOAs
+            ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
     }
