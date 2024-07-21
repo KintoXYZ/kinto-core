@@ -160,7 +160,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-contract KYCViewerV11 is KYCViewer {
+contract KYCViewerV12 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
         KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
