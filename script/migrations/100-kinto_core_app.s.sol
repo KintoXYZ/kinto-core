@@ -36,5 +36,17 @@ contract KintoCoreAppScript is MigrationHelper {
             ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
+
+        // Sets sponsored contracts, weth
+        address[] memory sponsoredContracts = new address[](1);
+        sponsoredContracts[0] = address(0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8); // WETH
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
+        _handleOps(
+            abi.encodeWithSelector(
+                KintoAppRegistry.setSponsoredContracts.selector, parentContract, sponsoredContracts, flags
+            ),
+            address(_getChainDeployment("KintoAppRegistry"))
+        );
     }
 }
