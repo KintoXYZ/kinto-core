@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {IKintoWallet} from "./IKintoWallet.sol";
 import {IKintoID} from "./IKintoID.sol";
+import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
 import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
@@ -51,6 +52,10 @@ interface IKintoWalletFactory {
 
     function sendMoneyToRecoverer(address wallet, address recoverer) external payable;
 
+    function sendETHToDeployer(address deployer) external payable;
+
+    function sendETHToEOA(address eoa, address app) external payable;
+
     function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
 
     function approveWalletRecovery(address wallet) external;
@@ -70,6 +75,8 @@ interface IKintoWalletFactory {
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
+
+    function appRegistry() external view returns (IKintoAppRegistry);
 
     function beacon() external view returns (UpgradeableBeacon);
 

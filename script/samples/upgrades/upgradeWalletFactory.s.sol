@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../../../src/wallet/KintoWallet.sol";
 import "../../../src/wallet/KintoWalletFactory.sol";
+import "../../../src/apps/KintoAppRegistry.sol";
 
 import "../../../test/helpers/ArtifactsReader.sol";
 
@@ -10,7 +11,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletFactoryNewVersion is KintoWalletFactory {
-    constructor(KintoWallet _impl) KintoWalletFactory(_impl) {}
+    constructor(KintoWallet _impl, KintoAppRegistry _app) KintoWalletFactory(_impl, _app) {}
 }
 
 /// @notice This script upgrades the KintoWalletFactory implementation
@@ -20,8 +21,10 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy new version of KintoWalletFactory
-        KintoWalletFactoryNewVersion _newImplementation =
-            new KintoWalletFactoryNewVersion(KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))));
+        KintoWalletFactoryNewVersion _newImplementation = new KintoWalletFactoryNewVersion(
+            KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))),
+            KintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+        );
 
         // upgrade KintoWalletFactory to new version
         KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory"))).upgradeTo(address(_newImplementation));

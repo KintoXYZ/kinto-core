@@ -12,7 +12,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletFactoryV2 is KintoWalletFactory {
-    constructor(IKintoWallet _impl) KintoWalletFactory(_impl) {}
+    constructor(IKintoWallet _impl, IKintoAppRegistry _app) KintoWalletFactory(_impl, _app) {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -45,7 +45,7 @@ contract KintoMigration7DeployScript is Create2Helper, ArtifactsReader {
         }
         bytes memory bytecode = abi.encodePacked(
             type(KintoWalletFactoryV2).creationCode,
-            abi.encode(_getChainDeployment("KintoWalletV2-impl")) // Encoded constructor arguments
+            abi.encode(_getChainDeployment("KintoWalletV2-impl"), address(0)) // Encoded constructor arguments
         );
 
         // Deploy new paymaster implementation

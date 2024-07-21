@@ -207,6 +207,13 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoID.upgradeTo(address(kintoIDImpl));
 
+        bytecode =
+            abi.encodePacked(type(KintoWalletFactory).creationCode, abi.encode(address(wallet), address(kintoRegistry)));
+        address implementation =
+            _deployImplementation("KintoWalletFactory", type(KintoWalletFactory).creationCode, bytecode, false);
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        factory.upgradeTo(implementation);
+
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
 
@@ -245,7 +252,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         // deploy factory implementation
         bytes memory creationCode = type(KintoWalletFactory).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(dummy)));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(dummy), address(dummy)));
         address implementation = _deployImplementation("KintoWalletFactory", creationCode, bytecode, false);
         address proxy = _deployProxy("KintoWalletFactory", implementation, false);
 

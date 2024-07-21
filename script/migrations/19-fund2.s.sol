@@ -15,7 +15,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletFactoryV5 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _app) KintoWalletFactory(_implAddressP, _app) {}
 }
 
 contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
@@ -51,7 +51,7 @@ contract KintoMigration16DeployScript is Create2Helper, ArtifactsReader {
 
         bytes memory bytecode = abi.encodePacked(
             type(KintoWalletFactoryV5).creationCode,
-            abi.encode(newImpl) // Encoded constructor arguments
+            abi.encode(newImpl, address(0)) // Encoded constructor arguments
         );
 
         // 1) Deploy new wallet factory

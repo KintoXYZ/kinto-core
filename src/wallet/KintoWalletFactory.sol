@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
 
@@ -15,6 +16,7 @@ import "../interfaces/bridger/IBridgerL2.sol";
 import "../interfaces/IFaucet.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoWallet.sol";
+import "../interfaces/IKintoAppRegistry.sol";
 
 /**
  * @title KintoWalletFactory
@@ -36,6 +38,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
     mapping(address => bool) public override adminApproved;
+    IKintoAppRegistry public override appRegistry;
 
     /* ============ Events ============ */
 
@@ -44,9 +47,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP) {
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry) {
         _disableInitializers();
         _implAddress = _implAddressP;
+        appRegistry = _appRegistry;
     }
 
     /* ============ External/Public methods ============ */
@@ -267,6 +271,34 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (!sent) revert SendFailed();
     }
 
+    /**
+     * @dev Send eth to the deployer of a wallet
+     * @param deployer The deployer address
+     */
+    function sendETHToDeployer(address deployer) external payable override {
+        if (walletTs[msg.sender] == 0) revert InvalidWallet();
+        if (deployer == address(0)) revert InvalidTarget();
+        if (appRegistry.deployerToWallet(deployer) != msg.sender) revert InvalidWallet();
+        (bool sent,) = deployer.call{value: msg.value}("");
+        if (!sent) revert SendFailed();
+    }
+
+    /**
+     * @dev Send eth to the EOA of an app
+     * @param eoa The EOA address
+     * @param app The app address
+     */
+    function sendETHToEOA(address eoa, address app) external payable override {
+        if (walletTs[msg.sender] == 0) revert InvalidWallet();
+        if (eoa == address(0) || app == address(0)) revert InvalidTarget();
+        if (appRegistry.devEoaToApp(eoa) != app) revert InvalidTarget();
+        if (IERC721Enumerable(address(appRegistry)).ownerOf(appRegistry.getAppMetadata(app).tokenId) != msg.sender) {
+            revert InvalidWallet();
+        }
+        (bool sent,) = eoa.call{value: msg.value}("");
+        if (!sent) revert SendFailed();
+    }
+
     /* ============ Getters ============ */
 
     /**
@@ -359,6 +391,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV18 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+contract KintoWalletFactoryV19 is KintoWalletFactory {
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry)
+        KintoWalletFactory(_implAddressP, _appRegistry)
+    {}
 }
