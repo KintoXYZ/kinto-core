@@ -16,7 +16,7 @@ contract DeployScript is MigrationHelper {
 
         saveContractAddress("KintoAppRegistryV16-impl", impl);
 
-        memory bytecode = abi.encodePacked(
+        bytecode = abi.encodePacked(
             type(KYCViewer).creationCode,
             abi.encode(
                 _getChainDeployment("KintoWalletFactory"),

@@ -308,10 +308,13 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     }
 
     function deployKYCViewer() public returns (KYCViewer _kycViewer, KYCViewer _kycViewerImpl) {
-
         bytes memory creationCode = type(KYCViewer).creationCode;
         bytes memory bytecode = abi.encodePacked(
-            creationCode, abi.encode(address(factory)), abi.encode(address(faucet)), abi.encode(address(engenCredits)), abi.encode(address(kintoRegistry))
+            creationCode,
+            abi.encode(address(factory)),
+            abi.encode(address(faucet)),
+            abi.encode(address(engenCredits)),
+            abi.encode(address(kintoRegistry))
         );
         address implementation = _deployImplementation("KYCViewer", creationCode, bytecode, false);
         address proxy = _deployProxy("KYCViewer", implementation, false);

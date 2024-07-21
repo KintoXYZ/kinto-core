@@ -122,10 +122,10 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 
     function getDevApps(address _wallet) external view override returns (IKintoAppRegistry.Metadata[] memory) {
-        uint balance = IERC721Enumerable(address(kintoAppRegistry)).balanceOf(_wallet);
+        uint256 balance = IERC721Enumerable(address(kintoAppRegistry)).balanceOf(_wallet);
         IKintoAppRegistry.Metadata[] memory apps = new IKintoAppRegistry.Metadata[](balance);
-        for (uint i = 0; i < balance; i++) {
-            uint tokenId = IERC721Enumerable(address(kintoAppRegistry)).tokenOfOwnerByIndex(_wallet, i);
+        for (uint256 i = 0; i < balance; i++) {
+            uint256 tokenId = IERC721Enumerable(address(kintoAppRegistry)).tokenOfOwnerByIndex(_wallet, i);
             apps[i] = kintoAppRegistry.getAppMetadata(kintoAppRegistry.tokenIdToApp(tokenId));
         }
         return apps;
