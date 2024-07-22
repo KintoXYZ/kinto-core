@@ -93,7 +93,7 @@ interface IBridger {
     struct SignatureData {
         /// @notice Kinto Wallet Address on L2 where tokens will be deposited.
         address kintoWallet;
-        /// @sigData.signernotice Address of the signer.
+        /// @notice Address of the signer.
         address signer;
         /// @notice Address of the input asset.
         address inputAsset;
