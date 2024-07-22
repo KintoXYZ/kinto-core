@@ -36,13 +36,14 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
 
         bridger = Bridger(payable(bridgerAddress));
         vm.prank(bridger.owner());
-        bridger.upgradeTo(address(newImpl));
+        bridger.upgradeTo(newImpl);
 
         // Checks
         assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
         // Safe Account
         assertEq(bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82, "Invalid Owner");
 
-        console.log("BridgerV7-impl at: %s", address(newImpl));
+        console.log("BridgerV9-impl at: %s", newImpl);
+        saveContractAddress("BridgerV9-impl", newImpl);
     }
 }
