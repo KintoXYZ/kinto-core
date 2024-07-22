@@ -361,7 +361,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
         // todo: remove socket once the app key flow and pimlico errors are gone
         if ((app == SOCKET || app == REWARDS_DISTRIBUTOR) && address(this) != ADMIN_WALLET) {
-            return _verifySingleSignature(owners[0], hashData, userOp.signature);
+            if (_verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
+                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
+                    ? SIG_VALIDATION_SUCCESS
+                    : SIG_VALIDATION_FAILED;
+            }
         }
 
         // if using an app key, no calls to wallet are allowed
