@@ -34,7 +34,16 @@ contract DeployScript is MigrationHelper {
             type(KintoWalletFactory).creationCode,
             abi.encode(0xC99D77eF43FCA9D491c1f5B900F74649236055C3, _getChainDeployment("KintoAppRegistry"))
         );
-        address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V19", bytecode);
-        saveContractAddress("KintoWalletFactoryV19-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V20", bytecode);
+        saveContractAddress("KintoWalletFactoryV20-impl", impl);
+        KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
+
+        _handleOps(
+            abi.encodeWithSelector(
+                KintoWalletFactory.setAppRegistry.selector, IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+            ),
+            address(_getChainDeployment("KintoWalletFactory"))
+        );
+        assertEq(address(factory.appRegistry()), _getChainDeployment("KintoAppRegistry"));
     }
 }

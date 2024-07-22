@@ -391,7 +391,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV19 is KintoWalletFactory {
+contract KintoWalletFactoryV20 is KintoWalletFactory {
     constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry)
         KintoWalletFactory(_implAddressP, _appRegistry)
     {}
