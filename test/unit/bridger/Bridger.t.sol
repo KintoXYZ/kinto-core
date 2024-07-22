@@ -341,9 +341,27 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         assertEq(sDAI.balanceOf(address(bridger)), amountToDeposit);
     }
 
+    function testDepositERC20_RevertWhenInvalidBridge() public {
+        uint256 amountToDeposit = 1e18;
+        deal(address(sDAI), _user, amountToDeposit);
+        deal(_user, GAS_FEE);
+
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(vault), false);
+
+        vm.prank(_user);
+        sDAI.approve(address(bridger), amountToDeposit);
+
+        vm.prank(_user);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidVault.selector, address(vault)));
+        bridger.depositERC20{value: GAS_FEE}(
+            address(sDAI), amountToDeposit, kintoWallet, address(sDAI), amountToDeposit, bytes(""), mockBridgerData
+        );
+    }
+
     /* ============ depositETH ============ */
 
-    function testDepositERC20_RevertWhenInvalidBridge() public {
+    function testDepositETH_RevertWhenInvalidBridge() public {
         uint256 amountToDeposit = 1e18;
         vm.deal(_user, amountToDeposit + GAS_FEE);
 
