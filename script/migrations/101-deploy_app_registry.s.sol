@@ -11,25 +11,25 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        // bytes memory bytecode =
-        //     abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
-        // address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V16", bytecode);
+        bytes memory bytecode =
+            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
+        address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V16", bytecode);
 
-        // saveContractAddress("KintoAppRegistryV16-impl", impl);
+        saveContractAddress("KintoAppRegistryV16-impl", impl);
 
-        // bytecode = abi.encodePacked(
-        //     type(KYCViewer).creationCode,
-        //     abi.encode(
-        //         _getChainDeployment("KintoWalletFactory"),
-        //         _getChainDeployment("Faucet"),
-        //         _getChainDeployment("EngenCredits"),
-        //         _getChainDeployment("KintoAppRegistry")
-        //     )
-        // );
+        bytecode = abi.encodePacked(
+            type(KYCViewer).creationCode,
+            abi.encode(
+                _getChainDeployment("KintoWalletFactory"),
+                _getChainDeployment("Faucet"),
+                _getChainDeployment("EngenCredits"),
+                _getChainDeployment("KintoAppRegistry")
+            )
+        );
 
-        // // upgrade KYCViewer to V12
-        // impl = _deployImplementationAndUpgrade("KYCViewer", "V12", bytecode);
-        // saveContractAddress("KYCViewerV12-impl", impl);
+        // upgrade KYCViewer to V12
+        impl = _deployImplementationAndUpgrade("KYCViewer", "V12", bytecode);
+        saveContractAddress("KYCViewerV12-impl", impl);
         bytes memory bytecode = abi.encodePacked(
             type(KintoWalletFactory).creationCode,
             abi.encode(0xC99D77eF43FCA9D491c1f5B900F74649236055C3, _getChainDeployment("KintoAppRegistry"))
@@ -37,13 +37,5 @@ contract DeployScript is MigrationHelper {
         address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V20", bytecode);
         saveContractAddress("KintoWalletFactoryV20-impl", impl);
         KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
-
-        _handleOps(
-            abi.encodeWithSelector(
-                KintoWalletFactory.setAppRegistry.selector, IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
-            ),
-            address(_getChainDeployment("KintoWalletFactory"))
-        );
-        assertEq(address(factory.appRegistry()), _getChainDeployment("KintoAppRegistry"));
     }
 }
