@@ -77,6 +77,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         bridger.initialize(senderAccount);
 
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(vault), true);
+
         mockBridgerData = IBridger.BridgeData({
             vault: address(vault),
             gasFee: GAS_FEE,
@@ -340,15 +343,23 @@ contract BridgerTest is SignatureHelper, SharedSetup {
 
     /* ============ depositETH ============ */
 
-    function testDepositETH_RevertWhen_AmountIsZero() public {
-        uint256 amountToDeposit = 0;
-        vm.deal(_user, amountToDeposit);
-        vm.startPrank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, amountToDeposit));
+    function testDepositERC20_RevertWhenInvalidBridge() public {
+        uint256 amountToDeposit = 1e18;
+        vm.deal(_user, amountToDeposit + GAS_FEE);
+
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(vault), false);
+
+        vm.prank(_user);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidVault.selector, address(vault)));
         bridger.depositETH{value: amountToDeposit + GAS_FEE}(
             amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
         );
-        vm.stopPrank();
+    }
+
+    function testDepositETH_RevertWhen_AmountIsZero() public {
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidAmount.selector, 0));
+        bridger.depositETH{value: GAS_FEE}(0, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData);
     }
 
     /* ============ Pause ============ */
@@ -380,9 +391,23 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.unpause();
     }
 
+    /* ============ Set Bridge Vault  ============ */
+
+    function testsetBridgeVault() public {
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(0xcafe), true);
+
+        assertEq(bridger.bridgeVaults(address(0xcafe)), true);
+    }
+
+    function testsetBridgeVault_RevertWhenNotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        bridger.setBridgeVault(address(0xcafe), true);
+    }
+
     /* ============ Sender account ============ */
 
-    function testSetSenderAccount_RevertWhen_NotOwner() public {
+    function testSetSenderAccount_RevertWhenNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         bridger.setSenderAccount(address(0xdead));
     }
