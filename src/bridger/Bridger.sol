@@ -122,6 +122,8 @@ contract Bridger is
     uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
     bool private __swapsEnabled;
+    /// @notice List of allowed vaults for the Bridge.
+    mapping(address => bool) public bridgeVaults;
 
     /* ============ Modifiers ============ */
 
@@ -183,29 +185,26 @@ contract Bridger is
         (newImplementation);
     }
 
-    /* ============ Pause and Unpause ============ */
+    /* ============ Admin ============ */
 
-    /**
-     * @notice Pauses the contract, preventing certain functions from being executed.
-     * @dev This function can only be called by the contract owner.
-     */
+    /// @inheritdoc IBridger
     function pause() external override onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Unpauses the contract. Only the owner can call this function.
-     */
+    /// @inheritdoc IBridger
     function unpause() external override onlyOwner {
         _unpause();
     }
 
-    /**
-     * @notice Sets the sender account. Only the owner can call this function.
-     * @param sender Address of the sender account.
-     */
+    /// @inheritdoc IBridger
     function setSenderAccount(address sender) external override onlyOwner {
         senderAccount = sender;
+    }
+
+    /// @inheritdoc IBridger
+    function setBridgeVault(address vault, bool flag) external override onlyOwner {
+        bridgeVaults[vault] = flag;
     }
 
     /* ============ Public ============ */
@@ -314,6 +313,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
@@ -360,6 +360,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
