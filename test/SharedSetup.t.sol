@@ -191,7 +191,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);
-        console2.log("_kintoAppRegistry:", address(_kintoAppRegistry));
     }
 
     function etchWallet(address wallet) internal {

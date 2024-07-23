@@ -538,7 +538,6 @@ contract KintoWalletFactoryTest is SharedSetup {
     /* ============ sendETHToDeployer ============ */
 
     function testSendETHToDeployer() public {
-        console2.log("_kintoAppRegistry:", address(_kintoAppRegistry));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
