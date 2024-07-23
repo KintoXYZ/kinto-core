@@ -28,7 +28,9 @@ contract KintoWalletUpgrade is KintoWallet {
 }
 
 contract KintoWalletFactoryUpgrade is KintoWalletFactory {
-    constructor(KintoWallet _impl, IKintoAppRegistry _app) KintoWalletFactory(_impl, _app) {}
+    constructor(KintoWallet _impl, IKintoAppRegistry _app, IKintoID _kintoID)
+        KintoWalletFactory(_impl, _app, _kintoID)
+    {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -38,16 +40,13 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 contract KintoWalletFactoryTest is SharedSetup {
     using SignatureChecker for address;
 
-    KintoWalletFactoryUpgrade _walletFactoryv2;
-    KintoWalletUpgrade _kintoWalletv2;
-
     function testUp() public override {
         super.testUp();
         assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
-    /* ============ Create Account tests ============ */
+    /* ============ Create Account ============ */
 
     function testCreateAccount() public {
         vm.prank(address(_owner));
@@ -86,11 +85,11 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoWallet = _walletFactory.createAccount(_user2, _owner, 0);
     }
 
-    /* ============ Upgrade tests ============ */
+    /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
         vm.prank(_owner);
         _walletFactory.upgradeTo(address(_newImplementation));
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
@@ -99,7 +98,7 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
 
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
@@ -151,7 +150,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.upgradeAllWalletImplementations(_newImpl);
     }
 
-    /* ============ Deploy tests ============ */
+    /* ============ Deploy ============ */
 
     function testDeployContract() public {
         address computed =
@@ -253,7 +252,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.fundWallet{value: 0}(payable(address(_kintoWallet)));
     }
 
-    /* ============ Start Recovery tests ============ */
+    /* ============ Start Recovery ============ */
 
     function testStartWalletRecovery_WhenCallerIsRecoverer() public {
         vm.prank(address(_kintoWallet.recoverer()));
@@ -273,7 +272,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
     }
 
-    /* ============ Complete Recovery tests ============ */
+    /* ============ Complete Recovery ============ */
 
     function testCompleteWalletRecovery_WhenCallerIsRecoverer() public {
         vm.prank(_owner);
@@ -398,7 +397,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
     }
 
-    /* ============ Send Money tests ============ */
+    /* ============ Send Money ============ */
 
     function testSendMoneyToAccount_WhenCallerIsKYCd() public {
         approveKYC(_kycProvider, _user, _userPk);
@@ -505,7 +504,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(123));
     }
 
-    /* ============ Claim From Faucet tests ============ */
+    /* ============ Claim From Faucet ============ */
 
     function testClaimFromFaucet_WhenCallerIsKYCd() public {
         vm.prank(_owner);
@@ -534,5 +533,16 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.expectRevert(IKintoWalletFactory.InvalidFaucet.selector);
         vm.prank(_kycProvider);
         _walletFactory.claimFromFaucet(address(0), sigdata);
+    }
+
+    /* ============ sendETHToDeployer ============ */
+
+    function testSendETHToDeployer() public {
+        console2.log("_kintoAppRegistry:", address(_kintoAppRegistry));
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
+
+        vm.prank(address(_kintoWallet));
+        _walletFactory.sendETHToDeployer(address(0xde));
     }
 }

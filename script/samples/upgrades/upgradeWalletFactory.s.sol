@@ -11,7 +11,9 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoWalletFactoryNewVersion is KintoWalletFactory {
-    constructor(KintoWallet _impl, KintoAppRegistry _app) KintoWalletFactory(_impl, _app) {}
+    constructor(KintoWallet _impl, KintoAppRegistry _app, IKintoID _kintoID)
+        KintoWalletFactory(_impl, _app, _kintoID)
+    {}
 }
 
 /// @notice This script upgrades the KintoWalletFactory implementation
@@ -23,7 +25,8 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         // deploy new version of KintoWalletFactory
         KintoWalletFactoryNewVersion _newImplementation = new KintoWalletFactoryNewVersion(
             KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))),
-            KintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+            KintoAppRegistry(_getChainDeployment("KintoAppRegistry")),
+            IKintoID(_getChainDeployment("KintoID"))
         );
 
         // upgrade KintoWalletFactory to new version

@@ -29,16 +29,23 @@ import "../interfaces/IKintoAppRegistry.sol";
  *   before or after the account is created.
  */
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
+    /* ============ Constants & Immutables ============ */
+
+    IKintoWallet private immutable _implAddress;
+    IKintoID public immutable override kintoID;
+    IKintoAppRegistry public immutable override appRegistry;
+
     /* ============ State Variables ============ */
 
     UpgradeableBeacon public beacon;
-    IKintoWallet private immutable _implAddress;
-    IKintoID public override kintoID;
+    /// @notice DEPRECATED: Address of an KintoId.
+    IKintoID private __kintoID;
     mapping(address => uint256) public override walletTs; // wallet address => timestamp
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
     mapping(address => bool) public override adminApproved;
-    IKintoAppRegistry public override appRegistry;
+    /// @notice DEPRECATED: Address of an AppRegistry.
+    IKintoAppRegistry private __appRegistry;
 
     /* ============ Events ============ */
 
@@ -47,10 +54,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry) {
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID) {
         _disableInitializers();
+
         _implAddress = _implAddressP;
         appRegistry = _appRegistry;
+        kintoID = _kintoID;
     }
 
     /* ============ External/Public methods ============ */
@@ -58,12 +67,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize(IKintoID _kintoID) external virtual initializer {
+    function initialize() external virtual initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         beacon = new UpgradeableBeacon(address(_implAddress));
         factoryWalletVersion = 1;
-        kintoID = _kintoID;
     }
 
     /**
@@ -392,7 +400,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 }
 
 contract KintoWalletFactoryV20 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry)
-        KintoWalletFactory(_implAddressP, _appRegistry)
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID)
+        KintoWalletFactory(_implAddressP, _appRegistry, _kintoID)
     {}
 }
