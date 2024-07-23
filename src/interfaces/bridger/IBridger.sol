@@ -61,6 +61,9 @@ interface IBridger {
     /// @notice The nonce is invalid.
     error InvalidNonce();
 
+    /// @notice The vault is not permitted.
+    error InvalidVault(address vault);
+
     /// @notice The signer is invalid.
     /// @param signer The signer.
     error InvalidSigner(address signer);
@@ -233,6 +236,13 @@ interface IBridger {
      * @param senderAccount Address of the sender account.
      */
     function setSenderAccount(address senderAccount) external;
+
+    /**
+     * @notice Enables the vault contract for bridge operations.
+     * @param vault Address of the sender account.
+     * @param flag True to enable, false to disable.
+     */
+    function setBridgeVault(address vault, bool flag) external;
 
     /* ============ View ============ */
 

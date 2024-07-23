@@ -283,6 +283,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
         uint256 nonce = bridger.nonces(_user);
 
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
         // DAI to wstETH quote's swapData
         // curl 'https://api.0x.org/swap/v1/quote?sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-dai-to-wsteth-quote.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-wsteth-quote.json").readBytes(".data");
@@ -345,6 +348,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
         uint256 nonce = bridger.nonces(_user);
 
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
         // DAI to USDC quote's swapData
         // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000' --header '0x-api-key: key' | jq > ./test/data/swap-dai-to-usdc-arb.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-usdc-arb.json").readBytes(".data");
@@ -371,6 +377,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         deal(_user, amountToDeposit);
         deal(_user, data.gasFee);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
 
         // ETH to USDC quote's swapData
         // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=1000000000000000000' --header '0x-api-key: key' | jq > ./test/data/swap-weth-to-usdc-arb.json
@@ -408,6 +417,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(_user);
         IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
 
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
         vm.prank(_user);
         bridger.depositERC20{value: data.gasFee}(
             assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, 1618e10, swapCalldata, data
@@ -441,6 +453,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(_user);
         IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
 
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
         vm.prank(_user);
         bridger.depositERC20{value: data.gasFee}(
             assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit * 1e10, bytes(""), data
@@ -473,6 +488,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         vm.prank(_user);
         IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
 
         vm.prank(_user);
         bridger.depositERC20{value: data.gasFee}(
@@ -519,6 +537,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         // top-up `_user` ETH balance
         vm.deal(_user, amountIn + data.gasFee);
 
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
         // WETH to sDAI quote's swapData
         // curl 'https://api.0x.org/swap/v1/quote?sellToken=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&buyToken=0x83F20F44975D03b1b09e64809B757c47f942BEeA&sellAmount=1000000000000000000' --header '0x-api-key: KEY' | jq > ./test/data/swap-eth-to-sdai-quote.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-eth-to-sdai-quote.json").readBytes(".data");
@@ -561,6 +582,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         uint256 bridgerBalanceBefore = address(bridger).balance;
         uint256 vaultAssetOutBalanceBefore = ERC20(assetOut).balanceOf(data.vault);
         uint256 amountOut = 55832490000000000;
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
 
         vm.prank(_user);
         bridger.depositETH{value: amountIn + data.gasFee}(
