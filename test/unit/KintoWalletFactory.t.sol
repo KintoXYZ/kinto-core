@@ -538,10 +538,26 @@ contract KintoWalletFactoryTest is SharedSetup {
     /* ============ sendETHToDeployer ============ */
 
     function testSendETHToDeployer() public {
-        vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
+        uint256 amount = 1 ether;
+        vm.deal(_user, amount);
 
         vm.prank(address(_kintoWallet));
-        _walletFactory.sendETHToDeployer(address(0xde));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), _user);
+
+        vm.prank(address(_kintoWallet));
+        _walletFactory.sendETHToDeployer(_user);
+
+        assertEq(_user.balance, 1 ether);
+    }
+
+    /* ============ sendETHToEOA ============ */
+
+    function testSendETHToEOA() public {
+        address[] memory eoas = new address[](1);
+        eoas[0] = _user;
+        registerApp(address(_kintoWallet), "app", address(this), eoas);
+
+        vm.prank(address(_kintoWallet));
+        _walletFactory.sendETHToEOA(_user, address(this));
     }
 }
