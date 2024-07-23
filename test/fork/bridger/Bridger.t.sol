@@ -102,15 +102,6 @@ abstract contract BridgeDataHelper is Constants {
             options: bytes("")
         });
 
-        bridgeData[ARBITRUM_CHAINID][SOLV_BTC_ARBITRUM] = IBridger.BridgeData({
-            vault: 0x25a1baC7314Ff40Ee8CD549251924D066D7d5bC6,
-            gasFee: 1e16,
-            msgGasLimit: 500_000,
-            connector: 0x5817bF28f6f0B0215f310837BAB88A127d29aBF3,
-            execPayload: bytes(""),
-            options: bytes("")
-        });
-
         bridgeData[ARBITRUM_CHAINID][stUSD] = IBridger.BridgeData({
             vault: 0x97bf1f0F7A929bE866F7Fbeb35545f5429Addf26,
             gasFee: 1e16,
