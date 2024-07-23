@@ -101,6 +101,24 @@ abstract contract BridgeDataHelper is Constants {
             execPayload: bytes(""),
             options: bytes("")
         });
+
+        bridgeData[ARBITRUM_CHAINID][SOLV_BTC_ARBITRUM] = IBridger.BridgeData({
+            vault: 0x25a1baC7314Ff40Ee8CD549251924D066D7d5bC6,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x5817bF28f6f0B0215f310837BAB88A127d29aBF3,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
+        bridgeData[ARBITRUM_CHAINID][stUSD] = IBridger.BridgeData({
+            vault: 0x97bf1f0F7A929bE866F7Fbeb35545f5429Addf26,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0xE16Cc29f4d28BB93D1B882035D87dE9AC0306bAd,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 }
 
@@ -367,7 +385,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // ETH to wUSDM
     function testDepositETH_WhenEthToWUSDM() public {
         setUpArbitrumFork();
-        vm.rollFork(221170245); // block number in which the 0x API data was fetched
+        vm.rollFork(235263493); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
@@ -387,12 +405,43 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         vm.prank(_owner);
         bridger.depositETH{value: data.gasFee + amountToDeposit}(
-            amountToDeposit, kintoWalletL2, wUSDM, 3460596206951588256619, swapCalldata, data
+            amountToDeposit, kintoWalletL2, wUSDM, 3323851357460084447523, swapCalldata, data
         );
 
-        uint256 shares = ERC4626(wUSDM).previewDeposit(3577796244115359404856);
+        uint256 shares = ERC4626(wUSDM).previewDeposit(3455161312938986082011);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
+    }
+
+    // ETH to stUSD
+    function testDepositETH_WhenEthToStUSD() public {
+        setUpArbitrumFork();
+        vm.rollFork(235263493); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][stUSD];
+        uint256 amountToDeposit = 1e18;
+        uint256 sharesBefore = ERC20(stUSD).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(stUSD).balanceOf(address(data.vault));
+
+        deal(_user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // ETH to USDC quote's swapData
+        // curl 'https://arbitrum.api.0x.org/swap/v1/quote?buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=1000000000000000000' --header '0x-api-key: key' | jq > ./test/data/swap-weth-to-usdc-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-usdc-arb.json").readBytes(".data");
+
+        vm.prank(_owner);
+        bridger.depositETH{value: data.gasFee + amountToDeposit}(
+            amountToDeposit, kintoWalletL2, stUSD, 3311918568204055178241, swapCalldata, data
+        );
+
+        uint256 shares = ERC4626(stUSD).previewDeposit(3455881288000000000000);
+        assertEq(ERC20(stUSD).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(stUSD).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
     // USDC to SolvBTC
