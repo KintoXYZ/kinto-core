@@ -30,12 +30,11 @@ contract DeployScript is MigrationHelper {
         // upgrade KYCViewer to V12
         impl = _deployImplementationAndUpgrade("KYCViewer", "V12", bytecode);
         saveContractAddress("KYCViewerV12-impl", impl);
-        bytes memory bytecode = abi.encodePacked(
+        bytecode = abi.encodePacked(
             type(KintoWalletFactory).creationCode,
             abi.encode(0xC99D77eF43FCA9D491c1f5B900F74649236055C3, _getChainDeployment("KintoAppRegistry"))
         );
-        address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V20", bytecode);
+        impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V20", bytecode);
         saveContractAddress("KintoWalletFactoryV20-impl", impl);
-        KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
     }
 }
