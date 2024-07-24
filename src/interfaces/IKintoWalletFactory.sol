@@ -13,16 +13,15 @@ interface IKintoWalletFactory {
     error InvalidInput();
     error KYCRequired();
     error KYCMustNotExist();
-    error InvalidWallet();
-    error InvalidRecoverer();
+    error InvalidWallet(address);
+    error InvalidRecoverer(address);
     error OnlyRecoverer();
-    error InvalidWalletOrFunder();
-    error InvalidSender();
+    error InvalidWalletOrFunder(address);
+    error InvalidSender(address);
     error SendFailed();
-    error InvalidFaucet();
-    error InvalidTarget();
+    error InvalidTarget(address);
     error NotAdminApproved();
-    error OnlyPrivileged();
+    error OnlyPrivileged(address);
     error DeploymentNotAllowed(string reason);
     error AmountMismatch();
     error EmptyBytecode();
@@ -55,8 +54,6 @@ interface IKintoWalletFactory {
     function sendETHToDeployer(address deployer) external payable;
 
     function sendETHToEOA(address eoa, address app) external payable;
-
-    function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
 
     function approveWalletRecovery(address wallet) external;
 
