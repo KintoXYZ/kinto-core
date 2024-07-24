@@ -627,4 +627,26 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         assertEq(_recoverer.balance, amount);
     }
+
+    function testSendMoneyToRecoverer_RevertWhenInvalidRecoverer() public {
+        vm.deal(_recoverer, 1);
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidRecoverer.selector, address(_recoverer)));
+        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), _recoverer);
+    }
+
+    function testSendMoneyToRecoverer_RevertWhenInvalidWallet() public {
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidWallet.selector, address(this)));
+        _walletFactory.sendMoneyToRecoverer(address(this), _recoverer);
+    }
+
+    function testSendMoneyToRecoverer_RevertWhenOnlyRecoverer() public {
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, address(123), _recoverer));
+        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), address(123));
+    }
+
+    function testSendMoneyToRecoverer_RevertWhenInvalidSender() public {
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidSender.selector, address(this)));
+        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), _recoverer);
+    }
 }

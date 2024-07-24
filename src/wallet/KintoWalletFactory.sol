@@ -266,7 +266,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (recoverer.balance > 0) revert InvalidRecoverer(recoverer);
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
         if (recoverer != IKintoWallet(wallet).recoverer()) {
-            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+            revert OnlyRecoverer(recoverer, IKintoWallet(wallet).recoverer());
         }
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
