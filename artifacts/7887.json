@@ -12420,6 +12420,11 @@
               "name": "_implAddressP",
               "type": "address",
               "internalType": "contract IKintoWallet"
+            },
+            {
+              "name": "_appRegistry",
+              "type": "address",
+              "internalType": "contract IKintoAppRegistry"
             }
           ],
           "stateMutability": "nonpayable"
@@ -12439,6 +12444,19 @@
               "name": "",
               "type": "bool",
               "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "appRegistry",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoAppRegistry"
             }
           ],
           "stateMutability": "view"
@@ -12764,6 +12782,37 @@
           "inputs": [],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "sendETHToDeployer",
+          "inputs": [
+            {
+              "name": "deployer",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "sendETHToEOA",
+          "inputs": [
+            {
+              "name": "eoa",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
           "type": "function",

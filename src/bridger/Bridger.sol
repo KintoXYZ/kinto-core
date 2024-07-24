@@ -125,7 +125,7 @@ contract Bridger is
     mapping(address => mapping(address => uint256)) private __deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
-    /// @notice DEPRECATED: Count of deposits..
+    /// @notice DEPRECATED: Count of deposits.
     uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
     bool private __swapsEnabled;
