@@ -15,7 +15,7 @@ interface IKintoWalletFactory {
     error KYCMustNotExist();
     error InvalidWallet(address);
     error InvalidRecoverer(address);
-    error OnlyRecoverer();
+    error OnlyRecoverer(address, address);
     error InvalidWalletOrFunder(address);
     error InvalidSender(address);
     error SendFailed();

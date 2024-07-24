@@ -95,8 +95,8 @@ contract KintoWalletFactoryTest is SharedSetup {
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
     }
 
-    function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
-        vm.assume(someone != _owner);
+    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
+        address someone = _user2;
         KintoWalletFactoryUpgrade _newImplementation =
             new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
 
@@ -265,10 +265,10 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.startWalletRecovery(payable(address(123)));
     }
 
-    function testStartWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
-        vm.assume(someone != address(_kintoWallet.recoverer()));
+    function testStartWalletRecovery_RevertWhen_CallerIsNotRecoverer() public {
+        address someone = _user2;
         vm.prank(someone);
-        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, someone, _recoverer));
         _walletFactory.startWalletRecovery(payable(address(_kintoWallet)));
     }
 
@@ -372,10 +372,10 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.completeWalletRecovery(payable(address(123)), new address[](0));
     }
 
-    function testCompleteWalletRecovery_RevertWhen_CallerIsNotRecoverer(address someone) public {
-        vm.assume(someone != address(_kintoWallet.recoverer()));
+    function testCompleteWalletRecovery_RevertWhen_CallerIsNotRecoverer() public {
+        address someone = _user2;
         vm.prank(someone);
-        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, someone, _recoverer));
         _walletFactory.completeWalletRecovery(payable(address(_kintoWallet)), new address[](0));
     }
 
@@ -390,10 +390,10 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.changeWalletRecoverer(payable(address(123)), payable(address(123)));
     }
 
-    function testChangeWalletRecoverer_RevertWhen_CallerIsNotRecoverer(address someone) public {
-        vm.assume(someone != address(_kintoWallet.recoverer()));
+    function testChangeWalletRecoverer_RevertWhen_CallerIsNotRecoverer() public {
+        address someone = _user2;
         vm.prank(someone);
-        vm.expectRevert(IKintoWalletFactory.OnlyRecoverer.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, someone, _recoverer));
         _walletFactory.changeWalletRecoverer(payable(address(_kintoWallet)), payable(address(123)));
     }
 
@@ -614,5 +614,17 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.prank(address(_kintoWallet));
         vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidTarget.selector, address(this)));
         _walletFactory.sendETHToEOA(_user, address(this));
+    }
+
+    /* ============ sendMoneyToRecoverer ============ */
+
+    function testSendMoneyToRecoverer() public {
+        uint256 amount = 1 ether;
+        vm.deal(address(_kintoWallet), amount);
+
+        vm.prank(_owner);
+        _walletFactory.sendMoneyToRecoverer{value: amount}(address(_kintoWallet), _recoverer);
+
+        assertEq(_recoverer.balance, amount);
     }
 }

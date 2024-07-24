@@ -135,7 +135,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function startWalletRecovery(address payable wallet) external override {
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         IKintoWallet(wallet).startRecovery();
     }
 
@@ -146,7 +148,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         if (!adminApproved[wallet]) revert NotAdminApproved();
         // Transfer kinto id from old to new signer
         if (!kintoID.isKYC(newSigners[0]) && kintoID.isKYC(IKintoWallet(wallet).owners(0))) {
@@ -173,7 +177,9 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         IKintoWallet(wallet).changeRecoverer(_newRecoverer);
     }
 
@@ -259,10 +265,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     function sendMoneyToRecoverer(address wallet, address recoverer) external payable override {
         if (recoverer.balance > 0) revert InvalidRecoverer(recoverer);
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
-        if (recoverer != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (recoverer != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
-        if (!isPrivileged) revert OnlyRecoverer();
+        if (!isPrivileged) revert InvalidSender(msg.sender);
         (bool sent,) = recoverer.call{value: msg.value}("");
         if (!sent) revert SendFailed();
     }
