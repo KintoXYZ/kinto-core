@@ -286,7 +286,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function sendETHToEOA(address eoa, address app) external payable override {
         if (walletTs[msg.sender] == 0) revert InvalidWallet(msg.sender);
-        if (eoa == address(0) || app == address(0)) revert InvalidTarget(eoa);
+        if (eoa == address(0) || app == address(0)) revert InvalidTarget(address(0));
         if (appRegistry.devEoaToApp(eoa) != app) revert InvalidTarget(app);
         if (IERC721Enumerable(address(appRegistry)).ownerOf(appRegistry.getAppMetadata(app).tokenId) != msg.sender) {
             revert InvalidWallet(msg.sender);

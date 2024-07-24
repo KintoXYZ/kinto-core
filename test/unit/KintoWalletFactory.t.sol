@@ -564,6 +564,12 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.sendETHToDeployer(_user);
     }
 
+    function testSendETHToDeployer_RevertWhenInvalidTarget() public {
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidTarget.selector, address(0)));
+        _walletFactory.sendETHToDeployer(address(0));
+    }
+
     /* ============ sendETHToEOA ============ */
 
     function testSendETHToEOA() public {
@@ -578,5 +584,35 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.sendETHToEOA{value: amount}(_user, address(this));
 
         assertEq(_user.balance, amount);
+    }
+
+    function testSendETHToEOA_RevertWhenInvalidWalletApp() public {
+        address[] memory eoas = new address[](1);
+        eoas[0] = _user;
+        registerApp(address(_kintoWallet), "app", address(this), eoas);
+
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidWallet.selector, address(this)));
+        _walletFactory.sendETHToEOA(_user, address(this));
+    }
+
+    function testSendETHToEOA_RevertWhenInvalidWallet() public {
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidWallet.selector, address(this)));
+        _walletFactory.sendETHToEOA(_user, address(this));
+    }
+
+    function testSendETHToEOA_RevertWhenInvalidTarget() public {
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidTarget.selector, address(0)));
+        _walletFactory.sendETHToEOA(_user, address(0));
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidTarget.selector, address(0)));
+        _walletFactory.sendETHToEOA(address(0), address(this));
+    }
+
+    function testSendETHToEOA_RevertWhenInvalidTargetWrongApp() public {
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidTarget.selector, address(this)));
+        _walletFactory.sendETHToEOA(_user, address(this));
     }
 }
