@@ -366,6 +366,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                     ? SIG_VALIDATION_SUCCESS
                     : SIG_VALIDATION_FAILED;
             }
+            return SIG_VALIDATION_FAILED;
         }
 
         // if using an app key, no calls to wallet are allowed
@@ -395,8 +396,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Internal/Private Functions ============ */
 
-    /// @dev when `executeBatch`batches user operations, we use the last op on the batch to identify who is the sponsor that will
-    // be paying for all the ops within that batch. The following rules must be met:
+    /// @dev when `executeBatch` batches user actions, we use the last action on the batch to identify who is the sponsor that will
+    // be paying for all the actions within that batch. The following rules must be met:
     // - all targets must be either a sponsored contract or a child (same if using an app key)
     // - no more than WALLET_TARGET_LIMIT ops allowed. If using an app key, NO wallet calls are allowed
     function _verifyBatch(address sponsor, bytes calldata callData, bool appKey) private view returns (bool) {
