@@ -350,6 +350,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV10 is SponsorPaymaster {
+contract SponsorPaymasterV11 is SponsorPaymaster {
     constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }
