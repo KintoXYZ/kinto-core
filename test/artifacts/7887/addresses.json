@@ -145,6 +145,7 @@
   "SponsorPaymaster": "0x1842a4EFf3eFd24c50B63c3CF89cECEe245Fc2bd",
   "SponsorPaymaster-impl": "0x1F9E60e0289b35325B25635B602d515179a7497d",
   "SponsorPaymasterV10-impl": "0x625D89063092d340B3F87C927DBc3d1a104E3d81",
+  "SponsorPaymasterV11-impl": "0xAbB778766dea552533F2110A9FAE13f856108195",
   "SponsorPaymasterV2-impl": "0xD2779fcE8766011c9E71b368786C5e4b4459F42c",
   "SponsorPaymasterV3-impl": "0x0Df539ef2a0E0f1902F7D4363A79f55Ed93438b9",
   "SponsorPaymasterV4-impl": "0x77222bdac39671db6C91c7fFc85E0909B76177c8",

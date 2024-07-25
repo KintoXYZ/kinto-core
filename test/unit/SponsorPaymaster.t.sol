@@ -11,11 +11,14 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/sample/Counter.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner)
+        SponsorPaymaster(__entryPoint, factory)
+    {
         _disableInitializers();
         _transferOwnership(_owner);
     }
@@ -42,10 +45,8 @@ contract SponsorPaymasterTest is SharedSetup {
     event AppRegistrySet(address oldRegistry, address newRegistry);
     event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
-    /* ============ Upgrade ============ */
-
     function testUpgradeTo() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
+        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _walletFactory, _owner);
 
         vm.prank(_owner);
         _paymaster.upgradeTo(address(_newImplementation));
@@ -55,12 +56,23 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        _paymaster.upgradeTo(address(_newImplementation));
+        _paymaster.upgradeTo(address(this));
     }
 
-    /* ============ Deposit & Stake ============ */
+    /* ============ addDepositFor ============ */
+
+    function testAddDepositFor_WhenWallet() public {
+        uint256 amount = 1e18;
+        vm.deal(address(_kintoWallet), amount);
+        uint256 balance = address(_kintoWallet).balance;
+
+        vm.prank(address(_kintoWallet));
+        _paymaster.addDepositFor{value: amount}(address(_owner));
+
+        assertEq(address(_kintoWallet).balance, balance - amount);
+        assertEq(_paymaster.balances(_owner), amount);
+    }
 
     function testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() public {
         uint256 balance = address(_owner).balance;
@@ -97,6 +109,8 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
+
+    /* ============ withdrawTokensTo ============ */
 
     function testWithdrawTokensTo(uint256 someonePk) public {
         // ensure the private key is within the valid range for Ethereum
@@ -229,6 +243,8 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
+
+    /* ============ depositInfo ============ */
 
     function testDepositInfo_WhenCallerDepositsToHimself() public {
         vm.prank(_owner);
