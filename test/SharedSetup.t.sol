@@ -19,6 +19,8 @@ import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 // scripts & migrations
 import "@kinto-core-script/actions/deploy.s.sol";
 
+import "forge-std/console2.sol";
+
 abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsReader {
     Counter counter;
     uint256[] privateKeys;
@@ -69,7 +71,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         counter = new Counter();
         assertEq(counter.count(), 0);
 
-        registerApp(address(_kintoWallet), "test", address(counter), new address[](0));
+        registerApp(address(_kintoWallet), "counter-app", address(counter), new address[](0));
         whitelistApp(address(counter));
         fundSponsorForApp(_owner, address(counter));
     }

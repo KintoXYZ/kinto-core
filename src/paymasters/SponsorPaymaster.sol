@@ -8,10 +8,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 
-import "../interfaces/ISponsorPaymaster.sol";
-import "../interfaces/IKintoAppRegistry.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IKintoID.sol";
+import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 /**
  * @notice An ETH-based paymaster that accepts ETH deposits
@@ -29,6 +30,8 @@ import "../interfaces/IKintoID.sol";
 contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, ReentrancyGuard, ISponsorPaymaster {
     using SafeERC20 for IERC20;
 
+    /* ============ Constants & Immutables ============ */
+
     // calculated cost of the postOp
     uint256 public constant COST_OF_POST = 200_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 530_000;
@@ -36,6 +39,11 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
+
+    /// @notice The KintoWalletFactory contract
+    IKintoWalletFactory public immutable override walletFactory;
+
+    /* ============ State Variables ============ */
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
@@ -60,8 +68,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory _walletFactory) BasePaymaster(__entryPoint) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     /**
@@ -105,7 +114,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function addDepositFor(address account) external payable override {
         if (msg.value == 0) revert InvalidAmount();
-        if (!kintoID.isKYC(msg.sender) && msg.sender != owner()) revert SenderKYCRequired();
+        if (!kintoID.isKYC(msg.sender) && msg.sender != owner() && walletFactory.walletTs(msg.sender) == 0) {
+            revert SenderKYCRequired();
+        }
         if (account.code.length == 0 && !kintoID.isKYC(account)) revert AccountKYCRequired();
 
         // sender must have approval for the paymaster
@@ -339,6 +350,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV10 is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
+contract SponsorPaymasterV11 is SponsorPaymaster {
+    constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }

@@ -207,6 +207,14 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoID.upgradeTo(address(kintoIDImpl));
 
+        bytecode = abi.encodePacked(
+            type(KintoWalletFactory).creationCode, abi.encode(address(wallet), address(kintoRegistry), address(kintoID))
+        );
+        address implementation =
+            _deployImplementation("KintoWalletFactory", type(KintoWalletFactory).creationCode, bytecode, false);
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        factory.upgradeTo(implementation);
+
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
     }
 
@@ -245,7 +253,8 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         // deploy factory implementation
         bytes memory creationCode = type(KintoWalletFactory).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(dummy)));
+        bytes memory bytecode =
+            abi.encodePacked(creationCode, abi.encode(address(dummy), address(dummy), address(kintoID)));
         address implementation = _deployImplementation("KintoWalletFactory", creationCode, bytecode, false);
         address proxy = _deployProxy("KintoWalletFactory", implementation, false);
 
@@ -253,7 +262,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         _walletFactoryImpl = KintoWalletFactory(payable(implementation));
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        _walletFactory.initialize(kintoID);
+        _walletFactory.initialize();
 
         // set wallet factory in EntryPoint
         if (log) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
@@ -280,7 +289,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         returns (SponsorPaymaster _sponsorPaymaster, SponsorPaymaster _sponsorPaymasterImpl)
     {
         bytes memory creationCode = type(SponsorPaymaster).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint), address(factory)));
         address implementation = _deployImplementation("SponsorPaymaster", creationCode, bytecode, false);
         address proxy = _deployProxy("SponsorPaymaster", implementation, false);
 

@@ -16,14 +16,6 @@ contract EthfiDistributeSignersScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        vm.broadcast(deployerPrivateKey);
-        ERC20Multisender sender = new ERC20Multisender{salt: 0}();
-        saveContractAddress("ERC20Multisender", address(sender));
-
-        _whitelistApp(address(sender));
-
-        _handleOps(abi.encodeWithSelector(IERC20.approve.selector, address(sender), type(uint256).max), ETHFI);
-
         string memory json = vm.readFile("./script/data/weETH_final_distribution.json");
         string[] memory keys = vm.parseJsonKeys(json, "$");
         address[] memory users = new address[](keys.length);
@@ -34,11 +26,13 @@ contract EthfiDistributeSignersScript is MigrationHelper {
             users[index] = user;
             amounts[index] = amount;
         }
-
-        uint256 total = IERC20(ETHFI).balanceOf(kintoAdminWallet);
-
         uint256 batchSize = 100;
         uint256 totalBatches = (keys.length + batchSize - 1) / batchSize;
+
+        uint256 balance0 = IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE);
+        uint256 balance1 = IERC20(ETHFI).balanceOf(0x8c962d232219Ba491F2099F03E43E29E2CAb7bEA);
+        uint256 balance2 = IERC20(ETHFI).balanceOf(0xa4aC7205D57194547b18021127ceF8DEcF076387);
+        uint256 balance3 = IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9);
 
         for (uint256 batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
             uint256 start = batchIndex * batchSize;
@@ -52,15 +46,17 @@ contract EthfiDistributeSignersScript is MigrationHelper {
 
             for (uint256 i = start; i < end; i++) {
                 batchUsers[i - start] = users[i];
-                batchAmounts[i - start] = amounts[i] * total / 1e18;
+                batchAmounts[i - start] = amounts[i];
             }
 
             bytes memory selectorAndParams =
                 abi.encodeWithSelector(ERC20Multisender.multisendToken.selector, ETHFI, batchUsers, batchAmounts);
-            _handleOps(selectorAndParams, address(sender));
+            _handleOps(selectorAndParams, _getChainDeployment('ERC20Multisender'));
         }
 
-        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE), total * 313510000000000000 / 1e18);
-        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9), total * 10000000000000 / 1e18);
+        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE) - balance0, 6270170000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x8c962d232219Ba491F2099F03E43E29E2CAb7bEA) - balance1, 3740000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0xa4aC7205D57194547b18021127ceF8DEcF076387) - balance2, 1600000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9) - balance3, 100000000000000000);
     }
 }

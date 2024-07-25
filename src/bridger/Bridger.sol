@@ -22,6 +22,7 @@ import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.so
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
+import {IAngleSwapper} from "@kinto-core/interfaces/external/IAngleSwapper.sol";
 import {ISftWrapRouter} from "@kinto-core/interfaces/external/ISftWrapRouter.sol";
 
 import "forge-std/console2.sol";
@@ -87,6 +88,10 @@ contract Bridger is
     address public constant SOLV_SFT_WRAP_ROUTER = 0x6Ea88D4D0c4bC06F6A51f427eF295c93e10D0b36;
     /// @notice SolvBTC pool id on Arbitrum.
     bytes32 public constant SOLV_BTC_POOL_ID = 0x488def4a346b409d5d57985a160cd216d29d4f555e1b716df4e04e2374d2d9f6;
+    /// @notice stUSD pool id on Arbitrum.
+    address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
+    /// @notice USDA pool id on Arbitrum.
+    address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -106,6 +111,8 @@ contract Bridger is
     address public immutable swapRouter;
     /// @notice The address of the Curve pool for USDM.
     address public immutable usdmCurvePool;
+    /// @notice The address of Angel Swapper on Arbitrum.
+    address public constant angleSwapper = 0xD253b62108d1831aEd298Fc2434A5A8e4E418053;
 
     /* ============ State Variables ============ */
 
@@ -118,10 +125,12 @@ contract Bridger is
     mapping(address => mapping(address => uint256)) private __deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
-    /// @notice DEPRECATED: Count of deposits..
+    /// @notice DEPRECATED: Count of deposits.
     uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
     bool private __swapsEnabled;
+    /// @notice List of allowed vaults for the Bridge.
+    mapping(address => bool) public bridgeVaults;
 
     /* ============ Modifiers ============ */
 
@@ -183,29 +192,26 @@ contract Bridger is
         (newImplementation);
     }
 
-    /* ============ Pause and Unpause ============ */
+    /* ============ Admin ============ */
 
-    /**
-     * @notice Pauses the contract, preventing certain functions from being executed.
-     * @dev This function can only be called by the contract owner.
-     */
+    /// @inheritdoc IBridger
     function pause() external override onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Unpauses the contract. Only the owner can call this function.
-     */
+    /// @inheritdoc IBridger
     function unpause() external override onlyOwner {
         _unpause();
     }
 
-    /**
-     * @notice Sets the sender account. Only the owner can call this function.
-     * @param sender Address of the sender account.
-     */
+    /// @inheritdoc IBridger
     function setSenderAccount(address sender) external override onlyOwner {
         senderAccount = sender;
+    }
+
+    /// @inheritdoc IBridger
+    function setBridgeVault(address vault, bool flag) external override onlyOwner {
+        bridgeVaults[vault] = flag;
     }
 
     /* ============ Public ============ */
@@ -314,6 +320,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
@@ -360,6 +367,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
@@ -449,6 +457,20 @@ contract Bridger is
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
 
+        // If the final asset is stUSD, then swap USDC to USDA and wrap it.
+        if (finalAsset == stUSD) {
+            uint256 balance = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeApprove(angleSwapper, balance);
+            // We can ignore minReceive here because we enforce the minimal amount for final asset (stUSD).
+            amountBought = IAngleSwapper(angleSwapper).swapExactInput(
+                IERC20(USDC).balanceOf(address(this)), 0, USDC, USDA, address(this), 0
+            );
+            // wrap USDA to stUSD
+            balance = IERC20(USDA).balanceOf(address(this));
+            IERC20(USDA).safeApprove(stUSD, balance);
+            amountBought = IERC4626(stUSD).deposit(balance, address(this));
+        }
+
         // If the final asset is SolvBTC, then wrap WBTC to SolvBTC.
         if (finalAsset == SOLV_BTC) {
             uint256 balance = IERC20(WBTC).balanceOf(address(this));
@@ -464,6 +486,9 @@ contract Bridger is
             return USDe;
         }
         if (finalAsset == wUSDM) {
+            return USDC;
+        }
+        if (finalAsset == stUSD) {
             return USDC;
         }
         if (finalAsset == SOLV_BTC) {

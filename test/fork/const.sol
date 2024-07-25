@@ -24,4 +24,8 @@ contract Constants {
     address public constant USDM = 0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C;
     /// @notice The address of the wrapped USDM token. The same on all chains.
     address public constant wUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
+    /// @notice stUSD pool id on Arbitrum.
+    address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
+    /// @notice USDA pool id on Arbitrum.
+    address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
 }
