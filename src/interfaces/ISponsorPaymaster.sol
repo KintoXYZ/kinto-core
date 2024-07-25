@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
-import {IKintoID} from "./IKintoID.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 
 interface ISponsorPaymaster {
     /* ============ Errors ============ */
@@ -54,6 +55,8 @@ interface ISponsorPaymaster {
     function balances(address account) external view returns (uint256 amount);
 
     function appRegistry() external view returns (IKintoAppRegistry);
+
+    function walletFactory() external view returns (IKintoWalletFactory);
 
     function contractSpent(address account) external view returns (uint256 amount);
 

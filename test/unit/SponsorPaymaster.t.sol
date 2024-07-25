@@ -11,11 +11,12 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/sample/Counter.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner) SponsorPaymaster(__entryPoint, factory) {
         _disableInitializers();
         _transferOwnership(_owner);
     }
@@ -42,10 +43,8 @@ contract SponsorPaymasterTest is SharedSetup {
     event AppRegistrySet(address oldRegistry, address newRegistry);
     event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
-    /* ============ Upgrade ============ */
-
     function testUpgradeTo() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
+        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _walletFactory, _owner);
 
         vm.prank(_owner);
         _paymaster.upgradeTo(address(_newImplementation));
@@ -55,9 +54,8 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        _paymaster.upgradeTo(address(_newImplementation));
+        _paymaster.upgradeTo(address(this));
     }
 
     /* ============ Deposit & Stake ============ */

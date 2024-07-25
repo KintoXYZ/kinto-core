@@ -232,7 +232,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         vm.prank(_walletFactory.owner());
         _walletFactory.upgradeAllWalletImplementations(_impl);
 
-        SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
+        SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint, _walletFactory);
         vm.prank(_paymaster.owner());
         _paymaster.upgradeTo(address(_paymasterImpl));
 

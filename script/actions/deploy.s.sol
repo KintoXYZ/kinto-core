@@ -289,7 +289,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         returns (SponsorPaymaster _sponsorPaymaster, SponsorPaymaster _sponsorPaymasterImpl)
     {
         bytes memory creationCode = type(SponsorPaymaster).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint)));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(entryPoint), address(factory)));
         address implementation = _deployImplementation("SponsorPaymaster", creationCode, bytecode, false);
         address proxy = _deployProxy("SponsorPaymaster", implementation, false);
 

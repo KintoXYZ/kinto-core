@@ -6,11 +6,11 @@ import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IKintoAppRegistry.sol";
 
 import {SponsorPaymaster} from "../../src/paymasters/SponsorPaymaster.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 // Harness contract to expose internal functions for testing.
 contract SponsorPaymasterHarness is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {
-        // body intentionally blank
+    constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {
     }
 
     function exposed_validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
