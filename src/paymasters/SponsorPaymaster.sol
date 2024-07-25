@@ -8,10 +8,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@aa/core/BasePaymaster.sol";
 
-import "../interfaces/ISponsorPaymaster.sol";
-import "../interfaces/IKintoAppRegistry.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IKintoID.sol";
+import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 /**
