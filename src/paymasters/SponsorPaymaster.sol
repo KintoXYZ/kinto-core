@@ -114,7 +114,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function addDepositFor(address account) external payable override {
         if (msg.value == 0) revert InvalidAmount();
-        if (!kintoID.isKYC(msg.sender) && msg.sender != owner() && walletFactory.walletTs(msg.sender) == 0) revert SenderKYCRequired();
+        if (!kintoID.isKYC(msg.sender) && msg.sender != owner() && walletFactory.walletTs(msg.sender) == 0) {
+            revert SenderKYCRequired();
+        }
         if (account.code.length == 0 && !kintoID.isKYC(account)) revert AccountKYCRequired();
 
         // sender must have approval for the paymaster

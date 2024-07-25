@@ -16,7 +16,9 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner) SponsorPaymaster(__entryPoint, factory) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner)
+        SponsorPaymaster(__entryPoint, factory)
+    {
         _disableInitializers();
         _transferOwnership(_owner);
     }
@@ -58,7 +60,19 @@ contract SponsorPaymasterTest is SharedSetup {
         _paymaster.upgradeTo(address(this));
     }
 
-    /* ============ Deposit & Stake ============ */
+    /* ============ addDepositFor ============ */
+
+    function testAddDepositFor_WhenWallet() public {
+        uint256 amount = 1e18;
+        vm.deal(address(_kintoWallet), amount);
+        uint256 balance = address(_kintoWallet).balance;
+
+        vm.prank(address(_kintoWallet));
+        _paymaster.addDepositFor{value: amount}(address(_owner));
+
+        assertEq(address(_kintoWallet).balance, balance - amount);
+        assertEq(_paymaster.balances(_owner), amount);
+    }
 
     function testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() public {
         uint256 balance = address(_owner).balance;
@@ -95,6 +109,8 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
+
+    /* ============ withdrawTokensTo ============ */
 
     function testWithdrawTokensTo(uint256 someonePk) public {
         // ensure the private key is within the valid range for Ethereum
@@ -227,6 +243,8 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.expectRevert("Ownable: caller is not the owner");
         _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
+
+    /* ============ depositInfo ============ */
 
     function testDepositInfo_WhenCallerDepositsToHimself() public {
         vm.prank(_owner);

@@ -10,8 +10,7 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
 
 // Harness contract to expose internal functions for testing.
 contract SponsorPaymasterHarness is SponsorPaymaster {
-    constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {
-    }
+    constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 
     function exposed_validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
         public
