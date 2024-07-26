@@ -361,7 +361,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
         // todo: remove socket once the app key flow and pimlico errors are gone
         if ((app == SOCKET || app == REWARDS_DISTRIBUTOR) && address(this) != ADMIN_WALLET) {
-            return _verifySingleSignature(owners[0], hashData, userOp.signature);
+            if (_verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
+                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
+                    ? SIG_VALIDATION_SUCCESS
+                    : SIG_VALIDATION_FAILED;
+            }
+            return SIG_VALIDATION_FAILED;
         }
 
         // if using an app key, no calls to wallet are allowed
@@ -391,8 +396,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Internal/Private Functions ============ */
 
-    /// @dev when `executeBatch`batches user operations, we use the last op on the batch to identify who is the sponsor that will
-    // be paying for all the ops within that batch. The following rules must be met:
+    /// @dev when `executeBatch` batches user actions, we use the last action on the batch to identify who is the sponsor that will
+    // be paying for all the actions within that batch. The following rules must be met:
     // - all targets must be either a sponsored contract or a child (same if using an app key)
     // - no more than WALLET_TARGET_LIMIT ops allowed. If using an app key, NO wallet calls are allowed
     function _verifyBatch(address sponsor, bytes calldata callData, bool appKey) private view returns (bool) {

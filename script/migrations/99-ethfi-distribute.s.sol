@@ -51,7 +51,7 @@ contract EthfiDistributeSignersScript is MigrationHelper {
 
             bytes memory selectorAndParams =
                 abi.encodeWithSelector(ERC20Multisender.multisendToken.selector, ETHFI, batchUsers, batchAmounts);
-            _handleOps(selectorAndParams, _getChainDeployment('ERC20Multisender'));
+            _handleOps(selectorAndParams, _getChainDeployment("ERC20Multisender"));
         }
 
         assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE) - balance0, 6270170000000000000000);

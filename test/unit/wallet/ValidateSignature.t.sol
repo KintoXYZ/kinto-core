@@ -8,6 +8,7 @@ contract ValidateSignatureTest is SharedSetup {
     // constants
     uint256 constant SIG_VALIDATION_FAILED = 1;
     uint256 constant SIG_VALIDATION_SUCCESS = 0;
+    address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
 
     function setUp() public override {
         super.setUp();
@@ -20,7 +21,7 @@ contract ValidateSignatureTest is SharedSetup {
         UserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -32,7 +33,7 @@ contract ValidateSignatureTest is SharedSetup {
         UserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -44,7 +45,7 @@ contract ValidateSignatureTest is SharedSetup {
         UserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -77,7 +78,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -98,7 +99,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -130,7 +131,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -161,7 +162,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -186,7 +187,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -218,7 +219,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -251,7 +252,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -291,7 +292,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -332,7 +333,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -382,7 +383,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -416,7 +417,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -451,7 +452,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -480,7 +481,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -513,7 +514,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -541,7 +542,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -565,7 +566,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -590,7 +591,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -621,7 +622,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -660,7 +661,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -702,7 +703,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -752,11 +753,130 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
         // todo: assert that it has used the app key and not the wallet policy
+    }
+
+    /* ============ privileged apps ============ */
+
+    function testValidateSignature_WhenPrivilegedAppFailWhenNotSponsored() public {
+        // prep batch
+        address[] memory targets = new address[](2);
+        targets[0] = address(counter);
+        targets[1] = address(SOCKET);
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature("recoverer()");
+        calls[1] = abi.encodeWithSignature("increment()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_FAILED,
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    function testValidateSignature_WhenPrivilegedAppFailWhenInvokeWallet() public {
+        // prep batch
+        address[] memory targets = new address[](2);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(SOCKET);
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature("recoverer()");
+        calls[1] = abi.encodeWithSignature("increment()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_FAILED,
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    function testValidateSignature_WhenPrivilegedAppWhenMultipleActions() public {
+        // prep batch
+        address[] memory targets = new address[](2);
+        targets[0] = address(SOCKET);
+        targets[1] = address(SOCKET);
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSignature("recoverer()");
+        calls[1] = abi.encodeWithSignature("increment()");
+
+        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    function testValidateSignature_WhenPrivilegedAppSingleAction() public {
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet),
+            SOCKET,
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+
+        assertEq(
+            SIG_VALIDATION_SUCCESS,
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
+    }
+
+    function testValidateSignature_RevertWhenPrivilegedAppSingleActionWhenInvalidSignature() public {
+        privateKeys[0] = _userPk;
+        UserOperation memory userOp = _createUserOperation(
+            address(_kintoWallet),
+            SOCKET,
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("increment()"),
+            address(_paymaster)
+        );
+        assertEq(
+            SIG_VALIDATION_FAILED,
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
+                userOp, _entryPoint.getUserOpHash(userOp)
+            )
+        );
     }
 
     /* ============ special cases ============ */
@@ -786,7 +906,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -806,7 +926,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -837,7 +957,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -857,7 +977,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -889,7 +1009,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_FAILED,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -925,7 +1045,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         assertEq(
             SIG_VALIDATION_SUCCESS,
-            KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+            KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
                 userOp, _entryPoint.getUserOpHash(userOp)
             )
         );
@@ -956,7 +1076,7 @@ contract ValidateSignatureTest is SharedSetup {
 
     //     assertEq(
     //         SIG_VALIDATION_SUCCESS,
-    //         KintoWalletHarness(payable(address(_kintoWallet))).exposed_validateSignature(
+    //         KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
     //             userOp, _entryPoint.getUserOpHash(userOp)
     //         )
     //     );
