@@ -31,6 +31,7 @@ import "../interfaces/IKintoAppRegistry.sol";
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
     /* ============ Constants & Immutables ============ */
 
+    /// @notice DEPRECATED: Address of an initial wallet implementation.
     IKintoWallet private immutable _implAddress;
     IKintoID public immutable override kintoID;
     IKintoAppRegistry public immutable override appRegistry;
