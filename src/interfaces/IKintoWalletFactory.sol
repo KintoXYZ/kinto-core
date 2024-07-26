@@ -32,11 +32,6 @@ interface IKintoWalletFactory {
 
     function createAccount(address owner, address recoverer, bytes32 salt) external returns (IKintoWallet ret);
 
-    function deployContract(address contractOwner, uint256 amount, bytes memory bytecode, bytes32 salt)
-        external
-        payable
-        returns (address);
-
     function startWalletRecovery(address payable wallet) external;
 
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external;
@@ -60,8 +55,6 @@ interface IKintoWalletFactory {
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
-
-    function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);
 
     function walletTs(address _account) external view returns (uint256);
 

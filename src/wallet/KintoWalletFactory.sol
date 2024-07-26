@@ -184,38 +184,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 
     /**
-     * @dev Deploys a contract using `CREATE2`. The address where the contract
-     * will be deployed can be known in advance via {computeAddress}.
-     *
-     * This can be called directly by a developer for ease of use.
-     * The bytecode for a contract can be obtained from Solidity with
-     * `type(contractName).creationCode`.
-     *
-     * Requirements:
-     * -  sender myst be KYC'd
-     * - `bytecode` must not be empty.
-     * - `salt` must have not been used for `bytecode` already.
-     * - the factory must have a balance of at least `amount`.
-     * - if `amount` is non-zero, `bytecode` must have a `payable` constructor.
-     * @param contractOwner The address to be set as owner
-     * @param amount The amount of wei to send with the contract creation
-     * @param bytecode The bytecode of the contract to deploy
-     * @param salt The salt to use for the calculation
-     */
-    // todo: Remove this method after next hardfork
-    function deployContract(address contractOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
-        external
-        payable
-        override
-        returns (address)
-    {
-        if (!kintoID.isKYC(msg.sender) && msg.sender != 0x4181803232280371E02a875F51515BE57B215231) {
-            revert KYCRequired();
-        }
-        return _deployAndAssignOwnership(contractOwner, amount, bytecode, salt);
-    }
-
-    /**
      * @dev Fund a wallet through the factory given chain restrictions
      * @param wallet The wallet address to send eth to
      */
@@ -334,17 +302,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         );
     }
 
-    /**
-     * @dev Calculates the counterfactual address of this contract as it
-     * would be returned by deployContract()
-     * @param salt Salt used by CREATE2
-     * @param byteCodeHash The bytecode hash (keccack256) of the contract to deploy
-     * @return address of the contract to deploy
-     */
-    function getContractAddress(bytes32 salt, bytes32 byteCodeHash) external view override returns (address) {
-        return Create2.computeAddress(salt, byteCodeHash, address(this));
-    }
-
     /* ============ Internal methods ============ */
 
     /**
@@ -354,44 +311,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      */
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
-    }
-
-    function _preventWalletDeployment(bytes calldata _bytecode) internal view {
-        bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
-        if (_bytecode.length > walletInitCode.length + 32) {
-            uint256 offset = 12 + walletInitCode.length;
-
-            // extract beacon address directly from calldata
-            address beaconAddress;
-            bytes memory slice = _bytecode[offset:offset + 20];
-            assembly {
-                beaconAddress := mload(add(slice, 20))
-            }
-
-            if (beaconAddress == address(beacon)) {
-                revert DeploymentNotAllowed("Direct KintoWallet deployment not allowed");
-            }
-        }
-    }
-
-    function _deployAndAssignOwnership(address newOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
-        internal
-        returns (address)
-    {
-        if (amount != msg.value) revert AmountMismatch();
-        if (bytecode.length == 0) revert EmptyBytecode();
-        _preventWalletDeployment(bytecode);
-
-        // deploy the contract using `CREATE2`
-        address created = Create2.deploy(amount, salt, bytecode);
-
-        // assign ownership to newOwner if the contract is Ownable
-        try OwnableUpgradeable(created).owner() returns (address owner) {
-            if (owner == address(this)) {
-                OwnableUpgradeable(created).transferOwnership(newOwner);
-            }
-        } catch {}
-        return created;
     }
 }
 

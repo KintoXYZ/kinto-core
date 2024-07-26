@@ -37,14 +37,11 @@ contract KintoCounterScript is MigrationHelper {
         _newWallet = IKintoWallet(newWallet);
 
         // Counter contract
-        address computed =
-            _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(Counter).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created = _walletFactory.deployContract(
-                deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0)
-            );
-            console.log("Counter contract deployed at", created);
+            Counter created = new Counter{salt: bytes32(0)}();
+            console.log("Counter contract deployed at", address(created));
         } else {
             console.log("Counter already deployed at", computed);
         }
