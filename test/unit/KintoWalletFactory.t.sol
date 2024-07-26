@@ -150,55 +150,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.upgradeAllWalletImplementations(_newImpl);
     }
 
-    /* ============ Deploy ============ */
-
-    function testDeployContract() public {
-        address computed =
-            _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
-
-        vm.prank(_owner);
-        address created =
-            _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
-
-        assertEq(computed, created);
-        assertEq(Counter(created).count(), 0);
-
-        Counter(created).increment();
-        assertEq(Counter(created).count(), 1);
-    }
-
-    function testDeployContract_RevertWhen_SenderNotKYCd() public {
-        vm.prank(_user2);
-        vm.expectRevert(IKintoWalletFactory.KYCRequired.selector);
-        _walletFactory.deployContract(_owner, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
-    }
-
-    function testDeployContract_RevertWhen_AmountMismatch() public {
-        vm.deal(_owner, 1 ether);
-        vm.prank(_owner);
-        vm.expectRevert(IKintoWalletFactory.AmountMismatch.selector);
-        _walletFactory.deployContract(_owner, 1 ether + 1, abi.encodePacked(type(Counter).creationCode), bytes32(0));
-    }
-
-    function testDeployContract_RevertWhen_ZeroBytecode() public {
-        vm.expectRevert(IKintoWalletFactory.EmptyBytecode.selector);
-        vm.prank(_owner);
-        _walletFactory.deployContract(_owner, 0, bytes(""), bytes32(0));
-    }
-
-    function testDeployContract_RevertWhen_CreateWallet() public {
-        bytes memory initialize = abi.encodeWithSelector(IKintoWallet.initialize.selector, _owner, _owner);
-        bytes memory bytecode = abi.encodePacked(
-            type(SafeBeaconProxy).creationCode, abi.encode(address(_walletFactory.beacon()), initialize)
-        );
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IKintoWalletFactory.DeploymentNotAllowed.selector, "Direct KintoWallet deployment not allowed"
-            )
-        );
-        vm.prank(_owner);
-        _walletFactory.deployContract(_owner, 0, bytecode, bytes32(0));
-    }
+    /* ============ FundWallet ============ */
 
     function testFundWallet() public {
         uint256 previousBalance = address(_kintoWallet).balance;

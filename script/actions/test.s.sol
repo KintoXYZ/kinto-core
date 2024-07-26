@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "@aa/core/EntryPoint.sol";
 
 import "@kinto-core/KintoID.sol";
@@ -100,13 +102,11 @@ contract KintoDeployTestCounter is MigrationHelper {
         _newWallet = IKintoWallet(newWallet);
 
         // Counter contract
-        address computed =
-            factory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(Counter).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created =
-                factory.deployContract(deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0));
-            console.log("Counter contract deployed at", created);
+            Counter created = new Counter{salt: bytes32(0)}();
+            console.log("Counter contract deployed at", address(created));
         } else {
             console.log("Counter already deployed at", computed);
         }
@@ -199,14 +199,12 @@ contract KintoDeployETHPriceIsRight is MigrationHelper {
         _newWallet = IKintoWallet(newWallet);
 
         // Counter contract
-        address computed =
-            factory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode)));
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(ETHPriceIsRight).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created = factory.deployContract(
-                deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0)
-            );
-            console.log("ETHPriceIsRight contract deployed at", created);
+            ETHPriceIsRight created = new ETHPriceIsRight{salt: bytes32(0)}();
+            created.transferOwnership(deployerPublicKey);
+            console.log("ETHPriceIsRight contract deployed at", address(created));
         } else {
             console.log("ETHPriceIsRight already deployed at", computed);
         }

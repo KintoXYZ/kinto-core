@@ -35,15 +35,12 @@ contract KintoGuesserScript is MigrationHelper {
         _newWallet = IKintoWallet(newWallet);
 
         // ETHPriceIsRight contract
-        address computed = _walletFactory.getContractAddress(
-            bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode))
-        );
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(ETHPriceIsRight).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created = _walletFactory.deployContract(
-                deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0)
-            );
-            console.log("ETHPriceIsRight contract deployed at", created);
+            ETHPriceIsRight created = new ETHPriceIsRight{salt: bytes32(0)}();
+            created.transferOwnership(deployerPublicKey);
+            console.log("ETHPriceIsRight contract deployed at", address(created));
         } else {
             console.log("ETHPriceIsRight already deployed at", computed);
         }

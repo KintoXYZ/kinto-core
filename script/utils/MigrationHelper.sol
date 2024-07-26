@@ -91,7 +91,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
     ) internal returns (address impl) {
         // deploy new implementation via factory
         vm.broadcast(deployerPrivateKey);
-        impl = factory.deployContract(msg.sender, 0, bytecode, salt);
+        impl = create2(bytecode, salt);
 
         console2.log(string.concat(contractName, version, "-impl: ", vm.toString(address(impl))));
     }
