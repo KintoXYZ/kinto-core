@@ -37,7 +37,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
     }
 
-    /* ============ Upgrade tests ============ */
+    /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
@@ -272,7 +272,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
     }
 
-    /* ============ DSA Test ============ */
+    /* ============ DSA ============ */
 
     function testEnableDSA_WhenCallerIsOwner() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
@@ -300,7 +300,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
-    /* ============ Sponsored Contracts Test ============ */
+    /* ============ Sponsored Contracts ============ */
 
     function testSetSponsoredContracts() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
@@ -351,7 +351,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
-    /* ============ Transfer Test ============ */
+    /* ============ Transfer ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {
         approveKYC(_kycProvider, _user, _userPk);
@@ -378,7 +378,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.safeTransferFrom(address(_kintoWallet), _user2, tokenIdx);
     }
 
-    /* ============ Supports Interface tests ============ */
+    /* ============ Supports Interface ============ */
 
     function testSupportsInterface() public view {
         bytes4 InterfaceERC721Upgradeable = bytes4(keccak256("balanceOf(address)"))
@@ -391,7 +391,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
     }
 
-    /* ============ System Contracts Test ============ */
+    /* ============ updateSystemContracts ============ */
 
     function getSystemContracts() public view returns (address[] memory) {
         uint256 count = 0;
@@ -488,6 +488,8 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
     }
 
+    /* ============ isContractCallAllowedFromEOA ============ */
+
     function testIsContractCallAllowedFromEOA_WhenSystemContract() public {
         // Update system contracts array
         address[] memory newSystemContracts = new address[](2);
@@ -555,10 +557,12 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
     }
 
+    /* ============ setDeployerEOA ============ */
+
     function testSetDeployerEOA() public {
         vm.prank(address(_kintoWallet));
         vm.expectEmit(true, true, true, true);
-        emit KintoAppRegistry.DeployerSet(address(0xde));
+        emit IKintoAppRegistry.DeployerSet(address(0xde));
         _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.deployerToWallet(address(0xde)), address(_kintoWallet));

@@ -95,13 +95,11 @@ contract KintoAppRegistry is
     /// @notice Mapping of wallet addresses to their associated deployer EOAs
     mapping(address => address) public override walletToDeployer;
 
-    /* ============ Events ============ */
+    /// @notice Array of reserved contract addresses
+    address[] public override reservedContracts;
 
-    event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
-    event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
-    event AppDSAEnabled(address indexed _app, uint256 _timestamp);
-    event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
-    event DeployerSet(address indexed newDeployer);
+    /// @notice Mapping to check if an address is a reserved contract
+    mapping(address => bool) public override isReservedContract;
 
     /* ============ Constructor & Initializers ============ */
 
@@ -263,6 +261,17 @@ contract KintoAppRegistry is
             isSystemContract[newSystemContracts[index]] = true;
         }
         systemContracts = newSystemContracts;
+    }
+
+    function updateReservedContracts(address[] calldata newReservedContracts) external onlyOwner {
+        emit ReservedContractsUpdated(reservedContracts, newReservedContracts);
+        for (uint256 index = 0; index < reservedContracts.length; index++) {
+            isReservedContract[reservedContracts[index]] = false;
+        }
+        for (uint256 index = 0; index < newReservedContracts.length; index++) {
+            isReservedContract[newReservedContracts[index]] = true;
+        }
+        reservedContracts = newReservedContracts;
     }
 
     /**

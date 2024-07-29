@@ -21,6 +21,15 @@ interface IKintoAppRegistry {
     error DevEoaIsContract(address);
     error DeployerAlreadySet();
 
+    /* ============ Events ============ */
+
+    event AppRegistered(address indexed app, address owner, uint256 timestamp);
+    event AppUpdated(address indexed app, address owner, uint256 timestamp);
+    event AppDSAEnabled(address indexed app, uint256 timestamp);
+    event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
+    event ReservedContractsUpdated(address[] oldReservedContracts, address[] newReservedContracts);
+    event DeployerSet(address indexed newDeployer);
+
     /* ============ Structs ============ */
 
     struct Metadata {
@@ -61,6 +70,8 @@ interface IKintoAppRegistry {
 
     function updateSystemContracts(address[] calldata newSystemContracts) external;
 
+    function updateReservedContracts(address[] calldata newReservedContracts) external;
+
     /* ============ Basic Viewers ============ */
 
     function name() external pure returns (string memory);
@@ -90,6 +101,10 @@ interface IKintoAppRegistry {
     function systemContracts(uint256 index) external view returns (address);
 
     function isSystemContract(address addr) external view returns (bool);
+
+    function reservedContracts(uint256 index) external view returns (address);
+
+    function isReservedContract(address addr) external view returns (bool);
 
     function deployerToWallet(address addr) external view returns (address);
 
