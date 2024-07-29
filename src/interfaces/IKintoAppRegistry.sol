@@ -102,6 +102,8 @@ interface IKintoAppRegistry {
 
     function isSystemContract(address addr) external view returns (bool);
 
+    function getReservedContracts() external view returns (address[] memory);
+
     function reservedContracts(uint256 index) external view returns (address);
 
     function isReservedContract(address addr) external view returns (bool);

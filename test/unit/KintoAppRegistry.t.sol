@@ -488,6 +488,101 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
     }
 
+    /* ============ updateReservedContracts ============ */
+
+    function testUpdateReservedContracts() public {
+        // Initial empty reserved contracts array
+        address[] memory initialReservedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(initialReservedContracts.length, 0);
+
+        // Update reserved contracts array
+        address[] memory newReservedContracts = new address[](2);
+        newReservedContracts[0] = address(1);
+        newReservedContracts[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Verify the reserved contracts array is updated
+        address[] memory updatedReservedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedReservedContracts.length, newReservedContracts.length);
+        assertEq(updatedReservedContracts[0], newReservedContracts[0]);
+        assertEq(updatedReservedContracts[1], newReservedContracts[1]);
+
+        // Check isReservedContract mapping
+        assertTrue(_kintoAppRegistry.isReservedContract(address(1)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(2)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(3)));
+    }
+
+    // Update the testUpdateReservedContractsWithDifferentLength function
+    function testUpdateReservedContractsWithDifferentLength() public {
+        // Initial update with 2 contracts
+        address[] memory initialContracts = new address[](2);
+        initialContracts[0] = address(1);
+        initialContracts[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(initialContracts);
+
+        // Verify initial update
+        address[] memory updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 2);
+        assertEq(updatedContracts[0], address(1));
+        assertEq(updatedContracts[1], address(2));
+
+        // Update with 3 contracts (increasing length)
+        address[] memory newContracts = new address[](3);
+        newContracts[0] = address(3);
+        newContracts[1] = address(4);
+        newContracts[2] = address(5);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newContracts);
+
+        // Verify update with increased length
+        updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 3);
+        assertEq(updatedContracts[0], address(3));
+        assertEq(updatedContracts[1], address(4));
+        assertEq(updatedContracts[2], address(5));
+
+        // Check isReservedContract mapping
+        assertFalse(_kintoAppRegistry.isReservedContract(address(1)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(2)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(3)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(4)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(5)));
+
+        // Update with 1 contract (decreasing length)
+        address[] memory finalContracts = new address[](1);
+        finalContracts[0] = address(6);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(finalContracts);
+
+        // Verify update with decreased length
+        updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 1);
+        assertEq(updatedContracts[0], address(6));
+
+        // Check isReservedContract mapping
+        assertFalse(_kintoAppRegistry.isReservedContract(address(3)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(4)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(5)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(6)));
+    }
+
+    function testUpdateReservedContracts_RevertWhen_CallerIsNotOwner() public {
+        address[] memory newReservedContracts = new address[](2);
+        newReservedContracts[0] = address(1);
+        newReservedContracts[1] = address(2);
+
+        vm.prank(_user);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+    }
+
     /* ============ isContractCallAllowedFromEOA ============ */
 
     function testIsContractCallAllowedFromEOA_WhenSystemContract() public {

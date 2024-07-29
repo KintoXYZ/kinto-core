@@ -404,6 +404,14 @@ contract KintoAppRegistry is
         return false;
     }
 
+    /**
+     * @notice Returns all reserved contracts
+     * @return An array of addresses representing all reserved contracts
+     */
+    function getReservedContracts() external view returns (address[] memory) {
+        return reservedContracts;
+    }
+
     /* =========== Internal methods =========== */
 
     /**
