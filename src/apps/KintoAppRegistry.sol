@@ -209,23 +209,24 @@ contract KintoAppRegistry is
 
     /**
      * @notice Allows the developer to set sponsored contracts
-     * @param _app The address of the app
-     * @param _contracts The addresses of the contracts
-     * @param _flags The flags of the contracts
+     * @param app The address of the app
+     * @param targets The addresses of the contracts
+     * @param flags The flags of the contracts
      */
-    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags)
+    function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags)
         external
         override
     {
-        if (_contracts.length != _flags.length) revert LengthMismatch(_contracts.length, _flags.length);
+        if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
-            _appMetadata[_app].tokenId == 0
-                || (msg.sender != ownerOf(_appMetadata[_app].tokenId) && msg.sender != owner())
+            _appMetadata[app].tokenId == 0
+                || (msg.sender != ownerOf(_appMetadata[app].tokenId) && msg.sender != owner())
         ) {
-            revert InvalidSponsorSetter(msg.sender, ownerOf(_appMetadata[_app].tokenId));
+            revert InvalidSponsorSetter(msg.sender, ownerOf(_appMetadata[app].tokenId));
         }
-        for (uint256 i = 0; i < _contracts.length; i++) {
-            _sponsoredContracts[_app][_contracts[i]] = _flags[i];
+        for (uint256 i = 0; i < targets.length; i++) {
+            if (targets[i].code.length == 0) revert ContractHasNoBytecode(targets[i]);
+            _sponsoredContracts[app][targets[i]] = flags[i];
         }
     }
 
@@ -311,22 +312,22 @@ contract KintoAppRegistry is
 
     /**
      * @notice Returns the metadata of the app
-     * @param _contract The address of the app
+     * @param target The address of the app
      * @return The metadata of the app
      */
-    function getAppMetadata(address _contract) external view override returns (IKintoAppRegistry.Metadata memory) {
+    function getAppMetadata(address target) external view override returns (IKintoAppRegistry.Metadata memory) {
         return
-            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
+            _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
     }
 
     /**
      * @notice Returns the limits of the app
-     * @param _contract The address of the app
+     * @param target The address of the app
      * @return The limits of the app
      */
-    function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
+    function getContractLimits(address target) external view override returns (uint256[4] memory) {
         IKintoAppRegistry.Metadata memory metadata =
-            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
+            _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
         return [
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
             metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
@@ -337,23 +338,23 @@ contract KintoAppRegistry is
 
     /**
      * @notice Returns whether a contract is sponsored by an app
-     * @param _app The address of the app
-     * @param _contract The address of the contract
+     * @param app The address of the app
+     * @param target The address of the contract
      * @return bool true or false
      */
-    function isSponsored(address _app, address _contract) external view override returns (bool) {
-        return _contract == _app || childToParentContract[_contract] == _app || _sponsoredContracts[_app][_contract];
+    function isSponsored(address app, address target) external view override returns (bool) {
+        return target == app || childToParentContract[target] == app || _sponsoredContracts[app][target];
     }
 
     /**
      * @notice Returns the sponsoring contract for a given contract (aka parent contract)
-     * @param _contract The address of the contract
+     * @param target The address of the contract
      * @return The address of the contract that sponsors the contract
      */
-    function getSponsor(address _contract) external view override returns (address) {
-        address sponsor = childToParentContract[_contract];
+    function getSponsor(address target) external view override returns (address) {
+        address sponsor = childToParentContract[target];
         if (sponsor != address(0)) return sponsor;
-        return _contract;
+        return target;
     }
 
     /**
@@ -473,6 +474,8 @@ contract KintoAppRegistry is
                 childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
             ) revert ChildAlreadyRegistered(appContract);
             if (isReservedContract[appContract]) revert ReservedContract(appContract);
+            if (appContract.code.length == 0) revert ContractHasNoBytecode(appContract);
+
             childToParentContract[appContract] = parentContract;
         }
 

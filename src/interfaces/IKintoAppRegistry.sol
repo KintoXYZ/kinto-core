@@ -19,6 +19,7 @@ interface IKintoAppRegistry {
     error OnlyMintingAllowed(); // Only mint transfers are allowed
     error InvalidWallet(address);
     error DevEoaIsContract(address);
+    error ContractHasNoBytecode(address); // New error for contracts without bytecode
 
     /* ============ Events ============ */
 
