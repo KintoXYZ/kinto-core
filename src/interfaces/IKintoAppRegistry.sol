@@ -27,8 +27,8 @@ interface IKintoAppRegistry {
     error ChildAlreadyRegistered(address child);
 
     /// @notice Thrown when attempting to register a reserved contract as an app contract
-    /// @param contract The address of the reserved contract
-    error ReservedContract(address);
+    /// @param target The address of the reserved contract
+    error ReservedContract(address target);
 
     /// @notice Thrown when attempting to register a wallet as an app
     /// @param wallet The address of the wallet
@@ -58,15 +58,15 @@ interface IKintoAppRegistry {
 
     /// @notice Thrown when an invalid wallet address is provided
     /// @param wallet The address of the invalid wallet
-    error InvalidWallet(address);
+    error InvalidWallet(address wallet);
 
     /// @notice Thrown when a contract address is provided instead of an EOA for a developer
     /// @param eoa The address that should be an EOA but is a contract
-    error DevEoaIsContract(address);
+    error DevEoaIsContract(address eoa);
 
     /// @notice Thrown when a contract address has no bytecode
-    /// @param contract The address of the contract without bytecode
-    error ContractHasNoBytecode(address);
+    /// @param target The address of the contract without bytecode
+    error ContractHasNoBytecode(address target);
 
     /* ============ Events ============ */
 
@@ -193,6 +193,13 @@ interface IKintoAppRegistry {
      * @param newReservedContracts An array of new reserved contract addresses
      */
     function updateReservedContracts(address[] calldata newReservedContracts) external;
+
+    /**
+     * @notice Sets the deployer EOA for a wallet
+     * @param wallet The address of the wallet
+     * @param deployer The address of the deployer EOA
+     */
+    function setDeployerEOA(address wallet, address deployer) external;
 
     /* ============ View Functions ============ */
 
@@ -329,6 +336,14 @@ interface IKintoAppRegistry {
      * @return The address of the associated deployer
      */
     function walletToDeployer(address addr) external view returns (address);
+
+    /**
+     * @notice Determines if a contract call is allowed from a `to` address to `to` address
+     * @param from The address initiating the call
+     * @param to The address being called
+     * @return A boolean indicating whether the call is allowed (true) or not (false)
+     */
+    function isContractCallAllowedFromEOA(address from, address to) external view returns (bool);
 
     /* ============ Constants and Attributes ============ */
 

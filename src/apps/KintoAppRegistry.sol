@@ -106,7 +106,6 @@ contract KintoAppRegistry is
     /**
      * @notice Constructs the KintoAppRegistry contract
      * @param _walletFactory The address of the KintoWalletFactory contract
-     * @custom:oz-upgrades-unsafe-allow constructor
      */
     constructor(IKintoWalletFactory _walletFactory) {
         _disableInitializers();
@@ -131,18 +130,12 @@ contract KintoAppRegistry is
 
     /* ============ Token name, symbol & URI ============ */
 
-    /**
-     * @notice Gets the token name
-     * @return The name of the token
-     */
+    /// @inheritdoc IKintoAppRegistry
     function name() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "Kinto APP";
     }
 
-    /**
-     * @notice Gets the token symbol
-     * @return The symbol of the token
-     */
+    /// @inheritdoc IKintoAppRegistry
     function symbol() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "KINTOAPP";
     }
@@ -157,14 +150,7 @@ contract KintoAppRegistry is
 
     /* ============ App Registration ============ */
 
-    /**
-     * @notice Registers a new app and mints the NFT to the creator
-     * @param appName The name of the app
-     * @param parentContract The address of the parent contract
-     * @param appContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     * @param devEOAs The addresses of the developers EOAs to be whitelisted
-     */
+    /// @inheritdoc IKintoAppRegistry
     function registerApp(
         string calldata appName,
         address parentContract,
@@ -185,14 +171,7 @@ contract KintoAppRegistry is
         emit AppRegistered(parentContract, msg.sender, block.timestamp);
     }
 
-    /**
-     * @notice Allows the developer to update the metadata of the app
-     * @param appName The name of the app
-     * @param parentContract The address of the parent contract
-     * @param appContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     * @param devEOAs The addresses of the developers EOAs to be whitelisted
-     */
+    /// @inheritdoc IKintoAppRegistry
     function updateMetadata(
         string calldata appName,
         address parentContract,
@@ -207,12 +186,7 @@ contract KintoAppRegistry is
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
 
-    /**
-     * @notice Allows the developer to set sponsored contracts
-     * @param app The address of the app
-     * @param targets The addresses of the contracts
-     * @param flags The flags of the contracts
-     */
+    /// @inheritdoc IKintoAppRegistry
     function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags) external override {
         if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
@@ -227,29 +201,19 @@ contract KintoAppRegistry is
         }
     }
 
-    /**
-     * @notice Allows the app to request PII data
-     * @param app The address of the app
-     */
+    /// @inheritdoc IKintoAppRegistry
     function enableDSA(address app) external override onlyOwner {
         if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled(app);
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
 
-    /**
-     * @notice Allows the owner to override the parent contract of a child contract
-     * @param child The address of the child contract
-     * @param parent The address of the parent contract
-     */
+    /// @inheritdoc IKintoAppRegistry
     function overrideChildToParentContract(address child, address parent) external override onlyOwner {
         childToParentContract[child] = parent;
     }
 
-    /**
-     * @notice Updates the system contracts array
-     * @param newSystemContracts The new array of system contracts
-     */
+    /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
         emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
@@ -261,6 +225,7 @@ contract KintoAppRegistry is
         systemContracts = newSystemContracts;
     }
 
+    /// @inheritdoc IKintoAppRegistry
     function updateReservedContracts(address[] calldata newReservedContracts) external onlyOwner {
         emit ReservedContractsUpdated(reservedContracts, newReservedContracts);
         for (uint256 index = 0; index < reservedContracts.length; index++) {
@@ -272,11 +237,7 @@ contract KintoAppRegistry is
         reservedContracts = newReservedContracts;
     }
 
-    /**
-     * @notice Sets the deployer EOA for a wallet
-     * @param wallet The address of the wallet
-     * @param deployer The address of the deployer EOA
-     */
+    /// @inheritdoc IKintoAppRegistry
     function setDeployerEOA(address wallet, address deployer) external {
         if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(wallet);
         if (msg.sender != owner() && msg.sender != wallet) revert InvalidWallet(wallet);
@@ -293,11 +254,7 @@ contract KintoAppRegistry is
 
     /* ============ Getters ============ */
 
-    /**
-     * @notice Returns whether the contract implements the interface defined by the id
-     * @param interfaceId id of the interface to be checked.
-     * @return true if the contract implements the interface defined by the id.
-     */
+    /// @dev See {IERC165-supportsInterface}.
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -307,20 +264,12 @@ contract KintoAppRegistry is
         return super.supportsInterface(interfaceId);
     }
 
-    /**
-     * @notice Returns the metadata of the app
-     * @param target The address of the app
-     * @return The metadata of the app
-     */
+    /// @inheritdoc IKintoAppRegistry
     function getAppMetadata(address target) external view override returns (IKintoAppRegistry.Metadata memory) {
         return _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
     }
 
-    /**
-     * @notice Returns the limits of the app
-     * @param target The address of the app
-     * @return The limits of the app
-     */
+    /// @inheritdoc IKintoAppRegistry
     function getContractLimits(address target) external view override returns (uint256[4] memory) {
         IKintoAppRegistry.Metadata memory metadata =
             _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
@@ -332,21 +281,12 @@ contract KintoAppRegistry is
         ];
     }
 
-    /**
-     * @notice Returns whether a contract is sponsored by an app
-     * @param app The address of the app
-     * @param target The address of the contract
-     * @return bool true or false
-     */
+    /// @inheritdoc IKintoAppRegistry
     function isSponsored(address app, address target) external view override returns (bool) {
         return target == app || childToParentContract[target] == app || _sponsoredContracts[app][target];
     }
 
-    /**
-     * @notice Returns the sponsoring contract for a given contract (aka parent contract)
-     * @param target The address of the contract
-     * @return The address of the contract that sponsors the contract
-     */
+    /// @inheritdoc IKintoAppRegistry
     function getSponsor(address target) external view override returns (address) {
         address sponsor = childToParentContract[target];
         if (sponsor != address(0)) return sponsor;
@@ -354,7 +294,7 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @notice Determines if a contract call is allowed from an EOA (Externally Owned Account)
+     * @inheritdoc IKintoAppRegistry
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
      *      1. Allows calls to system contracts from any EOA
      *      2. Checks if the EOA has a linked wallet
@@ -362,9 +302,6 @@ contract KintoAppRegistry is
      *      4. Ensures the wallet owner has completed KYC
      *      5. Permits CREATE and CREATE2 operations for eligible EOAs
      *      6. Allows dev EOAs to call their respective apps
-     * @param from The address of the EOA initiating the call
-     * @param to The address of the contract being called
-     * @return A boolean indicating whether the contract call is allowed (true) or not (false)
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
         // Calls to system contracts are allwed for any EOA
@@ -400,18 +337,12 @@ contract KintoAppRegistry is
         return false;
     }
 
-    /**
-     * @notice Returns all system contracts
-     * @return An array of addresses representing all system contracts
-     */
+    /// @inheritdoc IKintoAppRegistry
     function getSystemContracts() external view returns (address[] memory) {
         return systemContracts;
     }
 
-    /**
-     * @notice Returns all reserved contracts
-     * @return An array of addresses representing all reserved contracts
-     */
+    /// @inheritdoc IKintoAppRegistry
     function getReservedContracts() external view returns (address[] memory) {
         return reservedContracts;
     }
