@@ -98,6 +98,8 @@ interface IKintoAppRegistry {
 
     function devEoaToApp(address _eoa) external view returns (address);
 
+    function getSystemContracts() external view returns (address[] memory);
+
     function systemContracts(uint256 index) external view returns (address);
 
     function isSystemContract(address addr) external view returns (bool);

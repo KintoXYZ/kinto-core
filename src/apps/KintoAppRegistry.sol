@@ -405,6 +405,14 @@ contract KintoAppRegistry is
     }
 
     /**
+     * @notice Returns all system contracts
+     * @return An array of addresses representing all system contracts
+     */
+    function getSystemContracts() external view returns (address[] memory) {
+        return systemContracts;
+    }
+
+    /**
      * @notice Returns all reserved contracts
      * @return An array of addresses representing all reserved contracts
      */

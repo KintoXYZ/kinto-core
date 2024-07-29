@@ -393,30 +393,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
     /* ============ updateSystemContracts ============ */
 
-    function getSystemContracts() public view returns (address[] memory) {
-        uint256 count = 0;
-        address[] memory tempArray = new address[](100); // Arbitrary large size
-
-        for (uint256 i = 0; i < 100; i++) {
-            try _kintoAppRegistry.systemContracts(i) returns (address addr) {
-                tempArray[count] = addr;
-                count++;
-            } catch {
-                break;
-            }
-        }
-
-        address[] memory result = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = tempArray[i];
-        }
-
-        return result;
-    }
-
     function testUpdateSystemContracts() public {
         // Initial empty system contracts array
-        address[] memory initialSystemContracts = getSystemContracts();
+        address[] memory initialSystemContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(initialSystemContracts.length, 0);
 
         // Update system contracts array
@@ -428,7 +407,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
 
         // Verify the system contracts array is updated
-        address[] memory updatedSystemContracts = getSystemContracts();
+        address[] memory updatedSystemContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedSystemContracts.length, newSystemContracts.length);
         assertEq(updatedSystemContracts[0], newSystemContracts[0]);
         assertEq(updatedSystemContracts[1], newSystemContracts[1]);
@@ -444,7 +423,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(initialContracts);
 
         // Verify initial update
-        address[] memory updatedContracts = getSystemContracts();
+        address[] memory updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 2);
         assertEq(updatedContracts[0], address(1));
         assertEq(updatedContracts[1], address(2));
@@ -459,7 +438,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newContracts);
 
         // Verify update with increased length
-        updatedContracts = getSystemContracts();
+        updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 3);
         assertEq(updatedContracts[0], address(3));
         assertEq(updatedContracts[1], address(4));
@@ -473,7 +452,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(finalContracts);
 
         // Verify update with decreased length
-        updatedContracts = getSystemContracts();
+        updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 1);
         assertEq(updatedContracts[0], address(6));
     }
