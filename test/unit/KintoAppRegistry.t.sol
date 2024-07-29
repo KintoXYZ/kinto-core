@@ -494,7 +494,6 @@ contract KintoAppRegistryTest is SharedSetup {
         assertFalse(_kintoAppRegistry.isReservedContract(address(3)));
     }
 
-    // Update the testUpdateReservedContractsWithDifferentLength function
     function testUpdateReservedContractsWithDifferentLength() public {
         // Initial update with 2 contracts
         address[] memory initialContracts = new address[](2);
@@ -560,6 +559,86 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(_user);
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+    }
+
+    function testRegisterApp_RevertWhen_ContractIsReserved() public {
+        // First, set up a reserved contract
+        address[] memory newReservedContracts = new address[](1);
+        newReservedContracts[0] = address(0x1234);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Now try to register an app with the reserved contract as a child
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(0x1234); // This is the reserved contract
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ReservedContract.selector, address(0x1234)));
+        _kintoAppRegistry.registerApp(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+    }
+
+    function testUpdateMetadata_RevertWhen_ContractIsReserved() public {
+        // First, register an app
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(7);
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Now set up a reserved contract
+        address[] memory newReservedContracts = new address[](1);
+        newReservedContracts[0] = address(0x1234);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Try to update the app metadata with the reserved contract as a child
+        appContracts[0] = address(0x1234); // This is the reserved contract
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ReservedContract.selector, address(0x1234)));
+        _kintoAppRegistry.updateMetadata(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
     }
 
     /* ============ isContractCallAllowedFromEOA ============ */
