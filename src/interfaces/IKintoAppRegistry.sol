@@ -7,19 +7,18 @@ import {IKintoID} from "./IKintoID.sol";
 interface IKintoAppRegistry {
     /* ============ Errors ============ */
     error KYCRequired(); // KYC Required
-    error AlreadyRegistered(); // App already registered
-    error ParentAlreadyChild(); // Parent contract is already registered as a child
-    error ChildAlreadyRegistered(); // Children already registered
+    error AlreadyRegistered(address app); // App already registered
+    error ParentAlreadyChild(address parent); // Parent contract is already registered as a child
+    error ChildAlreadyRegistered(address child); // Children already registered
     error ReservedContract(address); // Contract is reserved, and can't be app contract
-    error CannotRegisterWallet(); // Wallets can not be registered
-    error OnlyAppDeveloper(); // Only app developer can update metadata
-    error LengthMismatch();
-    error InvalidSponsorSetter(); // "Only developer can set sponsored contracts"
-    error DSAAlreadyEnabled(); // DSA already enabled
+    error CannotRegisterWallet(address wallet); // Wallets can not be registered
+    error OnlyAppDeveloper(address caller, address owner); // Only app developer can update metadata
+    error LengthMismatch(uint256 contractsLength, uint256 flagsLength);
+    error InvalidSponsorSetter(address caller, address owner); // "Only developer can set sponsored contracts"
+    error DSAAlreadyEnabled(address app); // DSA already enabled
     error OnlyMintingAllowed(); // Only mint transfers are allowed
     error InvalidWallet(address);
     error DevEoaIsContract(address);
-    error DeployerAlreadySet();
 
     /* ============ Events ============ */
 

@@ -174,9 +174,9 @@ contract KintoAppRegistry is
     ) external override {
         if (walletFactory.walletTs(msg.sender) == 0) revert InvalidWallet(msg.sender);
         if (!kintoID.isKYC(IKintoWallet(msg.sender).owners(0))) revert KYCRequired();
-        if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
-        if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild();
-        if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
+        if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered(parentContract);
+        if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild(parentContract);
+        if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet(parentContract);
 
         appCount++;
         _updateMetadata(appCount, appName, parentContract, appContracts, appLimits, devEOAs);
@@ -201,7 +201,7 @@ contract KintoAppRegistry is
         address[] calldata devEOAs
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
-        if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
+        if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper(msg.sender, ownerOf(tokenId));
         _updateMetadata(tokenId, appName, parentContract, appContracts, appLimits, devEOAs);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
@@ -217,12 +217,12 @@ contract KintoAppRegistry is
         external
         override
     {
-        if (_contracts.length != _flags.length) revert LengthMismatch();
+        if (_contracts.length != _flags.length) revert LengthMismatch(_contracts.length, _flags.length);
         if (
             _appMetadata[_app].tokenId == 0
                 || (msg.sender != ownerOf(_appMetadata[_app].tokenId) && msg.sender != owner())
         ) {
-            revert InvalidSponsorSetter();
+            revert InvalidSponsorSetter(msg.sender, ownerOf(_appMetadata[_app].tokenId));
         }
         for (uint256 i = 0; i < _contracts.length; i++) {
             _sponsoredContracts[_app][_contracts[i]] = _flags[i];
@@ -234,7 +234,7 @@ contract KintoAppRegistry is
      * @param app The address of the app
      */
     function enableDSA(address app) external override onlyOwner {
-        if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled();
+        if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled(app);
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
@@ -282,7 +282,6 @@ contract KintoAppRegistry is
     function setDeployerEOA(address wallet, address deployer) external {
         if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(wallet);
         if (msg.sender != owner() && msg.sender != wallet) revert InvalidWallet(wallet);
-        if (deployerToWallet[deployer] != address(0)) revert DeployerAlreadySet();
 
         // cleanup old
         if (walletToDeployer[wallet] != address(0)) {
@@ -469,10 +468,10 @@ contract KintoAppRegistry is
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             address appContract = appContracts[i];
-            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet();
+            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet(appContract);
             if (
                 childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
-            ) revert ChildAlreadyRegistered();
+            ) revert ChildAlreadyRegistered(appContract);
             if (isReservedContract[appContract]) revert ReservedContract(appContract);
             childToParentContract[appContract] = parentContract;
         }

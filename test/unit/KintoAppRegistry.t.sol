@@ -130,7 +130,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(_kintoWallet);
 
         // register app
-        vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.CannotRegisterWallet.selector, _kintoWallet));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits, new address[](0));
     }
@@ -146,7 +146,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
 
         // try to register again
-        vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.AlreadyRegistered.selector, parentContract));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
@@ -165,7 +165,7 @@ contract KintoAppRegistryTest is SharedSetup {
         // registering app "app2" with parent address 2 should revert
         parentContract = address(2);
         appContracts = new address[](0);
-        vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ParentAlreadyChild.selector, parentContract));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
@@ -250,7 +250,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         vm.prank(address(_kintoWallet));
-        vm.expectRevert(IKintoAppRegistry.ChildAlreadyRegistered.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, address(8)));
         _kintoAppRegistry.registerApp(
             "test 5",
             address(2),
@@ -266,7 +266,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // update app
         vm.prank(_user);
-        vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.OnlyAppDeveloper.selector, _user, address(_kintoWallet))
+        );
         _kintoAppRegistry.updateMetadata(
             "app", address(0), new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)], new address[](0)
         );
@@ -296,7 +298,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
         vm.prank(_owner);
-        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.DSAAlreadyEnabled.selector, address(_engenCredits)));
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
@@ -333,7 +335,9 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[1] = true;
 
         vm.prank(_user);
-        vm.expectRevert(IKintoAppRegistry.InvalidSponsorSetter.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.InvalidSponsorSetter.selector, _user, address(_kintoWallet))
+        );
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
@@ -347,7 +351,7 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[0] = false;
         flags[1] = true;
 
-        vm.expectRevert(IKintoAppRegistry.LengthMismatch.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.LengthMismatch.selector, 1, 2));
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
