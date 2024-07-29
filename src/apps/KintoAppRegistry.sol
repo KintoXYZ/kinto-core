@@ -213,10 +213,7 @@ contract KintoAppRegistry is
      * @param targets The addresses of the contracts
      * @param flags The flags of the contracts
      */
-    function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags)
-        external
-        override
-    {
+    function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags) external override {
         if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
             _appMetadata[app].tokenId == 0
@@ -316,8 +313,7 @@ contract KintoAppRegistry is
      * @return The metadata of the app
      */
     function getAppMetadata(address target) external view override returns (IKintoAppRegistry.Metadata memory) {
-        return
-            _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
+        return _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
     }
 
     /**

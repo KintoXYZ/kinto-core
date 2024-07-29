@@ -20,7 +20,7 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
 contract KintoAppRegistryTest is SharedSetup {
     address internal constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     address internal appContract0 = address(0xdead);
-    address internal sponsorContract0 =  makeAddr("sponsorContract0");
+    address internal sponsorContract0 = makeAddr("sponsorContract0");
     address internal sponsorContract1 = makeAddr("sponsorContract1");
 
     function setUp() public virtual override {
@@ -46,7 +46,6 @@ contract KintoAppRegistryTest is SharedSetup {
             KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI(),
             "https://kinto.xyz/metadata/kintoapp/"
         );
-
     }
 
     /* ============ Upgrade ============ */
