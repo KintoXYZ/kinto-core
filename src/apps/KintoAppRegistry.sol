@@ -468,12 +468,13 @@ contract KintoAppRegistry is
 
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
-            if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
+            address appContract = appContracts[i];
+            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet();
             if (
-                childToParentContract[appContracts[i]] != address(0)
-                    && childToParentContract[appContracts[i]] != parentContract
+                childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
             ) revert ChildAlreadyRegistered();
-            childToParentContract[appContracts[i]] = parentContract;
+            if (isReservedContract[appContract]) revert ReservedContract(appContract);
+            childToParentContract[appContract] = parentContract;
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {

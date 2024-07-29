@@ -6,11 +6,11 @@ import {IKintoID} from "./IKintoID.sol";
 
 interface IKintoAppRegistry {
     /* ============ Errors ============ */
-
     error KYCRequired(); // KYC Required
     error AlreadyRegistered(); // App already registered
     error ParentAlreadyChild(); // Parent contract is already registered as a child
     error ChildAlreadyRegistered(); // Children already registered
+    error ReservedContract(address); // Contract is reserved, and can't be app contract
     error CannotRegisterWallet(); // Wallets can not be registered
     error OnlyAppDeveloper(); // Only app developer can update metadata
     error LengthMismatch();
