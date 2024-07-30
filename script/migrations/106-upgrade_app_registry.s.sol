@@ -17,7 +17,7 @@ contract DeployScript is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         //TODO: add entrypoints and paymaster on the next hardfork
-        address[] memory systemContracts = new address[](10);
+        address[] memory systemContracts = new address[](11);
         systemContracts[0] = 0xf369f78E3A0492CC4e96a90dae0728A38498e9c7; // kintoIdEnvAddress
         systemContracts[1] = 0x8a4720488CA32f1223ccFE5A087e250fE3BC5D75; // walletFactoryAddress
         systemContracts[2] = 0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b; // appRegistryAddress
@@ -29,9 +29,14 @@ contract DeployScript is MigrationHelper {
         systemContracts[8] = 0x8d2D899402ed84b6c0510bB1ad34ee436ADDD20d; // bundleBulker
         systemContracts[9] = 0x000000000000000000000000000000000000006E; // arbRetrayableTx
         systemContracts[10] = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // create2Factory
-        kintoAppRegistry.updateSystemContracts(systemContracts);
+        _handleOps(
+            abi.encodeWithSelector(KintoAppRegistry.updateSystemContracts.selector, systemContracts),
+            address(kintoAppRegistry)
+        );
 
-        address[] memory reservedContracts = new address[](24);
+        assertEq(kintoAppRegistry.isSystemContract(systemContracts[10]), true);
+
+        address[] memory reservedContracts = new address[](25);
         reservedContracts[0] = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb; // aaEntryPointEnvAddress
         reservedContracts[1] = 0x0000000071727De22E5E9d8BAf0edAc6f37da032; // aaEntryPointEnvAddressV7
         reservedContracts[2] = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // create2Factory
@@ -46,18 +51,23 @@ contract DeployScript is MigrationHelper {
         reservedContracts[11] = 0xd563ECBDF90EBA783d0a218EFf158C1263ad02BE; // wethGateWayAddress
         reservedContracts[12] = 0x8d2D899402ed84b6c0510bB1ad34ee436ADDD20d; // bundleBulker
         reservedContracts[13] = 0x000000000000000000000000000000000000006E; // arbRetrayableTx
-        systemContracts[14] = 0x000000000000000000000000000000000000006D; // ArbAggregator
-        systemContracts[15] = 0x000000000000000000000000000000000000006C; // ArbGasInfo
-        systemContracts[16] = 0x0000000000000000000000000000000000000064; // ArbSys
-        systemContracts[17] = 0x0000000000000000000000000000000000000066; // ArbAddressTable
-        systemContracts[18] = 0x00000000000000000000000000000000000000ff; // ArbDebug
-        systemContracts[19] = 0x0000000000000000000000000000000000000068; // ArbFunctionTable
-        systemContracts[20] = 0x0000000000000000000000000000000000000065; // ArbInfo
-        systemContracts[21] = 0x0000000000000000000000000000000000000070; // ArbOwner
-        systemContracts[22] = 0x000000000000000000000000000000000000006b; // ArbOwnerPublic
-        systemContracts[23] = 0x0000000000000000000000000000000000000069; // ArbosTest
-        systemContracts[24] = 0x0000000000000000000000000000000000000069; // ArbStatistics
+        reservedContracts[14] = 0x000000000000000000000000000000000000006D; // ArbAggregator
+        reservedContracts[15] = 0x000000000000000000000000000000000000006C; // ArbGasInfo
+        reservedContracts[16] = 0x0000000000000000000000000000000000000064; // ArbSys
+        reservedContracts[17] = 0x0000000000000000000000000000000000000066; // ArbAddressTable
+        reservedContracts[18] = 0x00000000000000000000000000000000000000ff; // ArbDebug
+        reservedContracts[19] = 0x0000000000000000000000000000000000000068; // ArbFunctionTable
+        reservedContracts[20] = 0x0000000000000000000000000000000000000065; // ArbInfo
+        reservedContracts[21] = 0x0000000000000000000000000000000000000070; // ArbOwner
+        reservedContracts[22] = 0x000000000000000000000000000000000000006b; // ArbOwnerPublic
+        reservedContracts[23] = 0x0000000000000000000000000000000000000069; // ArbosTest
+        reservedContracts[24] = 0x0000000000000000000000000000000000000069; // ArbStatistics
 
-        kintoAppRegistry.updateReservedContracts(reservedContracts);
+        _handleOps(
+            abi.encodeWithSelector(KintoAppRegistry.updateReservedContracts.selector, reservedContracts),
+            address(kintoAppRegistry)
+        );
+
+        assertEq(kintoAppRegistry.isReservedContract(reservedContracts[24]), true);
     }
 }
