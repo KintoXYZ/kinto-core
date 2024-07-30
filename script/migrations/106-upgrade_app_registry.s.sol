@@ -17,7 +17,7 @@ contract DeployScript is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         //TODO: add entrypoints and paymaster on the next hardfork
-        address[] memory systemContracts = new address[](10);
+        address[] memory systemContracts = new address[](21);
         systemContracts[0] = 0xf369f78E3A0492CC4e96a90dae0728A38498e9c7; // kintoIdEnvAddress
         systemContracts[1] = 0x8a4720488CA32f1223ccFE5A087e250fE3BC5D75; // walletFactoryAddress
         systemContracts[2] = 0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b; // appRegistryAddress
@@ -29,6 +29,17 @@ contract DeployScript is MigrationHelper {
         systemContracts[8] = 0x8d2D899402ed84b6c0510bB1ad34ee436ADDD20d; // bundleBulker
         systemContracts[9] = 0x000000000000000000000000000000000000006E; // arbRetrayableTx
         systemContracts[10] = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // create2Factory
+        systemContracts[11] = 0x000000000000000000000000000000000000006D; // ArbAggregator
+        systemContracts[12] = 0x000000000000000000000000000000000000006C; // ArbGasInfo
+        systemContracts[13] = 0x0000000000000000000000000000000000000064; // ArbSys
+        systemContracts[14] = 0x0000000000000000000000000000000000000066; // ArbAddressTable
+        systemContracts[15] = 0x00000000000000000000000000000000000000ff; // ArbDebug
+        systemContracts[16] = 0x0000000000000000000000000000000000000068; // ArbFunctionTable
+        systemContracts[17] = 0x0000000000000000000000000000000000000065; // ArbInfo
+        systemContracts[18] = 0x0000000000000000000000000000000000000070; // ArbOwner
+        systemContracts[19] = 0x000000000000000000000000000000000000006b; // ArbOwnerPublic
+        systemContracts[20] = 0x0000000000000000000000000000000000000069; // ArbosTest
+        systemContracts[21] = 0x000000000000000000000000000000000000006F; // ArbStatistics
         kintoAppRegistry.updateSystemContracts(systemContracts);
 
         address[] memory reservedContracts = new address[](13);
