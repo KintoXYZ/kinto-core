@@ -234,6 +234,28 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
     }
 
+    function testRegisterApp_RevertWhenAppContractIsParentContact() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, appContract0));
+        _kintoAppRegistry.registerApp(
+            name, appContract0, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], new address[](0)
+        );
+    }
+
     function testRegisterApp_RevertWithSameChildDoesNotOverrideChildToParent() public {
         string memory name = "app";
         address parentContract = address(123);

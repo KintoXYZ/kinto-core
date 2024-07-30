@@ -400,6 +400,7 @@ contract KintoAppRegistry is
             if (
                 childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
             ) revert ChildAlreadyRegistered(appContract);
+            if (appContract == parentContract) revert ChildAlreadyRegistered(appContract);
             if (isReservedContract[appContract]) revert ReservedContract(appContract);
             if (appContract.code.length == 0) revert ContractHasNoBytecode(appContract);
 
