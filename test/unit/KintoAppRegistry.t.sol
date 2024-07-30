@@ -19,7 +19,7 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
 
 contract KintoAppRegistryTest is SharedSetup {
     address internal constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-    address internal appContract0 = address(0xdead);
+    address internal appContract0 = makeAddr("appContract0");
     address internal sponsorContract0 = makeAddr("sponsorContract0");
     address internal sponsorContract1 = makeAddr("sponsorContract1");
 
@@ -232,6 +232,62 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.gasLimitCost, 1);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), false);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
+    }
+
+    function testRemoveOldDevEOAs() public {
+        address parentContract = address(0x123);
+        address[] memory initialDevEOAs = new address[](3);
+        initialDevEOAs[0] = address(0xdead);
+        initialDevEOAs[1] = address(0xbeef);
+        initialDevEOAs[2] = address(0xcafe);
+
+        address[] memory newDevEOAs = new address[](2);
+        newDevEOAs[0] = address(0x1234);
+        newDevEOAs[1] = address(0x5678);
+
+        // Set up initial state
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "Test App",
+            parentContract,
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            initialDevEOAs
+        );
+
+        // Verify initial state
+        for (uint256 i = 0; i < initialDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(initialDevEOAs[i]), parentContract);
+        }
+
+        // Update metadata with new dev EOAs
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.updateMetadata(
+            "Updated Test App",
+            parentContract,
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            newDevEOAs
+        );
+
+        // Verify old dev EOAs are removed
+        for (uint256 i = 0; i < initialDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(initialDevEOAs[i]), address(0));
+        }
+
+        // Verify new dev EOAs are set
+        for (uint256 i = 0; i < newDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(newDevEOAs[i]), parentContract);
+        }
+
+        // Verify app metadata is updated
+        IKintoAppRegistry.Metadata memory updatedMetadata = _kintoAppRegistry.getAppMetadata(parentContract);
+        assertEq(updatedMetadata.name, "Updated Test App");
+        assertEq(updatedMetadata.devEOAs.length, newDevEOAs.length);
+        for (uint256 i = 0; i < newDevEOAs.length; i++) {
+            assertEq(updatedMetadata.devEOAs[i], newDevEOAs[i]);
+        }
     }
 
     function testRegisterApp_RevertWhenAppContractIsParentContact() public {
@@ -783,6 +839,31 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.deployerToWallet(address(0xde)), address(_kintoWallet));
+    }
+
+    function testRemoveOldDeployerToWallet() public {
+        address wallet = address(_kintoWallet);
+        address oldDeployer = address(0xdead);
+        address newDeployer = address(0xbeef);
+
+        // Set up initial state
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(wallet, oldDeployer);
+
+        // Verify initial state
+        assertEq(_kintoAppRegistry.deployerToWallet(oldDeployer), wallet);
+        assertEq(_kintoAppRegistry.walletToDeployer(wallet), oldDeployer);
+
+        // Set new deployer
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(wallet, newDeployer);
+
+        // Verify new state
+        assertEq(_kintoAppRegistry.deployerToWallet(newDeployer), wallet);
+        assertEq(_kintoAppRegistry.walletToDeployer(wallet), newDeployer);
+
+        // Verify old deployer mapping is removed
+        assertEq(_kintoAppRegistry.deployerToWallet(oldDeployer), address(0));
     }
 
     /* ============ Helpers ============ */
