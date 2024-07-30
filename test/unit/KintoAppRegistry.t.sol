@@ -18,7 +18,18 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
 }
 
 contract KintoAppRegistryTest is SharedSetup {
-    address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    address internal constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    address internal appContract0 = makeAddr("appContract0");
+    address internal sponsorContract0 = makeAddr("sponsorContract0");
+    address internal sponsorContract1 = makeAddr("sponsorContract1");
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        mockContractBytecode(appContract0);
+        mockContractBytecode(sponsorContract0);
+        mockContractBytecode(sponsorContract1);
+    }
 
     function testUp() public override {
         super.testUp();
@@ -37,7 +48,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
     }
 
-    /* ============ Upgrade tests ============ */
+    /* ============ Upgrade ============ */
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
@@ -55,7 +66,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
     }
 
-    /* ============ App tests & Viewers ============ */
+    /* ============ RegisterApp & UpdateApp ============ */
 
     function testRegisterApp() public {
         string memory name = "app";
@@ -64,7 +75,7 @@ contract KintoAppRegistryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
-        appContracts[0] = address(7);
+        appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
@@ -99,12 +110,12 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.rateLimitNumber, appLimits[1]);
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
-        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), true);
-        assertEq(_kintoAppRegistry.getSponsor(address(7)), parentContract);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
+        assertEq(_kintoAppRegistry.getSponsor(appContract0), parentContract);
         assertEq(metadata.devEOAs[0], eoas[0]);
 
         // check child limits
-        uint256[4] memory limits = _kintoAppRegistry.getContractLimits(address(7));
+        uint256[4] memory limits = _kintoAppRegistry.getContractLimits(appContract0);
         assertEq(limits[0], appLimits[0]);
         assertEq(limits[1], appLimits[1]);
         assertEq(limits[2], appLimits[2]);
@@ -118,7 +129,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(limits[3], appLimits[3]);
 
         // check child metadata
-        metadata = _kintoAppRegistry.getAppMetadata(address(7));
+        metadata = _kintoAppRegistry.getAppMetadata(appContract0);
         assertEq(metadata.name, name);
     }
 
@@ -130,7 +141,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(_kintoWallet);
 
         // register app
-        vm.expectRevert(IKintoAppRegistry.CannotRegisterWallet.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.CannotRegisterWallet.selector, _kintoWallet));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp("app", address(123), appContracts, appLimits, new address[](0));
     }
@@ -146,7 +157,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
 
         // try to register again
-        vm.expectRevert(IKintoAppRegistry.AlreadyRegistered.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.AlreadyRegistered.selector, parentContract));
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
     }
@@ -157,17 +168,16 @@ contract KintoAppRegistryTest is SharedSetup {
         address parentContract = address(_engenCredits);
         uint256[4] memory appLimits = [uint256(0), uint256(0), uint256(0), uint256(0)];
         address[] memory appContracts = new address[](1);
-        appContracts[0] = address(2);
+        appContracts[0] = appContract0;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
 
         // registering app "app2" with parent address 2 should revert
-        parentContract = address(2);
         appContracts = new address[](0);
-        vm.expectRevert(IKintoAppRegistry.ParentAlreadyChild.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ParentAlreadyChild.selector, appContract0));
         vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.registerApp(name, parentContract, appContracts, appLimits, new address[](0));
+        _kintoAppRegistry.registerApp(name, appContract0, appContracts, appLimits, new address[](0));
     }
 
     function testRegisterApp_RevertWhen_CallerIsNotWallet() public {
@@ -189,7 +199,7 @@ contract KintoAppRegistryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
-        appContracts[0] = address(8);
+        appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
@@ -221,7 +231,85 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.gasLimitPeriod, 1);
         assertEq(metadata.gasLimitCost, 1);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, address(7)), false);
-        assertEq(_kintoAppRegistry.isSponsored(parentContract, address(8)), true);
+        assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
+    }
+
+    function testRemoveOldDevEOAs() public {
+        address parentContract = address(0x123);
+        address[] memory initialDevEOAs = new address[](3);
+        initialDevEOAs[0] = address(0xdead);
+        initialDevEOAs[1] = address(0xbeef);
+        initialDevEOAs[2] = address(0xcafe);
+
+        address[] memory newDevEOAs = new address[](2);
+        newDevEOAs[0] = address(0x1234);
+        newDevEOAs[1] = address(0x5678);
+
+        // Set up initial state
+        approveKYC(_kycProvider, _user, _userPk);
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "Test App",
+            parentContract,
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            initialDevEOAs
+        );
+
+        // Verify initial state
+        for (uint256 i = 0; i < initialDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(initialDevEOAs[i]), parentContract);
+        }
+
+        // Update metadata with new dev EOAs
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.updateMetadata(
+            "Updated Test App",
+            parentContract,
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            newDevEOAs
+        );
+
+        // Verify old dev EOAs are removed
+        for (uint256 i = 0; i < initialDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(initialDevEOAs[i]), address(0));
+        }
+
+        // Verify new dev EOAs are set
+        for (uint256 i = 0; i < newDevEOAs.length; i++) {
+            assertEq(_kintoAppRegistry.devEoaToApp(newDevEOAs[i]), parentContract);
+        }
+
+        // Verify app metadata is updated
+        IKintoAppRegistry.Metadata memory updatedMetadata = _kintoAppRegistry.getAppMetadata(parentContract);
+        assertEq(updatedMetadata.name, "Updated Test App");
+        assertEq(updatedMetadata.devEOAs.length, newDevEOAs.length);
+        for (uint256 i = 0; i < newDevEOAs.length; i++) {
+            assertEq(updatedMetadata.devEOAs[i], newDevEOAs[i]);
+        }
+    }
+
+    function testRegisterApp_RevertWhenAppContractIsParentContact() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, appContract0));
+        _kintoAppRegistry.registerApp(
+            name, appContract0, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], new address[](0)
+        );
     }
 
     function testRegisterApp_RevertWithSameChildDoesNotOverrideChildToParent() public {
@@ -231,7 +319,7 @@ contract KintoAppRegistryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
-        appContracts[0] = address(8);
+        appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
@@ -250,7 +338,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         vm.prank(address(_kintoWallet));
-        vm.expectRevert(IKintoAppRegistry.ChildAlreadyRegistered.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, appContract0));
         _kintoAppRegistry.registerApp(
             "test 5",
             address(2),
@@ -266,13 +354,41 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // update app
         vm.prank(_user);
-        vm.expectRevert(IKintoAppRegistry.OnlyAppDeveloper.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.OnlyAppDeveloper.selector, _user, address(_kintoWallet))
+        );
         _kintoAppRegistry.updateMetadata(
             "app", address(0), new address[](0), [uint256(1), uint256(1), uint256(1), uint256(1)], new address[](0)
         );
     }
 
-    /* ============ DSA Test ============ */
+    function testRegisterApp_RevertWhen_ContractHasNoBytecode() public {
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(0x1234); // An address without bytecode
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractHasNoBytecode.selector, address(0x1234)));
+        _kintoAppRegistry.registerApp(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+    }
+
+    /* ============ DSA ============ */
 
     function testEnableDSA_WhenCallerIsOwner() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
@@ -296,18 +412,18 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.enableDSA(address(_engenCredits));
 
         vm.prank(_owner);
-        vm.expectRevert(IKintoAppRegistry.DSAAlreadyEnabled.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.DSAAlreadyEnabled.selector, address(_engenCredits)));
         _kintoAppRegistry.enableDSA(address(_engenCredits));
     }
 
-    /* ============ Sponsored Contracts Test ============ */
+    /* ============ Sponsored Contracts ============ */
 
     function testSetSponsoredContracts() public {
         registerApp(address(_kintoWallet), "app", address(_engenCredits), new address[](0));
 
         address[] memory contracts = new address[](2);
-        contracts[0] = address(8);
-        contracts[1] = address(9);
+        contracts[0] = sponsorContract0;
+        contracts[1] = sponsorContract1;
 
         bool[] memory flags = new bool[](2);
         flags[0] = false;
@@ -316,8 +432,8 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
 
-        assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), address(8)), false);
-        assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), address(9)), true);
+        assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), sponsorContract0), false);
+        assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), sponsorContract1), true);
         assertEq(_kintoAppRegistry.isSponsored(address(_engenCredits), address(10)), false);
     }
 
@@ -333,7 +449,9 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[1] = true;
 
         vm.prank(_user);
-        vm.expectRevert(IKintoAppRegistry.InvalidSponsorSetter.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.InvalidSponsorSetter.selector, _user, address(_kintoWallet))
+        );
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
@@ -347,11 +465,11 @@ contract KintoAppRegistryTest is SharedSetup {
         flags[0] = false;
         flags[1] = true;
 
-        vm.expectRevert(IKintoAppRegistry.LengthMismatch.selector);
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.LengthMismatch.selector, 1, 2));
         _kintoAppRegistry.setSponsoredContracts(address(_engenCredits), contracts, flags);
     }
 
-    /* ============ Transfer Test ============ */
+    /* ============ Transfer ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {
         approveKYC(_kycProvider, _user, _userPk);
@@ -359,7 +477,7 @@ contract KintoAppRegistryTest is SharedSetup {
         address parentContract = address(_engenCredits);
 
         address[] memory appContracts = new address[](1);
-        appContracts[0] = address(8);
+        appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
         appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
@@ -378,7 +496,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.safeTransferFrom(address(_kintoWallet), _user2, tokenIdx);
     }
 
-    /* ============ Supports Interface tests ============ */
+    /* ============ Supports Interface ============ */
 
     function testSupportsInterface() public view {
         bytes4 InterfaceERC721Upgradeable = bytes4(keccak256("balanceOf(address)"))
@@ -391,32 +509,11 @@ contract KintoAppRegistryTest is SharedSetup {
         assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
     }
 
-    /* ============ System Contracts Test ============ */
-
-    function getSystemContracts() public view returns (address[] memory) {
-        uint256 count = 0;
-        address[] memory tempArray = new address[](100); // Arbitrary large size
-
-        for (uint256 i = 0; i < 100; i++) {
-            try _kintoAppRegistry.systemContracts(i) returns (address addr) {
-                tempArray[count] = addr;
-                count++;
-            } catch {
-                break;
-            }
-        }
-
-        address[] memory result = new address[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = tempArray[i];
-        }
-
-        return result;
-    }
+    /* ============ updateSystemContracts ============ */
 
     function testUpdateSystemContracts() public {
         // Initial empty system contracts array
-        address[] memory initialSystemContracts = getSystemContracts();
+        address[] memory initialSystemContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(initialSystemContracts.length, 0);
 
         // Update system contracts array
@@ -428,7 +525,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
 
         // Verify the system contracts array is updated
-        address[] memory updatedSystemContracts = getSystemContracts();
+        address[] memory updatedSystemContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedSystemContracts.length, newSystemContracts.length);
         assertEq(updatedSystemContracts[0], newSystemContracts[0]);
         assertEq(updatedSystemContracts[1], newSystemContracts[1]);
@@ -444,7 +541,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(initialContracts);
 
         // Verify initial update
-        address[] memory updatedContracts = getSystemContracts();
+        address[] memory updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 2);
         assertEq(updatedContracts[0], address(1));
         assertEq(updatedContracts[1], address(2));
@@ -459,7 +556,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(newContracts);
 
         // Verify update with increased length
-        updatedContracts = getSystemContracts();
+        updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 3);
         assertEq(updatedContracts[0], address(3));
         assertEq(updatedContracts[1], address(4));
@@ -473,7 +570,7 @@ contract KintoAppRegistryTest is SharedSetup {
         _kintoAppRegistry.updateSystemContracts(finalContracts);
 
         // Verify update with decreased length
-        updatedContracts = getSystemContracts();
+        updatedContracts = _kintoAppRegistry.getSystemContracts();
         assertEq(updatedContracts.length, 1);
         assertEq(updatedContracts[0], address(6));
     }
@@ -487,6 +584,182 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
     }
+
+    /* ============ updateReservedContracts ============ */
+
+    function testUpdateReservedContracts() public {
+        // Initial empty reserved contracts array
+        address[] memory initialReservedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(initialReservedContracts.length, 0);
+
+        // Update reserved contracts array
+        address[] memory newReservedContracts = new address[](2);
+        newReservedContracts[0] = address(1);
+        newReservedContracts[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Verify the reserved contracts array is updated
+        address[] memory updatedReservedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedReservedContracts.length, newReservedContracts.length);
+        assertEq(updatedReservedContracts[0], newReservedContracts[0]);
+        assertEq(updatedReservedContracts[1], newReservedContracts[1]);
+
+        // Check isReservedContract mapping
+        assertTrue(_kintoAppRegistry.isReservedContract(address(1)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(2)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(3)));
+    }
+
+    function testUpdateReservedContractsWithDifferentLength() public {
+        // Initial update with 2 contracts
+        address[] memory initialContracts = new address[](2);
+        initialContracts[0] = address(1);
+        initialContracts[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(initialContracts);
+
+        // Verify initial update
+        address[] memory updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 2);
+        assertEq(updatedContracts[0], address(1));
+        assertEq(updatedContracts[1], address(2));
+
+        // Update with 3 contracts (increasing length)
+        address[] memory newContracts = new address[](3);
+        newContracts[0] = address(3);
+        newContracts[1] = address(4);
+        newContracts[2] = address(5);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newContracts);
+
+        // Verify update with increased length
+        updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 3);
+        assertEq(updatedContracts[0], address(3));
+        assertEq(updatedContracts[1], address(4));
+        assertEq(updatedContracts[2], address(5));
+
+        // Check isReservedContract mapping
+        assertFalse(_kintoAppRegistry.isReservedContract(address(1)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(2)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(3)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(4)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(5)));
+
+        // Update with 1 contract (decreasing length)
+        address[] memory finalContracts = new address[](1);
+        finalContracts[0] = address(6);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(finalContracts);
+
+        // Verify update with decreased length
+        updatedContracts = _kintoAppRegistry.getReservedContracts();
+        assertEq(updatedContracts.length, 1);
+        assertEq(updatedContracts[0], address(6));
+
+        // Check isReservedContract mapping
+        assertFalse(_kintoAppRegistry.isReservedContract(address(3)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(4)));
+        assertFalse(_kintoAppRegistry.isReservedContract(address(5)));
+        assertTrue(_kintoAppRegistry.isReservedContract(address(6)));
+    }
+
+    function testUpdateReservedContracts_RevertWhen_CallerIsNotOwner() public {
+        address[] memory newReservedContracts = new address[](2);
+        newReservedContracts[0] = address(1);
+        newReservedContracts[1] = address(2);
+
+        vm.prank(_user);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+    }
+
+    function testRegisterApp_RevertWhen_ContractIsReserved() public {
+        // First, set up a reserved contract
+        address[] memory newReservedContracts = new address[](1);
+        newReservedContracts[0] = address(0x1234);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Now try to register an app with the reserved contract as a child
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = address(0x1234); // This is the reserved contract
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ReservedContract.selector, address(0x1234)));
+        _kintoAppRegistry.registerApp(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+    }
+
+    function testUpdateMetadata_RevertWhen_ContractIsReserved() public {
+        // First, register an app
+        string memory name = "app";
+        address parentContract = address(123);
+
+        approveKYC(_kycProvider, _user, _userPk);
+
+        address[] memory appContracts = new address[](1);
+        appContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Now set up a reserved contract
+        address[] memory newReservedContracts = new address[](1);
+        newReservedContracts[0] = address(0x1234);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateReservedContracts(newReservedContracts);
+
+        // Try to update the app metadata with the reserved contract as a child
+        appContracts[0] = address(0x1234); // This is the reserved contract
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ReservedContract.selector, address(0x1234)));
+        _kintoAppRegistry.updateMetadata(
+            name,
+            parentContract,
+            appContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+    }
+
+    /* ============ isContractCallAllowedFromEOA ============ */
 
     function testIsContractCallAllowedFromEOA_WhenSystemContract() public {
         // Update system contracts array
@@ -530,7 +803,9 @@ contract KintoAppRegistryTest is SharedSetup {
     function testIsContractCallAllowedFromEOA_WhenDevEOA() public {
         address[] memory appContracts = new address[](2);
         appContracts[0] = address(11);
+        mockContractBytecode(appContracts[0]);
         appContracts[1] = address(22);
+        mockContractBytecode(appContracts[1]);
 
         address[] memory devEOAs = new address[](3);
         devEOAs[0] = _owner;
@@ -555,12 +830,46 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
     }
 
+    /* ============ setDeployerEOA ============ */
+
     function testSetDeployerEOA() public {
         vm.prank(address(_kintoWallet));
         vm.expectEmit(true, true, true, true);
-        emit KintoAppRegistry.DeployerSet(address(0xde));
+        emit IKintoAppRegistry.DeployerSet(address(0xde));
         _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.deployerToWallet(address(0xde)), address(_kintoWallet));
+    }
+
+    function testRemoveOldDeployerToWallet() public {
+        address wallet = address(_kintoWallet);
+        address oldDeployer = address(0xdead);
+        address newDeployer = address(0xbeef);
+
+        // Set up initial state
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(wallet, oldDeployer);
+
+        // Verify initial state
+        assertEq(_kintoAppRegistry.deployerToWallet(oldDeployer), wallet);
+        assertEq(_kintoAppRegistry.walletToDeployer(wallet), oldDeployer);
+
+        // Set new deployer
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(wallet, newDeployer);
+
+        // Verify new state
+        assertEq(_kintoAppRegistry.deployerToWallet(newDeployer), wallet);
+        assertEq(_kintoAppRegistry.walletToDeployer(wallet), newDeployer);
+
+        // Verify old deployer mapping is removed
+        assertEq(_kintoAppRegistry.deployerToWallet(oldDeployer), address(0));
+    }
+
+    /* ============ Helpers ============ */
+
+    // Helper function to mock contract bytecode
+    function mockContractBytecode(address _contract) internal {
+        vm.etch(_contract, hex"00"); // Minimal bytecode
     }
 }

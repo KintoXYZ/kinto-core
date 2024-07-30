@@ -95,20 +95,17 @@ contract KintoAppRegistry is
     /// @notice Mapping of wallet addresses to their associated deployer EOAs
     mapping(address => address) public override walletToDeployer;
 
-    /* ============ Events ============ */
+    /// @notice Array of reserved contract addresses
+    address[] public override reservedContracts;
 
-    event AppRegistered(address indexed _app, address _owner, uint256 _timestamp);
-    event AppUpdated(address indexed _app, address _owner, uint256 _timestamp);
-    event AppDSAEnabled(address indexed _app, uint256 _timestamp);
-    event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
-    event DeployerSet(address indexed newDeployer);
+    /// @notice Mapping to check if an address is a reserved contract
+    mapping(address => bool) public override isReservedContract;
 
     /* ============ Constructor & Initializers ============ */
 
     /**
      * @notice Constructs the KintoAppRegistry contract
      * @param _walletFactory The address of the KintoWalletFactory contract
-     * @custom:oz-upgrades-unsafe-allow constructor
      */
     constructor(IKintoWalletFactory _walletFactory) {
         _disableInitializers();
@@ -133,18 +130,12 @@ contract KintoAppRegistry is
 
     /* ============ Token name, symbol & URI ============ */
 
-    /**
-     * @notice Gets the token name
-     * @return The name of the token
-     */
+    /// @inheritdoc IKintoAppRegistry
     function name() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "Kinto APP";
     }
 
-    /**
-     * @notice Gets the token symbol
-     * @return The symbol of the token
-     */
+    /// @inheritdoc IKintoAppRegistry
     function symbol() public pure override(ERC721Upgradeable, IKintoAppRegistry) returns (string memory) {
         return "KINTOAPP";
     }
@@ -159,14 +150,7 @@ contract KintoAppRegistry is
 
     /* ============ App Registration ============ */
 
-    /**
-     * @notice Registers a new app and mints the NFT to the creator
-     * @param appName The name of the app
-     * @param parentContract The address of the parent contract
-     * @param appContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     * @param devEOAs The addresses of the developers EOAs to be whitelisted
-     */
+    /// @inheritdoc IKintoAppRegistry
     function registerApp(
         string calldata appName,
         address parentContract,
@@ -176,9 +160,9 @@ contract KintoAppRegistry is
     ) external override {
         if (walletFactory.walletTs(msg.sender) == 0) revert InvalidWallet(msg.sender);
         if (!kintoID.isKYC(IKintoWallet(msg.sender).owners(0))) revert KYCRequired();
-        if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered();
-        if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild();
-        if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet();
+        if (_appMetadata[parentContract].tokenId != 0) revert AlreadyRegistered(parentContract);
+        if (childToParentContract[parentContract] != address(0)) revert ParentAlreadyChild(parentContract);
+        if (walletFactory.walletTs(parentContract) != 0) revert CannotRegisterWallet(parentContract);
 
         appCount++;
         _updateMetadata(appCount, appName, parentContract, appContracts, appLimits, devEOAs);
@@ -187,14 +171,7 @@ contract KintoAppRegistry is
         emit AppRegistered(parentContract, msg.sender, block.timestamp);
     }
 
-    /**
-     * @notice Allows the developer to update the metadata of the app
-     * @param appName The name of the app
-     * @param parentContract The address of the parent contract
-     * @param appContracts The addresses of the child contracts
-     * @param appLimits The limits of the app
-     * @param devEOAs The addresses of the developers EOAs to be whitelisted
-     */
+    /// @inheritdoc IKintoAppRegistry
     function updateMetadata(
         string calldata appName,
         address parentContract,
@@ -203,57 +180,40 @@ contract KintoAppRegistry is
         address[] calldata devEOAs
     ) external override {
         uint256 tokenId = _appMetadata[parentContract].tokenId;
-        if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper();
+        if (msg.sender != ownerOf(tokenId)) revert OnlyAppDeveloper(msg.sender, ownerOf(tokenId));
         _updateMetadata(tokenId, appName, parentContract, appContracts, appLimits, devEOAs);
 
         emit AppUpdated(parentContract, msg.sender, block.timestamp);
     }
 
-    /**
-     * @notice Allows the developer to set sponsored contracts
-     * @param _app The address of the app
-     * @param _contracts The addresses of the contracts
-     * @param _flags The flags of the contracts
-     */
-    function setSponsoredContracts(address _app, address[] calldata _contracts, bool[] calldata _flags)
-        external
-        override
-    {
-        if (_contracts.length != _flags.length) revert LengthMismatch();
+    /// @inheritdoc IKintoAppRegistry
+    function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags) external override {
+        if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
-            _appMetadata[_app].tokenId == 0
-                || (msg.sender != ownerOf(_appMetadata[_app].tokenId) && msg.sender != owner())
+            _appMetadata[app].tokenId == 0
+                || (msg.sender != ownerOf(_appMetadata[app].tokenId) && msg.sender != owner())
         ) {
-            revert InvalidSponsorSetter();
+            revert InvalidSponsorSetter(msg.sender, ownerOf(_appMetadata[app].tokenId));
         }
-        for (uint256 i = 0; i < _contracts.length; i++) {
-            _sponsoredContracts[_app][_contracts[i]] = _flags[i];
+        for (uint256 i = 0; i < targets.length; i++) {
+            if (targets[i].code.length == 0) revert ContractHasNoBytecode(targets[i]);
+            _sponsoredContracts[app][targets[i]] = flags[i];
         }
     }
 
-    /**
-     * @notice Allows the app to request PII data
-     * @param app The address of the app
-     */
+    /// @inheritdoc IKintoAppRegistry
     function enableDSA(address app) external override onlyOwner {
-        if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled();
+        if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled(app);
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
 
-    /**
-     * @notice Allows the owner to override the parent contract of a child contract
-     * @param child The address of the child contract
-     * @param parent The address of the parent contract
-     */
+    /// @inheritdoc IKintoAppRegistry
     function overrideChildToParentContract(address child, address parent) external override onlyOwner {
         childToParentContract[child] = parent;
     }
 
-    /**
-     * @notice Updates the system contracts array
-     * @param newSystemContracts The new array of system contracts
-     */
+    /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
         emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
@@ -265,15 +225,22 @@ contract KintoAppRegistry is
         systemContracts = newSystemContracts;
     }
 
-    /**
-     * @notice Sets the deployer EOA for a wallet
-     * @param wallet The address of the wallet
-     * @param deployer The address of the deployer EOA
-     */
+    /// @inheritdoc IKintoAppRegistry
+    function updateReservedContracts(address[] calldata newReservedContracts) external onlyOwner {
+        emit ReservedContractsUpdated(reservedContracts, newReservedContracts);
+        for (uint256 index = 0; index < reservedContracts.length; index++) {
+            isReservedContract[reservedContracts[index]] = false;
+        }
+        for (uint256 index = 0; index < newReservedContracts.length; index++) {
+            isReservedContract[newReservedContracts[index]] = true;
+        }
+        reservedContracts = newReservedContracts;
+    }
+
+    /// @inheritdoc IKintoAppRegistry
     function setDeployerEOA(address wallet, address deployer) external {
         if (walletFactory.walletTs(wallet) == 0) revert InvalidWallet(wallet);
         if (msg.sender != owner() && msg.sender != wallet) revert InvalidWallet(wallet);
-        if (deployerToWallet[deployer] != address(0)) revert DeployerAlreadySet();
 
         // cleanup old
         if (walletToDeployer[wallet] != address(0)) {
@@ -287,11 +254,7 @@ contract KintoAppRegistry is
 
     /* ============ Getters ============ */
 
-    /**
-     * @notice Returns whether the contract implements the interface defined by the id
-     * @param interfaceId id of the interface to be checked.
-     * @return true if the contract implements the interface defined by the id.
-     */
+    /// @dev See {IERC165-supportsInterface}.
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -301,24 +264,15 @@ contract KintoAppRegistry is
         return super.supportsInterface(interfaceId);
     }
 
-    /**
-     * @notice Returns the metadata of the app
-     * @param _contract The address of the app
-     * @return The metadata of the app
-     */
-    function getAppMetadata(address _contract) external view override returns (IKintoAppRegistry.Metadata memory) {
-        return
-            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
+    /// @inheritdoc IKintoAppRegistry
+    function getAppMetadata(address target) external view override returns (IKintoAppRegistry.Metadata memory) {
+        return _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
     }
 
-    /**
-     * @notice Returns the limits of the app
-     * @param _contract The address of the app
-     * @return The limits of the app
-     */
-    function getContractLimits(address _contract) external view override returns (uint256[4] memory) {
+    /// @inheritdoc IKintoAppRegistry
+    function getContractLimits(address target) external view override returns (uint256[4] memory) {
         IKintoAppRegistry.Metadata memory metadata =
-            _appMetadata[childToParentContract[_contract] != address(0) ? childToParentContract[_contract] : _contract];
+            _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
         return [
             metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
             metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
@@ -327,29 +281,20 @@ contract KintoAppRegistry is
         ];
     }
 
-    /**
-     * @notice Returns whether a contract is sponsored by an app
-     * @param _app The address of the app
-     * @param _contract The address of the contract
-     * @return bool true or false
-     */
-    function isSponsored(address _app, address _contract) external view override returns (bool) {
-        return _contract == _app || childToParentContract[_contract] == _app || _sponsoredContracts[_app][_contract];
+    /// @inheritdoc IKintoAppRegistry
+    function isSponsored(address app, address target) external view override returns (bool) {
+        return target == app || childToParentContract[target] == app || _sponsoredContracts[app][target];
     }
 
-    /**
-     * @notice Returns the sponsoring contract for a given contract (aka parent contract)
-     * @param _contract The address of the contract
-     * @return The address of the contract that sponsors the contract
-     */
-    function getSponsor(address _contract) external view override returns (address) {
-        address sponsor = childToParentContract[_contract];
+    /// @inheritdoc IKintoAppRegistry
+    function getSponsor(address target) external view override returns (address) {
+        address sponsor = childToParentContract[target];
         if (sponsor != address(0)) return sponsor;
-        return _contract;
+        return target;
     }
 
     /**
-     * @notice Determines if a contract call is allowed from an EOA (Externally Owned Account)
+     * @inheritdoc IKintoAppRegistry
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
      *      1. Allows calls to system contracts from any EOA
      *      2. Checks if the EOA has a linked wallet
@@ -357,9 +302,6 @@ contract KintoAppRegistry is
      *      4. Ensures the wallet owner has completed KYC
      *      5. Permits CREATE and CREATE2 operations for eligible EOAs
      *      6. Allows dev EOAs to call their respective apps
-     * @param from The address of the EOA initiating the call
-     * @param to The address of the contract being called
-     * @return A boolean indicating whether the contract call is allowed (true) or not (false)
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
         // Calls to system contracts are allwed for any EOA
@@ -393,6 +335,16 @@ contract KintoAppRegistry is
         }
 
         return false;
+    }
+
+    /// @inheritdoc IKintoAppRegistry
+    function getSystemContracts() external view returns (address[] memory) {
+        return systemContracts;
+    }
+
+    /// @inheritdoc IKintoAppRegistry
+    function getReservedContracts() external view returns (address[] memory) {
+        return reservedContracts;
     }
 
     /* =========== Internal methods =========== */
@@ -443,12 +395,16 @@ contract KintoAppRegistry is
 
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
-            if (walletFactory.walletTs(appContracts[i]) > 0) revert CannotRegisterWallet();
+            address appContract = appContracts[i];
+            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet(appContract);
             if (
-                childToParentContract[appContracts[i]] != address(0)
-                    && childToParentContract[appContracts[i]] != parentContract
-            ) revert ChildAlreadyRegistered();
-            childToParentContract[appContracts[i]] = parentContract;
+                childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
+            ) revert ChildAlreadyRegistered(appContract);
+            if (appContract == parentContract) revert ChildAlreadyRegistered(appContract);
+            if (isReservedContract[appContract]) revert ReservedContract(appContract);
+            if (appContract.code.length == 0) revert ContractHasNoBytecode(appContract);
+
+            childToParentContract[appContract] = parentContract;
         }
 
         for (uint256 i = 0; i < devEOAs.length; i++) {
@@ -475,6 +431,6 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV15 is KintoAppRegistry {
+contract KintoAppRegistryV17 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
 }
