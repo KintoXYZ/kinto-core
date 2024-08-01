@@ -164,9 +164,9 @@ jobs:
       #     minimum-coverage: 90
 
   slither:
-    needs:
-      - test-local
-      - test-fork
+    # needs:
+    #   - test-local
+    #   - test-fork
 
     name: Slither
     runs-on: ubuntu-latest
