@@ -6,7 +6,7 @@ import {MiningAdaptor} from "@kinto-core/liquidity-mining/MiningAdaptor.sol";
 
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";

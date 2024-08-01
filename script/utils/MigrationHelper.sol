@@ -22,7 +22,7 @@ import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
 import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
 
 import {Constants} from "@kinto-core-script/migrations/const.sol";

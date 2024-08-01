@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
 /// @custom:security-contact security@mamorilabs.com
 contract EngenBadges is

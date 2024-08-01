@@ -14,7 +14,6 @@ import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
 import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler.sol";
 
-import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 
