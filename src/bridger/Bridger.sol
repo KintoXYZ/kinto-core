@@ -337,7 +337,6 @@ contract Bridger is
             bridgeData.connector,
             bridgeData.execPayload,
             bridgeData.options
-
         );
 
         emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountOut);
