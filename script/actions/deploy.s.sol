@@ -22,7 +22,7 @@ import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
