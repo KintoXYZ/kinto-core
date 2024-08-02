@@ -329,6 +329,7 @@ contract Bridger is
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge the final amount to Kinto
+        // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountOut,
@@ -376,6 +377,7 @@ contract Bridger is
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge the final amount to Kinto
+        // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
@@ -419,6 +421,7 @@ contract Bridger is
                 return _stakeEthToWstEth(amount);
             }
             // Otherwise, wrap ETH to WETH
+            // slither-disable-next-line arbitrary-send-eth
             WETH.deposit{value: amount}();
             inputAsset = address(WETH);
         }
@@ -505,6 +508,7 @@ contract Bridger is
     function _stakeEthToWstEth(uint256 amount) private returns (uint256 amountBought) {
         // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
+        // slither-disable-next-line arbitrary-send-eth
         (bool sent,) = wstETH.call{value: amount}("");
         if (!sent) revert FailedToStakeEth();
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;

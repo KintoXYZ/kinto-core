@@ -361,6 +361,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
             }
 
             // Calculate the time passed in the current quarter
+            // slither-disable-next-line weak-prng
             uint256 timePassedInCurrentQuarter = elapsedTime % (90 days);
             uint256 currentQuarterReward = rewardsPerQuarter[currentQuarter];
             uint256 currentQuarterLimit = (currentQuarterReward * timePassedInCurrentQuarter) / (90 days);
