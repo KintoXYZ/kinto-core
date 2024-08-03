@@ -12,7 +12,7 @@ solc_version = "0.8.24"
 
 [profile.fork]
 match-path = 'test/fork/**/*.sol'
-evm_version = 'shanghai'
+evm_version = 'cancun'
 
 [rpc_endpoints]
 kinto = "${KINTO_RPC_URL}"

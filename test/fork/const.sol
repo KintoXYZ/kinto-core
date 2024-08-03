@@ -6,7 +6,7 @@ contract Constants {
     uint256 internal constant ARBITRUM_CHAINID = 42161;
     uint256 internal constant ETHEREUM_CHAINID = 1;
 
-    address internal constant EXCHANGE_PROXY = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address internal constant EXCHANGE_PROXY = 0x0000000000001fF3684f28c67538d4D072C22734;
     address internal constant WETH_ETHEREUM = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address internal constant DAI_ETHEREUM = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant DAI_ARBITRUM = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
