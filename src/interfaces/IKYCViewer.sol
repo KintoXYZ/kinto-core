@@ -11,23 +11,36 @@ import "../interfaces/IKintoAppRegistry.sol";
 /// @notice Interface for a contract that provides KYC (Know Your Customer) related information
 /// @dev This interface defines functions to check KYC status, sanctions safety, and retrieve user information
 interface IKYCViewer {
-
     /// @notice Struct to hold various user information
     /// @dev This struct contains balance, policy, KYC status, and other relevant user data
     struct UserInfo {
+        /// @notice The ETH balance of the user's EOA (Externally Owned Account)
         uint256 ownerBalance;
+        /// @notice The ETH balance of the user's Kinto wallet
         uint256 walletBalance;
+        /// @notice The policy governing the wallet's signers (e.g., number of required signatures)
         uint256 walletPolicy;
+        /// @notice Array of addresses that own the wallet
         address[] walletOwners;
+        /// @notice Amount of ETH claimed from the faucet
         bool claimedFaucet;
+        /// @notice Indicates whether the user has a Kinto ID NFT
         bool hasNFT;
+        /// @notice Total Engen Credits earned by the user
         uint256 engenCreditsEarned;
+        /// @notice Amount of Engen Credits claimed by the user
         uint256 engenCreditsClaimed;
+        /// @notice Indicates whether the user has completed KYC
         bool isKYC;
+        /// @notice Timestamp of when the wallet entered recovery mode (0 if not in recovery)
         uint256 recoveryTs;
+        /// @notice The insurance policy of the wallet (details depend on implementation)
         uint256 insurancePolicy;
+        /// @notice Indicates whether the wallet has a valid insurance policy
         bool hasValidInsurance;
+        /// @notice Timestamp of when the insurance policy was last updated
         uint256 insuranceTimestamp;
+        /// @notice Address of the EOA that deployed the wallet (if applicable)
         address deployer;
     }
 
