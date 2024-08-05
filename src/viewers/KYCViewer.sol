@@ -14,6 +14,8 @@ import "../interfaces/IFaucet.sol";
 import "../interfaces/IEngenCredits.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 
+import "./CountryCodes.sol";
+
 /**
  * @title KYCViewer
  * @dev A viewer class that helps developers to check if an address is KYC'd
@@ -79,8 +81,31 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return kintoID.isIndividual(_getFinalAddress(_account));
     }
 
-    function hasTrait(address _account, uint8 _traitId) external view returns (bool) {
+    function hasTrait(address _account, uint16 _traitId) external view returns (bool) {
         return kintoID.hasTrait(_getFinalAddress(_account), _traitId);
+    }
+
+    function hasTraits(address _account, uint16[] memory _traitIds) public view returns (uint16[] memory) {
+        address finalAddress = _getFinalAddress(_account);
+        uint16[] memory results = new uint16[](_traitIds.length);
+        for (uint256 i = 0; i < _traitIds.length; i++) {
+            results[i] = kintoID.hasTrait(finalAddress, _traitIds[i]) ? 1 : 0;
+        }
+        return results;
+    }
+
+    function getCountry(address _account) external view returns (uint16) {
+        uint16[] memory validCodes = CountryCodes.getValidCountryCodes();
+        address finalAddress = _getFinalAddress(_account);
+
+        for (uint16 i = 0; i < validCodes.length; i++) {
+            bool hasTraitValue = kintoID.hasTrait(finalAddress, uint16(validCodes[i]));
+            if (hasTraitValue) {
+                return validCodes[i];
+            }
+        }
+
+        return 0; // Return 0 if no country trait is found
     }
 
     function getWalletOwners(address _wallet) public view override returns (address[] memory owners) {

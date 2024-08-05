@@ -42,7 +42,11 @@ interface IKYCViewer {
 
     function isIndividual(address _account) external view returns (bool);
 
-    function hasTrait(address _account, uint8 _traitId) external view returns (bool);
+    function hasTrait(address _account, uint16 _traitId) external view returns (bool);
+
+    function hasTraits(address _account, uint16[] memory _traitIds) external view returns (uint16[] memory);
+
+    function getCountry(address _account) external view returns (uint16);
 
     function getWalletOwners(address _wallet) external view returns (address[] memory);
 
