@@ -16,9 +16,11 @@ import "../interfaces/IKintoAppRegistry.sol";
 
 import "./CountryCodes.sol";
 
-/// @title KYCViewer
-/// @notice A contract that provides KYC (Know Your Customer) related information and utilities
-/// @dev This contract implements the IKYCViewer interface and is upgradeable
+/**
+ * @title KYCViewer
+ * @notice A contract that provides KYC (Know Your Customer) related information and utilities
+ * @dev This contract implements the IKYCViewer interface and is upgradeable
+ */
 contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCViewer {
     /* ============ State Variables ============ */
 
@@ -39,12 +41,14 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     /* ============ Constructor & Upgrades ============ */
 
-    /// @notice Contract constructor
-    /// @dev Sets up immutable state variables and disables initializers
-    /// @param _kintoWalletFactory Address of the KintoWalletFactory contract
-    /// @param _faucet Address of the Faucet contract
-    /// @param _engenCredits Address of the EngenCredits contract
-    /// @param _kintoAppRegistry Address of the KintoAppRegistry contract
+    /**
+     * @notice Contract constructor
+     * @dev Sets up immutable state variables and disables initializers
+     * @param _kintoWalletFactory Address of the KintoWalletFactory contract
+     * @param _faucet Address of the Faucet contract
+     * @param _engenCredits Address of the EngenCredits contract
+     * @param _kintoAppRegistry Address of the KintoAppRegistry contract
+     */
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry) {
         _disableInitializers();
         walletFactory = IKintoWalletFactory(_kintoWalletFactory);
@@ -54,17 +58,21 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         kintoAppRegistry = IKintoAppRegistry(_kintoAppRegistry);
     }
 
-    /// @notice Initializes the contract
-    /// @dev Sets up the owner and UUPS upgradeability
+    /**
+     * @notice Initializes the contract
+     * @dev Sets up the owner and UUPS upgradeability
+     */
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
     }
 
-    /// @notice Authorizes an upgrade to a new implementation
-    /// @dev Can only be called by the contract owner
-    /// @param newImplementation Address of the new implementation contract
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Can only be called by the contract owner
+     * @param newImplementation Address of the new implementation contract
+     */
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {}
 
     /* ============ Basic Viewers ============ */
@@ -94,30 +102,22 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return kintoID.isIndividual(_getOwnerOrWallet(account));
     }
 
-    /// @notice Checks if an account has a specific trait
-    /// @param account The account to check
-    /// @param _traitId The ID of the trait to check for
-    /// @return bool True if the account has the specified trait, false otherwise
+    /// @inheritdoc IKYCViewer
     function hasTrait(address account, uint16 _traitId) external view returns (bool) {
         return kintoID.hasTrait(_getOwnerOrWallet(account), _traitId);
     }
 
-    /// @notice Checks if an account has multiple traits
-    /// @param account The account to check
-    /// @param _traitIds An array of trait IDs to check for
-    /// @return uint16[] An array of 1s and 0s indicating whether the account has each trait
-    function hasTraits(address account, uint16[] memory _traitIds) public view returns (uint16[] memory) {
+    /// @inheritdoc IKYCViewer
+    function hasTraits(address account, uint16[] memory _traitIds) public view returns (bool[] memory) {
         address finalAddress = _getOwnerOrWallet(account);
-        uint16[] memory results = new uint16[](_traitIds.length);
+        bool[] memory results = new bool[](_traitIds.length);
         for (uint256 i = 0; i < _traitIds.length; i++) {
-            results[i] = kintoID.hasTrait(finalAddress, _traitIds[i]) ? 1 : 0;
+            results[i] = kintoID.hasTrait(finalAddress, _traitIds[i]);
         }
         return results;
     }
 
-    /// @notice Gets the country code for an account
-    /// @param account The account to check
-    /// @return uint16 The country code of the account, or 0 if not found
+    /// @inheritdoc IKYCViewer
     function getCountry(address account) external view returns (uint16) {
         uint16[] memory validCodes = CountryCodes.getValidCountryCodes();
         address finalAddress = _getOwnerOrWallet(account);
@@ -181,12 +181,14 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return apps;
     }
 
-    /// @notice Retrieves the ERC20 token balances for a specific target address
-    /// @dev This view function allows fetching balances for multiple tokens in a single call,
-    ///      which can save considerable gas over multiple calls
-    /// @param tokens An array of token addresses to query balances for
-    /// @param target The address whose balances will be queried
-    /// @return balances An array of balances corresponding to the array of tokens provided
+    /**
+     * @notice Retrieves the ERC20 token balances for a specific target address
+     * @dev This view function allows fetching balances for multiple tokens in a single call,
+     *      which can save considerable gas over multiple calls
+     * @param tokens An array of token addresses to query balances for
+     * @param target The address whose balances will be queried
+     * @return balances An array of balances corresponding to the array of tokens provided
+     */
     function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances) {
         balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -200,10 +202,12 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     /* ============ Helpers ============ */
 
-    /// @notice Helper function to get the owner address or wallet address
-    /// @dev If the input address is a wallet, it returns the first owner's address
-    /// @param addr The address to check
-    /// @return The owner's address or the input address if it's not a wallet
+    /**
+     * @notice Helper function to get the owner address or wallet address
+     * @dev If the input address is a wallet, it returns the first owner's address
+     * @param addr The address to check
+     * @return The owner's address or the input address if it's not a wallet
+     */
     function _getOwnerOrWallet(address addr) private view returns (address) {
         if (walletFactory.getWalletTimestamp(addr) > 0) {
             return IKintoWallet(payable(addr)).owners(0);
@@ -212,14 +216,18 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-/// @notice KYCViewer contract version 13
-/// @dev This contract inherits from KYCViewer and is used for deployment
+/**
+ * @notice KYCViewer contract version 13
+ * @dev This contract inherits from KYCViewer and is used for deployment
+ */
 contract KYCViewerV13 is KYCViewer {
-    /// @notice Contract constructor
-    /// @param _kintoWalletFactory Address of the KintoWalletFactory contract
-    /// @param _faucet Address of the Faucet contract
-    /// @param _engenCredits Address of the EngenCredits contract
-    /// @param _kintoAppRegistry Address of the KintoAppRegistry contract
+    /**
+     * @notice Contract constructor
+     * @param _kintoWalletFactory Address of the KintoWalletFactory contract
+     * @param _faucet Address of the Faucet contract
+     * @param _engenCredits Address of the EngenCredits contract
+     * @param _kintoAppRegistry Address of the KintoAppRegistry contract
+     */
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
         KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
