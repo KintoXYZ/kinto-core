@@ -61,32 +61,32 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     /* ============ Basic Viewers ============ */
 
-    function isKYC(address _address) external view override returns (bool) {
-        return kintoID.isKYC(_getFinalAddress(_address));
+    function isKYC(address addr) external view override returns (bool) {
+        return kintoID.isKYC(_getOwnerOrWallet(addr));
     }
 
-    function isSanctionsSafe(address _account) external view override returns (bool) {
-        return kintoID.isSanctionsSafe(_getFinalAddress(_account));
+    function isSanctionsSafe(address account) external view override returns (bool) {
+        return kintoID.isSanctionsSafe(_getOwnerOrWallet(account));
     }
 
-    function isSanctionsSafeIn(address _account, uint16 _countryId) external view override returns (bool) {
-        return kintoID.isSanctionsSafeIn(_getFinalAddress(_account), _countryId);
+    function isSanctionsSafeIn(address account, uint16 _countryId) external view override returns (bool) {
+        return kintoID.isSanctionsSafeIn(_getOwnerOrWallet(account), _countryId);
     }
 
-    function isCompany(address _account) external view override returns (bool) {
-        return kintoID.isCompany(_getFinalAddress(_account));
+    function isCompany(address account) external view override returns (bool) {
+        return kintoID.isCompany(_getOwnerOrWallet(account));
     }
 
-    function isIndividual(address _account) external view override returns (bool) {
-        return kintoID.isIndividual(_getFinalAddress(_account));
+    function isIndividual(address account) external view override returns (bool) {
+        return kintoID.isIndividual(_getOwnerOrWallet(account));
     }
 
-    function hasTrait(address _account, uint16 _traitId) external view returns (bool) {
-        return kintoID.hasTrait(_getFinalAddress(_account), _traitId);
+    function hasTrait(address account, uint16 _traitId) external view returns (bool) {
+        return kintoID.hasTrait(_getOwnerOrWallet(account), _traitId);
     }
 
-    function hasTraits(address _account, uint16[] memory _traitIds) public view returns (uint16[] memory) {
-        address finalAddress = _getFinalAddress(_account);
+    function hasTraits(address account, uint16[] memory _traitIds) public view returns (uint16[] memory) {
+        address finalAddress = _getOwnerOrWallet(account);
         uint16[] memory results = new uint16[](_traitIds.length);
         for (uint256 i = 0; i < _traitIds.length; i++) {
             results[i] = kintoID.hasTrait(finalAddress, _traitIds[i]) ? 1 : 0;
@@ -94,9 +94,9 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return results;
     }
 
-    function getCountry(address _account) external view returns (uint16) {
+    function getCountry(address account) external view returns (uint16) {
         uint16[] memory validCodes = CountryCodes.getValidCountryCodes();
-        address finalAddress = _getFinalAddress(_account);
+        address finalAddress = _getOwnerOrWallet(account);
 
         for (uint16 i = 0; i < validCodes.length; i++) {
             bool hasTraitValue = kintoID.hasTrait(finalAddress, uint16(validCodes[i]));
@@ -108,49 +108,47 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return 0; // Return 0 if no country trait is found
     }
 
-    function getWalletOwners(address _wallet) public view override returns (address[] memory owners) {
+    function getWalletOwners(address wallet) public view override returns (address[] memory owners) {
         // return owners if wallet exists and has a valid timestamp
-        if (_wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0) {
-            uint256 ownersCount = IKintoWallet(payable(_wallet)).getOwnersCount();
+        if (wallet != address(0) && walletFactory.getWalletTimestamp(wallet) > 0) {
+            uint256 ownersCount = IKintoWallet(payable(wallet)).getOwnersCount();
             owners = new address[](ownersCount);
             for (uint256 i = 0; i < ownersCount; i++) {
-                owners[i] = IKintoWallet(payable(_wallet)).owners(i);
+                owners[i] = IKintoWallet(payable(wallet)).owners(i);
             }
         }
     }
 
-    function getUserInfo(address _account, address payable _wallet)
+    function getUserInfo(address account, address payable wallet)
         external
         view
         override
         returns (IKYCViewer.UserInfo memory info)
     {
-        bool hasWallet = _wallet != address(0) && walletFactory.getWalletTimestamp(_wallet) > 0;
+        bool hasWallet = wallet != address(0) && walletFactory.getWalletTimestamp(wallet) > 0;
         info = IKYCViewer.UserInfo({
-            ownerBalance: _account.balance,
-            walletBalance: hasWallet ? _wallet.balance : 0,
-            walletPolicy: hasWallet ? IKintoWallet(_wallet).signerPolicy() : 0,
-            walletOwners: hasWallet ? getWalletOwners(_wallet) : new address[](0),
-            claimedFaucet: faucet.claimed(_account),
-            hasNFT: IERC721(address(kintoID)).balanceOf(_account) > 0,
-            engenCreditsEarned: engenCredits.earnedCredits(_wallet),
-            engenCreditsClaimed: IERC20(address(engenCredits)).balanceOf(_wallet),
-            isKYC: kintoID.isKYC(_account),
-            recoveryTs: hasWallet ? IKintoWallet(_wallet).inRecovery() : 0,
-            insurancePolicy: hasWallet ? IKintoWallet(_wallet).insurancePolicy() : 0,
-            hasValidInsurance: hasWallet
-                ? (IKintoWallet(_wallet).insuranceTimestamp() + 365 days) >= block.timestamp
-                : false,
-            insuranceTimestamp: hasWallet ? IKintoWallet(_wallet).insuranceTimestamp() : 0,
-            deployer: hasWallet ? kintoAppRegistry.walletToDeployer(_wallet) : address(0)
+            ownerBalance: account.balance,
+            walletBalance: hasWallet ? wallet.balance : 0,
+            walletPolicy: hasWallet ? IKintoWallet(wallet).signerPolicy() : 0,
+            walletOwners: hasWallet ? getWalletOwners(wallet) : new address[](0),
+            claimedFaucet: faucet.claimed(account),
+            hasNFT: IERC721(address(kintoID)).balanceOf(account) > 0,
+            engenCreditsEarned: engenCredits.earnedCredits(wallet),
+            engenCreditsClaimed: IERC20(address(engenCredits)).balanceOf(wallet),
+            isKYC: kintoID.isKYC(account),
+            recoveryTs: hasWallet ? IKintoWallet(wallet).inRecovery() : 0,
+            insurancePolicy: hasWallet ? IKintoWallet(wallet).insurancePolicy() : 0,
+            hasValidInsurance: hasWallet ? (IKintoWallet(wallet).insuranceTimestamp() + 365 days) >= block.timestamp : false,
+            insuranceTimestamp: hasWallet ? IKintoWallet(wallet).insuranceTimestamp() : 0,
+            deployer: hasWallet ? kintoAppRegistry.walletToDeployer(wallet) : address(0)
         });
     }
 
-    function getDevApps(address _wallet) external view override returns (IKintoAppRegistry.Metadata[] memory) {
-        uint256 balance = IERC721Enumerable(address(kintoAppRegistry)).balanceOf(_wallet);
+    function getDevApps(address wallet) external view override returns (IKintoAppRegistry.Metadata[] memory) {
+        uint256 balance = IERC721Enumerable(address(kintoAppRegistry)).balanceOf(wallet);
         IKintoAppRegistry.Metadata[] memory apps = new IKintoAppRegistry.Metadata[](balance);
         for (uint256 i = 0; i < balance; i++) {
-            uint256 tokenId = IERC721Enumerable(address(kintoAppRegistry)).tokenOfOwnerByIndex(_wallet, i);
+            uint256 tokenId = IERC721Enumerable(address(kintoAppRegistry)).tokenOfOwnerByIndex(wallet, i);
             apps[i] = kintoAppRegistry.getAppMetadata(kintoAppRegistry.tokenIdToApp(tokenId));
         }
         return apps;
@@ -177,11 +175,11 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     /* ============ Helpers ============ */
 
-    function _getFinalAddress(address _address) private view returns (address) {
-        if (walletFactory.getWalletTimestamp(_address) > 0) {
-            return IKintoWallet(payable(_address)).owners(0);
+    function _getOwnerOrWallet(address addr) private view returns (address) {
+        if (walletFactory.getWalletTimestamp(addr) > 0) {
+            return IKintoWallet(payable(addr)).owners(0);
         }
-        return _address;
+        return addr;
     }
 }
 
