@@ -17,11 +17,11 @@ methods {
     function kintoID.walletFactory() external returns (address) envfree;
 
     /// KYCViewer
-    function viewer.isKYC(address _address) external returns (bool);
-    function viewer.isSanctionsSafe(address _account) external returns (bool);
-    function viewer.isSanctionsSafeIn(address _account, uint16 _countryId) external returns (bool);
-    function viewer.isCompany(address _account) external returns (bool) envfree;
-    function viewer.isIndividual(address _account) external returns (bool) envfree;
+    function viewer.isKYC(address addr) external returns (bool);
+    function viewer.isSanctionsSafe(address account) external returns (bool);
+    function viewer.isSanctionsSafeIn(address account, uint16 _countryId) external returns (bool);
+    function viewer.isCompany(address account) external returns (bool) envfree;
+    function viewer.isIndividual(address account) external returns (bool) envfree;
 
     // IERC721Receiver
     function _.onERC721Received(address,address,uint256,bytes) external => NONDET;

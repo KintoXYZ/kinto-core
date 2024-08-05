@@ -2039,7 +2039,7 @@
           "name": "getAppMetadata",
           "inputs": [
             {
-              "name": "_contract",
+              "name": "target",
               "type": "address",
               "internalType": "address"
             }
@@ -2124,7 +2124,7 @@
           "name": "getContractLimits",
           "inputs": [
             {
-              "name": "_contract",
+              "name": "target",
               "type": "address",
               "internalType": "address"
             }
@@ -2140,10 +2140,23 @@
         },
         {
           "type": "function",
+          "name": "getReservedContracts",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getSponsor",
           "inputs": [
             {
-              "name": "_contract",
+              "name": "target",
               "type": "address",
               "internalType": "address"
             }
@@ -2153,6 +2166,19 @@
               "name": "",
               "type": "address",
               "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getSystemContracts",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
             }
           ],
           "stateMutability": "view"
@@ -2214,15 +2240,34 @@
         },
         {
           "type": "function",
+          "name": "isReservedContract",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "isSponsored",
           "inputs": [
             {
-              "name": "_app",
+              "name": "app",
               "type": "address",
               "internalType": "address"
             },
             {
-              "name": "_contract",
+              "name": "target",
               "type": "address",
               "internalType": "address"
             }
@@ -2386,6 +2431,25 @@
         },
         {
           "type": "function",
+          "name": "reservedContracts",
+          "inputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "safeTransferFrom",
           "inputs": [
             {
@@ -2476,17 +2540,17 @@
           "name": "setSponsoredContracts",
           "inputs": [
             {
-              "name": "_app",
+              "name": "app",
               "type": "address",
               "internalType": "address"
             },
             {
-              "name": "_contracts",
+              "name": "targets",
               "type": "address[]",
               "internalType": "address[]"
             },
             {
-              "name": "_flags",
+              "name": "flags",
               "type": "bool[]",
               "internalType": "bool[]"
             }
@@ -2710,6 +2774,19 @@
         },
         {
           "type": "function",
+          "name": "updateReservedContracts",
+          "inputs": [
+            {
+              "name": "newReservedContracts",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "updateSystemContracts",
           "inputs": [
             {
@@ -2808,13 +2885,13 @@
           "name": "AppDSAEnabled",
           "inputs": [
             {
-              "name": "_app",
+              "name": "app",
               "type": "address",
               "indexed": true,
               "internalType": "address"
             },
             {
-              "name": "_timestamp",
+              "name": "timestamp",
               "type": "uint256",
               "indexed": false,
               "internalType": "uint256"
@@ -2827,19 +2904,19 @@
           "name": "AppRegistered",
           "inputs": [
             {
-              "name": "_app",
+              "name": "app",
               "type": "address",
               "indexed": true,
               "internalType": "address"
             },
             {
-              "name": "_owner",
+              "name": "owner",
               "type": "address",
               "indexed": false,
               "internalType": "address"
             },
             {
-              "name": "_timestamp",
+              "name": "timestamp",
               "type": "uint256",
               "indexed": false,
               "internalType": "uint256"
@@ -2852,19 +2929,19 @@
           "name": "AppUpdated",
           "inputs": [
             {
-              "name": "_app",
+              "name": "app",
               "type": "address",
               "indexed": true,
               "internalType": "address"
             },
             {
-              "name": "_owner",
+              "name": "owner",
               "type": "address",
               "indexed": false,
               "internalType": "address"
             },
             {
-              "name": "_timestamp",
+              "name": "timestamp",
               "type": "uint256",
               "indexed": false,
               "internalType": "uint256"
@@ -2982,6 +3059,25 @@
         },
         {
           "type": "event",
+          "name": "ReservedContractsUpdated",
+          "inputs": [
+            {
+              "name": "oldReservedContracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
+            },
+            {
+              "name": "newReservedContracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "SystemContractsUpdated",
           "inputs": [
             {
@@ -3040,34 +3136,64 @@
         {
           "type": "error",
           "name": "AlreadyRegistered",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "CannotRegisterWallet",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "ChildAlreadyRegistered",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "child",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ContractHasNoBytecode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "DSAAlreadyEnabled",
-          "inputs": []
-        },
-        {
-          "type": "error",
-          "name": "DeployerAlreadySet",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "DevEoaIsContract",
           "inputs": [
             {
-              "name": "",
+              "name": "eoa",
               "type": "address",
               "internalType": "address"
             }
@@ -3076,14 +3202,25 @@
         {
           "type": "error",
           "name": "InvalidSponsorSetter",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "caller",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "InvalidWallet",
           "inputs": [
             {
-              "name": "",
+              "name": "wallet",
               "type": "address",
               "internalType": "address"
             }
@@ -3097,12 +3234,34 @@
         {
           "type": "error",
           "name": "LengthMismatch",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "contractsLength",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "flagsLength",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "OnlyAppDeveloper",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "caller",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
@@ -3112,7 +3271,24 @@
         {
           "type": "error",
           "name": "ParentAlreadyChild",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "parent",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ReservedContract",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         }
       ],
       "address": "0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b"
@@ -6492,6 +6668,11 @@
               "name": "__entryPoint",
               "type": "address",
               "internalType": "contract IEntryPoint"
+            },
+            {
+              "name": "_walletFactory",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
             }
           ],
           "stateMutability": "nonpayable"
@@ -7136,6 +7317,19 @@
             }
           ],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "walletFactory",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -10471,10 +10665,29 @@
         },
         {
           "type": "function",
+          "name": "getCountry",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint16",
+              "internalType": "uint16"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getDevApps",
           "inputs": [
             {
-              "name": "_wallet",
+              "name": "wallet",
               "type": "address",
               "internalType": "address"
             }
@@ -10540,12 +10753,12 @@
           "name": "getUserInfo",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             },
             {
-              "name": "_wallet",
+              "name": "wallet",
               "type": "address",
               "internalType": "address payable"
             }
@@ -10556,11 +10769,6 @@
               "type": "tuple",
               "internalType": "struct IKYCViewer.UserInfo",
               "components": [
-                {
-                  "name": "insurancePolicy",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                },
                 {
                   "name": "ownerBalance",
                   "type": "uint256",
@@ -10573,26 +10781,6 @@
                 },
                 {
                   "name": "walletPolicy",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                },
-                {
-                  "name": "recoveryTs",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                },
-                {
-                  "name": "engenCreditsEarned",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                },
-                {
-                  "name": "engenCreditsClaimed",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                },
-                {
-                  "name": "insuranceTimestamp",
                   "type": "uint256",
                   "internalType": "uint256"
                 },
@@ -10612,14 +10800,39 @@
                   "internalType": "bool"
                 },
                 {
+                  "name": "engenCreditsEarned",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "engenCreditsClaimed",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
                   "name": "isKYC",
                   "type": "bool",
                   "internalType": "bool"
                 },
                 {
+                  "name": "recoveryTs",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "insurancePolicy",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
                   "name": "hasValidInsurance",
                   "type": "bool",
                   "internalType": "bool"
+                },
+                {
+                  "name": "insuranceTimestamp",
+                  "type": "uint256",
+                  "internalType": "uint256"
                 },
                 {
                   "name": "deployer",
@@ -10636,7 +10849,7 @@
           "name": "getWalletOwners",
           "inputs": [
             {
-              "name": "_wallet",
+              "name": "wallet",
               "type": "address",
               "internalType": "address"
             }
@@ -10655,14 +10868,14 @@
           "name": "hasTrait",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             },
             {
               "name": "_traitId",
-              "type": "uint8",
-              "internalType": "uint8"
+              "type": "uint16",
+              "internalType": "uint16"
             }
           ],
           "outputs": [
@@ -10670,6 +10883,30 @@
               "name": "",
               "type": "bool",
               "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "hasTraits",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "_traitIds",
+              "type": "uint16[]",
+              "internalType": "uint16[]"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool[]",
+              "internalType": "bool[]"
             }
           ],
           "stateMutability": "view"
@@ -10686,7 +10923,7 @@
           "name": "isCompany",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             }
@@ -10705,7 +10942,7 @@
           "name": "isIndividual",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             }
@@ -10724,7 +10961,7 @@
           "name": "isKYC",
           "inputs": [
             {
-              "name": "_address",
+              "name": "addr",
               "type": "address",
               "internalType": "address"
             }
@@ -10743,7 +10980,7 @@
           "name": "isSanctionsSafe",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             }
@@ -10762,7 +10999,7 @@
           "name": "isSanctionsSafeIn",
           "inputs": [
             {
-              "name": "_account",
+              "name": "account",
               "type": "address",
               "internalType": "address"
             },
@@ -10973,11 +11210,6 @@
             }
           ],
           "anonymous": false
-        },
-        {
-          "type": "error",
-          "name": "OnlyOwner",
-          "inputs": []
         }
       ],
       "address": "0x33F28C3a636B38683a38987100723f2e2d3d038e"
@@ -12425,6 +12657,11 @@
               "name": "_appRegistry",
               "type": "address",
               "internalType": "contract IKintoAppRegistry"
+            },
+            {
+              "name": "_kintoID",
+              "type": "address",
+              "internalType": "contract IKintoID"
             }
           ],
           "stateMutability": "nonpayable"
@@ -12594,40 +12831,6 @@
         },
         {
           "type": "function",
-          "name": "deployContract",
-          "inputs": [
-            {
-              "name": "contractOwner",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "amount",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "bytecode",
-              "type": "bytes",
-              "internalType": "bytes"
-            },
-            {
-              "name": "salt",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "payable"
-        },
-        {
-          "type": "function",
           "name": "factoryWalletVersion",
           "inputs": [],
           "outputs": [
@@ -12683,30 +12886,6 @@
         },
         {
           "type": "function",
-          "name": "getContractAddress",
-          "inputs": [
-            {
-              "name": "salt",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            },
-            {
-              "name": "byteCodeHash",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "getWalletTimestamp",
           "inputs": [
             {
@@ -12727,13 +12906,7 @@
         {
           "type": "function",
           "name": "initialize",
-          "inputs": [
-            {
-              "name": "_kintoID",
-              "type": "address",
-              "internalType": "contract IKintoID"
-            }
-          ],
+          "inputs": [],
           "outputs": [],
           "stateMutability": "nonpayable"
         },
@@ -12948,29 +13121,6 @@
           "stateMutability": "view"
         },
         {
-          "type": "function",
-          "name": "writeL2Deposit",
-          "inputs": [
-            {
-              "name": "walletAddress",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "assetL2",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "amount",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
-        },
-        {
           "type": "event",
           "name": "AdminChanged",
           "inputs": [
@@ -13114,11 +13264,6 @@
         },
         {
           "type": "error",
-          "name": "InvalidFaucet",
-          "inputs": []
-        },
-        {
-          "type": "error",
           "name": "InvalidImplementation",
           "inputs": []
         },
@@ -13130,27 +13275,57 @@
         {
           "type": "error",
           "name": "InvalidRecoverer",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "InvalidSender",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "InvalidTarget",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "InvalidWallet",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "InvalidWalletOrFunder",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
@@ -13170,12 +13345,29 @@
         {
           "type": "error",
           "name": "OnlyPrivileged",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "OnlyRecoverer",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",

@@ -44,7 +44,7 @@ contract KYCViewerTest is SharedSetup {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(
             address(_walletFactory), address(_faucet), address(_engenCredits), address(_kintoAppRegistry)
         );
-        vm.expectRevert(IKYCViewer.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));
     }
@@ -58,6 +58,63 @@ contract KYCViewerTest is SharedSetup {
         assertEq(_kycViewer.hasTrait(address(_kintoWallet), 6), false);
         assertEq(_kycViewer.isSanctionsSafe(address(_kintoWallet)), true);
         assertEq(_kycViewer.isSanctionsSafeIn(address(_kintoWallet), 1), true);
+    }
+
+    function testHasTraits() public {
+        // Set up some traits for the owner
+        uint16[] memory traitsToSet = new uint16[](3);
+        traitsToSet[0] = 1;
+        traitsToSet[1] = 3;
+        traitsToSet[2] = 5;
+        for (uint16 i = 0; i < traitsToSet.length; i++) {
+            vm.prank(_owner);
+            _kintoID.addTrait(_owner, traitsToSet[i]);
+        }
+        // Create an array of trait IDs to check
+        uint16[] memory traitsToCheck = new uint16[](5);
+        traitsToCheck[0] = 1; // Should be true
+        traitsToCheck[1] = 2; // Should be false
+        traitsToCheck[2] = 3; // Should be true
+        traitsToCheck[3] = 4; // Should be false
+        traitsToCheck[4] = 5; // Should be true
+        // Call hasTraits function
+        bool[] memory results = _kycViewer.hasTraits(_owner, traitsToCheck);
+        // Assert the results
+        assertEq(results.length, 5);
+        assertEq(results[0], true);
+        assertEq(results[1], false);
+        assertEq(results[2], true);
+        assertEq(results[3], false);
+        assertEq(results[4], true);
+        // Test with wallet address
+        bool[] memory resultsWithWallet = _kycViewer.hasTraits(address(_kintoWallet), traitsToCheck);
+        // Assert the results are the same when using the wallet address
+        for (uint16 i = 0; i < results.length; i++) {
+            assertEq(results[i], resultsWithWallet[i]);
+        }
+    }
+
+    function testGetCountry() public {
+        // Set a country trait for the owner (USA with code 840)
+        vm.prank(_owner);
+        _kintoID.addTrait(_owner, 840);
+
+        // Verify that the trait was set correctly
+        bool hasTraitDirect = _kintoID.hasTrait(_owner, 840);
+
+        // Check trait through KYCViewer
+        bool hasTraitViaViewer = _kycViewer.hasTrait(_owner, 840);
+
+        // Get the country code
+        uint16 countryCode = _kycViewer.getCountry(_owner);
+
+        // Assert the country code
+        assertEq(countryCode, 840, "Country code should be 840 (USA)");
+
+        // Test with an address that has no country trait set
+        address noCountryAddress = address(0x123);
+        uint16 noCountry = _kycViewer.getCountry(noCountryAddress);
+        assertEq(noCountry, 0, "Address with no country should return 0");
     }
 
     function testGetUserInfoWithCredits() public {
