@@ -22,7 +22,7 @@ import "./CountryCodes.sol";
  * @dev This contract implements the IKYCViewer interface and is upgradeable
  */
 contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCViewer {
-    /* ============ State Variables ============ */
+    /* ============ Constants ============ */
 
     /// @inheritdoc IKYCViewer
     IKintoWalletFactory public immutable override walletFactory;
@@ -38,6 +38,8 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
 
     /// @inheritdoc IKYCViewer
     IKintoAppRegistry public immutable override kintoAppRegistry;
+
+    /* ============ State Variables ============ */
 
     /* ============ Constructor & Upgrades ============ */
 
@@ -209,18 +211,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
     }
 }
 
-/**
- * @notice KYCViewer contract version 13
- * @dev This contract inherits from KYCViewer and is used for deployment
- */
-contract KYCViewerV13 is KYCViewer {
-    /**
-     * @notice Contract constructor
-     * @param _kintoWalletFactory Address of the KintoWalletFactory contract
-     * @param _faucet Address of the Faucet contract
-     * @param _engenCredits Address of the EngenCredits contract
-     * @param _kintoAppRegistry Address of the KintoAppRegistry contract
-     */
+contract KYCViewerV14 is KYCViewer {
     constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
         KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
