@@ -78,16 +78,16 @@ contract KYCViewerTest is SharedSetup {
         traitsToCheck[3] = 4; // Should be false
         traitsToCheck[4] = 5; // Should be true
         // Call hasTraits function
-        uint16[] memory results = _kycViewer.hasTraits(_owner, traitsToCheck);
+        bool[] memory results = _kycViewer.hasTraits(_owner, traitsToCheck);
         // Assert the results
         assertEq(results.length, 5);
-        assertEq(results[0], 1);
-        assertEq(results[1], 0);
-        assertEq(results[2], 1);
-        assertEq(results[3], 0);
-        assertEq(results[4], 1);
+        assertEq(results[0], true);
+        assertEq(results[1], false);
+        assertEq(results[2], true);
+        assertEq(results[3], false);
+        assertEq(results[4], true);
         // Test with wallet address
-        uint16[] memory resultsWithWallet = _kycViewer.hasTraits(address(_kintoWallet), traitsToCheck);
+        bool[] memory resultsWithWallet = _kycViewer.hasTraits(address(_kintoWallet), traitsToCheck);
         // Assert the results are the same when using the wallet address
         for (uint16 i = 0; i < results.length; i++) {
             assertEq(results[i], resultsWithWallet[i]);
