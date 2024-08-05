@@ -181,14 +181,7 @@ contract KYCViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKYCVi
         return apps;
     }
 
-    /**
-     * @notice Retrieves the ERC20 token balances for a specific target address
-     * @dev This view function allows fetching balances for multiple tokens in a single call,
-     *      which can save considerable gas over multiple calls
-     * @param tokens An array of token addresses to query balances for
-     * @param target The address whose balances will be queried
-     * @return balances An array of balances corresponding to the array of tokens provided
-     */
+    /// @inheritdoc IKYCViewer
     function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances) {
         balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {

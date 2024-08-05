@@ -158,4 +158,14 @@ interface IKYCViewer {
      * @return uint16 The country code of the account, or 0 if not found
      */
     function getCountry(address account) external view returns (uint16);
+
+    /**
+     * @notice Retrieves the ERC20 token balances for a specific target address
+     * @dev This view function allows fetching balances for multiple tokens in a single call,
+     *      which can save considerable gas over multiple calls
+     * @param tokens An array of token addresses to query balances for
+     * @param target The address whose balances will be queried
+     * @return balances An array of balances corresponding to the array of tokens provided
+     */
+    function getBalances(address[] memory tokens, address target) external view returns (uint256[] memory balances);
 }
