@@ -11,6 +11,7 @@ import "../interfaces/IKintoAppRegistry.sol";
 /// @notice Interface for a contract that provides KYC (Know Your Customer) related information
 /// @dev This interface defines functions to check KYC status, sanctions safety, and retrieve user information
 interface IKYCViewer {
+
     /// @notice Struct to hold various user information
     /// @dev This struct contains balance, policy, KYC status, and other relevant user data
     struct UserInfo {
@@ -18,7 +19,7 @@ interface IKYCViewer {
         uint256 walletBalance;
         uint256 walletPolicy;
         address[] walletOwners;
-        uint256 claimedFaucet;
+        bool claimedFaucet;
         bool hasNFT;
         uint256 engenCreditsEarned;
         uint256 engenCreditsClaimed;

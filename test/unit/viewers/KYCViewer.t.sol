@@ -44,7 +44,7 @@ contract KYCViewerTest is SharedSetup {
         KYCViewerUpgraded _implementationV2 = new KYCViewerUpgraded(
             address(_walletFactory), address(_faucet), address(_engenCredits), address(_kintoAppRegistry)
         );
-        vm.expectRevert(IKYCViewer.OnlyOwner.selector);
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
         _kycViewer.upgradeTo(address(_implementationV2));
     }
