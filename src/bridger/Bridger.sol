@@ -556,7 +556,7 @@ contract Bridger is
 
     /**
      * @notice Swaps ERC20->ERC20 tokens held by this contract using a 0x-API quote.
-     * See [get-swap-v1-quote](https://0x.org/docs/0x-swap-api/api-references/get-swap-v1-quote).
+     * See [get-swap-v2-quote](https://0x.org/docs/next/upgrading/upgrading_to_swap_v2).
      * @param amountIn Amount of input asset.
      * @param sellToken Address of the sell token.
      * @param buyToken Address of the buy token.
