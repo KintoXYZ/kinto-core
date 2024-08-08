@@ -75,6 +75,15 @@ abstract contract BridgeDataHelper is Constants {
             options: bytes("")
         });
 
+        bridgeData[ETHEREUM_CHAINID][PAXG_ETHEREUM] = IBridger.BridgeData({
+            vault: 0x25f0D71Da51A77Ca231484eBbAD1f588A0230ef2,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x6B3614474eE19FA9A2d6D2079a2D73c04E567310,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
         bridgeData[ETHEREUM_CHAINID][ENA_ETHEREUM] = IBridger.BridgeData({
             vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
             gasFee: 1e16,
@@ -546,6 +555,42 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(
             ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
             vaultSolvBtcBalanceBefore + amountToDeposit,
+            "Invalid balance of the Vault"
+        );
+    }
+
+    // PAXG to PAXG
+    function testDepositERC20_WhenPaxgToPaxg() public {
+        vm.rollFork(20484444); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][PAXG_ETHEREUM];
+        address assetToDeposit = PAXG_ETHEREUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 solvBtcBalanceBefore = ERC20(PAXG_ETHEREUM).balanceOf(address(bridger));
+        uint256 vaultSolvBtcBalanceBefore = ERC20(PAXG_ETHEREUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        vm.prank(_user);
+        bridger.depositERC20{value: data.gasFee}(
+            assetToDeposit, amountToDeposit, kintoWalletL2, PAXG_ETHEREUM, amountToDeposit, bytes(""), data
+        );
+
+        // PAXG has 0.02% tranfer fee
+        assertEq(
+            ERC20(PAXG_ETHEREUM).balanceOf(address(bridger)), solvBtcBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(PAXG_ETHEREUM).balanceOf(data.vault),
+            vaultSolvBtcBalanceBefore + (amountToDeposit * 9998 * 9998) / (10000 * 10000),
             "Invalid balance of the Vault"
         );
     }

@@ -249,7 +249,8 @@ contract Bridger is
         return _deposit(
             depositData.signer,
             depositData.inputAsset,
-            depositData.amount,
+            // we have to use `balanceOf` to support tokens with fee on transfer
+            IERC20(depositData.inputAsset).balanceOf(address(this)),
             depositData.kintoWallet,
             depositData.finalAsset,
             depositData.minReceive,
@@ -285,7 +286,8 @@ contract Bridger is
         return _deposit(
             depositData.signer,
             depositData.inputAsset,
-            depositData.amount,
+            // we have to use `balanceOf` to support tokens with fee on transfer
+            IERC20(depositData.inputAsset).balanceOf(address(this)),
             depositData.kintoWallet,
             depositData.finalAsset,
             depositData.minReceive,
@@ -307,7 +309,17 @@ contract Bridger is
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
 
-        return _deposit(msg.sender, inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
+        return _deposit(
+            msg.sender,
+            inputAsset,
+            // we have to use `balanceOf` to support tokens with fee on transfer
+            IERC20(inputAsset).balanceOf(address(this)),
+            kintoWallet,
+            finalAsset,
+            minReceive,
+            swapCallData,
+            bridgeData
+        );
     }
 
     /// @inheritdoc IBridger
