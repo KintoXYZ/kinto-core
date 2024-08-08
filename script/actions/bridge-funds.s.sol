@@ -28,10 +28,6 @@ contract BridgeFundsScript is MigrationHelper {
         bytes memory options = json.readBytes(string.concat(".", "options"));
         uint256 gasFee = json.readUint(string.concat(".", "gasFee"));
 
-        // etchWallet(0xa158e30099C6F7D9546eF2a519F2118E46039307);
-        // replaceOwner(IKintoWallet(from), 0x4632F4120DC68F225e7d24d973Ee57478389e9Fd);
-        // hardwareWalletType = 1;
-
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
         privKeys[1] = hardwareWalletType;

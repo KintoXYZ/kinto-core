@@ -14,7 +14,6 @@
   },
   "license": "MIT",
   "scripts": {
-    "install": "forge install && cd lib/token-bridge-contracts && yarn",
     "test": "source .env && forge test -vvv",
     "test-fork": "source .env && FOUNDRY_PROFILE=fork forge test -vvv",
     "coverage": "forge coverage",
@@ -23,5 +22,20 @@
     "export-arbitrum": "source .env && node ./utils/export.js 42161",
     "export-base": "source .env && node ./utils/export.js 8453",
     "export-eth-mainnet": "source .env && node ./utils/export.js 1"
+  },
+  "dependencies": {
+    "@pimlico/alto": "^0.0.4",
+    "account-abstraction": "https://github.com/KintoXYZ/account-abstraction#61f677923ad7ed0ed5b87d2c20100a7079dba63a",
+    "account-abstraction-0.7.0": "https://github.com/eth-infinitism/account-abstraction#7af70c8993a6f42973f520ae0752386a5032abe7",
+    "forge-safe": "https://github.com/ind-igo/forge-safe#4ce820bad668846207f34b6f439021ad151f0a1e",
+    "forge-std": "https://github.com/foundry-rs/forge-std#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef",
+    "nitro-contracts": "https://github.com/OffchainLabs/nitro-contracts#90037b996509312ef1addb3f9352457b8a99d6a6",
+    "openzeppelin-contracts": "https://github.com/openzeppelin/openzeppelin-contracts#1a60b061d5bb809c3d7e4ee915c77a00b1eca95d",
+    "openzeppelin-contracts-5.0.1": "https://github.com/openzeppelin/openzeppelin-contracts#141c947921cc5d23ee1d247c691a8b85cabbbd5d",
+    "openzeppelin-contracts-upgradeable": "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#dd8ca8adc47624c5c5e2f4d412f5f421951dcc25",
+    "openzeppelin-contracts-upgradeable-5.0.1": "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#789ba4f167cc94088e305d78e4ae6f3c1ec2e6f1",
+    "permit2": "https://github.com/Uniswap/permit2.git#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219",
+    "solady": "https://github.com/vectorized/solady#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e",
+    "token-bridge-contracts": "https://github.com/OffchainLabs/token-bridge-contracts#b3894ecc8b6185b2d505c71c9a7851725f53df15"
   }
 }
