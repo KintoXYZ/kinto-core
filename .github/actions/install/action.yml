@@ -5,8 +5,6 @@ runs:
   using: composite
 
   steps:
-    - uses: actions/checkout@v4
-
     - name: Install dependencies
       shell: bash
       run: yarn install
