@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {AbsInboxTest, Sender} from "@nitro-contracts/test/foundry/AbsInbox.t.sol";
-import "@nitro-contracts/test/foundry/util/TestUtil.sol";
+import {AbsInboxTest, Sender} from "@arbitrum/nitro-contracts/test/foundry/AbsInbox.t.sol";
+import "@arbitrum/nitro-contracts/test/foundry/util/TestUtil.sol";
 import "@kinto-core/nitro-contracts/bridge/Inbox.sol";
-import "@nitro-contracts/src/bridge/IInbox.sol";
-import "@nitro-contracts/src/bridge/Bridge.sol";
-import "@nitro-contracts/src/bridge/ISequencerInbox.sol";
-import "@nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
+import "@arbitrum/nitro-contracts/src/bridge/Bridge.sol";
+import "@arbitrum/nitro-contracts/src/bridge/ISequencerInbox.sol";
+import "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 
 contract InboxTest is AbsInboxTest {
     IInbox public ethInbox;

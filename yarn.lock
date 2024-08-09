@@ -2474,10 +2474,6 @@ for-each@^0.3.3:
   dependencies:
     is-callable "^1.1.3"
 
-"forge-safe@https://github.com/ind-igo/forge-safe#4ce820bad668846207f34b6f439021ad151f0a1e":
-  version "0.0.0"
-  resolved "https://github.com/ind-igo/forge-safe#4ce820bad668846207f34b6f439021ad151f0a1e"
-
 "forge-std@https://github.com/foundry-rs/forge-std#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef":
   version "1.7.6"
   resolved "https://github.com/foundry-rs/forge-std#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef"

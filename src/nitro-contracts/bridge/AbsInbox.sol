@@ -14,18 +14,18 @@ import {
     NotOrigin,
     NotRollupOrOwner,
     RetryableData
-} from "@nitro-contracts/src/libraries/Error.sol";
-import "@nitro-contracts/src/bridge/IInboxBase.sol";
-import "@nitro-contracts/src/bridge/ISequencerInbox.sol";
-import "@nitro-contracts/src/bridge/IBridge.sol";
-import "@nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import "@nitro-contracts/src/libraries/DelegateCallAware.sol";
+} from "@arbitrum/nitro-contracts/src/libraries/Error.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IInboxBase.sol";
+import "@arbitrum/nitro-contracts/src/bridge/ISequencerInbox.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IBridge.sol";
+import "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@arbitrum/nitro-contracts/src/libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
     L2MessageType_unsignedContractTx,
     L2MessageType_unsignedEOATx,
     L2_MSG
-} from "@nitro-contracts/src/libraries/MessageTypes.sol";
+} from "@arbitrum/nitro-contracts/src/libraries/MessageTypes.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";

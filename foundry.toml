@@ -10,36 +10,35 @@ match-path = 'test/unit/**/*.sol'
 ffi = true
 solc_version = "0.8.24"
 remappings = [
-    'ds-test/=/node_modules/forge-std/lib/ds-test/src/',
-    'forge-std/=/node_modules/forge-std/src/',
+    'node_modules/account-abstraction-0.7.0:@openzeppelin/=node_modules/openzeppelin-contracts-5.0.1',
+    '@aa-v7/=node_modules/account-abstraction-0.7.0/contracts/',
 
-    'forge-safe/=/node_modules/forge-safe/src/',
+    'ds-test/=node_modules/forge-std/lib/ds-test/src/',
+    'forge-std/=node_modules/forge-std/src/',
 
     '@kinto-core-script/=script/',
     '@kinto-core-test/=test/',
     '@kinto-core/=src/',
 
-    '@openzeppelin/contracts/=/node_modules/openzeppelin-contracts/contracts/',
-    '@openzeppelin/contracts-upgradeable/=/node_modules/openzeppelin-contracts-upgradeable/contracts/',
+    '@openzeppelin-5.0.1/contracts/=node_modules/openzeppelin-contracts-5.0.1/contracts/',
+    'node_modules/openzeppelin-contracts-upgradeable-5.0.1:@openzeppelin/=node_modules/openzeppelin-contracts-5.0.1',
+    '@openzeppelin-5.0.1/contracts-upgradeable/=node_modules/openzeppelin-contracts-upgradeable-5.0.1/contracts/',
 
-    '@openzeppelin-5.0.1/contracts/=/node_modules/openzeppelin-contracts-5.0.1/contracts/',
+    '@openzeppelin/contracts/=node_modules/openzeppelin-contracts/contracts/',
+    '@openzeppelin/contracts-upgradeable/=node_modules/openzeppelin-contracts-upgradeable/contracts/',
 
-    '@openzeppelin-5.0.1/contracts-upgradeable/=/node_modules/openzeppelin-contracts-upgradeable-5.0.1/contracts/',
-    '/node_modules/openzeppelin-contracts-upgradeable-5.0.1:@openzeppelin/=/node_modules/openzeppelin-contracts-5.0.1',
+    'node_modules/account-abstraction:@openzeppelin/=node_modules/openzeppelin-contracts',
+    '@aa/=node_modules/account-abstraction/contracts/',
 
-    'lib/account-abstraction:@openzeppelin/=/node_modules/openzeppelin-contracts',
-    'lib/account-abstraction-0.7.0:@openzeppelin/=/node_modules/openzeppelin-contracts-5.0.1',
+    '@solady/=node_modules/solady/src/',
+    'solady/=node_modules/solady/src/',
 
-    '@aa/=/node_modules/account-abstraction/contracts/',
-    '@aa-v7/=/node_modules/account-abstraction-0.7.0/contracts',
+    '@token-bridge-contracts/=node_modules/token-bridge-contracts/',
+    '@arbitrum/nitro-contracts/=node_modules/nitro-contracts/',
 
-    '@solady/=/node_modules/solady/src/',
+    '@alto/=node_modules/alto/contracts/',
 
-    '@token-bridge-contracts/=/node_modules/token-bridge-contracts/',
-    '@nitro-contracts/=/node_modules/nitro-contracts/',
-
-    '@alto/=/node_modules/alto/contracts/'
-
+    'permit2/=node_modules/permit2/'
 ]
 
 
