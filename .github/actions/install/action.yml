@@ -38,7 +38,6 @@ runs:
     - name: Install Yarn dependencies
       shell: bash
       run: |
-        cd lib/token-bridge-contracts
         yarn install --frozen-lockfile
 
     - name: Save Yarn cache
