@@ -1,9 +1,7 @@
-name: Install dependencies
-description: Install foundry & other dependencies for use in other actions
-
+name: 'Install dependencies'
+description: 'Install foundry & other dependencies for use in other actions'
 runs:
   using: composite
-
   steps:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
@@ -21,8 +19,12 @@ runs:
           forge-${{ github.base_ref }}
           forge-
 
-    - name: Install token-bridge-contracts submodule dependencies
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'yarn'
+
+    - name: Install dependencies
       shell: bash
-      run: |
-        cd lib/token-bridge-contracts
-        yarn
+      run: yarn install --frozen-lockfile
