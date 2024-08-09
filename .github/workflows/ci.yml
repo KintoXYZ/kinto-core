@@ -24,8 +24,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - uses: ./.github/actions/install
 
       - name: Check formatting
@@ -38,8 +36,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - uses: ./.github/actions/install
 
       - name: Build contracts
@@ -60,8 +56,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - uses: ./.github/actions/install
 
       - name: Run tests
@@ -95,8 +89,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - uses: ./.github/actions/install
 
       - name: Run fork tests
@@ -124,8 +116,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - uses: ./.github/actions/install
 
       - name: Install LCOV
@@ -163,8 +153,6 @@ jobs:
     name: Slither
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
         id: slither
