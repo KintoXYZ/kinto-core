@@ -32,6 +32,8 @@ jobs:
         run: forge fmt --check
 
   build:
+    needs: format
+
     name: Build
     runs-on: ubuntu-latest
 
