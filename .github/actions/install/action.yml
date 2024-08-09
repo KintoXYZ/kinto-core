@@ -5,4 +5,28 @@ runs:
   using: composite
 
   steps:
+  - name: Install Foundry
+    uses: foundry-rs/foundry-toolchain@v1
+    with:
+      version: nightly
+
+  - name: Restore forge compilation cache
+    uses: actions/cache/restore@v3
+    with:
+      path: |
+        cache
+        out
+      key: forge-${{ github.ref_name }}
+      restore-keys: |
+        forge-${{ github.base_ref }}
+        forge-
+
+  - uses: actions/checkout@v4
+  - name: Set up Node
+    uses: actions/setup-node@v4
+    with:
+      node-version: 20
+      cache: 'yarn'
+  shell: bash
+  run: yarn install --frozen-lockfile
 

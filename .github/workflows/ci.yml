@@ -24,14 +24,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile --network-timeout 1000000 # optional, --immutable
-
       - uses: ./.github/actions/install
 
       - name: Check formatting
