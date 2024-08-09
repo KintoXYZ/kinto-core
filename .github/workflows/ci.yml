@@ -165,6 +165,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/install
+
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
         id: slither
@@ -206,7 +208,9 @@ jobs:
           - SponsorPaymaster.conf
           - SponsorPaymaster_additional.conf
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install
 
       - name: Run verification
         uses: ./.github/actions/certora-verifier
