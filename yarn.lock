@@ -3308,9 +3308,10 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-"nitro-contracts@https://github.com/OffchainLabs/nitro-contracts.git#90037b996509312ef1addb3f9352457b8a99d6a6":
+"nitro-contracts@npm:@arbitrum/nitro-contracts@1.2.1":
   version "1.2.1"
-  resolved "https://github.com/OffchainLabs/nitro-contracts.git#90037b996509312ef1addb3f9352457b8a99d6a6"
+  resolved "https://registry.yarnpkg.com/@arbitrum/nitro-contracts/-/nitro-contracts-1.2.1.tgz#2ebff205886e7dd1017a3e1df68fb1a8ab36185b"
+  integrity sha512-1k8t5ozeyCUpZ4RFlPXF876JE57z3w/YW1qUow1l9TF2+VDnbqGAiK3axhVZFhYUZxo+PajqsdpWr3FK+yW6uA==
   dependencies:
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
     "@openzeppelin/contracts" "4.5.0"
