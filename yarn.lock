@@ -1245,9 +1245,9 @@ abstract-logging@^2.0.1:
   resolved "https://registry.yarnpkg.com/abstract-logging/-/abstract-logging-2.0.1.tgz#6b0c371df212db7129b57d2e7fcf282b8bf1c839"
   integrity sha512-2BjRTZxTPvheOvGbBslFSYOUkr+SjPtOnrLP33f+VIWLzezQpZcqVg7ja3L4dBXmzzgwT+a029jRx5PCi3JuiA==
 
-"account-abstraction-0.7.0@https://github.com/eth-infinitism/account-abstraction#7af70c8993a6f42973f520ae0752386a5032abe7":
+"account-abstraction-0.7.0@https://github.com/eth-infinitism/account-abstraction.git#7af70c8993a6f42973f520ae0752386a5032abe7":
   version "0.7.0"
-  resolved "https://github.com/eth-infinitism/account-abstraction#7af70c8993a6f42973f520ae0752386a5032abe7"
+  resolved "https://github.com/eth-infinitism/account-abstraction.git#7af70c8993a6f42973f520ae0752386a5032abe7"
   dependencies:
     "@nomiclabs/hardhat-etherscan" "^2.1.6"
     "@openzeppelin/contracts" "^5.0.0"
@@ -1265,9 +1265,9 @@ abstract-logging@^2.0.1:
     table "^6.8.0"
     typescript "^4.3.5"
 
-"account-abstraction@https://github.com/KintoXYZ/account-abstraction#61f677923ad7ed0ed5b87d2c20100a7079dba63a":
+"account-abstraction@https://github.com/KintoXYZ/account-abstraction.git#61f677923ad7ed0ed5b87d2c20100a7079dba63a":
   version "0.6.0"
-  resolved "https://github.com/KintoXYZ/account-abstraction#61f677923ad7ed0ed5b87d2c20100a7079dba63a"
+  resolved "https://github.com/KintoXYZ/account-abstraction.git#61f677923ad7ed0ed5b87d2c20100a7079dba63a"
   dependencies:
     "@gnosis.pm/safe-contracts" "^1.3.0"
     "@nomiclabs/hardhat-etherscan" "^2.1.6"
@@ -2407,9 +2407,9 @@ for-each@^0.3.3:
   dependencies:
     is-callable "^1.1.3"
 
-"forge-std@https://github.com/foundry-rs/forge-std#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef":
+"forge-std@https://github.com/foundry-rs/forge-std.git#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef":
   version "1.7.6"
-  resolved "https://github.com/foundry-rs/forge-std#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef"
+  resolved "https://github.com/foundry-rs/forge-std.git#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef"
 
 form-data@^4.0.0:
   version "4.0.0"
@@ -3308,9 +3308,9 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-"nitro-contracts@https://github.com/OffchainLabs/nitro-contracts#90037b996509312ef1addb3f9352457b8a99d6a6":
+"nitro-contracts@https://github.com/OffchainLabs/nitro-contracts.git#90037b996509312ef1addb3f9352457b8a99d6a6":
   version "1.2.1"
-  resolved "https://github.com/OffchainLabs/nitro-contracts#90037b996509312ef1addb3f9352457b8a99d6a6"
+  resolved "https://github.com/OffchainLabs/nitro-contracts.git#90037b996509312ef1addb3f9352457b8a99d6a6"
   dependencies:
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
     "@openzeppelin/contracts" "4.5.0"
@@ -3424,21 +3424,21 @@ opentelemetry-instrumentation-fetch-node@^1.1.2:
     "@opentelemetry/instrumentation" "^0.46.0"
     "@opentelemetry/semantic-conventions" "^1.17.0"
 
-"openzeppelin-contracts-5.0.1@https://github.com/openzeppelin/openzeppelin-contracts#141c947921cc5d23ee1d247c691a8b85cabbbd5d":
+"openzeppelin-contracts-5.0.1@https://github.com/openzeppelin/openzeppelin-contracts.git#141c947921cc5d23ee1d247c691a8b85cabbbd5d":
   version "5.0.1"
-  resolved "https://github.com/openzeppelin/openzeppelin-contracts#141c947921cc5d23ee1d247c691a8b85cabbbd5d"
+  resolved "https://github.com/openzeppelin/openzeppelin-contracts.git#141c947921cc5d23ee1d247c691a8b85cabbbd5d"
 
-"openzeppelin-contracts-upgradeable-5.0.1@https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#789ba4f167cc94088e305d78e4ae6f3c1ec2e6f1":
+"openzeppelin-contracts-upgradeable-5.0.1@https://github.com/openzeppelin/openzeppelin-contracts-upgradeable.git#789ba4f167cc94088e305d78e4ae6f3c1ec2e6f1":
   version "5.0.1"
-  resolved "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#789ba4f167cc94088e305d78e4ae6f3c1ec2e6f1"
+  resolved "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable.git#789ba4f167cc94088e305d78e4ae6f3c1ec2e6f1"
 
-"openzeppelin-contracts-upgradeable@https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#dd8ca8adc47624c5c5e2f4d412f5f421951dcc25":
+"openzeppelin-contracts-upgradeable@https://github.com/openzeppelin/openzeppelin-contracts-upgradeable.git#dd8ca8adc47624c5c5e2f4d412f5f421951dcc25":
   version "4.8.0"
-  resolved "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable#dd8ca8adc47624c5c5e2f4d412f5f421951dcc25"
+  resolved "https://github.com/openzeppelin/openzeppelin-contracts-upgradeable.git#dd8ca8adc47624c5c5e2f4d412f5f421951dcc25"
 
-"openzeppelin-contracts@https://github.com/openzeppelin/openzeppelin-contracts#1a60b061d5bb809c3d7e4ee915c77a00b1eca95d":
+"openzeppelin-contracts@https://github.com/openzeppelin/openzeppelin-contracts.git#1a60b061d5bb809c3d7e4ee915c77a00b1eca95d":
   version "4.8.2"
-  resolved "https://github.com/openzeppelin/openzeppelin-contracts#1a60b061d5bb809c3d7e4ee915c77a00b1eca95d"
+  resolved "https://github.com/openzeppelin/openzeppelin-contracts.git#1a60b061d5bb809c3d7e4ee915c77a00b1eca95d"
 
 optionator@^0.8.1:
   version "0.8.3"
@@ -4062,9 +4062,9 @@ slice-ansi@^4.0.0:
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
 
-"solady@https://github.com/vectorized/solady#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e":
+"solady@https://github.com/vectorized/solady.git#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e":
   version "0.0.168"
-  resolved "https://github.com/vectorized/solady#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e"
+  resolved "https://github.com/vectorized/solady.git#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e"
 
 solidity-ast@^0.4.51:
   version "0.4.56"
@@ -4294,9 +4294,9 @@ toad-cache@^3.3.0:
   resolved "https://registry.yarnpkg.com/toad-cache/-/toad-cache-3.7.0.tgz#b9b63304ea7c45ec34d91f1d2fa513517025c441"
   integrity sha512-/m8M+2BJUpoJdgAHoG+baCwBT+tf2VraSfkBgl0Y00qIWt41DJ8R5B8nsEw0I58YwF5IZH6z24/2TobDKnqSWw==
 
-"token-bridge-contracts@https://github.com/OffchainLabs/token-bridge-contracts#b3894ecc8b6185b2d505c71c9a7851725f53df15":
+"token-bridge-contracts@https://github.com/OffchainLabs/token-bridge-contracts.git#b3894ecc8b6185b2d505c71c9a7851725f53df15":
   version "1.2.1"
-  resolved "https://github.com/OffchainLabs/token-bridge-contracts#b3894ecc8b6185b2d505c71c9a7851725f53df15"
+  resolved "https://github.com/OffchainLabs/token-bridge-contracts.git#b3894ecc8b6185b2d505c71c9a7851725f53df15"
   dependencies:
     "@arbitrum/nitro-contracts" "1.1.1"
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
