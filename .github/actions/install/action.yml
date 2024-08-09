@@ -7,5 +7,5 @@ runs:
   steps:
     - name: Install dependencies
       shell: bash
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
