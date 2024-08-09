@@ -20,6 +20,12 @@ runs:
         node-version: '16'
         cache: 'yarn'
 
+    - name: Check working directory
+      shell: bash
+      run: |
+        pwd
+        ls -la
+
     - name: Install dependencies
       shell: bash
       run: yarn install --frozen-lockfile
