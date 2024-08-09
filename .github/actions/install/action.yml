@@ -5,39 +5,7 @@ runs:
   using: composite
 
   steps:
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
-    - name: List directory contents
-      shell: bash
-      run: ls -la
-
-    - name: Setup Node Modules
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-
-    - name: Check working directory
-      shell: bash
-      run: |
-        pwd
-        ls -la
-
     - name: Install dependencies
       shell: bash
       run: yarn install --frozen-lockfile
 
-
-    - name: Restore Forge compilation cache
-      uses: actions/cache/restore@v3
-      with:
-        path: |
-          cache
-          out
-        key: forge-${{ github.ref_name }}
-        restore-keys: |
-          forge-${{ github.base_ref }}
-          forge-
