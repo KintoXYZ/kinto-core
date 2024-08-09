@@ -20,9 +20,3 @@ runs:
         restore-keys: |
           forge-${{ github.base_ref }}
           forge-
-
-    - name: Install token-bridge-contracts submodule dependencies
-      shell: bash
-      run: |
-        cd lib/token-bridge-contracts
-        yarn
