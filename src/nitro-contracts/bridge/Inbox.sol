@@ -13,12 +13,12 @@ import {
     L1Forked,
     NotForked,
     GasLimitTooLarge
-} from "@nitro-contracts/src/libraries/Error.sol";
+} from "@arbitrum/nitro-contracts/src/libraries/Error.sol";
 import "./AbsInbox.sol";
-import "@nitro-contracts/src/bridge/IInbox.sol";
-import "@nitro-contracts/src/bridge/IBridge.sol";
-import "@nitro-contracts/src/bridge/IEthBridge.sol";
-import "@nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IBridge.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IEthBridge.sol";
+import "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import {
     L2_MSG,
     L1MessageType_L2FundedByL1,
@@ -26,8 +26,8 @@ import {
     L1MessageType_ethDeposit,
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx
-} from "@nitro-contracts/src/libraries/MessageTypes.sol";
-import "@nitro-contracts/src/precompiles/ArbSys.sol";
+} from "@arbitrum/nitro-contracts/src/libraries/MessageTypes.sol";
+import "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 

@@ -55,8 +55,7 @@ This repository contains all the core smart contracts available at Kinto.
 - Yarn or NPM
 
 ## Install dependencies
-- Run `yarn install` to install all forge dependencies 
-  - Alternative, you can run `forge install` and then `cd lib/token-bridge-contracts && yarn`
+- Run `yarn install` to install all dependencies 
 - Copy `.env.sample` to `.env` and fill the values. After you deploy the proxy make sure to fill its address as well.
 
 ### Enable CREATE2 in a custom chain (only needed in a custom chain)

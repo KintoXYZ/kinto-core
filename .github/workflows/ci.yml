@@ -24,9 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -34,13 +32,13 @@ jobs:
         run: forge fmt --check
 
   build:
+    needs: format
+
     name: Build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -62,9 +60,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -99,9 +95,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -130,9 +124,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -171,7 +163,9 @@ jobs:
     name: Slither
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install
 
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
@@ -214,9 +208,9 @@ jobs:
           - SponsorPaymaster.conf
           - SponsorPaymaster_additional.conf
     steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install
 
       - name: Run verification
         uses: ./.github/actions/certora-verifier
