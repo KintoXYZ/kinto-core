@@ -92,6 +92,11 @@ interface IKintoAppRegistry {
     /// @param newSystemContracts The array of new system contract addresses
     event SystemContractsUpdated(address[] oldSystemContracts, address[] newSystemContracts);
 
+    /// @notice Emitted when the system apps are updated
+    /// @param oldSystemApps The array of old system app addresses
+    /// @param newSystemApps The array of new system apps addresses
+    event SystemAppsUpdated(address[] oldSystemApps, address[] newSystemApps);
+
     /// @notice Emitted when the reserved contracts are updated
     /// @param oldReservedContracts The array of old reserved contract addresses
     /// @param newReservedContracts The array of new reserved contract addresses
@@ -183,6 +188,12 @@ interface IKintoAppRegistry {
     function overrideChildToParentContract(address child, address parent) external;
 
     /**
+     * @notice Updates the system apps
+     * @param newSystemApps An array of new system apps addresses
+     */
+    function updateSystemApps(address[] calldata newSystemApps) external;
+
+    /**
      * @notice Updates the system contracts
      * @param newSystemContracts An array of new system contract addresses
      */
@@ -243,11 +254,11 @@ interface IKintoAppRegistry {
     function getAppMetadata(address target) external view returns (Metadata memory);
 
     /**
-     * @notice Returns the sponsor of a contract
+     * @notice Returns the app of a contract
      * @param target The address of the contract
-     * @return The address of the sponsor
+     * @return The address of the app
      */
-    function getSponsor(address target) external view returns (address);
+    function getApp(address target) external view returns (address);
 
     /**
      * @notice Checks if a contract is sponsored by an app
@@ -290,6 +301,12 @@ interface IKintoAppRegistry {
     function getSystemContracts() external view returns (address[] memory);
 
     /**
+     * @notice Returns an array of all system app addresses
+     * @return An array of system app addresses
+     */
+    function getSystemApps() external view returns (address[] memory);
+
+    /**
      * @notice Returns the system contract address at a given index
      * @param index The index in the system contracts array
      * @return The address of the system contract
@@ -302,6 +319,20 @@ interface IKintoAppRegistry {
      * @return A boolean indicating whether the address is a system contract
      */
     function isSystemContract(address addr) external view returns (bool);
+
+    /**
+     * @notice Returns the system app address at a given index
+     * @param index The index in the system apps array
+     * @return The address of the system app
+     */
+    function systemApps(uint256 index) external view returns (address);
+
+    /**
+     * @notice Checks if an address is a system app
+     * @param addr The address to check
+     * @return A boolean indicating whether the address is a system app
+     */
+    function isSystemApp(address addr) external view returns (bool);
 
     /**
      * @notice Returns an array of all reserved contract addresses

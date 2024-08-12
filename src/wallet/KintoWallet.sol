@@ -356,7 +356,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (!kintoID.isKYC(owners[0])) return SIG_VALIDATION_FAILED; // check first owner is KYC'ed
 
         (address target, bool batch) = _decodeCallData(userOp.callData);
-        address app = appRegistry.getSponsor(target);
+        address app = appRegistry.getApp(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
 
         // todo: remove socket once the app key flow and pimlico errors are gone
@@ -539,12 +539,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     function _executeInner(address dest, uint256 value, bytes calldata func, address lastAddress) internal {
         // if target is a contract, check if it's whitelisted
-        address sponsor = appRegistry.getSponsor(lastAddress);
-        bool validChild = dest == lastAddress || appRegistry.isSponsored(sponsor, dest);
-        bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
-        bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
-        if (isNotAppSponsored && isNotSystemApproved) {
-            revert AppNotWhitelisted(sponsor, dest);
+        address app = appRegistry.getApp(lastAddress);
+        bool validChild = dest == lastAddress || appRegistry.isSponsored(app, dest);
+        bool isNotAppWhitelistedAndSponsored = !appWhitelist[app] || !validChild;
+        bool isNotSystemApproved = dest != address(this) && app != SOCKET && app != REWARDS_DISTRIBUTOR;
+        if (isNotAppWhitelistedAndSponsored && isNotSystemApproved) {
+            revert AppNotWhitelisted(app, dest);
         }
 
         dest.functionCallWithValue(func, value);

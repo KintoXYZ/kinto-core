@@ -101,6 +101,12 @@ contract KintoAppRegistry is
     /// @notice Mapping to check if an address is a reserved contract
     mapping(address => bool) public override isReservedContract;
 
+    /// @notice Array of system app addresses
+    address[] public override systemApps;
+
+    /// @notice Mapping to check if an address is a app contract
+    mapping(address => bool) public override isSystemApp;
+
     /* ============ Constructor & Initializers ============ */
 
     /**
@@ -214,6 +220,18 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
+    function updateSystemApps(address[] calldata newSystemApps) external onlyOwner {
+        emit SystemAppsUpdated(systemApps, newSystemApps);
+        for (uint256 index = 0; index < systemApps.length; index++) {
+            isSystemApp[systemApps[index]] = false;
+        }
+        for (uint256 index = 0; index < newSystemApps.length; index++) {
+            isSystemApp[newSystemApps[index]] = true;
+        }
+        systemApps = newSystemApps;
+    }
+
+    /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
         emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
@@ -287,10 +305,8 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function getSponsor(address target) external view override returns (address) {
-        address sponsor = childToParentContract[target];
-        if (sponsor != address(0)) return sponsor;
-        return target;
+    function getApp(address target) external view override returns (address) {
+        return childToParentContract[target] != address(0) ? childToParentContract[target] : target;
     }
 
     /**
@@ -335,6 +351,11 @@ contract KintoAppRegistry is
         }
 
         return false;
+    }
+
+    /// @inheritdoc IKintoAppRegistry
+    function getSystemApps() external view returns (address[] memory) {
+        return systemApps;
     }
 
     /// @inheritdoc IKintoAppRegistry

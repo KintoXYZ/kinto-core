@@ -111,7 +111,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
-        assertEq(_kintoAppRegistry.getSponsor(appContract0), parentContract);
+        assertEq(_kintoAppRegistry.getApp(appContract0), parentContract);
         assertEq(metadata.devEOAs[0], eoas[0]);
 
         // check child limits

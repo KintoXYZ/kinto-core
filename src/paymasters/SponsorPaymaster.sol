@@ -240,7 +240,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         if (ethMaxCost > userOpMaxCost) revert GasTooHighForUserOp();
 
-        address sponsor = appRegistry.getSponsor(_decodeCallData(userOp.callData));
+        address sponsor = appRegistry.getApp(_decodeCallData(userOp.callData));
         if (unlockBlock[sponsor] != 0) revert DepositNotLocked();
         if (balances[sponsor] < ethMaxCost) revert DepositTooLow();
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
