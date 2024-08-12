@@ -5,7 +5,6 @@ pragma solidity ^0.8.18;
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract WhitelistTest is SharedSetup {
-
     function testWhitelistAppAndSetKey() public {
         Counter counter = new Counter();
 

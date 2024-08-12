@@ -6,12 +6,24 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 
 contract ExecuteTest is SharedSetup {
-    function testExecute() public {
-        vm.prank(address(_entryPoint));
-        _kintoWallet.execute(address(counter), 0, abi.encodeWithSelector(Counter.increment.selector));
+    address public systemApp;
+    Counter public systemCounter;
 
-        assertEq(counter.count(), 1);
+    function setUp() public override {
+        super.setUp();
+
+        // Deploy a new counter to be used as a system app
+        systemCounter = new Counter();
+        systemApp = address(systemCounter);
+
+        // Set up the system app in the registry
+        address[] memory newSystemApps = new address[](1);
+        newSystemApps[0] = systemApp;
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(newSystemApps);
     }
+
+    /* ============ Paymaster ============ */
 
     function testExecute_RevertWhen_NoPaymasterNorPrefund() public {
         // remove any balance from the wallet
@@ -75,52 +87,7 @@ contract ExecuteTest is SharedSetup {
         assertEq(counter.count(), 2);
     }
 
-    function testExecute_RevertWhen_AppIsNotWhitelisted() public {
-        // remove app from whitelist
-        whitelistApp(address(counter), false);
-
-        // create Counter increment user op
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // execute transaction
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
-        assertEq(counter.count(), 0);
-    }
-
-    function testExecute_WhenAppSponsor() public {
-        // remove any balance from the wallet
-        vm.deal(address(_kintoWallet), 0);
-
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
-
-        // execute the transactions via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
-    }
-
-    function testExecute_RevertWhenNoSponsor() public {
+    function testExecute_RevertWhenDepositTooLow() public {
         // remove any balance from the wallet
         vm.deal(address(_kintoWallet), 0);
 
@@ -148,5 +115,41 @@ contract ExecuteTest is SharedSetup {
         _entryPoint.handleOps(userOps, payable(_owner));
 
         assertEq(other.count(), 0);
+    }
+    /* ============ Execute ============ */
+
+    function testExecute() public {
+        vm.prank(address(_entryPoint));
+        _kintoWallet.execute(address(counter), 0, abi.encodeWithSelector(Counter.increment.selector));
+
+        assertEq(counter.count(), 1);
+    }
+
+    function testExecute_RevertWhen_AppIsNotWhitelisted() public {
+        // remove app from whitelist
+        whitelistApp(address(counter), false);
+
+        vm.prank(address(_entryPoint));
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoWallet.AppNotWhitelisted.selector, address(counter), address(counter))
+        );
+        _kintoWallet.execute(address(counter), 0, abi.encodeWithSelector(Counter.increment.selector));
+
+        assertEq(counter.count(), 0);
+    }
+
+    function testExecute_WhenAppSponsor() public {
+        // TODO: Use explicit sponsor contracts
+        vm.prank(address(_entryPoint));
+        _kintoWallet.execute(address(counter), 0, abi.encodeWithSelector(Counter.increment.selector));
+
+        assertEq(counter.count(), 1);
+    }
+
+    function testExecute_WhenSystemApp() public {
+        vm.prank(address(_entryPoint));
+        _kintoWallet.execute(systemApp, 0, abi.encodeWithSelector(Counter.increment.selector));
+
+        assertEq(systemCounter.count(), 1);
     }
 }

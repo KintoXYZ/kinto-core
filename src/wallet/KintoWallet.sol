@@ -18,7 +18,7 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
-import 'forge-std/console2.sol';
+import "forge-std/console2.sol";
 
 /**
  * @title KintoWallet
@@ -361,16 +361,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         (address target, bool batch) = _decodeCallData(userOp.callData);
         address app = appRegistry.getApp(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
-
-        // todo: remove socket once the app key flow and pimlico errors are gone
-        if ((app == SOCKET || app == REWARDS_DISTRIBUTOR) && address(this) != ADMIN_WALLET) {
-            if (_verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
-                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
-                    ? SIG_VALIDATION_SUCCESS
-                    : SIG_VALIDATION_FAILED;
-            }
-            return SIG_VALIDATION_FAILED;
-        }
 
         // if using an app key, no calls to wallet are allowed
         // check if an app key is set

@@ -128,7 +128,9 @@ contract ExecuteBatchTest is SharedSetup {
         calls[1] = abi.encodeWithSignature("increment()");
 
         vm.prank(address(_entryPoint));
-        vm.expectRevert(abi.encodeWithSelector(IKintoWallet.AppNotWhitelisted.selector, address(counter), address(counter)));
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoWallet.AppNotWhitelisted.selector, address(counter), address(counter))
+        );
         _kintoWallet.executeBatch(targets, values, calls);
     }
 
