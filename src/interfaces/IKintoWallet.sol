@@ -16,7 +16,8 @@ interface IKintoWallet {
     error InvalidInsurancePayment(address token);
     error InvalidSigner();
     error InvalidApp();
-    error AppNotWhitelisted(address sponsor, address addr);
+    error AppNotWhitelisted(address app, address addr);
+    error AppNotSponsored(address app, address addr);
     error RecoveryNotStarted();
     error RecoveryTimeNotElapsed();
     error OwnerKYCMustBeBurned();

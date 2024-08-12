@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import "@aa/interfaces/IEntryPoint.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 contract ExecuteBatchTest is SharedSetup {
     function testExecuteBatch_WhenPaymaster() public {
@@ -119,19 +120,9 @@ contract ExecuteBatchTest is SharedSetup {
         calls[0] = abi.encodeWithSignature("recoverer()");
         calls[1] = abi.encodeWithSignature("increment()");
 
-        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-        );
-
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(IKintoWallet.AppNotWhitelisted.selector);
+        vm.prank(address(_entryPoint));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWallet.AppNotWhitelisted.selector, address(counter), address(counter)));
+        _kintoWallet.executeBatch(targets, values, calls);
     }
 
     function testExecuteBatch_RevertWhen_LengthMismatch() public {
