@@ -6,19 +6,10 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 
 contract ExecuteTest is SharedSetup {
-    function testExecute_WhenPaymaster() public {
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(counter),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("increment()"),
-            address(_paymaster)
-        );
+    function testExecute() public {
+        vm.prank(address(_entryPoint));
+        _kintoWallet.execute(address(counter), 0, abi.encodeWithSelector(Counter.increment.selector));
 
-        // execute the transactions via the entry point
-        _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(counter.count(), 1);
     }
 

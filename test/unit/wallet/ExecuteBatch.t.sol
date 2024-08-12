@@ -9,26 +9,32 @@ import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 contract ExecuteBatchTest is SharedSetup {
     function testExecuteBatch_WhenPaymaster() public {
-        // prep batch
-        address[] memory targets = new address[](1);
-        targets[0] = address(counter);
+        Counter counter2 = new Counter();
 
-        uint256[] memory values = new uint256[](1);
+        address[] memory targets = new address[](3);
+        targets[0] = address(_kintoWallet);
+        targets[1] = address(counter2);
+        targets[2] = address(counter2);
+
+        uint256[] memory values = new uint256[](3);
         values[0] = 0;
+        values[1] = 0;
+        values[2] = 0;
 
-        // we want to do 3 calls: whitelistApp, increment counter and increment counter2
-        bytes[] memory calls = new bytes[](1);
-        calls[0] = abi.encodeWithSignature("increment()");
+        address[] memory whitelistTargets = new address[](1);
+        whitelistTargets[0] = address(counter2);
+        bool[] memory flags = new bool[](1);
+        flags[0] = true;
 
-        OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
-            address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
-        );
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = userOp;
+        bytes[] memory calls = new bytes[](3);
+        calls[0] = abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, whitelistTargets, flags);
+        calls[1] = abi.encodeWithSignature("increment()");
+        calls[2] = abi.encodeWithSignature("increment()");
 
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertEq(counter.count(), 1);
+        vm.prank(address(_entryPoint));
+        _kintoWallet.executeBatch(targets, values, calls);
+
+        assertEq(counter2.count(), 2);
     }
 
     function testExecuteBatch_RevertWhen_NoPaymasterNorPrefund() public {
@@ -76,6 +82,7 @@ contract ExecuteBatchTest is SharedSetup {
             _createUserOperation(address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(0));
 
         _entryPoint.handleOps(userOps, payable(_owner));
+
         assertEq(counter.count(), 1);
     }
 

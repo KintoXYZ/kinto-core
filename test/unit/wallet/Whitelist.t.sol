@@ -25,7 +25,6 @@ contract WhitelistTest is SharedSetup {
     }
 
     function testWhitelistAppRemovesAppKey() public {
-        // deploy an app
         Counter counter = new Counter();
 
         whitelistApp(address(counter), true);
@@ -35,7 +34,6 @@ contract WhitelistTest is SharedSetup {
 
         vm.prank(address(_kintoWallet));
         _kintoWallet.setAppKey(address(counter), _user);
-
 
         assertEq(_kintoWallet.appSigner(address(counter)), _user);
 

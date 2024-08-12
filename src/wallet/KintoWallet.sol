@@ -18,6 +18,8 @@ import "../governance/EngenGovernance.sol";
 import "../interfaces/IKintoAppRegistry.sol";
 import "../libraries/ByteSignature.sol";
 
+import 'forge-std/console2.sol';
+
 /**
  * @title KintoWallet
  * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
@@ -138,8 +140,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     {
         _requireFromEntryPoint();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
+        address lastDest = dest[dest.length - 1];
         for (uint256 i = 0; i < dest.length; i++) {
-            _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
+            _executeInner(dest[i], values[i], func[i], lastDest);
         }
         // if can transact, cancel recovery
         inRecovery = 0;
