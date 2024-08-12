@@ -8,6 +8,8 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 contract ExecuteBatchTest is SharedSetup {
+    /* ============ Paymaster ============ */
+
     function testExecuteBatch_WhenPaymaster() public {
         Counter counter2 = new Counter();
 
@@ -110,6 +112,8 @@ contract ExecuteBatchTest is SharedSetup {
         assertEq(counter.count(), 2);
     }
 
+    /* ============ executeBatch ============ */
+
     function testExecuteBatch_RevertWhen_AppIsNotWhitelisted() public {
         // remove app from whitelist
         whitelistApp(address(counter), false);
@@ -194,5 +198,33 @@ contract ExecuteBatchTest is SharedSetup {
         vm.recordLogs();
         _entryPoint.handleOps(userOps, payable(_owner));
         assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
+    }
+
+    function testExecuteBatch_RevertWhen_AppNotSponsored() public {
+        address notSponsored = address(new Counter());
+
+        // Prepare batch execution data
+        address[] memory targets = new address[](2);
+        targets[0] = notSponsored; // This is sponsored
+        targets[1] = address(counter); // This is the app, but not sponsored
+
+        uint256[] memory values = new uint256[](2);
+        values[0] = 0;
+        values[1] = 0;
+
+        bytes[] memory callData = new bytes[](2);
+        callData[0] = abi.encodeWithSelector(Counter.increment.selector);
+        callData[1] = abi.encodeWithSelector(Counter.increment.selector);
+
+        // Attempt to execute the batch
+        vm.prank(address(_entryPoint));
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoWallet.AppNotSponsored.selector, address(counter), address(notSponsored))
+        );
+        _kintoWallet.executeBatch(targets, values, callData);
+
+        // Verify that no counters were incremented
+        assertEq(Counter(notSponsored).count(), 0);
+        assertEq(counter.count(), 0);
     }
 }
