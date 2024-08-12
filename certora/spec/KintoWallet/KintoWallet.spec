@@ -138,7 +138,7 @@ rule validationSignerIntegrity() {
     /// Assuming the validation succeeded:
     require validationData == 0;
     /// Sponsor app from userOp:
-    address app = appRegistry.getSponsor(ghostAppContract);
+    address app = appRegistry.getApp(ghostAppContract);
     /// userOp hash + Eth signature hash:
     bytes32 hash = signedMessageHash(userOpHash);
     /// Hash message signer:
@@ -171,7 +171,7 @@ rule validationSignerPolicyIntegrity(uint8 policy, uint256 ownersCount) {
     /// Assume success:
     require validationData == 0;
     /// Assume signers (non-app) validation:
-    require appRegistry.getSponsor(ghostAppContract) == 0;
+    require appRegistry.getApp(ghostAppContract) == 0;
 
     /// Get hash message signers:
     uint256 signaturesLength = userOp.signature.length;
@@ -247,7 +247,7 @@ rule signatureDuplicatesCannotBeVerified() {
     bytes32 userOpHash; bytes32 hash = signedMessageHash(userOpHash);
     uint256 missingAccountFunds;
     uint256 validationData = validateUserOp(e, userOp, userOpHash, missingAccountFunds);
-    require appRegistry.getSponsor(ghostAppContract) == 0;
+    require appRegistry.getApp(ghostAppContract) == 0;
 
     address signer0 = recoverCVL(hash, extractSigCVL(userOp.signature, 0));
     address signer1 = recoverCVL(hash, extractSigCVL(userOp.signature, 1));
