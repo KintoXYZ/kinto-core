@@ -73,12 +73,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /// @dev Constant indicating successful signature validation
     uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
-    /// @dev Address of the Socket contract
-    address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
-
-    /// @dev Address of the admin wallet
-    address internal constant ADMIN_WALLET = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
-
     /// @dev Address of the Bridger contract on Mainnet
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
 
@@ -87,9 +81,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /// @dev Address of the Bridger contract on Base
     address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
-
-    /// @dev Address of the Rewards Distributor contract
-    address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
 
     /// @dev Address of the Kinto Token contract
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
