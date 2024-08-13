@@ -125,7 +125,9 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     function compress(UserOperation memory op) external view returns (bytes memory compressed) {
         // initialize a dynamic bytes array for the pre-compressed data
-        bytes memory buffer = new bytes(1024); // arbitrary size of 1024 bytes (resized later)
+        // TODO: Should by dynamically expandable with assembly
+        // If exceeded would throw `array out of bounds` error
+        bytes memory buffer = new bytes(4096); // arbitrary size of bytes (resized later)
         uint256 cursor = 0;
 
         // decode `callData` (selector, target, value, bytesOp)
