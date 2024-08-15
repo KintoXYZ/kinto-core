@@ -44,12 +44,10 @@ contract NioGuardians is ERC721, Ownable, EIP712, ERC721Votes {
 
         if (from != address(0) && to != address(0)) revert OnlyMintOrBurn();
 
-        _transferVotingUnits(from, to, 1);
-
         return from;
     }
 
-    function delegate(address delegatee) public override {
+    function delegate(address) public pure override {
         revert NoDelegate();
     }
 
