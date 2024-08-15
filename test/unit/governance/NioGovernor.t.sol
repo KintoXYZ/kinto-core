@@ -18,8 +18,8 @@ contract NioGovernorTest is SharedSetup {
     NioGuardians internal nio;
     OwnableCounter internal ownableCounter;
     AccessManager internal accessManager;
-    uint256 internal constant VOTING_DELAY = 3 days; 
-    uint256 internal constant VOTING_PERIOD = 5 days; 
+    uint256 internal constant VOTING_DELAY = 3 days;
+    uint256 internal constant VOTING_PERIOD = 5 days;
 
     address internal nio0;
     address internal nio1;
@@ -124,24 +124,28 @@ contract NioGovernorTest is SharedSetup {
 
     /* ============ Helper ============ */
 
-    function voteProposal(uint256 hashProposal) internal returns (uint256 hash) {
-        vm.warp(block.timestamp + 3 days + 1 seconds);
+    function voteProposal(uint256 hashProposal) internal {
+        vm.warp(block.timestamp + VOTING_DELAY + 1 seconds);
 
         // 5 out of 9 nios have to vote
         for (uint256 index = 0; index < 5; index++) {
-            vm.prank(nios[index + 1]);
+            vm.prank(nios[index]);
             governor.castVote(hashProposal, 1);
         }
     }
 
-    function getProposal() internal returns (address[] memory targets, bytes[] memory data, uint256[] memory values, string memory desc) {
+    function getProposal()
+        internal
+        view
+        returns (address[] memory targets, bytes[] memory data, uint256[] memory values, string memory desc)
+    {
         targets = new address[](1);
         targets[0] = address(ownableCounter);
         data = new bytes[](1);
         data[0] = abi.encodeWithSignature("increment()");
         values = new uint256[](1);
         values[0] = 0;
-        desc= "hello";
+        desc = "hello";
     }
 
     function createProposal() internal returns (uint256 hash) {
