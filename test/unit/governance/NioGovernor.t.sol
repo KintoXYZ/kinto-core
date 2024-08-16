@@ -20,6 +20,8 @@ contract NioGovernorTest is SharedSetup {
     AccessManager internal accessManager;
     uint256 internal constant VOTING_DELAY = 3 days;
     uint256 internal constant VOTING_PERIOD = 5 days;
+    uint256 internal constant EXECUTION_DELAY = 3 days;
+    uint64 internal constant GOVERNOR_ROLE = 1;
 
     address internal nio0;
     address internal nio1;
@@ -60,12 +62,20 @@ contract NioGovernorTest is SharedSetup {
         nio = new NioGuardians(_owner);
         governor = new NioGovernor(nio, address(accessManager));
 
-        ownableCounter.transferOwnership(address(governor));
+        ownableCounter.transferOwnership(address(accessManager));
 
         for (uint256 index = 0; index < nios.length; index++) {
             vm.prank(_owner);
             nio.mint(nios[index], index);
         }
+
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = OwnableCounter.increment.selector;
+        vm.prank(_owner);
+        accessManager.setTargetFunctionRole(address(ownableCounter), selectors, GOVERNOR_ROLE);
+
+        vm.prank(_owner);
+        accessManager.grantRole(GOVERNOR_ROLE, address(governor), uint32(EXECUTION_DELAY));
 
         skip(100);
     }
@@ -75,6 +85,7 @@ contract NioGovernorTest is SharedSetup {
 
         assertEq(governor.votingDelay(), VOTING_DELAY);
         assertEq(governor.votingPeriod(), VOTING_PERIOD);
+        assertEq(governor.baseDelaySeconds(), EXECUTION_DELAY);
         assertEq(governor.proposalThreshold(), 1);
         assertEq(governor.quorum(block.number), 5);
 
@@ -91,6 +102,8 @@ contract NioGovernorTest is SharedSetup {
 
         vm.warp(block.timestamp + VOTING_DELAY + 1 seconds);
         assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Active));
+
+        (uint32 delay, bool[] memory indirect, bool[] memory withDelay) = governor.proposalExecutionPlan(hashProposal);
     }
 
     /* ============ Vote Proposal ============ */
@@ -112,6 +125,10 @@ contract NioGovernorTest is SharedSetup {
         voteProposal(hashProposal);
 
         vm.warp(block.timestamp + VOTING_PERIOD + 1 seconds);
+        assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Succeeded));
+
+        queueProposal(hashProposal);
+        vm.warp(block.timestamp + EXECUTION_DELAY + 1 seconds);
 
         // Execute
         (address[] memory targets, bytes[] memory data, uint256[] memory values, string memory desc) = getProposal();
@@ -123,6 +140,12 @@ contract NioGovernorTest is SharedSetup {
     }
 
     /* ============ Helper ============ */
+
+    function queueProposal(uint256 hashProposal) internal returns (uint256 hash) {
+        governor.queue(hashProposal);
+        assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Queued));
+    }
+
 
     function voteProposal(uint256 hashProposal) internal {
         vm.warp(block.timestamp + VOTING_DELAY + 1 seconds);
@@ -142,7 +165,7 @@ contract NioGovernorTest is SharedSetup {
         targets = new address[](1);
         targets[0] = address(ownableCounter);
         data = new bytes[](1);
-        data[0] = abi.encodeWithSignature("increment()");
+        data[0] = abi.encodeWithSelector(OwnableCounter.increment.selector);
         values = new uint256[](1);
         values[0] = 0;
         desc = "hello";
