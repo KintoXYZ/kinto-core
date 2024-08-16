@@ -146,7 +146,6 @@ contract NioGovernorTest is SharedSetup {
         assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Queued));
     }
 
-
     function voteProposal(uint256 hashProposal) internal {
         vm.warp(block.timestamp + VOTING_DELAY + 1 seconds);
 
