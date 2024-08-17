@@ -30,32 +30,45 @@ import "@solady/utils/LibZip.sol";
 /// The rest of the flags are not used.
 /// All other UserOperation fields are encoded as is.
 contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
-    mapping(string => address) public kintoContracts; // mapping of Kinto contract names to addresses
-    mapping(address => string) public kintoNames; // mapping of Kinto contract addresses to names
+    /// @notice Mapping of Kinto contract names to addresses
+    mapping(string => address) public kintoContracts;
+
+    /// @notice Mapping of Kinto contract addresses to names
+    mapping(address => string) public kintoNames;
 
     event KintoContractSet(string name, address target);
 
     /* ============ Constructor & Upgrades ============ */
 
+    /// @dev Prevents initialization of the implementation contract
     constructor() {
         _disableInitializers();
     }
 
-    /// @dev Upgrade calling `upgradeTo()`
+    /**
+     * @notice Initializes the contract
+     * @dev Sets up initial state and transfers ownership to the deployer
+     */
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
     }
 
-    /// @dev Authorize the upgrade. Only by an owner.
-    /// @param newImplementation address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-        (newImplementation);
-    }
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Can only be called by the contract owner
+     * @param newImplementation Address of the new implementation
+     */
+    function _authorizeUpgrade(address) internal view override onlyOwner {}
 
     /* ============ Inflate & Compress ============ */
 
+    /**
+     * @notice Inflates a compressed UserOperation
+     * @param compressed The compressed UserOperation as bytes
+     * @return op The inflated UserOperation
+     */
     function inflate(bytes calldata compressed) external view returns (UserOperation memory op) {
         // decompress the data
         return this._inflate(LibZip.flzDecompress(compressed));
@@ -123,6 +136,11 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         return op;
     }
 
+    /**
+     * @notice Compresses a UserOperation for efficient storage and transmission
+     * @param op The UserOperation to compress
+     * @return compressed The compressed UserOperation as bytes
+     */
     function compress(UserOperation memory op) external view returns (bytes memory compressed) {
         // Initialize a dynamically sized buffer
         bytes memory buffer = new bytes(0);
@@ -167,16 +185,31 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Simple compress/inflate ============ */
 
+    /**
+     * @notice Inflates a UserOperation compressed with the simple algorithm
+     * @param compressed The compressed UserOperation as bytes
+     * @return op The inflated UserOperation
+     */
     function inflateSimple(bytes calldata compressed) external pure returns (UserOperation memory op) {
         op = abi.decode(LibZip.flzDecompress(compressed), (UserOperation));
     }
 
+    /**
+     * @notice Compresses a UserOperation using a simple compression algorithm
+     * @param op The UserOperation to compress
+     * @return compressed The compressed UserOperation as bytes
+     */
     function compressSimple(UserOperation memory op) external pure returns (bytes memory compressed) {
         compressed = LibZip.flzCompress(abi.encode(op));
     }
 
     /* ============ Auth methods ============ */
 
+    /**
+     * @notice Sets or updates a Kinto contract
+     * @param name The name of the Kinto contract
+     * @param target The address of the Kinto contract
+     */
     function setKintoContract(string memory name, address target) external onlyOwner {
         kintoContracts[name] = target;
         kintoNames[target] = name;
@@ -269,6 +302,13 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Compress Helpers ============ */
 
+    /**
+     * @notice Determines the flags for a UserOperation
+     * @param selector The function selector
+     * @param op The UserOperation
+     * @param callData The calldata
+     * @return flags The determined flags
+     */
     function _flags(bytes4 selector, UserOperation memory op, bytes memory callData)
         internal
         view
@@ -291,6 +331,15 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice Encodes the calldata for an execute operation
+     * @param op The UserOperation
+     * @param target The target address
+     * @param value The value to send
+     * @param bytesOp The operation bytes
+     * @param buffer The current buffer
+     * @return The updated buffer
+     */
     function _encodeExecuteCalldata(
         UserOperation memory op,
         address target,
@@ -310,6 +359,14 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         return abi.encodePacked(buffer, value, uint32(bytesOp.length), bytesOp);
     }
 
+    /**
+     * @notice Encodes the calldata for an executeBatch operation
+     * @param targets The target addresses
+     * @param values The values to send
+     * @param bytesOps The operation bytes
+     * @param buffer The current buffer
+     * @return The updated buffer
+     */
     function _encodeExecuteBatchCalldata(
         address[] memory targets,
         uint256[] memory values,
