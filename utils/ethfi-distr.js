@@ -18,7 +18,7 @@ records.forEach(record => {
   console.log('record:', record)
   const wallet = record['Kinto Wallet'];
   console.log('wallet:', wallet)
-  const amountStr = record['July 24'];
+  const amountStr = record['August 17'];
   // Remove the comma and convert to cents (multiply by 100)
   const valueInCents = BigInt(Math.round(parseFloat(amountStr .replace(",", "")) * 100));
 
