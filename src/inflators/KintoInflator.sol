@@ -58,7 +58,6 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     /**
      * @notice Authorizes an upgrade to a new implementation
      * @dev Can only be called by the contract owner
-     * @param newImplementation Address of the new implementation
      */
     function _authorizeUpgrade(address) internal view override onlyOwner {}
 
