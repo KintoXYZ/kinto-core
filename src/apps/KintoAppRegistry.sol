@@ -270,15 +270,19 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function getContractLimits(address target) external view override returns (uint256[4] memory) {
+    function getContractLimits(address target) external view override returns (uint256[4] memory limits) {
         address app = childToParentContract[target] != address(0) ? childToParentContract[target] : target;
 
-        return [
-            metadata.rateLimitPeriod != 0 ? _appMetadata[app].rateLimitPeriod : RATE_LIMIT_PERIOD,
-            metadata.rateLimitNumber != 0 ? _appMetadata[app].rateLimitNumber : RATE_LIMIT_THRESHOLD,
-            metadata.gasLimitPeriod != 0 ? _appMetadata[app].gasLimitPeriod : GAS_LIMIT_PERIOD,
-            metadata.gasLimitCost != 0 ? _appMetadata[app].gasLimitCost : GAS_LIMIT_THRESHOLD
-        ];
+        uint256 rateLimitPeriod = _appMetadata[app].rateLimitPeriod;
+        uint256 rateLimitNumber = _appMetadata[app].rateLimitNumber;
+        uint256 gasLimitPeriod = _appMetadata[app].gasLimitPeriod;
+        uint256 gasLimitCost = _appMetadata[app].gasLimitCost;
+
+        // Assign values to the return array
+        limits[0] = rateLimitPeriod != 0 ? rateLimitPeriod : RATE_LIMIT_PERIOD;
+        limits[1] = rateLimitNumber != 0 ? rateLimitNumber : RATE_LIMIT_THRESHOLD;
+        limits[2] = gasLimitPeriod != 0 ? gasLimitPeriod : GAS_LIMIT_PERIOD;
+        limits[3] = gasLimitCost != 0 ? gasLimitCost : GAS_LIMIT_THRESHOLD;
     }
 
     /// @inheritdoc IKintoAppRegistry
