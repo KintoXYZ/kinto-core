@@ -271,13 +271,13 @@ contract KintoAppRegistry is
 
     /// @inheritdoc IKintoAppRegistry
     function getContractLimits(address target) external view override returns (uint256[4] memory) {
-        IKintoAppRegistry.Metadata memory metadata =
-            _appMetadata[childToParentContract[target] != address(0) ? childToParentContract[target] : target];
+        address app = childToParentContract[target] != address(0) ? childToParentContract[target] : target;
+
         return [
-            metadata.rateLimitPeriod != 0 ? metadata.rateLimitPeriod : RATE_LIMIT_PERIOD,
-            metadata.rateLimitNumber != 0 ? metadata.rateLimitNumber : RATE_LIMIT_THRESHOLD,
-            metadata.gasLimitPeriod != 0 ? metadata.gasLimitPeriod : GAS_LIMIT_PERIOD,
-            metadata.gasLimitCost != 0 ? metadata.gasLimitCost : GAS_LIMIT_THRESHOLD
+            metadata.rateLimitPeriod != 0 ? _appMetadata[app].rateLimitPeriod : RATE_LIMIT_PERIOD,
+            metadata.rateLimitNumber != 0 ? _appMetadata[app].rateLimitNumber : RATE_LIMIT_THRESHOLD,
+            metadata.gasLimitPeriod != 0 ? _appMetadata[app].gasLimitPeriod : GAS_LIMIT_PERIOD,
+            metadata.gasLimitCost != 0 ? _appMetadata[app].gasLimitCost : GAS_LIMIT_THRESHOLD
         ];
     }
 
