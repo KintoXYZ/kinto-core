@@ -85,7 +85,7 @@ contract Bridger is
     /// @notice SolvBTC address on Arbitrum.
     address public constant SOLV_BTC = 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0;
     /// @notice Solv Router address on Arbitrum.
-    address public constant SOLV_SFT_WRAP_ROUTER = 0x6Ea88D4D0c4bC06F6A51f427eF295c93e10D0b36;
+    address public constant SOLV_SFT_WRAP_ROUTER = 0xe9eD7530427Cb41A56C9e004e00e074cCc168C44;
     /// @notice SolvBTC pool id on Arbitrum.
     bytes32 public constant SOLV_BTC_POOL_ID = 0x488def4a346b409d5d57985a160cd216d29d4f555e1b716df4e04e2374d2d9f6;
     /// @notice stUSD pool id on Arbitrum.
