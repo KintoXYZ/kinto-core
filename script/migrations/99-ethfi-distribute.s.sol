@@ -54,9 +54,9 @@ contract EthfiDistributeSignersScript is MigrationHelper {
             _handleOps(selectorAndParams, _getChainDeployment("ERC20Multisender"));
         }
 
-        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE) - balance0, 6270170000000000000000);
-        assertEq(IERC20(ETHFI).balanceOf(0x8c962d232219Ba491F2099F03E43E29E2CAb7bEA) - balance1, 3740000000000000000);
-        assertEq(IERC20(ETHFI).balanceOf(0xa4aC7205D57194547b18021127ceF8DEcF076387) - balance2, 1600000000000000000);
-        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9) - balance3, 100000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x68242cfeDA40Ff286b045D388f4c5859713027AE) - balance0, 4473760000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x8c962d232219Ba491F2099F03E43E29E2CAb7bEA) - balance1, 2670000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0xa4aC7205D57194547b18021127ceF8DEcF076387) - balance2, 1140000000000000000);
+        assertEq(IERC20(ETHFI).balanceOf(0x5A68fa975f400679b88F8b43c4a8A0580E7F9cd9) - balance3, 70000000000000000);
     }
 }
