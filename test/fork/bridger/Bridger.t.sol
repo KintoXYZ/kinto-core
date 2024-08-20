@@ -439,7 +439,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // USDC to SolvBTC
     function testDepositERC20_WhenUsdcToSolvBtc() public {
         setUpArbitrumFork();
-        vm.rollFork(238822759); // block number in which the 0x API data was fetched
+        vm.rollFork(244906436); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
@@ -455,7 +455,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f&sellToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellAmount=1000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' --header '0x-api-key: key' | jq > ./test/data/swap-usdc-to-wbtc-arb.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-usdc-to-wbtc-arb.json").readBytes(".transaction.data");
 
-        uint256 amountOut = 1620e10;
+        uint256 amountOut = 1692e10;
 
         vm.prank(_user);
         IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
@@ -481,7 +481,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // WBTC to SolvBTC
     function testDepositERC20_WhenWBtcToSolvBtc() public {
         setUpArbitrumFork();
-        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        vm.rollFork(244906436);
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
@@ -517,7 +517,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // SolvBTC to SolvBTC
     function testDepositERC20_WhenSolvBtcToSolvBtc() public {
         setUpArbitrumFork();
-        vm.rollFork(225593361); // block number in which the 0x API data was fetched
+        vm.rollFork(244906436);
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][SOLV_BTC_ARBITRUM];
@@ -609,7 +609,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
     function testDepositETH_WhenSwapEthToSolveBtc() public {
         setUpArbitrumFork();
-        vm.rollFork(238813265); // block number in which the 0x API data was fetched
+        vm.rollFork(244948289); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         address assetOut = SOLV_BTC_ARBITRUM;
@@ -625,7 +625,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         uint256 bridgerBalanceBefore = address(bridger).balance;
         uint256 vaultAssetOutBalanceBefore = ERC20(assetOut).balanceOf(data.vault);
-        uint256 amountOut = 48428370000000000;
+        uint256 amountOut = 43787900000000000;
 
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
