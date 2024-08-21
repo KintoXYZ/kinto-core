@@ -30,18 +30,16 @@ contract RewardsDistributorTest is ForkTest {
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
 
         vm.startPrank(_owner);
-        distributor = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
-        );
+        distributor =
+            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
     }
 
     function testUp() public override {
         vm.startPrank(_owner);
-        distributor = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
-        );
+        distributor =
+            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
 
@@ -209,9 +207,8 @@ contract RewardsDistributorTest is ForkTest {
 
     function testClaim_RevertWhenMaxLimitExceeded() public {
         vm.startPrank(_owner);
-        RewardsDistributor distr = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
-        );
+        RewardsDistributor distr =
+            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
         distr.initialize(root, 0);
         vm.stopPrank();
         uint256 amount = 1e18;
@@ -293,9 +290,8 @@ contract RewardsDistributorTest is ForkTest {
 
     function testTotalLimitPerQuarter() public {
         vm.startPrank(_owner);
-        RewardsDistributor distr = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
-        );
+        RewardsDistributor distr =
+            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
         distr.initialize(root, 0);
         vm.stopPrank();
 

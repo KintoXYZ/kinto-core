@@ -12,8 +12,7 @@ contract UpgradeDistributorScript is MigrationHelper {
         uint256 LIQUIDITY_MINING_START_DATE = 1718690400; // June 18th 2024
 
         bytes memory bytecode = abi.encodePacked(
-            type(RewardsDistributor).creationCode,
-            abi.encode(_getChainDeployment("KINTO"), LIQUIDITY_MINING_START_DATE)
+            type(RewardsDistributor).creationCode, abi.encode(_getChainDeployment("KINTO"), LIQUIDITY_MINING_START_DATE)
         );
 
         address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V5", bytecode, keccak256("V4"));
