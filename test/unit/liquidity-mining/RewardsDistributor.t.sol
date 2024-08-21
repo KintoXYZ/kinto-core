@@ -19,7 +19,6 @@ import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributo
 contract RewardsDistributorTest is ForkTest {
     RewardsDistributor internal distributor;
     ERC20Mock internal kinto;
-    ERC20Mock internal engen;
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
     bytes32 internal leaf;
     uint256 internal bonusAmount = 600_000e18;
@@ -29,11 +28,10 @@ contract RewardsDistributorTest is ForkTest {
         super.setUp();
 
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
-        engen = new ERC20Mock("Engen Token", "ENGEN", 18);
 
         vm.startPrank(_owner);
         distributor = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
         );
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
@@ -42,7 +40,7 @@ contract RewardsDistributorTest is ForkTest {
     function testUp() public override {
         vm.startPrank(_owner);
         distributor = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
         );
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
@@ -212,7 +210,7 @@ contract RewardsDistributorTest is ForkTest {
     function testClaim_RevertWhenMaxLimitExceeded() public {
         vm.startPrank(_owner);
         RewardsDistributor distr = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
         );
         distr.initialize(root, 0);
         vm.stopPrank();
@@ -293,114 +291,10 @@ contract RewardsDistributorTest is ForkTest {
         distributor.updateBonusAmount(newBonusAmount);
     }
 
-    function testClaimEngen() public {
-        uint256 amount = 1e18;
-
-        kinto.mint(address(distributor), amount);
-        engen.mint(address(_user), amount);
-
-        assertEq(kinto.balanceOf(address(distributor)), amount);
-        assertEq(kinto.balanceOf(_user), 0);
-        assertEq(engen.balanceOf(_user), amount);
-
-        vm.prank(_user);
-        emit RewardsDistributor.UserEngenClaimed(_user, amount);
-        distributor.claimEngen();
-
-        uint256 claimedEngenAmount = 22e16;
-
-        assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
-        assertEq(kinto.balanceOf(_user), claimedEngenAmount);
-        assertEq(distributor.totalKintoFromEngenClaimed(), claimedEngenAmount);
-    }
-
-    function testClaimEngenWithBonus() public {
-        uint256 amount = 1e18;
-
-        kinto.mint(address(distributor), amount);
-        engen.mint(address(_user), amount);
-
-        assertEq(kinto.balanceOf(address(distributor)), amount);
-        assertEq(kinto.balanceOf(_user), 0);
-        assertEq(engen.balanceOf(_user), amount);
-
-        address[] memory users = new address[](1);
-        bool[] memory values = new bool[](1);
-
-        users[0] = _user;
-        values[0] = true;
-
-        vm.prank(_owner);
-        distributor.updateEngenHolders(users, values);
-
-        vm.prank(_user);
-        emit RewardsDistributor.UserEngenClaimed(_user, amount);
-        distributor.claimEngen();
-
-        uint256 claimedEngenAmount = 275e15;
-
-        assertEq(kinto.balanceOf(address(distributor)), amount - claimedEngenAmount);
-        assertEq(kinto.balanceOf(_user), claimedEngenAmount);
-        assertEq(distributor.totalKintoFromEngenClaimed(), claimedEngenAmount);
-    }
-
-    function testClaimEngen_RevertWhenClaimTwice() public {
-        uint256 amount = 1e18;
-
-        kinto.mint(address(distributor), amount);
-        engen.mint(address(_user), amount);
-
-        assertEq(kinto.balanceOf(address(distributor)), amount);
-        assertEq(kinto.balanceOf(_user), 0);
-        assertEq(engen.balanceOf(_user), amount);
-
-        vm.prank(_user);
-        distributor.claimEngen();
-
-        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.EngenAlreadyClaimed.selector, _user));
-        vm.prank(_user);
-        distributor.claimEngen();
-    }
-
-    function testUpdateEngenHolders() public {
-        address[] memory users = new address[](2);
-        bool[] memory values = new bool[](2);
-
-        users[0] = address(0x123);
-        users[1] = address(0x456);
-        values[0] = true;
-        values[1] = false;
-
-        vm.prank(_owner);
-        distributor.updateEngenHolders(users, values);
-
-        assertEq(distributor.engenHolders(address(0x123)), true);
-        assertEq(distributor.engenHolders(address(0x456)), false);
-    }
-
-    function testUpdateEngenHolders_RevertWhen_NotOwner() public {
-        address[] memory users = new address[](2);
-        bool[] memory values = new bool[](2);
-
-        users[0] = address(0x123);
-        users[1] = address(0x456);
-        values[0] = true;
-        values[1] = false;
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                address(this),
-                distributor.DEFAULT_ADMIN_ROLE()
-            )
-        );
-        distributor.updateEngenHolders(users, values);
-    }
-
     function testTotalLimitPerQuarter() public {
         vm.startPrank(_owner);
         RewardsDistributor distr = RewardsDistributor(
-            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, engen, startTime)), ""))
+            address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), ""))
         );
         distr.initialize(root, 0);
         vm.stopPrank();

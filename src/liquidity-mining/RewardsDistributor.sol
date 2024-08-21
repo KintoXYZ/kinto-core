@@ -96,15 +96,6 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice The address of Kinto token.
     IERC20 public immutable KINTO;
 
-    /// @notice The address of ENGEN token.
-    IERC20 public immutable ENGEN;
-
-    /// @notice The multiplier to convert Engen tokens to Kinto tokens.
-    uint256 public constant ENGEN_MULTIPLIER = 22e16;
-
-    /// @notice The bonus given to Engen holders.
-    uint256 public constant ENGEN_HOLDER_BONUS = 25e16;
-
     /// @notice Total amount of tokens to give away during liquidity mining. 4 million tokens.
     uint256 public constant totalTokens = 4_000_000 * 1e18;
 
@@ -125,17 +116,17 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice Amount of funds preloaded at the start.
     uint256 public bonusAmount;
 
-    /// @notice Engen users which kept the capital.
-    mapping(address => bool) public engenHolders;
+    /// @notice DEPRECATED: Engen users which kept the capital.
+    mapping(address => bool) private __engenHolders;
 
-    /// @notice Total amount of Kinto claimed tokens from Engen program.
-    uint256 public totalKintoFromEngenClaimed;
+    /// @notice DEPRECATED: Total amount of Kinto claimed tokens from Engen program.
+    uint256 private __totalKintoFromEngenClaimed;
 
     /// @notice Rewards per quarter for liquidity mining.
     mapping(uint256 => uint256) public rewardsPerQuarter;
 
-    /// @notice Whenever user claimed Engen rewards or not.
-    mapping(address => bool) public hasClaimedEngen;
+    /// @notice DEPRECATED: Whenever user claimed Engen rewards or not.
+    mapping(address => bool) private __hasClaimedEngen;
 
     // Mapping to track which root a user has claimed for.
     mapping(address => bytes32) public claimedRoot;
@@ -145,14 +136,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /**
      * @notice Initializes the contract with the given parameters.
      * @param kinto_ The address of the Kinto token.
-     * @param engen_ The address of the Engen token.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, IERC20 engen_, uint256 startTime_) {
+    constructor(IERC20 kinto_, uint256 startTime_) {
         _disableInitializers();
 
         KINTO = kinto_;
-        ENGEN = engen_;
         startTime = startTime_;
     }
 
@@ -252,50 +241,6 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
         // Emit an event indicating that the user has claimed tokens
         emit UserClaimed(user, amount);
-    }
-
-    /**
-     * @notice Allows a user to claim Kinto tokens based on their Engen token balance.
-     * @dev The amount of Kinto tokens claimed is calculated based on the user's Engen token balance and a multiplier.
-     *      Engen holders receive an additional bonus if they are marked as such.
-     */
-    function claimEngen() external nonReentrant {
-        // Do not allow to claim more than once
-        if (hasClaimedEngen[msg.sender]) {
-            revert EngenAlreadyClaimed(msg.sender);
-        }
-
-        // Amount of Kinto tokens to claim is EngenBalance * multiplier
-        uint256 amount = ENGEN.balanceOf(msg.sender) * ENGEN_MULTIPLIER / 1e18;
-
-        // Engen holder get an extra holder bonus
-        if (engenHolders[msg.sender]) {
-            amount = amount + amount * ENGEN_HOLDER_BONUS / 1e18;
-        }
-
-        // Tracked the total amount of Engen rewards claimed
-        totalKintoFromEngenClaimed += amount;
-
-        // Mark that user has claimed Engen rewards
-        hasClaimedEngen[msg.sender] = true;
-
-        // Transfer Kinto tokens to the user
-        KINTO.safeTransfer(msg.sender, amount);
-
-        // Emit an event indicating that the user has claimed tokens
-        emit UserEngenClaimed(msg.sender, amount);
-    }
-
-    /**
-     * @notice Updates the list of Engen holders and their status.
-     * @dev Only the contract owner can call this function.
-     * @param users The list of user addresses to update.
-     * @param values The corresponding list of boolean values indicating whether each user is an Engen holder.
-     */
-    function updateEngenHolders(address[] memory users, bool[] memory values) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 index = 0; index < users.length; index++) {
-            engenHolders[users[index]] = values[index];
-        }
     }
 
     /**

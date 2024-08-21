@@ -16,13 +16,13 @@ contract UpgradeDistributorScript is MigrationHelper {
             abi.encode(_getChainDeployment("KINTO"), LIQUIDITY_MINING_START_DATE)
         );
 
-        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V4", bytecode, keccak256("V4"));
+        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V5", bytecode, keccak256("V4"));
 
         RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
 
         assertEq(address(distr.KINTO()), 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87);
         assertEq(distr.startTime(), LIQUIDITY_MINING_START_DATE);
 
-        saveContractAddress("RewardsDistributorV4-impl", impl);
+        saveContractAddress("RewardsDistributorV5-impl", impl);
     }
 }
