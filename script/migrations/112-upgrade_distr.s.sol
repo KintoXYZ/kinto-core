@@ -11,17 +11,17 @@ contract UpgradeDistributorScript is MigrationHelper {
 
         uint256 LIQUIDITY_MINING_START_DATE = 1718690400; // June 18th 2024
 
-        abi.encodePacked(
+        bytes memory bytecode = abi.encodePacked(
             type(RewardsDistributor).creationCode, abi.encode(_getChainDeployment("KINTO"), LIQUIDITY_MINING_START_DATE)
         );
 
-        RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
+        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V5", bytecode, keccak256("V4"));
 
-        _upgradeTo(address(distr), 0x86FCC650cE6FfA75ee1dfF98d943e4d1ff16c4fB, deployerPrivateKey);
+        RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
 
         assertEq(address(distr.KINTO()), 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87);
         assertEq(distr.startTime(), LIQUIDITY_MINING_START_DATE);
 
-        saveContractAddress("RewardsDistributorV3-impl", 0x86FCC650cE6FfA75ee1dfF98d943e4d1ff16c4fB);
+        saveContractAddress("RewardsDistributorV5-impl", impl);
     }
 }
