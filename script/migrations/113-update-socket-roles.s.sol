@@ -29,11 +29,10 @@ contract Script is MigrationHelper {
         address EXECUTION_MANAGER = 0x6c914cc610e9a05eaFFfD79c10c60Ad1704717E5;
         address SOCKET_BATCHER = 0x1F6bc87f3309B5D31Eb0BdaBE3ED7d3110d3B9c3;
 
-//        _whitelistApp(address(rewardsDistributor));
+        //        _whitelistApp(address(rewardsDistributor));
 
         _handleOps(
-            abi.encodeWithSelector(IAccessControl.grantRole.selector, SOCKET_RELAYER_ROLE, SOCKET_BATCHER),
-            SOCKET
+            abi.encodeWithSelector(IAccessControl.grantRole.selector, SOCKET_RELAYER_ROLE, SOCKET_BATCHER), SOCKET
         );
 
         _handleOps(
@@ -42,8 +41,7 @@ contract Script is MigrationHelper {
         );
 
         _handleOps(
-            abi.encodeWithSelector(IAccessControl.grantRole.selector, RESCUE_ROLE, SOCKET_OWNER),
-            EXECUTION_MANAGER
+            abi.encodeWithSelector(IAccessControl.grantRole.selector, RESCUE_ROLE, SOCKET_OWNER), EXECUTION_MANAGER
         );
 
         assertTrue(IAccessControl(SOCKET).hasRole(SOCKET_RELAYER_ROLE, SOCKET_BATCHER));
@@ -53,4 +51,3 @@ contract Script is MigrationHelper {
         console2.log("All checks passed!");
     }
 }
-
