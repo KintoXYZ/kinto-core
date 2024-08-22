@@ -5,7 +5,7 @@ import {IERC721} from "@openzeppelin-5.0.1/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
-contract NiosElection is Ownable {
+contract NioElection is Ownable {
     IERC20 public kToken;
     IERC721 public nioNFT;
 
