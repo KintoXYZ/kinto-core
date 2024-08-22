@@ -10,18 +10,16 @@ import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
 
 contract BridgedTokenTest is BaseTest {
-    address admin;
     address minter;
     address upgrader;
-    address alice;
 
     BridgedToken token;
 
     function setUp() public override {
-        admin = createUser("admin");
+        super.setUp();
+
         minter = createUser("minter");
         upgrader = createUser("upgrader");
-        alice = createUser("alice");
 
         token = BridgedToken(address(new UUPSProxy(address(new BridgedToken(18)), "")));
         token.initialize("Stablecoin", "DAI", admin, minter, upgrader);

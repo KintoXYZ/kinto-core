@@ -2,7 +2,14 @@
 
 pragma solidity ^0.8.18;
 
-import {BridgedToken} from "./BridgedToken.sol";
+import {NoncesUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/utils/NoncesUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ERC20VotesUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
@@ -12,7 +19,7 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
  * @notice Implements an ERC20 token with specific features for Kinto token.
  * Extends BridgedToken.
  */
-contract BridgedKinto is BridgedToken {
+contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     /// @notice The error thrown if the recipient is not allowed.
     error TransferIsNotAllowed(address from, address to, uint256 amount);
 
@@ -46,7 +53,10 @@ contract BridgedKinto is BridgedToken {
      *
      * Emits a {Transfer} event.
      */
-    function _update(address from, address to, uint256 amount) internal override {
+    function _update(address from, address to, uint256 amount)
+        internal
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
+    {
         super._update(from, to, amount);
 
         if (
@@ -55,6 +65,14 @@ contract BridgedKinto is BridgedToken {
         ) {
             revert TransferIsNotAllowed(from, to, amount);
         }
+    }
+
+    function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
+        return super.decimals();
+    }
+
+    function decimals() public view override(ERC20Upgradeable, BridgedToken) returns (uint8) {
+        return super.decimals();
     }
 
     function symbol() public pure override returns (string memory) {

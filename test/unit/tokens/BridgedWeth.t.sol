@@ -12,19 +12,17 @@ import {ReceiveRevert} from "@kinto-core-test/helpers/ReceiveRevert.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
 
 contract BridgedWethTest is BaseTest {
-    address admin;
     address minter;
     address upgrader;
-    address alice;
 
     BridgedWeth internal token;
     ReceiveRevert internal receiveRevert;
 
     function setUp() public override {
-        admin = createUser("admin");
+        super.setUp();
+
         minter = createUser("minter");
         upgrader = createUser("upgrader");
-        alice = createUser("alice");
 
         receiveRevert = new ReceiveRevert();
 

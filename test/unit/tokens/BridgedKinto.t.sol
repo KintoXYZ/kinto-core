@@ -7,7 +7,6 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 
 contract BridgedKintoTest is SharedSetup {
-    address admin;
     address minter;
     address upgrader;
 
@@ -17,7 +16,6 @@ contract BridgedKintoTest is SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        admin = createUser("admin");
         minter = createUser("minter");
         upgrader = createUser("upgrader");
 

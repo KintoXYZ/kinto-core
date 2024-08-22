@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import {IERC721} from "@openzeppelin-5.0.1/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
 contract NioElection is Ownable {
-    IERC20 public kToken;
-    IERC721 public nioNFT;
+    /* ============ Struct ============ */
 
     struct Candidate {
         address addr;
@@ -25,13 +24,22 @@ contract NioElection is Ownable {
         mapping(address => Candidate) candidates;
         address[] candidateList;
         mapping(address => bool) hasVoted;
-        bool isActive;
+        bool hasStarted;
     }
 
-    Election public currentElection;
+    /* ============ Constants ============ */
+
     uint256 public constant ELECTION_DURATION = 30 days;
     uint256 public constant MIN_VOTE_PERCENTAGE = 5e15; // 0.5% in wei
+    IERC20 public immutable kToken;
+    IERC721 public immutable nioNFT;
+
+    /* ============ State Variables ============ */
+
+    Election public currentElection;
     uint256 public totalVotableTokens;
+
+    /* ============ Events ============ */
 
     event ElectionStarted(uint256 startTime, uint256 seatsAvailable);
     event CandidateDeclared(address candidate);
@@ -40,7 +48,8 @@ contract NioElection is Ownable {
     event VoteCast(address voter, address candidate, uint256 weight);
     event ElectionCompleted(address[] winners);
 
-    // Custom errors
+    /* ============ Errors ============ */
+
     error ElectionAlreadyActive();
     error NoActiveElection();
     error ContenderSubmissionEnded();
@@ -54,13 +63,18 @@ contract NioElection is Ownable {
     error ComplianceProcessEnded();
     error ElectionPeriodNotEnded();
 
+    /* ============ Constructor ============ */
+
     constructor(address _kToken, address _nioNFT) Ownable(msg.sender) {
         kToken = IERC20(_kToken);
         nioNFT = IERC721(_nioNFT);
     }
 
+    /* ============ External ============ */
+
+    // TODO: Allow to start only if 6 months has passed over the past election or it is the first one
     function startElection(uint256 _seatsAvailable) external onlyOwner {
-        if (currentElection.isActive) revert ElectionAlreadyActive();
+        if (currentElection.hasStarted) revert ElectionAlreadyActive();
 
         currentElection.startTime = block.timestamp;
         currentElection.contenderSubmissionEndTime = block.timestamp + 5 days;
@@ -68,7 +82,7 @@ contract NioElection is Ownable {
         currentElection.complianceProcessEndTime = block.timestamp + 15 days;
         currentElection.memberElectionEndTime = block.timestamp + 30 days;
         currentElection.seatsAvailable = _seatsAvailable;
-        currentElection.isActive = true;
+        currentElection.hasStarted = true;
 
         totalVotableTokens = kToken.totalSupply();
 
@@ -76,7 +90,7 @@ contract NioElection is Ownable {
     }
 
     function declareCandidate() external {
-        if (!currentElection.isActive) revert NoActiveElection();
+        if (!currentElection.hasStarted) revert NoActiveElection();
         if (block.timestamp > currentElection.contenderSubmissionEndTime) revert ContenderSubmissionEnded();
         if (isNio(msg.sender)) revert CurrentNioCannotBeCandidate();
 
@@ -87,7 +101,7 @@ contract NioElection is Ownable {
     }
 
     function vote(address _candidate) external {
-        if (!currentElection.isActive) revert NoActiveElection();
+        if (!currentElection.hasStarted) revert NoActiveElection();
         if (block.timestamp <= currentElection.contenderSubmissionEndTime) revert VotingNotStarted();
         if (block.timestamp > currentElection.memberElectionEndTime) revert VotingEnded();
         if (currentElection.hasVoted[msg.sender]) revert AlreadyVoted();
@@ -105,7 +119,7 @@ contract NioElection is Ownable {
         currentElection.hasVoted[msg.sender] = true;
 
         if (block.timestamp <= currentElection.nomineeSelectionEndTime) {
-            if (candidate.votes >= totalVotableTokens*MIN_VOTE_PERCENTAGE/1e18) {
+            if (candidate.votes >= totalVotableTokens * MIN_VOTE_PERCENTAGE / 1e18) {
                 candidate.isEligible = true;
                 emit NomineeSelected(_candidate, candidate.votes);
             }
@@ -115,7 +129,7 @@ contract NioElection is Ownable {
     }
 
     function disqualifyCandidate(address _candidate) external onlyOwner {
-        if (!currentElection.isActive) revert NoActiveElection();
+        if (!currentElection.hasStarted) revert NoActiveElection();
         if (block.timestamp <= currentElection.nomineeSelectionEndTime) revert NomineeSelectionNotEnded();
         if (block.timestamp > currentElection.complianceProcessEndTime) revert ComplianceProcessEnded();
 
@@ -127,7 +141,7 @@ contract NioElection is Ownable {
     }
 
     function completeElection() external onlyOwner {
-        if (!currentElection.isActive) revert NoActiveElection();
+        if (!currentElection.hasStarted) revert NoActiveElection();
         if (block.timestamp <= currentElection.memberElectionEndTime) revert ElectionPeriodNotEnded();
 
         address[] memory winners = new address[](currentElection.seatsAvailable);
@@ -147,16 +161,18 @@ contract NioElection is Ownable {
 
         // TODO: Implement logic to mint Nio NFTs for winners
 
-        currentElection.isActive = false;
+        currentElection.hasStarted = false;
         emit ElectionCompleted(winners);
     }
+
+    /* ============ View ============ */
 
     function calculateVoteWeight() internal view returns (uint256) {
         if (block.timestamp <= currentElection.complianceProcessEndTime + 7 days) {
             return 1e18; // 100% weight
         } else {
-            uint256 timeLeft = currentElection.memberElectionEndTime-block.timestamp;
-            return timeLeft*1e18/8 days; // Linear decrease from 100% to 0% over 8 days
+            uint256 timeLeft = currentElection.memberElectionEndTime - block.timestamp;
+            return timeLeft * 1e18 / 8 days; // Linear decrease from 100% to 0% over 8 days
         }
     }
 
@@ -174,7 +190,7 @@ contract NioElection is Ownable {
             uint256 complianceProcessEndTime,
             uint256 memberElectionEndTime,
             uint256 seatsAvailable,
-            bool isActive
+            bool hasStarted
         )
     {
         return (
@@ -184,7 +200,7 @@ contract NioElection is Ownable {
             currentElection.complianceProcessEndTime,
             currentElection.memberElectionEndTime,
             currentElection.seatsAvailable,
-            currentElection.isActive
+            currentElection.hasStarted
         );
     }
 
