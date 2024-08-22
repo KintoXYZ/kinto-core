@@ -82,4 +82,13 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     function name() public pure override returns (string memory) {
         return "Kinto Token";
     }
+
+    function clock() public view override returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function CLOCK_MODE() public pure override returns (string memory) {
+        return "mode=timestamp";
+    }
 }

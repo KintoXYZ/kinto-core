@@ -5,6 +5,8 @@ import {IERC721} from "@openzeppelin-5.0.1/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+
 contract NioElection is Ownable {
     /* ============ Struct ============ */
 
@@ -31,13 +33,12 @@ contract NioElection is Ownable {
 
     uint256 public constant ELECTION_DURATION = 30 days;
     uint256 public constant MIN_VOTE_PERCENTAGE = 5e15; // 0.5% in wei
-    IERC20 public immutable kToken;
+    BridgedKinto public immutable kToken;
     IERC721 public immutable nioNFT;
 
     /* ============ State Variables ============ */
 
     Election public currentElection;
-    uint256 public totalVotableTokens;
 
     /* ============ Events ============ */
 
@@ -66,7 +67,7 @@ contract NioElection is Ownable {
     /* ============ Constructor ============ */
 
     constructor(address _kToken, address _nioNFT) Ownable(msg.sender) {
-        kToken = IERC20(_kToken);
+        kToken = BridgedKinto(_kToken);
         nioNFT = IERC721(_nioNFT);
     }
 
@@ -83,8 +84,6 @@ contract NioElection is Ownable {
         currentElection.memberElectionEndTime = block.timestamp + 30 days;
         currentElection.seatsAvailable = _seatsAvailable;
         currentElection.hasStarted = true;
-
-        totalVotableTokens = kToken.totalSupply();
 
         emit ElectionStarted(currentElection.startTime, _seatsAvailable);
     }
@@ -117,6 +116,8 @@ contract NioElection is Ownable {
 
         candidate.votes = candidate.votes + weightedVotes;
         currentElection.hasVoted[msg.sender] = true;
+
+        uint256 totalVotableTokens = kToken.getPastTotalSupply(currentElection.startTime);
 
         if (block.timestamp <= currentElection.nomineeSelectionEndTime) {
             if (candidate.votes >= totalVotableTokens * MIN_VOTE_PERCENTAGE / 1e18) {
