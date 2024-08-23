@@ -7,7 +7,7 @@ import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 
 import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 
-contract NioElection is Ownable {
+contract NioElection {
     /* ============ Types ============ */
 
     enum ElectionPhase {
@@ -65,7 +65,6 @@ contract NioElection is Ownable {
     event ElectionStarted(uint256 startTime, uint256 niosToElect);
     event NomineeSubmitted(address candidate);
     event NomineeSelected(address nominee, uint256 votes);
-    event CandidateDisqualified(address candidate);
     event NomineeVoteCast(address voter, address candidate, uint256 weight);
     event MemberVoteCast(address voter, address candidate, uint256 weight);
     event ElectionCompleted(uint256 electionId, address[] winners);
@@ -84,7 +83,7 @@ contract NioElection is Ownable {
 
     /* ============ Constructor ============ */
 
-    constructor(address _kToken, address _nioNFT) Ownable(msg.sender) {
+    constructor(address _kToken, address _nioNFT) {
         kToken = BridgedKinto(_kToken);
         nioNFT = IERC721(_nioNFT);
     }
@@ -168,19 +167,6 @@ contract NioElection is Ownable {
         currentElection.hasVotedForMember[msg.sender] = true;
 
         emit MemberVoteCast(msg.sender, _candidate, weightedVotes);
-    }
-
-    function disqualifyCandidate(address _candidate) external onlyOwner {
-        ElectionPhase currentPhase = getCurrentPhase();
-        if (currentPhase != ElectionPhase.ComplianceProcess) {
-            revert InvalidElectionPhase(currentPhase, ElectionPhase.ComplianceProcess);
-        }
-
-        Candidate storage candidate = currentElection.candidates[_candidate];
-        if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
-
-        candidate.isEligible = false;
-        emit CandidateDisqualified(_candidate);
     }
 
     function completeElection() external {

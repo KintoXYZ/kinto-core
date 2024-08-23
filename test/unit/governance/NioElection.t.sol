@@ -37,7 +37,7 @@ contract NiosElectionTest is SharedSetup {
         }
     }
 
-    function testUp() public virtual {}
+    function testUp() public override {}
 
     function testStartElection() public {
         election.startElection();
@@ -182,57 +182,6 @@ contract NiosElectionTest is SharedSetup {
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(NioElection.AlreadyVoted.selector, bob));
         election.voteForNominee(alice);
-    }
-
-    function testDisqualifyMultipleCandidates() public {
-        election.startElection();
-        for (uint256 i = 0; i < 3; i++) {
-            vm.prank(users[i]);
-            election.submitNominee();
-        }
-
-        bool isEligible;
-
-        vm.warp(block.timestamp + 11 days);
-        for (uint256 i = 0; i < 2; i++) {
-            election.disqualifyCandidate(users[i]);
-            (,,, isEligible) = election.getCandidateInfo(users[i]);
-            assertEq(isEligible, false);
-        }
-        (,,, isEligible) = election.getCandidateInfo(users[2]);
-        assertEq(isEligible, true);
-    }
-
-    function testCannotDisqualifyCandidateBeforeComplianceProcess() public {
-        election.startElection();
-        vm.prank(alice);
-        election.submitNominee();
-
-        vm.warp(block.timestamp + 9 days);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NioElection.InvalidElectionPhase.selector,
-                NioElection.ElectionPhase.NomineeSelection,
-                NioElection.ElectionPhase.ComplianceProcess
-            )
-        );
-        election.disqualifyCandidate(alice);
-    }
-
-    function testCannotDisqualifyCandidateAfterComplianceProcess() public {
-        election.startElection();
-        vm.prank(alice);
-        election.submitNominee();
-
-        vm.warp(block.timestamp + 16 days);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NioElection.InvalidElectionPhase.selector,
-                NioElection.ElectionPhase.MemberElection,
-                NioElection.ElectionPhase.ComplianceProcess
-            )
-        );
-        election.disqualifyCandidate(alice);
     }
 
     function testCompleteElectionWithMultipleUsers() public {
