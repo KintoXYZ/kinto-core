@@ -63,7 +63,7 @@ contract NioElection is Ownable {
     /* ============ Events ============ */
 
     event ElectionStarted(uint256 startTime, uint256 niosToElect);
-    event CandidateDeclared(address candidate);
+    event NomineeSubmitted(address candidate);
     event NomineeSelected(address nominee, uint256 votes);
     event CandidateDisqualified(address candidate);
     event NomineeVoteCast(address voter, address candidate, uint256 weight);
@@ -110,7 +110,7 @@ contract NioElection is Ownable {
         emit ElectionStarted(startTime, currentElection.niosToElect);
     }
 
-    function declareCandidate() external {
+    function submitNominee() external {
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.ContenderSubmission) {
             revert InvalidElectionPhase(currentPhase, ElectionPhase.ContenderSubmission);
@@ -120,7 +120,7 @@ contract NioElection is Ownable {
         currentElection.candidates[msg.sender] = Candidate(msg.sender, 0, 0, false);
         currentElection.candidateList.push(msg.sender);
 
-        emit CandidateDeclared(msg.sender);
+        emit NomineeSubmitted(msg.sender);
     }
 
     function voteForNominee(address _candidate) external {

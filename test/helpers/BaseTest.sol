@@ -46,11 +46,31 @@ abstract contract BaseTest is AssertionHelper {
     uint256 internal adminPk;
     address internal admin;
 
+    address[] internal users;
+
     uint256 internal alicePk;
     address internal alice;
 
     uint256 internal bobPk;
     address internal bob;
+
+    uint256 internal ianPk;
+    address internal ian;
+
+    uint256 internal hannahPk;
+    address internal hannah;
+
+    uint256 internal georgePk;
+    address internal george;
+
+    uint256 internal frankPk;
+    address internal frank;
+
+    uint256 internal davidPk;
+    address internal david;
+
+    uint256 internal charliePk;
+    address internal charlie;
 
     uint256 internal evePk;
     address internal eve;
@@ -64,7 +84,15 @@ abstract contract BaseTest is AssertionHelper {
         (admin, adminPk) = createUserWithKey("admin");
         (alice, alicePk) = createUserWithKey("alice");
         (bob, bobPk) = createUserWithKey("bob");
+        (charlie, charliePk) = createUserWithKey("charlie");
+        (david, davidPk) = createUserWithKey("david");
         (eve, evePk) = createUserWithKey("eve");
+        (frank, frankPk) = createUserWithKey("frank");
+        (george, georgePk) = createUserWithKey("george");
+        (hannah, hannahPk) = createUserWithKey("hannah");
+        (ian, ianPk) = createUserWithKey("ian");
+
+        users = [alice, bob, charlie, david, eve, frank, george, hannah, ian];
     }
 
     function testUp() public virtual {}
