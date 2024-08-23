@@ -14,10 +14,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {console2} from "forge-std/console2.sol";
 
 interface ISocket {
-
-    function setExecutionManager(
-        address executionManager
-    ) external ;
+    function setExecutionManager(address executionManager) external;
 
     function executionManager__() external view returns (address);
 }
@@ -33,11 +30,8 @@ contract Script is MigrationHelper {
         address SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
         address EXECUTION_MANAGER = 0xc8a4D2fd77c155fd52e65Ab07F337aBF84495Ead;
 
-        _handleOps(
-            abi.encodeWithSelector(ISocket.setExecutionManager.selector, EXECUTION_MANAGER), SOCKET
-        );
+        _handleOps(abi.encodeWithSelector(ISocket.setExecutionManager.selector, EXECUTION_MANAGER), SOCKET);
 
         assertEq(ISocket(SOCKET).executionManager__(), EXECUTION_MANAGER);
     }
 }
-
