@@ -47,15 +47,7 @@ contract NioGovernorTest is SharedSetup {
         nio7 = createUser("nio7");
         nio8 = createUser("nio8");
 
-        nios.push(nio0);
-        nios.push(nio1);
-        nios.push(nio2);
-        nios.push(nio3);
-        nios.push(nio4);
-        nios.push(nio5);
-        nios.push(nio6);
-        nios.push(nio7);
-        nios.push(nio8);
+        nios = [nio0, nio1, nio2, nio3, nio4, nio5, nio6, nio7, nio8];
 
         accessManager = new AccessManager(_owner);
         ownableCounter = new OwnableCounter();

@@ -10,7 +10,14 @@ import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 contract NioElection is Ownable {
     /* ============ Types ============ */
 
-    enum ElectionPhase { NotStarted, ContenderSubmission, NomineeSelection, ComplianceProcess, MemberElection, Completed }
+    enum ElectionPhase {
+        NotStarted,
+        ContenderSubmission,
+        NomineeSelection,
+        ComplianceProcess,
+        MemberElection,
+        Completed
+    }
 
     struct Candidate {
         address addr;
@@ -65,15 +72,15 @@ contract NioElection is Ownable {
 
     /* ============ Errors ============ */
 
-    error ElectionAlreadyActive();
+    error ElectionAlreadyActive(uint256 startTime);
     error ElectionNotActive();
-    error InvalidElectionPhase();
-    error ElectedNioCannotBeCandidate();
-    error AlreadyVoted();
-    error NoVotingPower();
-    error InvalidCandidate();
-    error InsufficientEligibleCandidates();
-    error TooEarlyForNewElection();
+    error InvalidElectionPhase(ElectionPhase currentPhase, ElectionPhase requiredPhase);
+    error ElectedNioCannotBeCandidate(address nio);
+    error AlreadyVoted(address voter);
+    error NoVotingPower(address voter);
+    error InvalidCandidate(address candidate);
+    error InsufficientEligibleCandidates(uint256 eligibleCount, uint256 required);
+    error TooEarlyForNewElection(uint256 currentTime, uint256 nextElectionTime);
 
     /* ============ Constructor ============ */
 
@@ -85,14 +92,17 @@ contract NioElection is Ownable {
     /* ============ External Functions ============ */
 
     function startElection() external {
-        if (isElectionActive()) revert ElectionAlreadyActive();
-        if (block.timestamp < lastElectionTime + ELECTION_INTERVAL) revert TooEarlyForNewElection();
+        if (isElectionActive()) revert ElectionAlreadyActive(currentElection.startTime);
+        if (block.timestamp < lastElectionTime + ELECTION_INTERVAL) {
+            revert TooEarlyForNewElection(block.timestamp, lastElectionTime + ELECTION_INTERVAL);
+        }
 
         uint256 startTime = block.timestamp;
         currentElection.startTime = startTime;
         currentElection.contenderSubmissionEndTime = startTime + CONTENDER_SUBMISSION_DURATION;
         currentElection.nomineeSelectionEndTime = startTime + CONTENDER_SUBMISSION_DURATION + NOMINEE_SELECTION_DURATION;
-        currentElection.complianceProcessEndTime = startTime + CONTENDER_SUBMISSION_DURATION + NOMINEE_SELECTION_DURATION + COMPLIANCE_PROCESS_DURATION;
+        currentElection.complianceProcessEndTime =
+            startTime + CONTENDER_SUBMISSION_DURATION + NOMINEE_SELECTION_DURATION + COMPLIANCE_PROCESS_DURATION;
         currentElection.memberElectionEndTime = startTime + ELECTION_DURATION;
         currentElection.isCompleted = false;
         currentElection.niosToElect = electionCount % 2 == 0 ? 4 : 5;
@@ -101,8 +111,11 @@ contract NioElection is Ownable {
     }
 
     function declareCandidate() external {
-        if (getCurrentPhase() != ElectionPhase.ContenderSubmission) revert InvalidElectionPhase();
-        if (isElectedNio(msg.sender)) revert ElectedNioCannotBeCandidate();
+        ElectionPhase currentPhase = getCurrentPhase();
+        if (currentPhase != ElectionPhase.ContenderSubmission) {
+            revert InvalidElectionPhase(currentPhase, ElectionPhase.ContenderSubmission);
+        }
+        if (isElectedNio(msg.sender)) revert ElectedNioCannotBeCandidate(msg.sender);
 
         currentElection.candidates[msg.sender] = Candidate(msg.sender, 0, 0, false);
         currentElection.candidateList.push(msg.sender);
@@ -111,14 +124,17 @@ contract NioElection is Ownable {
     }
 
     function voteForNominee(address _candidate) external {
-        if (getCurrentPhase() != ElectionPhase.NomineeSelection) revert InvalidElectionPhase();
-        if (currentElection.hasVotedForNominee[msg.sender]) revert AlreadyVoted();
+        ElectionPhase currentPhase = getCurrentPhase();
+        if (currentPhase != ElectionPhase.NomineeSelection) {
+            revert InvalidElectionPhase(currentPhase, ElectionPhase.NomineeSelection);
+        }
+        if (currentElection.hasVotedForNominee[msg.sender]) revert AlreadyVoted(msg.sender);
 
         uint256 votes = kToken.getPastVotes(msg.sender, currentElection.startTime);
-        if (votes == 0) revert NoVotingPower();
+        if (votes == 0) revert NoVotingPower(msg.sender);
 
         Candidate storage candidate = currentElection.candidates[_candidate];
-        if (candidate.addr == address(0)) revert InvalidCandidate();
+        if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
 
         candidate.nomineeVotes += votes;
         currentElection.hasVotedForNominee[msg.sender] = true;
@@ -133,14 +149,17 @@ contract NioElection is Ownable {
     }
 
     function voteForMember(address _candidate) external {
-        if (getCurrentPhase() != ElectionPhase.MemberElection) revert InvalidElectionPhase();
-        if (currentElection.hasVotedForMember[msg.sender]) revert AlreadyVoted();
+        ElectionPhase currentPhase = getCurrentPhase();
+        if (currentPhase != ElectionPhase.MemberElection) {
+            revert InvalidElectionPhase(currentPhase, ElectionPhase.MemberElection);
+        }
+        if (currentElection.hasVotedForMember[msg.sender]) revert AlreadyVoted(msg.sender);
 
         uint256 votes = kToken.getPastVotes(msg.sender, currentElection.startTime);
-        if (votes == 0) revert NoVotingPower();
+        if (votes == 0) revert NoVotingPower(msg.sender);
 
         Candidate storage candidate = currentElection.candidates[_candidate];
-        if (candidate.addr == address(0) || !candidate.isEligible) revert InvalidCandidate();
+        if (candidate.addr == address(0) || !candidate.isEligible) revert InvalidCandidate(_candidate);
 
         uint256 weight = calculateVoteWeight();
         uint256 weightedVotes = votes * weight / 1e18;
@@ -152,17 +171,21 @@ contract NioElection is Ownable {
     }
 
     function disqualifyCandidate(address _candidate) external onlyOwner {
-        if (getCurrentPhase() != ElectionPhase.ComplianceProcess) revert InvalidElectionPhase();
+        ElectionPhase currentPhase = getCurrentPhase();
+        if (currentPhase != ElectionPhase.ComplianceProcess) {
+            revert InvalidElectionPhase(currentPhase, ElectionPhase.ComplianceProcess);
+        }
 
         Candidate storage candidate = currentElection.candidates[_candidate];
-        if (candidate.addr == address(0)) revert InvalidCandidate();
+        if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
 
         candidate.isEligible = false;
         emit CandidateDisqualified(_candidate);
     }
 
     function completeElection() external {
-        if (getCurrentPhase() != ElectionPhase.Completed) revert InvalidElectionPhase();
+        ElectionPhase currentPhase = getCurrentPhase();
+        if (currentPhase != ElectionPhase.Completed) revert InvalidElectionPhase(currentPhase, ElectionPhase.Completed);
         if (currentElection.isCompleted) revert ElectionNotActive();
 
         address[] memory sortedCandidates = sortCandidatesByVotes();
@@ -177,7 +200,9 @@ contract NioElection is Ownable {
             }
         }
 
-        if (winnerCount < currentElection.niosToElect) revert InsufficientEligibleCandidates();
+        if (winnerCount < currentElection.niosToElect) {
+            revert InsufficientEligibleCandidates(winnerCount, currentElection.niosToElect);
+        }
 
         // TODO: Implement logic to mint Nio NFTs for winners
 
@@ -203,25 +228,28 @@ contract NioElection is Ownable {
     function isElectedNio(address _address) internal view returns (bool) {
         if (electionCount == 0) {
             return false;
-        } else {
-            // For subsequent elections, check the past election results
-            address[] memory currentNios = pastElectionResults[electionCount - 1];
-            for (uint256 i = 0; i < currentNios.length; i++) {
-                if (currentNios[i] == _address) {
-                    return true;
-                }
-            }
-            return false;
         }
+        // For subsequent elections, check the past election results
+        address[] memory currentNios = pastElectionResults[electionCount - 1];
+        for (uint256 i = 0; i < currentNios.length; i++) {
+            if (currentNios[i] == _address) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function sortCandidatesByVotes() internal view returns (address[] memory) {
+        // TODO: Use https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Arrays.sol
         address[] memory sortedCandidates = currentElection.candidateList;
         uint256 length = sortedCandidates.length;
 
         for (uint256 i = 0; i < length - 1; i++) {
             for (uint256 j = 0; j < length - i - 1; j++) {
-                if (currentElection.candidates[sortedCandidates[j]].electionVotes < currentElection.candidates[sortedCandidates[j + 1]].electionVotes) {
+                if (
+                    currentElection.candidates[sortedCandidates[j]].electionVotes
+                        < currentElection.candidates[sortedCandidates[j + 1]].electionVotes
+                ) {
                     (sortedCandidates[j], sortedCandidates[j + 1]) = (sortedCandidates[j + 1], sortedCandidates[j]);
                 }
             }
@@ -296,12 +324,7 @@ contract NioElection is Ownable {
         return lastElectionTime + ELECTION_INTERVAL;
     }
 
-     function getElectedNios() public view returns (address[] memory) {
-        if (electionCount == 0) {
-            return new address[](0);
-        } else {
-            // For subsequent elections, return the result of the most recent election
-            return pastElectionResults[electionCount - 1];
-        }
+    function getElectedNios() public view returns (address[] memory) {
+        return electionCount == 0 ? new address[](0) : pastElectionResults[electionCount - 1];
     }
 }
