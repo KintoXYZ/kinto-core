@@ -23,6 +23,7 @@ contract EngenBadges is
     error NoTokenIDsProvided();
     error MismatchedInputLengths();
     error MintToManyAddresses();
+    error BurnTooManyAddresses();
 
     string public constant name = "Engen Badges";
     string public constant symbol = "ENGB";
@@ -88,6 +89,27 @@ contract EngenBadges is
 
         for (uint256 i = 0; i < recipients.length; i++) {
             mintBadges(recipients[i], ids[i]);
+        }
+    }
+
+    /**
+     * @dev Batch burning function that burns multiple types of tokens from multiple addresses.
+     * Only callable by addresses with the MINTER_ROLE. Limits the batch to a maximum of 100 addresses.
+     * @param accounts List of addresses to burn tokens from.
+     * @param ids List of lists of token IDs. Each element of `ids` corresponds to a list of tokens to burn from the corresponding address in `accounts`.
+     * @param amounts List of lists of amounts. Each element of `amounts` corresponds to the amount of tokens to burn for each ID in `ids`.
+     */
+    function burnBadgesBatch(address[] memory accounts, uint256[][] memory ids, uint256[][] memory amounts)
+        external
+        onlyRole(MINTER_ROLE)
+    {
+        if (accounts.length != ids.length || accounts.length != amounts.length) revert MismatchedInputLengths();
+        if (accounts.length > 100) revert BurnTooManyAddresses();
+        if (ids.length == 0) revert NoTokenIDsProvided();
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            if (ids[i].length != amounts[i].length) revert MismatchedInputLengths();
+            _burnBatch(accounts[i], ids[i], amounts[i]);
         }
     }
 

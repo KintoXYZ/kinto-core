@@ -142,8 +142,8 @@ contract EngenBadgesTest is SharedSetup {
         }
     }
 
-    function testMintBatchRecipients_RevertWhen_101addresses() public {
-        uint256 elements = 101;
+    function testMintBatchRecipients_RevertWhen_TooManyAddresses() public {
+        uint256 elements = 251;
         address[] memory recipients = new address[](elements);
         uint256[][] memory ids = new uint256[][](elements);
 
@@ -261,5 +261,119 @@ contract EngenBadgesTest is SharedSetup {
             ^ bytes4(keccak256("safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)"));
 
         assertTrue(_engenBadges.supportsInterface(InterfaceERC1155Upgradeable));
+    }
+
+    function testBurnBadgesBatch() public {
+        // First, mint some badges
+        uint256 elements = 3;
+        address[] memory recipients = new address[](elements);
+        uint256[][] memory mintIds = new uint256[][](elements);
+
+        for (uint256 i = 0; i < elements; i++) {
+            recipients[i] = address(uint160(0xABCDE + i));
+            mintIds[i] = new uint256[](2);
+            mintIds[i][0] = i + 1;
+            mintIds[i][1] = i + 4;
+        }
+
+        UserOperation[] memory mintOps = new UserOperation[](1);
+        mintOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenBadges),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("mintBadgesBatch(address[],uint256[][])", recipients, mintIds),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(mintOps, payable(_owner));
+
+        // Verify minting was successful
+        for (uint256 i = 0; i < elements; i++) {
+            assertEq(_engenBadges.balanceOf(recipients[i], i + 1), 1);
+            assertEq(_engenBadges.balanceOf(recipients[i], i + 4), 1);
+        }
+
+        // Now, burn some of the minted badges
+        uint256[][] memory burnIds = new uint256[][](elements);
+        uint256[][] memory burnAmounts = new uint256[][](elements);
+
+        for (uint256 i = 0; i < elements; i++) {
+            burnIds[i] = new uint256[](1);
+            burnIds[i][0] = i + 1;
+            burnAmounts[i] = new uint256[](1);
+            burnAmounts[i][0] = 1;
+        }
+
+        UserOperation[] memory burnOps = new UserOperation[](1);
+        burnOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenBadges),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature(
+                "burnBadgesBatch(address[],uint256[][],uint256[][])", recipients, burnIds, burnAmounts
+            ),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(burnOps, payable(_owner));
+
+        // Verify burning was successful
+        for (uint256 i = 0; i < elements; i++) {
+            assertEq(_engenBadges.balanceOf(recipients[i], i + 1), 0);
+            assertEq(_engenBadges.balanceOf(recipients[i], i + 4), 1);
+        }
+    }
+
+    function testBurnBadgesBatch_RevertWhen_NotMinter() public {
+        address[] memory accounts = new address[](1);
+        accounts[0] = alice;
+        uint256[][] memory ids = new uint256[][](1);
+        ids[0] = new uint256[](1);
+        ids[0][0] = 1;
+        uint256[][] memory amounts = new uint256[][](1);
+        amounts[0] = new uint256[](1);
+        amounts[0][0] = 1;
+
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(alice),
+            " is missing role ",
+            Strings.toHexString(uint256(_engenBadges.MINTER_ROLE()), 32)
+        );
+
+        vm.expectRevert(err);
+        vm.prank(alice);
+        _engenBadges.burnBadgesBatch(accounts, ids, amounts);
+    }
+
+    function testBurnBadgesBatch_RevertWhen_TooManyAddresses() public {
+        uint256 elements = 251;
+        address[] memory accounts = new address[](elements);
+        uint256[][] memory ids = new uint256[][](elements);
+        uint256[][] memory amounts = new uint256[][](elements);
+
+        for (uint256 i = 0; i < elements; i++) {
+            accounts[i] = address(uint160(0xABCDE + i));
+            ids[i] = new uint256[](1);
+            ids[i][0] = 1;
+            amounts[i] = new uint256[](1);
+            amounts[i][0] = 1;
+        }
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenBadges),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("burnBadgesBatch(address[],uint256[][],uint256[][])", accounts, ids, amounts),
+            address(_paymaster)
+        );
+
+        vm.recordLogs();
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertRevertReasonEq(EngenBadges.BurnTooManyAddresses.selector);
     }
 }
