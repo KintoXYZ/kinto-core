@@ -84,7 +84,7 @@ contract EngenBadges is
      */
     function mintBadgesBatch(address[] memory recipients, uint256[][] memory ids) external onlyRole(MINTER_ROLE) {
         if (recipients.length != ids.length) revert MismatchedInputLengths();
-        if (recipients.length > 100) revert MintToManyAddresses();
+        if (recipients.length > 250) revert MintToManyAddresses();
         if (ids.length == 0) revert NoTokenIDsProvided();
 
         for (uint256 i = 0; i < recipients.length; i++) {
@@ -104,7 +104,7 @@ contract EngenBadges is
         onlyRole(MINTER_ROLE)
     {
         if (accounts.length != ids.length || accounts.length != amounts.length) revert MismatchedInputLengths();
-        if (accounts.length > 100) revert BurnTooManyAddresses();
+        if (accounts.length > 250) revert BurnTooManyAddresses();
         if (ids.length == 0) revert NoTokenIDsProvided();
 
         for (uint256 i = 0; i < accounts.length; i++) {
