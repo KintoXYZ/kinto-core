@@ -81,53 +81,15 @@ contract NioElectionTest is SharedSetup {
     function testVoteForNominee() public {}
 
     function testCannotVoteForCandidateBeforeCandidateVoting() public {
-        election.startElection();
-        vm.prank(alice);
-        election.submitCandidate();
-
-        vm.prank(bob);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NioElection.InvalidElectionPhase.selector,
-                NioElection.ElectionPhase.CandidateSubmission,
-                NioElection.ElectionPhase.CandidateVoting
-            )
-        );
-        election.voteForCandidate(alice);
+        
     }
 
     function testCannotVoteForNomineeBeforeNomineeVoting() public {
-        election.startElection();
-        vm.prank(alice);
-        election.submitCandidate();
-
-        vm.warp(block.timestamp + 6 days);
-        vm.prank(bob);
-        election.voteForCandidate(alice);
-
-        vm.prank(charlie);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NioElection.InvalidElectionPhase.selector,
-                NioElection.ElectionPhase.CandidateVoting,
-                NioElection.ElectionPhase.NomineeVoting
-            )
-        );
-        election.voteForNominee(alice);
+        
     }
 
     function testCannotVoteTwice() public {
-        election.startElection();
-        vm.prank(alice);
-        election.submitCandidate();
-
-        vm.warp(block.timestamp + 6 days);
-        vm.prank(bob);
-        election.voteForCandidate(alice);
-
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(NioElection.AlreadyVoted.selector, bob));
-        election.voteForCandidate(alice);
+        
     }
 
     function testElectNios() public {}

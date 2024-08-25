@@ -44,8 +44,8 @@ contract NioElection {
         address[] candidateList;
         mapping(address => Nominee) nominees;
         address[] nomineeList;
-        mapping(address => bool) hasVotedForCandidate;
-        mapping(address => bool) hasVotedForNominee;
+        mapping(address => uint256) usedCandidateVotes;
+        mapping(address => uint256) usedNomineeVotes;
         uint256 niosToElect;
         address[] electedNios;
     }
@@ -140,7 +140,7 @@ contract NioElection {
         emit CandidateSubmitted(currentElectionId, msg.sender);
     }
 
-    function voteForCandidate(address _candidate) external {
+    function voteForCandidate(address _candidate, uint256 _votes) external {
         uint256 currentElectionId = elections.length - 1;
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateVoting) {
@@ -148,18 +148,18 @@ contract NioElection {
         }
 
         Election storage election = elections[currentElectionId];
-        if (election.hasVotedForCandidate[msg.sender]) revert AlreadyVoted(msg.sender);
+        uint256 availableVotes =
+            kToken.getPastVotes(msg.sender, election.startTime) - election.usedCandidateVotes[msg.sender];
 
-        uint256 votes = kToken.getPastVotes(msg.sender, election.startTime);
-        if (votes == 0) revert NoVotingPower(msg.sender);
+        if (_votes > availableVotes) revert NoVotingPower(msg.sender);
 
         Candidate storage candidate = election.candidates[_candidate];
         if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
 
-        candidate.votes += votes;
-        election.hasVotedForCandidate[msg.sender] = true;
+        candidate.votes += _votes;
+        election.usedCandidateVotes[msg.sender] += _votes;
 
-        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, votes);
+        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, _votes);
 
         // Check if the candidate now meets the threshold to become a nominee
         uint256 totalVotableTokens = kToken.getPastTotalSupply(election.startTime);
@@ -172,7 +172,7 @@ contract NioElection {
         }
     }
 
-    function voteForNominee(address _nominee) external {
+    function voteForNominee(address _nominee, uint256 _votes) external {
         uint256 currentElectionId = elections.length - 1;
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.NomineeVoting) {
@@ -180,19 +180,19 @@ contract NioElection {
         }
 
         Election storage election = elections[currentElectionId];
-        if (election.hasVotedForNominee[msg.sender]) revert AlreadyVoted(msg.sender);
+        uint256 availableVotes =
+            kToken.getPastVotes(msg.sender, election.startTime) - election.usedNomineeVotes[msg.sender];
 
-        uint256 votes = kToken.getPastVotes(msg.sender, election.startTime);
-        if (votes == 0) revert NoVotingPower(msg.sender);
+        if (_votes > availableVotes) revert NoVotingPower(msg.sender);
 
         Nominee storage nominee = election.nominees[_nominee];
         if (nominee.addr == address(0)) revert InvalidNominee(_nominee);
 
         uint256 weight = calculateVoteWeight(currentElectionId);
-        uint256 weightedVotes = votes * weight / 1e18;
+        uint256 weightedVotes = _votes * weight / 1e18;
 
         nominee.votes += weightedVotes;
-        election.hasVotedForNominee[msg.sender] = true;
+        election.usedNomineeVotes[msg.sender] += _votes;
 
         emit NomineeVoteCast(currentElectionId, msg.sender, _nominee, weightedVotes);
     }
