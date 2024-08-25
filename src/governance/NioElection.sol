@@ -79,6 +79,7 @@ contract NioElection {
 
     /* ============ Errors ============ */
 
+    error KYCRequired(address user);
     error ElectionAlreadyActive(uint256 electionId, uint256 startTime);
     error InvalidElectionPhase(uint256 electionId, ElectionPhase currentPhase, ElectionPhase requiredPhase);
     error ElectedNioCannotBeCandidate(address nio);
@@ -141,6 +142,7 @@ contract NioElection {
     }
 
     function voteForCandidate(address _candidate, uint256 _votes) external {
+        if (!kintoID.isKYC(IKintoWallet(_candidate).owners(0))) revert KYCRequired(_candidate);
         uint256 currentElectionId = elections.length - 1;
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateVoting) {
@@ -173,6 +175,7 @@ contract NioElection {
     }
 
     function voteForNominee(address _nominee, uint256 _votes) external {
+        if (!kintoID.isKYC(IKintoWallet(_nominee).owners(0))) revert KYCRequired(_nominee);
         uint256 currentElectionId = elections.length - 1;
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.NomineeVoting) {
@@ -219,6 +222,9 @@ contract NioElection {
         }
 
         // TODO: Implement logic to mint Nio NFTs for winners
+        for (uint256 index = 0; index < winners.length; index++) {
+            address winner = winners[index];
+        }
 
         election.electedNios = winners;
         election.electionEndTime = block.timestamp;

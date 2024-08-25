@@ -80,17 +80,11 @@ contract NioElectionTest is SharedSetup {
 
     function testVoteForNominee() public {}
 
-    function testCannotVoteForCandidateBeforeCandidateVoting() public {
-        
-    }
+    function testCannotVoteForCandidateBeforeCandidateVoting() public {}
 
-    function testCannotVoteForNomineeBeforeNomineeVoting() public {
-        
-    }
+    function testCannotVoteForNomineeBeforeNomineeVoting() public {}
 
-    function testCannotVoteTwice() public {
-        
-    }
+    function testCannotVoteTwice() public {}
 
     function testElectNios() public {}
 
