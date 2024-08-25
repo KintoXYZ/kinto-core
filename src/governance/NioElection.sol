@@ -10,7 +10,7 @@ import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
-import 'forge-std/console2.sol';
+import "forge-std/console2.sol";
 
 contract NioElection {
     /* ============ Types ============ */
@@ -229,7 +229,7 @@ contract NioElection {
         uint256 nftStartId = election.niosToElect == 4 ? 1 : 5;
         for (uint256 index = 0; index < winners.length; index++) {
             uint256 nftId = nftStartId + index;
-            if(nioNFT.exists(nftId)) {
+            if (nioNFT.exists(nftId)) {
                 nioNFT.burn(nftId);
             }
             nioNFT.mint(winners[index], nftId);
@@ -485,6 +485,7 @@ contract NioElection {
      * @param _voter The address of the voter.
      * @return The number of votes used by the voter in the nominee voting phase.
      */
+
     function getUsedNomineeVotes(uint256 electionId, address _voter) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].usedNomineeVotes[_voter];

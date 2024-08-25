@@ -26,6 +26,10 @@ contract NioElectionTest is SharedSetup {
     uint256 public constant MIN_VOTE_PERCENTAGE = 5e15; // 0.5% in wei
     uint256 public constant ELECTION_INTERVAL = 180 days; // 6 months
 
+    uint256 internal kAmount = 100e18;
+    uint256 internal fullVoteAmount = 100e18;
+    uint256 internal halfVoteAmount = 50e18;
+
     function setUp() public override {
         super.setUp();
 
@@ -38,7 +42,6 @@ contract NioElectionTest is SharedSetup {
         nioNFT.transferOwnership(address(election));
 
         // Distribute tokens and set up KYC
-        uint256 kAmount = 100e18;
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(admin);
             kToken.mint(wallets[i], kAmount);
@@ -46,6 +49,8 @@ contract NioElectionTest is SharedSetup {
             kToken.delegate(wallets[i]);
         }
     }
+
+    /* ============ startElection ============ */
 
     function testStartElection() public {
         election.startElection();
@@ -86,6 +91,8 @@ contract NioElectionTest is SharedSetup {
         election.startElection();
     }
 
+    /* ============ submitCandidate ============ */
+
     function testSubmitCandidate() public {
         election.startElection();
 
@@ -114,6 +121,8 @@ contract NioElectionTest is SharedSetup {
         election.submitCandidate();
     }
 
+    /* ============ voteForCandidate ============ */
+
     function testVoteForCandidate() public {
         election.startElection();
         vm.prank(alice);
@@ -126,13 +135,20 @@ contract NioElectionTest is SharedSetup {
         assertEq(election.getCandidateVotes(alice), 50e18);
     }
 
+    /* ============ voteForNominee ============ */
+
     function testVoteForNominee() public {
         election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
 
-        vm.warp(block.timestamp + 16 days);
         vm.prank(bob);
-        election.voteForNominee(alice, 50e18);
-        assertGt(election.getNomineeVotes(0, alice), 0);
+        election.voteForNominee(alice, fullVoteAmount);
+
+        assertEq(election.getNomineeVotes(alice), fullVoteAmount);
     }
 
     function testCannotVoteForCandidateBeforeCandidateVoting() public {
@@ -177,6 +193,8 @@ contract NioElectionTest is SharedSetup {
         election.voteForNominee(alice, 50e18);
         vm.stopPrank();
     }
+
+    /* ============ electNios ============ */
 
     function testElectNios() public {
         voteForNominees();
@@ -258,7 +276,8 @@ contract NioElectionTest is SharedSetup {
         assertGt(initialVotes, laterVotes);
     }
 
-    // Helper functions
+    /* ============ Helper functions ============ */
+
     function submitCandidates() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
@@ -269,14 +288,14 @@ contract NioElectionTest is SharedSetup {
     function voteForCandidates() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
-            election.voteForCandidate(wallets[i], 10e18);
+            election.voteForCandidate(wallets[i], halfVoteAmount);
         }
     }
 
     function voteForNominees() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
-            election.voteForNominee(wallets[i], 10e18);
+            election.voteForNominee(wallets[i], halfVoteAmount);
         }
     }
 
