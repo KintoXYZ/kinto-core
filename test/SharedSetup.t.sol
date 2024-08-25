@@ -135,7 +135,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         for (uint256 i = 0; i < users.length; i++) {
             approveKYC(_kycProvider, users[i], usersPk[i]);
             _kintoID.isKYC(users[i]);
-            console2.log("_kintoID.isKYC(users[i]):", _kintoID.isKYC(users[i]));
             vm.prank(users[i]);
             wallets[i] = address(_walletFactory.createAccount(users[i], _recoverer, 0));
         }

@@ -145,7 +145,7 @@ contract NioElection {
 
     function voteForCandidate(address _candidate, uint256 _votes) external {
         if (!kintoID.isKYC(IKintoWallet(_candidate).owners(0))) revert KYCRequired(_candidate);
-        uint256 currentElectionId = elections.length - 1;
+        uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateVoting) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateVoting);
@@ -178,7 +178,7 @@ contract NioElection {
 
     function voteForNominee(address _nominee, uint256 _votes) external {
         if (!kintoID.isKYC(IKintoWallet(_nominee).owners(0))) revert KYCRequired(_nominee);
-        uint256 currentElectionId = elections.length - 1;
+        uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.NomineeVoting) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.NomineeVoting);
@@ -203,7 +203,7 @@ contract NioElection {
     }
 
     function electNios() external {
-        uint256 currentElectionId = elections.length - 1;
+        uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.AwaitingElection) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.AwaitingElection);
@@ -229,8 +229,6 @@ contract NioElection {
         uint256 nftStartId = election.niosToElect == 4 ? 1 : 5;
         for (uint256 index = 0; index < winners.length; index++) {
             uint256 nftId = nftStartId + index;
-            console2.log('burn');
-            console2.log('nftId:', nftId);
             if(nioNFT.exists(nftId)) {
                 nioNFT.burn(nftId);
             }
@@ -334,6 +332,26 @@ contract NioElection {
         return elections.length;
     }
 
+    function getCurrentElectionId() public view returns (uint256) {
+        return elections.length - 1;
+    }
+
+    function getElectionDetails()
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 candidateSubmissionEndTime,
+            uint256 candidateVotingEndTime,
+            uint256 complianceProcessEndTime,
+            uint256 nomineeVotingEndTime,
+            uint256 electionEndTime,
+            uint256 niosToElect
+        )
+    {
+        return getElectionDetails(getCurrentElectionId());
+    }
+
     /**
      * @dev Returns the details of a specific election.
      * @param electionId The ID of the election to query.
@@ -346,7 +364,7 @@ contract NioElection {
      * @return niosToElect The number of Nios to be elected in this election.
      */
     function getElectionDetails(uint256 electionId)
-        external
+        public
         view
         returns (
             uint256 startTime,
@@ -371,14 +389,22 @@ contract NioElection {
         );
     }
 
+    function getCandidates() external view returns (address[] memory) {
+        return getCandidates(getCurrentElectionId());
+    }
+
     /**
      * @dev Returns the list of candidates for a specific election.
      * @param electionId The ID of the election to query.
      * @return An array of candidate addresses.
      */
-    function getCandidates(uint256 electionId) external view returns (address[] memory) {
+    function getCandidates(uint256 electionId) public view returns (address[] memory) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].candidateList;
+    }
+
+    function getNominees() external view returns (address[] memory) {
+        return getNominees(getCurrentElectionId());
     }
 
     /**
@@ -386,9 +412,13 @@ contract NioElection {
      * @param electionId The ID of the election to query.
      * @return An array of nominee addresses.
      */
-    function getNominees(uint256 electionId) external view returns (address[] memory) {
+    function getNominees(uint256 electionId) public view returns (address[] memory) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].nomineeList;
+    }
+
+    function getCandidateVotes(address _candidate) external view returns (uint256) {
+        return getCandidateVotes(getCurrentElectionId(), _candidate);
     }
 
     /**
@@ -397,9 +427,13 @@ contract NioElection {
      * @param _candidate The address of the candidate.
      * @return The number of votes received by the candidate.
      */
-    function getCandidateVotes(uint256 electionId, address _candidate) external view returns (uint256) {
+    function getCandidateVotes(uint256 electionId, address _candidate) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].candidates[_candidate].votes;
+    }
+
+    function getNomineeVotes(address _nominee) external view returns (uint256) {
+        getNomineeVotes(getCurrentElectionId(), _nominee);
     }
 
     /**
@@ -408,9 +442,13 @@ contract NioElection {
      * @param _nominee The address of the nominee.
      * @return The number of votes received by the nominee.
      */
-    function getNomineeVotes(uint256 electionId, address _nominee) external view returns (uint256) {
+    function getNomineeVotes(uint256 electionId, address _nominee) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].nominees[_nominee].votes;
+    }
+
+    function getElectedNios() external view returns (address[] memory) {
+        return getElectedNios(getCurrentElectionId());
     }
 
     /**
@@ -418,9 +456,13 @@ contract NioElection {
      * @param electionId The ID of the election to query.
      * @return An array of elected Nio addresses.
      */
-    function getElectedNios(uint256 electionId) external view returns (address[] memory) {
+    function getElectedNios(uint256 electionId) public view returns (address[] memory) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].electedNios;
+    }
+
+    function getUsedCandidateVotes(address _voter) external view returns (uint256) {
+        getUsedCandidateVotes(getCurrentElectionId(), _voter);
     }
 
     /**
@@ -429,18 +471,21 @@ contract NioElection {
      * @param _voter The address of the voter.
      * @return The number of votes used by the voter in the candidate voting phase.
      */
-    function getUsedCandidateVotes(uint256 electionId, address _voter) external view returns (uint256) {
+    function getUsedCandidateVotes(uint256 electionId, address _voter) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].usedCandidateVotes[_voter];
     }
 
+    function getUsedNomineeVotes(address _voter) external view returns (uint256) {
+        return getUsedNomineeVotes(getCurrentElectionId(), _voter);
+    }
     /**
      * @dev Returns the number of votes used by a voter in the nominee voting phase of a specific election.
      * @param electionId The ID of the election to query.
      * @param _voter The address of the voter.
      * @return The number of votes used by the voter in the nominee voting phase.
      */
-    function getUsedNomineeVotes(uint256 electionId, address _voter) external view returns (uint256) {
+    function getUsedNomineeVotes(uint256 electionId, address _voter) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].usedNomineeVotes[_voter];
     }

@@ -44,7 +44,6 @@ contract NioElectionTest is SharedSetup {
             kToken.mint(wallets[i], kAmount);
             vm.prank(wallets[i]);
             kToken.delegate(wallets[i]);
-            console2.log("_kintoID.isKYC(users[i]):", _kintoID.isKYC(users[i]));
         }
     }
 
@@ -89,16 +88,20 @@ contract NioElectionTest is SharedSetup {
 
     function testSubmitCandidate() public {
         election.startElection();
+
         vm.prank(alice);
         election.submitCandidate();
+
         address[] memory candidates = election.getCandidates(0);
+
         assertEq(candidates.length, 1);
         assertEq(candidates[0], alice);
     }
 
-    function testCannotSubmitCandidateAfterDeadline() public {
+    function testSubmitCandidate_RevertWhenEAfterDeadline() public {
         election.startElection();
         vm.warp(block.timestamp + 6 days);
+
         vm.prank(alice);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -116,8 +119,10 @@ contract NioElectionTest is SharedSetup {
         vm.prank(alice);
         election.submitCandidate();
         vm.warp(block.timestamp + 6 days);
+
         vm.prank(bob);
         election.voteForCandidate(alice, 50e18);
+
         assertEq(election.getCandidateVotes(0, alice), 50e18);
     }
 
