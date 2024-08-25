@@ -10,6 +10,8 @@ import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
+import 'forge-std/console2.sol';
+
 contract NioElection {
     /* ============ Types ============ */
 
@@ -121,7 +123,7 @@ contract NioElection {
         newElection.complianceProcessEndTime =
             startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION + COMPLIANCE_PROCESS_DURATION;
         newElection.nomineeVotingEndTime = startTime + ELECTION_DURATION;
-        newElection.niosToElect = elections.length % 2 == 0 ? 4 : 5;
+        newElection.niosToElect = elections.length % 2 == 1 ? 4 : 5;
 
         emit ElectionStarted(elections.length - 1, startTime, newElection.niosToElect);
     }
@@ -226,8 +228,13 @@ contract NioElection {
 
         uint256 nftStartId = election.niosToElect == 4 ? 1 : 5;
         for (uint256 index = 0; index < winners.length; index++) {
-            nioNFT.burn(nftStartId);
-            nioNFT.mint(winners[index], nftStartId);
+            uint256 nftId = nftStartId + index;
+            console2.log('burn');
+            console2.log('nftId:', nftId);
+            if(nioNFT.exists(nftId)) {
+                nioNFT.burn(nftId);
+            }
+            nioNFT.mint(winners[index], nftId);
         }
 
         emit ElectionCompleted(currentElectionId, winners);

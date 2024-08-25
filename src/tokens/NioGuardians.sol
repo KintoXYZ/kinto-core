@@ -54,4 +54,8 @@ contract NioGuardians is ERC721, Ownable, EIP712, ERC721Votes {
     function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Votes) {
         super._increaseBalance(account, value);
     }
+
+    function exists(uint256 tokenId) external view returns (bool) {
+        return _ownerOf(tokenId) != address(0);
+    }
 }

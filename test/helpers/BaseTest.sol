@@ -43,37 +43,38 @@ abstract contract BaseTest is AssertionHelper {
     uint256 internal _noKycPk = 10;
     address payable internal _noKyc = payable(vm.addr(_noKycPk));
 
-    uint256 internal adminPk;
-    address internal admin;
-
     address[] internal users;
+    uint256[] internal usersPk;
 
-    uint256 internal alicePk;
-    address internal alice;
+    uint256 internal admin0Pk;
+    address internal admin0;
 
-    uint256 internal bobPk;
-    address internal bob;
+    uint256 internal alice0Pk;
+    address internal alice0;
 
-    uint256 internal ianPk;
-    address internal ian;
+    uint256 internal bob0Pk;
+    address internal bob0;
 
-    uint256 internal hannahPk;
-    address internal hannah;
+    uint256 internal ian0Pk;
+    address internal ian0;
 
-    uint256 internal georgePk;
-    address internal george;
+    uint256 internal hannah0Pk;
+    address internal hannah0;
 
-    uint256 internal frankPk;
-    address internal frank;
+    uint256 internal george0Pk;
+    address internal george0;
 
-    uint256 internal davidPk;
-    address internal david;
+    uint256 internal frank0Pk;
+    address internal frank0;
 
-    uint256 internal charliePk;
-    address internal charlie;
+    uint256 internal david0Pk;
+    address internal david0;
 
-    uint256 internal evePk;
-    address internal eve;
+    uint256 internal charlie0Pk;
+    address internal charlie0;
+
+    uint256 internal eve0Pk;
+    address internal eve0;
 
     function setUp() public virtual {
         if (block.chainid == 31337) {
@@ -81,18 +82,19 @@ abstract contract BaseTest is AssertionHelper {
             vm.warp(START_TIMESTAMP);
         }
 
-        (admin, adminPk) = createUserWithKey("admin");
-        (alice, alicePk) = createUserWithKey("alice");
-        (bob, bobPk) = createUserWithKey("bob");
-        (charlie, charliePk) = createUserWithKey("charlie");
-        (david, davidPk) = createUserWithKey("david");
-        (eve, evePk) = createUserWithKey("eve");
-        (frank, frankPk) = createUserWithKey("frank");
-        (george, georgePk) = createUserWithKey("george");
-        (hannah, hannahPk) = createUserWithKey("hannah");
-        (ian, ianPk) = createUserWithKey("ian");
+        (admin0, admin0Pk) = createUserWithKey("admin0");
+        (alice0, alice0Pk) = createUserWithKey("alice0");
+        (bob0, bob0Pk) = createUserWithKey("bob0");
+        (charlie0, charlie0Pk) = createUserWithKey("charlie0");
+        (david0, david0Pk) = createUserWithKey("david0");
+        (eve0, eve0Pk) = createUserWithKey("eve0");
+        (frank0, frank0Pk) = createUserWithKey("frank0");
+        (george0, george0Pk) = createUserWithKey("george0");
+        (hannah0, hannah0Pk) = createUserWithKey("hannah0");
+        (ian0, ian0Pk) = createUserWithKey("ian0");
 
-        users = [alice, bob, charlie, david, eve, frank, george, hannah, ian];
+        users = [admin0, alice0, bob0, charlie0, david0, eve0, frank0, george0, hannah0, ian0];
+        usersPk = [admin0Pk, alice0Pk, bob0Pk, charlie0Pk, david0Pk, eve0Pk, frank0Pk, george0Pk, hannah0Pk, ian0Pk];
     }
 
     function testUp() public virtual {}
