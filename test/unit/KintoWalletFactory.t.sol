@@ -40,6 +40,7 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 
 contract KintoWalletFactoryTest is SharedSetup {
     using SignatureChecker for address;
+    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
 
     function testUp() public override {
         super.testUp();
