@@ -221,13 +221,14 @@ contract NioElection {
             revert InsufficientEligibleCandidates(winnerCount, election.niosToElect);
         }
 
-        // TODO: Implement logic to mint Nio NFTs for winners
-        for (uint256 index = 0; index < winners.length; index++) {
-            address winner = winners[index];
-        }
-
         election.electedNios = winners;
         election.electionEndTime = block.timestamp;
+
+        uint256 nftStartId = election.niosToElect == 4 ? 1 : 5;
+        for (uint256 index = 0; index < winners.length; index++) {
+            nioNFT.burn(nftStartId);
+            nioNFT.mint(winners[index], nftStartId);
+        }
 
         emit ElectionCompleted(currentElectionId, winners);
     }
