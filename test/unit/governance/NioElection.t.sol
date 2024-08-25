@@ -123,11 +123,12 @@ contract NioElectionTest is SharedSetup {
         vm.prank(bob);
         election.voteForCandidate(alice, 50e18);
 
-        assertEq(election.getCandidateVotes(0, alice), 50e18);
+        assertEq(election.getCandidateVotes(alice), 50e18);
     }
 
     function testVoteForNominee() public {
-        voteForNominee();
+        election.startElection();
+
         vm.warp(block.timestamp + 16 days);
         vm.prank(bob);
         election.voteForNominee(alice, 50e18);
@@ -151,7 +152,8 @@ contract NioElectionTest is SharedSetup {
     }
 
     function testCannotVoteForNomineeBeforeNomineeVoting() public {
-        voteForNominee();
+        voteForNominees();
+
         vm.warp(block.timestamp + 11 days);
         vm.prank(bob);
         vm.expectRevert(
@@ -166,7 +168,8 @@ contract NioElectionTest is SharedSetup {
     }
 
     function testCannotVoteTwice() public {
-        voteForNominee();
+        voteForNominees();
+
         vm.warp(block.timestamp + 16 days);
         vm.startPrank(bob);
         election.voteForNominee(alice, 50e18);
@@ -176,7 +179,8 @@ contract NioElectionTest is SharedSetup {
     }
 
     function testElectNios() public {
-        voteForNominee();
+        voteForNominees();
+
         vm.warp(block.timestamp + 31 days);
         election.electNios();
         address[] memory electedNios = election.getElectedNios(0);
@@ -184,7 +188,8 @@ contract NioElectionTest is SharedSetup {
     }
 
     function testCannotElectNiosBeforeEnd() public {
-        voteForNominee();
+        voteForNominees();
+
         vm.warp(block.timestamp + 29 days);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -238,7 +243,8 @@ contract NioElectionTest is SharedSetup {
     }
 
     function testVoteWeighting() public {
-        voteForNominee();
+        voteForNominees();
+
         vm.warp(block.timestamp + 16 days);
         vm.prank(bob);
         election.voteForNominee(alice, 50e18);
@@ -253,7 +259,6 @@ contract NioElectionTest is SharedSetup {
     }
 
     // Helper functions
-
     function submitCandidates() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
@@ -261,14 +266,14 @@ contract NioElectionTest is SharedSetup {
         }
     }
 
-    function voteForCandidate() internal {
+    function voteForCandidates() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
             election.voteForCandidate(wallets[i], 10e18);
         }
     }
 
-    function voteForNominee() internal {
+    function voteForNominees() internal {
         for (uint256 i = 1; i < wallets.length; i++) {
             vm.prank(wallets[i]);
             election.voteForNominee(wallets[i], 10e18);
@@ -280,11 +285,11 @@ contract NioElectionTest is SharedSetup {
         submitCandidates();
         vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
 
-        voteForCandidate();
+        voteForCandidates();
         vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
         vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
 
-        voteForNominee();
+        voteForNominees();
         vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
 
         election.electNios();
