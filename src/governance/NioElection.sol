@@ -325,4 +325,115 @@ contract NioElection {
     function getElectionCount() external view returns (uint256) {
         return elections.length;
     }
+
+    /**
+     * @dev Returns the details of a specific election.
+     * @param _electionId The ID of the election to query.
+     * @return startTime The start time of the election.
+     * @return candidateSubmissionEndTime The end time for candidate submissions.
+     * @return candidateVotingEndTime The end time for candidate voting.
+     * @return complianceProcessEndTime The end time for the compliance process.
+     * @return nomineeVotingEndTime The end time for nominee voting.
+     * @return electionEndTime The end time of the election.
+     * @return niosToElect The number of Nios to be elected in this election.
+     */
+    function getElectionDetails(uint256 _electionId)
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 candidateSubmissionEndTime,
+            uint256 candidateVotingEndTime,
+            uint256 complianceProcessEndTime,
+            uint256 nomineeVotingEndTime,
+            uint256 electionEndTime,
+            uint256 niosToElect
+        )
+    {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        Election storage election = elections[_electionId];
+        return (
+            election.startTime,
+            election.candidateSubmissionEndTime,
+            election.candidateVotingEndTime,
+            election.complianceProcessEndTime,
+            election.nomineeVotingEndTime,
+            election.electionEndTime,
+            election.niosToElect
+        );
+    }
+
+    /**
+     * @dev Returns the list of candidates for a specific election.
+     * @param _electionId The ID of the election to query.
+     * @return An array of candidate addresses.
+     */
+    function getCandidates(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].candidateList;
+    }
+
+    /**
+     * @dev Returns the list of nominees for a specific election.
+     * @param _electionId The ID of the election to query.
+     * @return An array of nominee addresses.
+     */
+    function getNominees(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].nomineeList;
+    }
+
+    /**
+     * @dev Returns the votes received by a candidate in a specific election.
+     * @param _electionId The ID of the election to query.
+     * @param _candidate The address of the candidate.
+     * @return The number of votes received by the candidate.
+     */
+    function getCandidateVotes(uint256 _electionId, address _candidate) external view returns (uint256) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].candidates[_candidate].votes;
+    }
+
+    /**
+     * @dev Returns the votes received by a nominee in a specific election.
+     * @param _electionId The ID of the election to query.
+     * @param _nominee The address of the nominee.
+     * @return The number of votes received by the nominee.
+     */
+    function getNomineeVotes(uint256 _electionId, address _nominee) external view returns (uint256) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].nominees[_nominee].votes;
+    }
+
+    /**
+     * @dev Returns the elected Nios for a completed election.
+     * @param _electionId The ID of the election to query.
+     * @return An array of elected Nio addresses.
+     */
+    function getElectedNios(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].electedNios;
+    }
+
+    /**
+     * @dev Returns the number of votes used by a voter in the candidate voting phase of a specific election.
+     * @param _electionId The ID of the election to query.
+     * @param _voter The address of the voter.
+     * @return The number of votes used by the voter in the candidate voting phase.
+     */
+    function getUsedCandidateVotes(uint256 _electionId, address _voter) external view returns (uint256) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].usedCandidateVotes[_voter];
+    }
+
+    /**
+     * @dev Returns the number of votes used by a voter in the nominee voting phase of a specific election.
+     * @param _electionId The ID of the election to query.
+     * @param _voter The address of the voter.
+     * @return The number of votes used by the voter in the nominee voting phase.
+     */
+    function getUsedNomineeVotes(uint256 _electionId, address _voter) external view returns (uint256) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].usedNomineeVotes[_voter];
+    }
 }
