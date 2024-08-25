@@ -100,7 +100,7 @@ contract NioElectionTest is SharedSetup {
         vm.prank(bob);
         election.voteForCandidate(alice);
 
-        (,uint256 votes) = election.getCandidateInfo(alice);
+        (, uint256 votes) = election.getCandidateInfo(alice);
         assertGt(votes, 0);
     }
 
@@ -117,7 +117,7 @@ contract NioElectionTest is SharedSetup {
         vm.prank(charlie);
         election.voteForNominee(alice);
 
-        (,uint256 votes) = election.getNomineeInfo(alice);
+        (, uint256 votes) = election.getNomineeInfo(alice);
         assertGt(votes, 0);
     }
 

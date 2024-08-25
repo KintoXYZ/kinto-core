@@ -8,6 +8,7 @@ import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
 contract NioElection {
     /* ============ Types ============ */
@@ -38,6 +39,7 @@ contract NioElection {
         uint256 candidateVotingEndTime;
         uint256 complianceProcessEndTime;
         uint256 nomineeVotingEndTime;
+        uint256 electionEndTime;
         mapping(address => Candidate) candidates;
         address[] candidateList;
         mapping(address => Nominee) nominees;
@@ -45,6 +47,7 @@ contract NioElection {
         mapping(address => bool) hasVotedForCandidate;
         mapping(address => bool) hasVotedForNominee;
         uint256 niosToElect;
+        address[] electedNios;
     }
 
     /* ============ Constants & Immutables ============ */
@@ -63,24 +66,21 @@ contract NioElection {
 
     /* ============ State Variables ============ */
 
-    Election public currentElection;
-    uint256 public lastElectionEndTime;
-    uint256 public electionCount;
-    mapping(uint256 => address[]) public pastElectionResults;
+    Election[] public elections;
 
     /* ============ Events ============ */
 
-    event ElectionStarted(uint256 startTime, uint256 niosToElect);
-    event CandidateSubmitted(address candidate);
-    event NomineeSelected(address nominee, uint256 votes);
-    event CandidateVoteCast(address voter, address candidate, uint256 weight);
-    event NomineeVoteCast(address voter, address nominee, uint256 weight);
+    event ElectionStarted(uint256 electionId, uint256 startTime, uint256 niosToElect);
+    event CandidateSubmitted(uint256 electionId, address candidate);
+    event NomineeSelected(uint256 electionId, address nominee, uint256 votes);
+    event CandidateVoteCast(uint256 electionId, address voter, address candidate, uint256 weight);
+    event NomineeVoteCast(uint256 electionId, address voter, address nominee, uint256 weight);
     event ElectionCompleted(uint256 electionId, address[] winners);
 
     /* ============ Errors ============ */
 
-    error ElectionAlreadyActive(uint256 startTime);
-    error InvalidElectionPhase(ElectionPhase currentPhase, ElectionPhase requiredPhase);
+    error ElectionAlreadyActive(uint256 electionId, uint256 startTime);
+    error InvalidElectionPhase(uint256 electionId, ElectionPhase currentPhase, ElectionPhase requiredPhase);
     error ElectedNioCannotBeCandidate(address nio);
     error AlreadyVoted(address voter);
     error NoVotingPower(address voter);
@@ -88,6 +88,7 @@ contract NioElection {
     error InvalidNominee(address nominee);
     error InsufficientEligibleCandidates(uint256 eligibleCount, uint256 required);
     error TooEarlyForNewElection(uint256 currentTime, uint256 nextElectionTime);
+    error InvalidElectionId(uint256 electionId);
 
     /* ============ Constructor ============ */
 
@@ -100,128 +101,148 @@ contract NioElection {
     /* ============ External Functions ============ */
 
     function startElection() external {
-        if (isElectionActive()) revert ElectionAlreadyActive(currentElection.startTime);
-        if (block.timestamp < lastElectionEndTime + ELECTION_INTERVAL) {
-            revert TooEarlyForNewElection(block.timestamp, lastElectionEndTime + ELECTION_INTERVAL);
+        if (isElectionActive()) {
+            revert ElectionAlreadyActive(elections.length - 1, elections[elections.length - 1].startTime);
+        }
+        if (elections.length > 0) {
+            uint256 lastElectionEndTime = elections[elections.length - 1].electionEndTime;
+            if (block.timestamp < lastElectionEndTime + ELECTION_INTERVAL) {
+                revert TooEarlyForNewElection(block.timestamp, lastElectionEndTime + ELECTION_INTERVAL);
+            }
         }
 
         uint256 startTime = block.timestamp;
-        currentElection.startTime = startTime;
-        currentElection.candidateSubmissionEndTime = startTime + CANDIDATE_SUBMISSION_DURATION;
-        currentElection.candidateVotingEndTime = startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION;
-        currentElection.complianceProcessEndTime = startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION + COMPLIANCE_PROCESS_DURATION;
-        currentElection.nomineeVotingEndTime = startTime + ELECTION_DURATION;
-        currentElection.niosToElect = electionCount % 2 == 0 ? 4 : 5;
+        elections.push();
+        Election storage newElection = elections[elections.length - 1];
+        newElection.startTime = startTime;
+        newElection.candidateSubmissionEndTime = startTime + CANDIDATE_SUBMISSION_DURATION;
+        newElection.candidateVotingEndTime = startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION;
+        newElection.complianceProcessEndTime =
+            startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION + COMPLIANCE_PROCESS_DURATION;
+        newElection.nomineeVotingEndTime = startTime + ELECTION_DURATION;
+        newElection.niosToElect = elections.length % 2 == 0 ? 4 : 5;
 
-        emit ElectionStarted(startTime, currentElection.niosToElect);
+        emit ElectionStarted(elections.length - 1, startTime, newElection.niosToElect);
     }
 
     function submitCandidate() external {
-        ElectionPhase currentPhase = getCurrentPhase();
+        uint256 currentElectionId = elections.length - 1;
+        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
         if (currentPhase != ElectionPhase.CandidateSubmission) {
-            revert InvalidElectionPhase(currentPhase, ElectionPhase.CandidateSubmission);
+            revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateSubmission);
         }
         if (isElectedNio(msg.sender)) revert ElectedNioCannotBeCandidate(msg.sender);
 
-        currentElection.candidates[msg.sender] = Candidate(msg.sender, 0);
-        currentElection.candidateList.push(msg.sender);
+        Election storage election = elections[currentElectionId];
+        election.candidates[msg.sender] = Candidate(msg.sender, 0);
+        election.candidateList.push(msg.sender);
 
-        emit CandidateSubmitted(msg.sender);
+        emit CandidateSubmitted(currentElectionId, msg.sender);
     }
 
     function voteForCandidate(address _candidate) external {
-        ElectionPhase currentPhase = getCurrentPhase();
+        uint256 currentElectionId = elections.length - 1;
+        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
         if (currentPhase != ElectionPhase.CandidateVoting) {
-            revert InvalidElectionPhase(currentPhase, ElectionPhase.CandidateVoting);
+            revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateVoting);
         }
-        if (currentElection.hasVotedForCandidate[msg.sender]) revert AlreadyVoted(msg.sender);
 
-        uint256 votes = kToken.getPastVotes(msg.sender, currentElection.startTime);
+        Election storage election = elections[currentElectionId];
+        if (election.hasVotedForCandidate[msg.sender]) revert AlreadyVoted(msg.sender);
+
+        uint256 votes = kToken.getPastVotes(msg.sender, election.startTime);
         if (votes == 0) revert NoVotingPower(msg.sender);
 
-        Candidate storage candidate = currentElection.candidates[_candidate];
+        Candidate storage candidate = election.candidates[_candidate];
         if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
 
         candidate.votes += votes;
-        currentElection.hasVotedForCandidate[msg.sender] = true;
+        election.hasVotedForCandidate[msg.sender] = true;
 
-        emit CandidateVoteCast(msg.sender, _candidate, votes);
+        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, votes);
 
         // Check if the candidate now meets the threshold to become a nominee
-        uint256 totalVotableTokens = kToken.getPastTotalSupply(currentElection.startTime);
+        uint256 totalVotableTokens = kToken.getPastTotalSupply(election.startTime);
         uint256 threshold = totalVotableTokens * MIN_VOTE_PERCENTAGE / 1e18;
 
-        if (candidate.votes >= threshold && currentElection.nominees[_candidate].addr == address(0)) {
-            currentElection.nominees[_candidate] = Nominee(_candidate, 0);
-            currentElection.nomineeList.push(_candidate);
-            emit NomineeSelected(_candidate, candidate.votes);
+        if (candidate.votes >= threshold && election.nominees[_candidate].addr == address(0)) {
+            election.nominees[_candidate] = Nominee(_candidate, 0);
+            election.nomineeList.push(_candidate);
+            emit NomineeSelected(currentElectionId, _candidate, candidate.votes);
         }
     }
 
     function voteForNominee(address _nominee) external {
-        ElectionPhase currentPhase = getCurrentPhase();
+        uint256 currentElectionId = elections.length - 1;
+        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
         if (currentPhase != ElectionPhase.NomineeVoting) {
-            revert InvalidElectionPhase(currentPhase, ElectionPhase.NomineeVoting);
+            revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.NomineeVoting);
         }
-        if (currentElection.hasVotedForNominee[msg.sender]) revert AlreadyVoted(msg.sender);
 
-        uint256 votes = kToken.getPastVotes(msg.sender, currentElection.startTime);
+        Election storage election = elections[currentElectionId];
+        if (election.hasVotedForNominee[msg.sender]) revert AlreadyVoted(msg.sender);
+
+        uint256 votes = kToken.getPastVotes(msg.sender, election.startTime);
         if (votes == 0) revert NoVotingPower(msg.sender);
 
-        Nominee storage nominee = currentElection.nominees[_nominee];
+        Nominee storage nominee = election.nominees[_nominee];
         if (nominee.addr == address(0)) revert InvalidNominee(_nominee);
 
-        uint256 weight = calculateVoteWeight();
+        uint256 weight = calculateVoteWeight(currentElectionId);
         uint256 weightedVotes = votes * weight / 1e18;
 
         nominee.votes += weightedVotes;
-        currentElection.hasVotedForNominee[msg.sender] = true;
+        election.hasVotedForNominee[msg.sender] = true;
 
-        emit NomineeVoteCast(msg.sender, _nominee, weightedVotes);
+        emit NomineeVoteCast(currentElectionId, msg.sender, _nominee, weightedVotes);
     }
 
     function electNios() external {
-        ElectionPhase currentPhase = getCurrentPhase();
-        if (currentPhase != ElectionPhase.Completed) revert InvalidElectionPhase(currentPhase, ElectionPhase.Completed);
+        uint256 currentElectionId = elections.length - 1;
+        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
+        if (currentPhase != ElectionPhase.AwaitingElection) {
+            revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.AwaitingElection);
+        }
 
-        address[] memory sortedNominees = sortNomineesByVotes();
-        address[] memory winners = new address[](currentElection.niosToElect);
+        Election storage election = elections[currentElectionId];
+        address[] memory sortedNominees = sortNomineesByVotes(currentElectionId);
+        address[] memory winners = new address[](election.niosToElect);
         uint256 winnerCount = 0;
 
-        for (uint256 i = 0; i < sortedNominees.length && winnerCount < currentElection.niosToElect; i++) {
+        for (uint256 i = 0; i < sortedNominees.length && winnerCount < election.niosToElect; i++) {
             winners[winnerCount] = sortedNominees[i];
             winnerCount++;
         }
 
-        if (winnerCount < currentElection.niosToElect) {
-            revert InsufficientEligibleCandidates(winnerCount, currentElection.niosToElect);
+        if (winnerCount < election.niosToElect) {
+            revert InsufficientEligibleCandidates(winnerCount, election.niosToElect);
         }
 
         // TODO: Implement logic to mint Nio NFTs for winners
 
-        pastElectionResults[electionCount] = winners;
-        lastElectionEndTime = block.timestamp;
-        electionCount++;
+        election.electedNios = winners;
+        election.electionEndTime = block.timestamp;
 
-        emit ElectionCompleted(electionCount - 1, winners);
+        emit ElectionCompleted(currentElectionId, winners);
     }
 
     /* ============ Internal Functions ============ */
 
-    function calculateVoteWeight() internal view returns (uint256) {
-        if (block.timestamp <= currentElection.complianceProcessEndTime + 7 days) {
+    function calculateVoteWeight(uint256 _electionId) internal view returns (uint256) {
+        Election storage election = elections[_electionId];
+        if (block.timestamp <= election.complianceProcessEndTime + 7 days) {
             return 1e18; // 100% weight
         } else {
-            uint256 timeLeft = currentElection.nomineeVotingEndTime - block.timestamp;
+            uint256 timeLeft = election.nomineeVotingEndTime - block.timestamp;
             return timeLeft * 1e18 / 8 days; // Linear decrease from 100% to 0% over 8 days
         }
     }
 
     function isElectedNio(address _address) internal view returns (bool) {
-        if (electionCount == 0) {
+        if (elections.length == 0) {
             return false;
         }
-        address[] memory currentNios = pastElectionResults[electionCount - 1];
+        address[] memory currentNios = elections[elections.length - 1].electedNios;
         for (uint256 i = 0; i < currentNios.length; i++) {
             if (currentNios[i] == _address) {
                 return true;
@@ -230,15 +251,16 @@ contract NioElection {
         return false;
     }
 
-    function sortNomineesByVotes() internal view returns (address[] memory) {
-        uint256 length = currentElection.nomineeList.length;
+    function sortNomineesByVotes(uint256 _electionId) internal view returns (address[] memory) {
+        Election storage election = elections[_electionId];
+        uint256 length = election.nomineeList.length;
         address[] memory sortedNominees = new address[](length);
         uint256[] memory votes = new uint256[](length);
 
         // Initialize arrays
         for (uint256 i = 0; i < length; i++) {
-            sortedNominees[i] = currentElection.nomineeList[i];
-            votes[i] = currentElection.nominees[currentElection.nomineeList[i]].votes;
+            sortedNominees[i] = election.nomineeList[i];
+            votes[i] = election.nominees[election.nomineeList[i]].votes;
         }
 
         // Perform insertion sort
@@ -261,33 +283,33 @@ contract NioElection {
 
     /* ============ View Functions ============ */
 
-    function getCurrentPhase() public view returns (ElectionPhase) {
-        if (currentElection.startTime == 0) {
-            return ElectionPhase.NotStarted;
-        }
-        if (block.timestamp < currentElection.candidateSubmissionEndTime) {
+    function getCurrentPhase(uint256 _electionId) public view returns (ElectionPhase) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        Election storage election = elections[_electionId];
+
+        if (block.timestamp < election.candidateSubmissionEndTime) {
             return ElectionPhase.CandidateSubmission;
         }
-        if (block.timestamp < currentElection.candidateVotingEndTime) {
+        if (block.timestamp < election.candidateVotingEndTime) {
             return ElectionPhase.CandidateVoting;
         }
-        if (block.timestamp < currentElection.complianceProcessEndTime) {
+        if (block.timestamp < election.complianceProcessEndTime) {
             return ElectionPhase.ComplianceProcess;
         }
-        if (block.timestamp < currentElection.nomineeVotingEndTime) {
+        if (block.timestamp < election.nomineeVotingEndTime) {
             return ElectionPhase.NomineeVoting;
         }
-        if (lastElectionEndTime < currentElection.nomineeVotingEndTime) {
+        if (election.electionEndTime == 0) {
             return ElectionPhase.AwaitingElection;
         }
         return ElectionPhase.Completed;
     }
 
     function isElectionActive() public view returns (bool) {
-        return currentElection.startTime != 0;
+        return elections.length > 0 && getCurrentPhase(elections.length - 1) != ElectionPhase.Completed;
     }
 
-    function getElectionStatus()
+    function getElectionStatus(uint256 _electionId)
         external
         view
         returns (
@@ -296,48 +318,76 @@ contract NioElection {
             uint256 candidateVotingEndTime,
             uint256 complianceProcessEndTime,
             uint256 nomineeVotingEndTime,
+            uint256 electionEndTime,
             ElectionPhase currentPhase,
             uint256 niosToElect
         )
     {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        Election storage election = elections[_electionId];
         return (
-            currentElection.startTime,
-            currentElection.candidateSubmissionEndTime,
-            currentElection.candidateVotingEndTime,
-            currentElection.complianceProcessEndTime,
-            currentElection.nomineeVotingEndTime,
-            getCurrentPhase(),
-            currentElection.niosToElect
+            election.startTime,
+            election.candidateSubmissionEndTime,
+            election.candidateVotingEndTime,
+            election.complianceProcessEndTime,
+            election.nomineeVotingEndTime,
+            election.electionEndTime,
+            getCurrentPhase(_electionId),
+            election.niosToElect
         );
     }
 
-    function getCandidates() external view returns (address[] memory) {
-        return currentElection.candidateList;
+    function getCandidates(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].candidateList;
     }
 
-    function getNominees() external view returns (address[] memory) {
-        return currentElection.nomineeList;
+    function getNominees(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].nomineeList;
     }
 
-    function getCandidateInfo(address _candidate) external view returns (address addr, uint256 votes) {
-        Candidate memory candidate = currentElection.candidates[_candidate];
+    function getCandidateInfo(uint256 _electionId, address _candidate)
+        external
+        view
+        returns (address addr, uint256 votes)
+    {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        Candidate memory candidate = elections[_electionId].candidates[_candidate];
         return (candidate.addr, candidate.votes);
     }
 
-    function getNomineeInfo(address _nominee) external view returns (address addr, uint256 votes) {
-        Nominee memory nominee = currentElection.nominees[_nominee];
+    function getNomineeInfo(uint256 _electionId, address _nominee)
+        external
+        view
+        returns (address addr, uint256 votes)
+    {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        Nominee memory nominee = elections[_electionId].nominees[_nominee];
         return (nominee.addr, nominee.votes);
     }
 
-    function getPastElectionResult(uint256 _electionId) external view returns (address[] memory) {
-        return pastElectionResults[_electionId];
+    function getElectionResult(uint256 _electionId) external view returns (address[] memory) {
+        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
+        return elections[_electionId].electedNios;
     }
 
     function getNextElectionTime() external view returns (uint256) {
+        if (elections.length == 0) {
+            return block.timestamp;
+        }
+        uint256 lastElectionEndTime = elections[elections.length - 1].electionEndTime;
         return lastElectionEndTime + ELECTION_INTERVAL;
     }
 
     function getElectedNios() public view returns (address[] memory) {
-        return electionCount == 0 ? new address[](0) : pastElectionResults[electionCount - 1];
+        if (elections.length == 0) {
+            return new address[](0);
+        }
+        return elections[elections.length - 1].electedNios;
+    }
+
+    function getElectionCount() external view returns (uint256) {
+        return elections.length;
     }
 }
