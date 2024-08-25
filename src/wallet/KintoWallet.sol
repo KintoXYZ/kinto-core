@@ -52,6 +52,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant WETH = 0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8;
     address internal constant KINTO_TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+    uint256 public constant RECOVERY_PRICE = 5e18;
 
     /* ============ State Variables ============ */
 
@@ -248,6 +249,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      * Can only be called by the factory through a privileged signer
      */
     function startRecovery() external override onlyFactory {
+        IERC20(KINTO_TOKEN).safeTransfer(KINTO_TREASURY, RECOVERY_PRICE);
         inRecovery = block.timestamp;
     }
 
