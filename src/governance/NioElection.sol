@@ -127,7 +127,7 @@ contract NioElection {
 
     function submitCandidate() external {
         uint256 currentElectionId = elections.length - 1;
-        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
+        ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateSubmission) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateSubmission);
         }
@@ -142,7 +142,7 @@ contract NioElection {
 
     function voteForCandidate(address _candidate) external {
         uint256 currentElectionId = elections.length - 1;
-        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
+        ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateVoting) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateVoting);
         }
@@ -174,7 +174,7 @@ contract NioElection {
 
     function voteForNominee(address _nominee) external {
         uint256 currentElectionId = elections.length - 1;
-        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
+        ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.NomineeVoting) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.NomineeVoting);
         }
@@ -199,7 +199,7 @@ contract NioElection {
 
     function electNios() external {
         uint256 currentElectionId = elections.length - 1;
-        ElectionPhase currentPhase = getCurrentPhase(currentElectionId);
+        ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.AwaitingElection) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.AwaitingElection);
         }
@@ -283,9 +283,8 @@ contract NioElection {
 
     /* ============ View Functions ============ */
 
-    function getCurrentPhase(uint256 _electionId) public view returns (ElectionPhase) {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        Election storage election = elections[_electionId];
+    function getCurrentPhase() public view returns (ElectionPhase) {
+        Election storage election = elections[elections.length - 1];
 
         if (block.timestamp < election.candidateSubmissionEndTime) {
             return ElectionPhase.CandidateSubmission;
@@ -306,70 +305,7 @@ contract NioElection {
     }
 
     function isElectionActive() public view returns (bool) {
-        return elections.length > 0 && getCurrentPhase(elections.length - 1) != ElectionPhase.Completed;
-    }
-
-    function getElectionStatus(uint256 _electionId)
-        external
-        view
-        returns (
-            uint256 startTime,
-            uint256 candidateSubmissionEndTime,
-            uint256 candidateVotingEndTime,
-            uint256 complianceProcessEndTime,
-            uint256 nomineeVotingEndTime,
-            uint256 electionEndTime,
-            ElectionPhase currentPhase,
-            uint256 niosToElect
-        )
-    {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        Election storage election = elections[_electionId];
-        return (
-            election.startTime,
-            election.candidateSubmissionEndTime,
-            election.candidateVotingEndTime,
-            election.complianceProcessEndTime,
-            election.nomineeVotingEndTime,
-            election.electionEndTime,
-            getCurrentPhase(_electionId),
-            election.niosToElect
-        );
-    }
-
-    function getCandidates(uint256 _electionId) external view returns (address[] memory) {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        return elections[_electionId].candidateList;
-    }
-
-    function getNominees(uint256 _electionId) external view returns (address[] memory) {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        return elections[_electionId].nomineeList;
-    }
-
-    function getCandidateInfo(uint256 _electionId, address _candidate)
-        external
-        view
-        returns (address addr, uint256 votes)
-    {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        Candidate memory candidate = elections[_electionId].candidates[_candidate];
-        return (candidate.addr, candidate.votes);
-    }
-
-    function getNomineeInfo(uint256 _electionId, address _nominee)
-        external
-        view
-        returns (address addr, uint256 votes)
-    {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        Nominee memory nominee = elections[_electionId].nominees[_nominee];
-        return (nominee.addr, nominee.votes);
-    }
-
-    function getElectionResult(uint256 _electionId) external view returns (address[] memory) {
-        if (_electionId >= elections.length) revert InvalidElectionId(_electionId);
-        return elections[_electionId].electedNios;
+        return elections.length > 0 && getCurrentPhase() != ElectionPhase.Completed;
     }
 
     function getNextElectionTime() external view returns (uint256) {
@@ -378,13 +314,6 @@ contract NioElection {
         }
         uint256 lastElectionEndTime = elections[elections.length - 1].electionEndTime;
         return lastElectionEndTime + ELECTION_INTERVAL;
-    }
-
-    function getElectedNios() public view returns (address[] memory) {
-        if (elections.length == 0) {
-            return new address[](0);
-        }
-        return elections[elections.length - 1].electedNios;
     }
 
     function getElectionCount() external view returns (uint256) {
