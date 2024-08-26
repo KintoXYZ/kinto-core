@@ -433,7 +433,7 @@ contract NioElection {
     }
 
     function getNomineeVotes(address _nominee) external view returns (uint256) {
-        getNomineeVotes(getCurrentElectionId(), _nominee);
+        return getNomineeVotes(getCurrentElectionId(), _nominee);
     }
 
     /**
@@ -462,7 +462,7 @@ contract NioElection {
     }
 
     function getUsedCandidateVotes(address _voter) external view returns (uint256) {
-        getUsedCandidateVotes(getCurrentElectionId(), _voter);
+        return getUsedCandidateVotes(getCurrentElectionId(), _voter);
     }
 
     /**

@@ -63,7 +63,7 @@ contract NioElectionTest is SharedSetup {
             uint256 nomineeVotingEndTime,
             uint256 electionEndTime,
             uint256 niosToElect
-        ) = election.getElectionDetails(0);
+        ) = election.getElectionDetails();
 
         assertEq(startTime, block.timestamp);
         assertEq(candidateSubmissionEndTime, startTime + CANDIDATE_SUBMISSION_DURATION);
@@ -105,7 +105,7 @@ contract NioElectionTest is SharedSetup {
         assertEq(candidates[0], alice);
     }
 
-    function testSubmitCandidate_RevertWhenEAfterDeadline() public {
+    function testSubmitCandidate_RevertWhenAfterDeadline() public {
         election.startElection();
         vm.warp(block.timestamp + 6 days);
 
@@ -135,6 +135,24 @@ contract NioElectionTest is SharedSetup {
         assertEq(election.getCandidateVotes(alice), 50e18);
     }
 
+    function testVoteForCandidate_RevertWhenBeforeCandidateVoting() public {
+        election.startElection();
+
+        vm.prank(alice);
+        election.submitCandidate();
+
+        vm.prank(bob);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NioElection.InvalidElectionPhase.selector,
+                0,
+                NioElection.ElectionPhase.CandidateSubmission,
+                NioElection.ElectionPhase.CandidateVoting
+            )
+        );
+        election.voteForCandidate(alice, 50e18);
+    }
+
     /* ============ voteForNominee ============ */
 
     function testVoteForNominee() public {
@@ -151,26 +169,13 @@ contract NioElectionTest is SharedSetup {
         assertEq(election.getNomineeVotes(alice), fullVoteAmount);
     }
 
-    function testCannotVoteForCandidateBeforeCandidateVoting() public {
+    function testVoteForNominee_RevertWhenBeforeNomineeVoting() public {
         election.startElection();
-        vm.prank(alice);
-        election.submitCandidate();
-        vm.prank(bob);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NioElection.InvalidElectionPhase.selector,
-                0,
-                NioElection.ElectionPhase.CandidateSubmission,
-                NioElection.ElectionPhase.CandidateVoting
-            )
-        );
-        election.voteForCandidate(alice, 50e18);
-    }
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
 
-    function testCannotVoteForNomineeBeforeNomineeVoting() public {
-        voteForNominees();
-
-        vm.warp(block.timestamp + 11 days);
         vm.prank(bob);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -183,32 +188,70 @@ contract NioElectionTest is SharedSetup {
         election.voteForNominee(alice, 50e18);
     }
 
-    function testCannotVoteTwice() public {
-        voteForNominees();
+    function testVoteForNominee_RevertWhenVoteTwice() public {
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
 
-        vm.warp(block.timestamp + 16 days);
-        vm.startPrank(bob);
-        election.voteForNominee(alice, 50e18);
+        vm.prank(bob);
+        election.voteForNominee(alice, fullVoteAmount);
+
+        vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(NioElection.NoVotingPower.selector, bob));
-        election.voteForNominee(alice, 50e18);
-        vm.stopPrank();
+        election.voteForNominee(alice, fullVoteAmount);
+    }
+
+    function testVoteForNomineeVoteWeighting() public {
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        // 50% voting power
+        vm.warp(block.timestamp + 11 days);
+        vm.prank(bob);
+        election.voteForNominee(alice, fullVoteAmount);
+
+        assertEq(election.getNomineeVotes(alice), fullVoteAmount / 2);
+
+        // ~0% voting power
+        vm.warp(block.timestamp + 4 days - 1);
+        vm.prank(eve);
+        election.voteForNominee(alice, fullVoteAmount);
+
+        uint256 weight = uint256(1e18) / 8 days;
+        assertEq(election.getNomineeVotes(alice), fullVoteAmount / 2 + fullVoteAmount * weight / 1e18);
     }
 
     /* ============ electNios ============ */
 
     function testElectNios() public {
-        voteForNominees();
+        runElection();
 
-        vm.warp(block.timestamp + 31 days);
-        election.electNios();
-        address[] memory electedNios = election.getElectedNios(0);
-        assertEq(electedNios.length, 5);
+        (,,,,, uint256 electionEndTime, uint256 niosToElect) = election.getElectionDetails();
+
+        address[] memory electedNios = election.getElectedNios();
+        assertEq(electedNios.length, 4);
+
+        assertEq(electionEndTime, block.timestamp);
     }
 
-    function testCannotElectNiosBeforeEnd() public {
-        voteForNominees();
+    function testElectNios_RevertWhenBeforeEnd() public {
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
 
-        vm.warp(block.timestamp + 29 days);
+        vm.prank(bob);
+        election.voteForNominee(alice, fullVoteAmount);
+
         vm.expectRevert(
             abi.encodeWithSelector(
                 NioElection.InvalidElectionPhase.selector,
@@ -223,7 +266,7 @@ contract NioElectionTest is SharedSetup {
     function testAlternatingNiosToElect() public {
         // First election
         runElection();
-        (,,,,, uint256 electionEndTime, uint256 niosToElect) = election.getElectionDetails(0);
+        (,,,,, uint256 electionEndTime, uint256 niosToElect) = election.getElectionDetails();
         assertEq(niosToElect, 4);
 
         // Second election
@@ -237,43 +280,6 @@ contract NioElectionTest is SharedSetup {
         runElection();
         (,,,,, electionEndTime, niosToElect) = election.getElectionDetails(2);
         assertEq(niosToElect, 4);
-    }
-
-    function testGetElectionDetails() public {
-        election.startElection();
-        (
-            uint256 startTime,
-            uint256 candidateSubmissionEndTime,
-            uint256 candidateVotingEndTime,
-            uint256 complianceProcessEndTime,
-            uint256 nomineeVotingEndTime,
-            uint256 electionEndTime,
-            uint256 niosToElect
-        ) = election.getElectionDetails(0);
-
-        assertEq(startTime, block.timestamp);
-        assertEq(candidateSubmissionEndTime, startTime + CANDIDATE_SUBMISSION_DURATION);
-        assertEq(candidateVotingEndTime, candidateSubmissionEndTime + CANDIDATE_VOTING_DURATION);
-        assertEq(complianceProcessEndTime, candidateVotingEndTime + COMPLIANCE_PROCESS_DURATION);
-        assertEq(nomineeVotingEndTime, startTime + ELECTION_DURATION);
-        assertEq(electionEndTime, 0); // Should be 0 before election is completed
-        assertEq(niosToElect, 4);
-    }
-
-    function testVoteWeighting() public {
-        voteForNominees();
-
-        vm.warp(block.timestamp + 16 days);
-        vm.prank(bob);
-        election.voteForNominee(alice, 50e18);
-        uint256 initialVotes = election.getNomineeVotes(0, alice);
-
-        vm.warp(block.timestamp + 4 days);
-        vm.prank(eve);
-        election.voteForNominee(alice, 50e18);
-        uint256 laterVotes = election.getNomineeVotes(0, alice) - initialVotes;
-
-        assertGt(initialVotes, laterVotes);
     }
 
     /* ============ Helper functions ============ */
