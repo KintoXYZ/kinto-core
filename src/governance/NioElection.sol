@@ -162,11 +162,11 @@ contract NioElection {
 
     /**
      * @notice Allows a user to vote for a candidate during the candidate voting phase.
-     * @param _candidate The address of the candidate to vote for.
+     * @param candidate The address of the candidate to vote for.
      * @param votes The number of votes to cast.
      */
-    function voteForCandidate(address _candidate, uint256 votes) external {
-        if (!kintoID.isKYC(IKintoWallet(_candidate).owners(0))) revert KYCRequired(_candidate);
+    function voteForCandidate(address candidate, uint256 votes) external {
+        if (!kintoID.isKYC(IKintoWallet(candidate).owners(0))) revert KYCRequired(candidate);
         uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.CandidateVoting) {
@@ -179,32 +179,32 @@ contract NioElection {
 
         if (votes > availableVotes) revert NoVotingPower(msg.sender);
 
-        Candidate storage candidate = election.candidates[_candidate];
-        if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
+        Candidate storage $candidate = election.candidates[candidate];
+        if ($candidate.addr == address(0)) revert InvalidCandidate(candidate);
 
-        candidate.votes += votes;
+        $candidate.votes += votes;
         election.usedCandidateVotes[msg.sender] += votes;
 
-        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, votes);
+        emit CandidateVoteCast(currentElectionId, msg.sender, candidate, votes);
 
         // Check if the candidate now meets the threshold to become a nominee
         uint256 totalVotableTokens = kToken.getPastTotalSupply(election.startTime);
         uint256 threshold = totalVotableTokens * MIN_VOTE_PERCENTAGE / 1e18;
 
-        if (candidate.votes >= threshold && election.nominees[_candidate].addr == address(0)) {
-            election.nominees[_candidate] = Nominee(_candidate, 0);
-            election.nomineeList.push(_candidate);
-            emit NomineeSelected(currentElectionId, _candidate, candidate.votes);
+        if ($candidate.votes >= threshold && election.nominees[candidate].addr == address(0)) {
+            election.nominees[candidate] = Nominee(candidate, 0);
+            election.nomineeList.push(candidate);
+            emit NomineeSelected(currentElectionId, candidate, $candidate.votes);
         }
     }
 
     /**
-     * @notice Allows a user to vote for a nominee during the nominee voting phase.
-     * @param _nominee The address of the nominee to vote for.
+     * @notice Allows a user to vote for a $nominee during the $nominee voting phase.
+     * @param nominee The address of the $nominee to vote for.
      * @param votes The number of votes to cast.
      */
-    function voteForNominee(address _nominee, uint256 votes) external {
-        if (!kintoID.isKYC(IKintoWallet(_nominee).owners(0))) revert KYCRequired(_nominee);
+    function voteForNominee(address nominee, uint256 votes) external {
+        if (!kintoID.isKYC(IKintoWallet(nominee).owners(0))) revert KYCRequired(nominee);
         uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
         if (currentPhase != ElectionPhase.NomineeVoting) {
@@ -217,16 +217,16 @@ contract NioElection {
 
         if (votes > availableVotes) revert NoVotingPower(msg.sender);
 
-        Nominee storage nominee = election.nominees[_nominee];
-        if (nominee.addr == address(0)) revert InvalidNominee(_nominee);
+        Nominee storage $nominee = election.nominees[nominee];
+        if ($nominee.addr == address(0)) revert InvalidNominee(nominee);
 
         uint256 weight = calculateVoteWeight(currentElectionId);
         uint256 weightedVotes = votes * weight / 1e18;
 
-        nominee.votes += weightedVotes;
+        $nominee.votes += weightedVotes;
         election.usedNomineeVotes[msg.sender] += votes;
 
-        emit NomineeVoteCast(currentElectionId, msg.sender, _nominee, weightedVotes);
+        emit NomineeVoteCast(currentElectionId, msg.sender, nominee, weightedVotes);
     }
 
     /**
@@ -308,7 +308,7 @@ contract NioElection {
      * @notice Sorts nominees by their vote count in descending order.
      * @dev Internal function used to determine election winners.
      * @param _electionId The ID of the election to sort nominees for.
-     * @return An array of nominee addresses sorted by votes.
+     * @return An array of $nominee addresses sorted by votes.
      */
     function sortNomineesByVotes(uint256 _electionId) internal view returns (address[] memory) {
         Election storage election = elections[_electionId];
@@ -409,7 +409,7 @@ contract NioElection {
      * @return candidateSubmissionEndTime The end time for candidate submissions.
      * @return candidateVotingEndTime The end time for candidate voting.
      * @return complianceProcessEndTime The end time for the compliance process.
-     * @return nomineeVotingEndTime The end time for nominee voting.
+     * @return nomineeVotingEndTime The end time for $nominee voting.
      * @return electionEndTime The end time of the election.
      * @return niosToElect The number of Nios to be elected in this election.
      */
@@ -436,7 +436,7 @@ contract NioElection {
      * @return candidateSubmissionEndTime The end time for candidate submissions.
      * @return candidateVotingEndTime The end time for candidate voting.
      * @return complianceProcessEndTime The end time for the compliance process.
-     * @return nomineeVotingEndTime The end time for nominee voting.
+     * @return nomineeVotingEndTime The end time for $nominee voting.
      * @return electionEndTime The end time of the election.
      * @return niosToElect The number of Nios to be elected in this election.
      */
@@ -486,7 +486,7 @@ contract NioElection {
 
     /**
      * @notice Returns the list of nominees for the current election.
-     * @return An array of nominee addresses.
+     * @return An array of $nominee addresses.
      */
     function getNominees() external view returns (address[] memory) {
         return getNominees(getCurrentElectionId());
@@ -495,7 +495,7 @@ contract NioElection {
     /**
      * @notice Returns the list of nominees for a specific election.
      * @param electionId The ID of the election to query.
-     * @return An array of nominee addresses.
+     * @return An array of $nominee addresses.
      */
     function getNominees(uint256 electionId) public view returns (address[] memory) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
@@ -504,42 +504,42 @@ contract NioElection {
 
     /**
      * @notice Returns the votes received by a candidate in the current election.
-     * @param _candidate The address of the candidate.
+     * @param candidate The address of the candidate.
      * @return The number of votes received by the candidate.
      */
-    function getCandidateVotes(address _candidate) external view returns (uint256) {
-        return getCandidateVotes(getCurrentElectionId(), _candidate);
+    function getCandidateVotes(address candidate) external view returns (uint256) {
+        return getCandidateVotes(getCurrentElectionId(), candidate);
     }
 
     /**
      * @notice Returns the votes received by a candidate in a specific election.
      * @param electionId The ID of the election to query.
-     * @param _candidate The address of the candidate.
+     * @param candidate The address of the candidate.
      * @return The number of votes received by the candidate.
      */
-    function getCandidateVotes(uint256 electionId, address _candidate) public view returns (uint256) {
+    function getCandidateVotes(uint256 electionId, address candidate) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
-        return elections[electionId].candidates[_candidate].votes;
+        return elections[electionId].candidates[candidate].votes;
     }
 
     /**
-     * @notice Returns the votes received by a nominee in the current election.
-     * @param _nominee The address of the nominee.
-     * @return The number of votes received by the nominee.
+     * @notice Returns the votes received by a $nominee in the current election.
+     * @param nominee The address of the $nominee.
+     * @return The number of votes received by the $nominee.
      */
-    function getNomineeVotes(address _nominee) external view returns (uint256) {
-        return getNomineeVotes(getCurrentElectionId(), _nominee);
+    function getNomineeVotes(address nominee) external view returns (uint256) {
+        return getNomineeVotes(getCurrentElectionId(), nominee);
     }
 
     /**
-     * @notice Returns the votes received by a nominee in a specific election.
+     * @notice Returns the votes received by a $nominee in a specific election.
      * @param electionId The ID of the election to query.
-     * @param _nominee The address of the nominee.
-     * @return The number of votes received by the nominee.
+     * @param nominee The address of the $nominee.
+     * @return The number of votes received by the $nominee.
      */
-    function getNomineeVotes(uint256 electionId, address _nominee) public view returns (uint256) {
+    function getNomineeVotes(uint256 electionId, address nominee) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
-        return elections[electionId].nominees[_nominee].votes;
+        return elections[electionId].nominees[nominee].votes;
     }
 
     /**
@@ -581,19 +581,19 @@ contract NioElection {
     }
 
     /**
-     * @notice Returns the number of votes used by a voter in the nominee voting phase of the current election.
+     * @notice Returns the number of votes used by a voter in the $nominee voting phase of the current election.
      * @param _voter The address of the voter.
-     * @return The number of votes used by the voter in the nominee voting phase.
+     * @return The number of votes used by the voter in the $nominee voting phase.
      */
     function getUsedNomineeVotes(address _voter) external view returns (uint256) {
         return getUsedNomineeVotes(getCurrentElectionId(), _voter);
     }
 
     /**
-     * @notice Returns the number of votes used by a voter in the nominee voting phase of a specific election.
+     * @notice Returns the number of votes used by a voter in the $nominee voting phase of a specific election.
      * @param electionId The ID of the election to query.
      * @param _voter The address of the voter.
-     * @return The number of votes used by the voter in the nominee voting phase.
+     * @return The number of votes used by the voter in the $nominee voting phase.
      */
     function getUsedNomineeVotes(uint256 electionId, address _voter) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
