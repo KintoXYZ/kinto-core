@@ -53,6 +53,8 @@ contract NioElectionTest is SharedSetup {
     /* ============ startElection ============ */
 
     function testStartElection() public {
+        assertEq(election.getNextElectionTime(), block.timestamp);
+
         election.startElection();
         assertEq(uint256(election.getCurrentPhase()), uint256(NioElection.ElectionPhase.CandidateSubmission));
         (
@@ -99,9 +101,10 @@ contract NioElectionTest is SharedSetup {
         vm.prank(alice);
         election.submitCandidate();
 
-        address[] memory candidates = election.getCandidates(0);
+        address[] memory candidates = election.getCandidates();
 
         assertEq(candidates.length, 1);
+        assertEq(candidates.length, election.getCandidates(0).length);
         assertEq(candidates[0], alice);
     }
 
@@ -132,7 +135,14 @@ contract NioElectionTest is SharedSetup {
         vm.prank(bob);
         election.voteForCandidate(alice, 50e18);
 
+        address[] memory nominees = election.getNominees();
+        assertEq(nominees.length, 1);
+        assertEq(nominees.length, election.getNominees(0).length);
+        assertEq(nominees[0], alice);
+
         assertEq(election.getCandidateVotes(alice), 50e18);
+        assertEq(election.getUsedCandidateVotes(bob), 50e18);
+        assertEq(election.getUsedCandidateVotes(0, bob), 50e18);
     }
 
     function testVoteForCandidate_RevertWhenNoKyc() public {
@@ -180,6 +190,9 @@ contract NioElectionTest is SharedSetup {
         election.voteForNominee(alice, fullVoteAmount);
 
         assertEq(election.getNomineeVotes(alice), fullVoteAmount);
+
+        assertEq(election.getUsedNomineeVotes(bob), fullVoteAmount);
+        assertEq(election.getUsedNomineeVotes(0, bob), fullVoteAmount);
     }
 
     function testVoteForNominee_RevertWhenNoKyc() public {
@@ -274,6 +287,7 @@ contract NioElectionTest is SharedSetup {
         }
 
         assertEq(electionEndTime, block.timestamp);
+        assertEq(election.getElectionCount(), 1);
     }
 
     function testElectNiosSorting() public {
