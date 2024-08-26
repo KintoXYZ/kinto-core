@@ -67,8 +67,8 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
         }
     }
 
-    function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
-        return super.nonces(owner);
+    function nonces(address user) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
+        return super.nonces(user);
     }
 
     function decimals() public view override(ERC20Upgradeable, BridgedToken) returns (uint8) {

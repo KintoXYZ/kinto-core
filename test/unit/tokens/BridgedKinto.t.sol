@@ -39,6 +39,9 @@ contract BridgedKintoTest is SharedSetup {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Kinto Token");
         assertEq(token.symbol(), "K");
+        assertEq(token.decimals(), 18);
+        assertEq(token.nonces(_user), 0);
+        assertEq(token.CLOCK_MODE(), "mode=timestamp");
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
