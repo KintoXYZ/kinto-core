@@ -12,6 +12,11 @@ import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
 import "forge-std/console2.sol";
 
+/**
+ * @title NioElection
+ * @notice This contract manages the election process for Nio Guardians in the Kinto ecosystem.
+ * It handles candidate submission, voting, and the final election of Nios.
+ */
 contract NioElection {
     /* ============ Types ============ */
 
@@ -95,6 +100,12 @@ contract NioElection {
 
     /* ============ Constructor ============ */
 
+    /**
+     * @notice Initializes the NioElection contract with necessary dependencies.
+     * @param _kToken The address of the BridgedKinto token contract.
+     * @param _nioNFT The address of the NioGuardians NFT contract.
+     * @param _kintoID The address of the KintoID contract.
+     */
     constructor(BridgedKinto _kToken, NioGuardians _nioNFT, IKintoID _kintoID) {
         kToken = _kToken;
         nioNFT = _nioNFT;
@@ -103,6 +114,9 @@ contract NioElection {
 
     /* ============ External Functions ============ */
 
+    /**
+     * @notice Initiates a new election cycle if the conditions are met.
+     */
     function startElection() external {
         if (isElectionActive()) {
             revert ElectionAlreadyActive(elections.length - 1, elections[elections.length - 1].startTime);
@@ -128,6 +142,9 @@ contract NioElection {
         emit ElectionStarted(elections.length - 1, startTime, newElection.niosToElect);
     }
 
+    /**
+     * @notice Allows a user to submit themselves as a candidate for the current election.
+     */
     function submitCandidate() external {
         uint256 currentElectionId = elections.length - 1;
         ElectionPhase currentPhase = getCurrentPhase();
@@ -143,7 +160,12 @@ contract NioElection {
         emit CandidateSubmitted(currentElectionId, msg.sender);
     }
 
-    function voteForCandidate(address _candidate, uint256 _votes) external {
+    /**
+     * @notice Allows a user to vote for a candidate during the candidate voting phase.
+     * @param _candidate The address of the candidate to vote for.
+     * @param votes The number of votes to cast.
+     */
+    function voteForCandidate(address _candidate, uint256 votes) external {
         if (!kintoID.isKYC(IKintoWallet(_candidate).owners(0))) revert KYCRequired(_candidate);
         uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
@@ -155,15 +177,15 @@ contract NioElection {
         uint256 availableVotes =
             kToken.getPastVotes(msg.sender, election.startTime) - election.usedCandidateVotes[msg.sender];
 
-        if (_votes > availableVotes) revert NoVotingPower(msg.sender);
+        if (votes > availableVotes) revert NoVotingPower(msg.sender);
 
         Candidate storage candidate = election.candidates[_candidate];
         if (candidate.addr == address(0)) revert InvalidCandidate(_candidate);
 
-        candidate.votes += _votes;
-        election.usedCandidateVotes[msg.sender] += _votes;
+        candidate.votes += votes;
+        election.usedCandidateVotes[msg.sender] += votes;
 
-        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, _votes);
+        emit CandidateVoteCast(currentElectionId, msg.sender, _candidate, votes);
 
         // Check if the candidate now meets the threshold to become a nominee
         uint256 totalVotableTokens = kToken.getPastTotalSupply(election.startTime);
@@ -176,7 +198,12 @@ contract NioElection {
         }
     }
 
-    function voteForNominee(address _nominee, uint256 _votes) external {
+    /**
+     * @notice Allows a user to vote for a nominee during the nominee voting phase.
+     * @param _nominee The address of the nominee to vote for.
+     * @param votes The number of votes to cast.
+     */
+    function voteForNominee(address _nominee, uint256 votes) external {
         if (!kintoID.isKYC(IKintoWallet(_nominee).owners(0))) revert KYCRequired(_nominee);
         uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
@@ -188,20 +215,23 @@ contract NioElection {
         uint256 availableVotes =
             kToken.getPastVotes(msg.sender, election.startTime) - election.usedNomineeVotes[msg.sender];
 
-        if (_votes > availableVotes) revert NoVotingPower(msg.sender);
+        if (votes > availableVotes) revert NoVotingPower(msg.sender);
 
         Nominee storage nominee = election.nominees[_nominee];
         if (nominee.addr == address(0)) revert InvalidNominee(_nominee);
 
         uint256 weight = calculateVoteWeight(currentElectionId);
-        uint256 weightedVotes = _votes * weight / 1e18;
+        uint256 weightedVotes = votes * weight / 1e18;
 
         nominee.votes += weightedVotes;
-        election.usedNomineeVotes[msg.sender] += _votes;
+        election.usedNomineeVotes[msg.sender] += votes;
 
         emit NomineeVoteCast(currentElectionId, msg.sender, _nominee, weightedVotes);
     }
 
+    /**
+     * @notice Finalizes the election by selecting the winners and minting Nio NFTs.
+     */
     function electNios() external {
         uint256 currentElectionId = getCurrentElectionId();
         ElectionPhase currentPhase = getCurrentPhase();
@@ -240,6 +270,12 @@ contract NioElection {
 
     /* ============ Internal Functions ============ */
 
+    /**
+     * @notice Calculates the weight of a vote based on the current time in the voting period.
+     * @dev Internal function used to adjust vote weight over time.
+     * @param _electionId The ID of the current election.
+     * @return The calculated vote weight.
+     */
     function calculateVoteWeight(uint256 _electionId) internal view returns (uint256) {
         Election storage election = elections[_electionId];
         if (block.timestamp <= election.complianceProcessEndTime + 7 days) {
@@ -250,6 +286,11 @@ contract NioElection {
         }
     }
 
+    /**
+     * @notice Checks if an address is currently an elected Nio.
+     * @param _address The address to check.
+     * @return A boolean indicating whether the address is an elected Nio.
+     */
     function isElectedNio(address _address) internal view returns (bool) {
         if (elections.length == 0) {
             return false;
@@ -263,6 +304,12 @@ contract NioElection {
         return false;
     }
 
+    /**
+     * @notice Sorts nominees by their vote count in descending order.
+     * @dev Internal function used to determine election winners.
+     * @param _electionId The ID of the election to sort nominees for.
+     * @return An array of nominee addresses sorted by votes.
+     */
     function sortNomineesByVotes(uint256 _electionId) internal view returns (address[] memory) {
         Election storage election = elections[_electionId];
         uint256 length = election.nomineeList.length;
@@ -295,6 +342,10 @@ contract NioElection {
 
     /* ============ View Functions ============ */
 
+    /**
+     * @notice Returns the current phase of the ongoing election.
+     * @return The current ElectionPhase.
+     */
     function getCurrentPhase() public view returns (ElectionPhase) {
         Election storage election = elections[elections.length - 1];
 
@@ -316,10 +367,18 @@ contract NioElection {
         return ElectionPhase.Completed;
     }
 
+    /**
+     * @notice Checks if there is an active election.
+     * @return A boolean indicating whether an election is currently active.
+     */
     function isElectionActive() public view returns (bool) {
         return elections.length > 0 && getCurrentPhase() != ElectionPhase.Completed;
     }
 
+    /**
+     * @notice Calculates the timestamp for the next possible election.
+     * @return The timestamp when the next election can be started.
+     */
     function getNextElectionTime() external view returns (uint256) {
         if (elections.length == 0) {
             return block.timestamp;
@@ -328,14 +387,32 @@ contract NioElection {
         return lastElectionEndTime + ELECTION_INTERVAL;
     }
 
+    /**
+     * @notice Returns the total number of elections that have been held.
+     * @return The count of all elections.
+     */
     function getElectionCount() external view returns (uint256) {
         return elections.length;
     }
 
+    /**
+     * @notice Returns the ID of the current or most recent election.
+     * @return The current election ID.
+     */
     function getCurrentElectionId() public view returns (uint256) {
         return elections.length - 1;
     }
 
+    /**
+     * @notice Retrieves the details of the current election.
+     * @return startTime The start time of the election.
+     * @return candidateSubmissionEndTime The end time for candidate submissions.
+     * @return candidateVotingEndTime The end time for candidate voting.
+     * @return complianceProcessEndTime The end time for the compliance process.
+     * @return nomineeVotingEndTime The end time for nominee voting.
+     * @return electionEndTime The end time of the election.
+     * @return niosToElect The number of Nios to be elected in this election.
+     */
     function getElectionDetails()
         external
         view
@@ -353,7 +430,7 @@ contract NioElection {
     }
 
     /**
-     * @dev Returns the details of a specific election.
+     * @notice Retrieves the details of a specific election.
      * @param electionId The ID of the election to query.
      * @return startTime The start time of the election.
      * @return candidateSubmissionEndTime The end time for candidate submissions.
@@ -389,12 +466,16 @@ contract NioElection {
         );
     }
 
+    /**
+     * @notice Returns the list of candidates for the current election.
+     * @return An array of candidate addresses.
+     */
     function getCandidates() external view returns (address[] memory) {
         return getCandidates(getCurrentElectionId());
     }
 
     /**
-     * @dev Returns the list of candidates for a specific election.
+     * @notice Returns the list of candidates for a specific election.
      * @param electionId The ID of the election to query.
      * @return An array of candidate addresses.
      */
@@ -403,12 +484,16 @@ contract NioElection {
         return elections[electionId].candidateList;
     }
 
+    /**
+     * @notice Returns the list of nominees for the current election.
+     * @return An array of nominee addresses.
+     */
     function getNominees() external view returns (address[] memory) {
         return getNominees(getCurrentElectionId());
     }
 
     /**
-     * @dev Returns the list of nominees for a specific election.
+     * @notice Returns the list of nominees for a specific election.
      * @param electionId The ID of the election to query.
      * @return An array of nominee addresses.
      */
@@ -417,12 +502,17 @@ contract NioElection {
         return elections[electionId].nomineeList;
     }
 
+    /**
+     * @notice Returns the votes received by a candidate in the current election.
+     * @param _candidate The address of the candidate.
+     * @return The number of votes received by the candidate.
+     */
     function getCandidateVotes(address _candidate) external view returns (uint256) {
         return getCandidateVotes(getCurrentElectionId(), _candidate);
     }
 
     /**
-     * @dev Returns the votes received by a candidate in a specific election.
+     * @notice Returns the votes received by a candidate in a specific election.
      * @param electionId The ID of the election to query.
      * @param _candidate The address of the candidate.
      * @return The number of votes received by the candidate.
@@ -432,12 +522,17 @@ contract NioElection {
         return elections[electionId].candidates[_candidate].votes;
     }
 
+    /**
+     * @notice Returns the votes received by a nominee in the current election.
+     * @param _nominee The address of the nominee.
+     * @return The number of votes received by the nominee.
+     */
     function getNomineeVotes(address _nominee) external view returns (uint256) {
         return getNomineeVotes(getCurrentElectionId(), _nominee);
     }
 
     /**
-     * @dev Returns the votes received by a nominee in a specific election.
+     * @notice Returns the votes received by a nominee in a specific election.
      * @param electionId The ID of the election to query.
      * @param _nominee The address of the nominee.
      * @return The number of votes received by the nominee.
@@ -447,12 +542,16 @@ contract NioElection {
         return elections[electionId].nominees[_nominee].votes;
     }
 
+    /**
+     * @notice Returns the elected Nios for the current election.
+     * @return An array of elected Nio addresses.
+     */
     function getElectedNios() external view returns (address[] memory) {
         return getElectedNios(getCurrentElectionId());
     }
 
     /**
-     * @dev Returns the elected Nios for a completed election.
+     * @notice Returns the elected Nios for a completed election.
      * @param electionId The ID of the election to query.
      * @return An array of elected Nio addresses.
      */
@@ -461,12 +560,17 @@ contract NioElection {
         return elections[electionId].electedNios;
     }
 
+    /**
+     * @notice Returns the number of votes used by a voter in the candidate voting phase of the current election.
+     * @param _voter The address of the voter.
+     * @return The number of votes used by the voter in the candidate voting phase.
+     */
     function getUsedCandidateVotes(address _voter) external view returns (uint256) {
         return getUsedCandidateVotes(getCurrentElectionId(), _voter);
     }
 
     /**
-     * @dev Returns the number of votes used by a voter in the candidate voting phase of a specific election.
+     * @notice Returns the number of votes used by a voter in the candidate voting phase of a specific election.
      * @param electionId The ID of the election to query.
      * @param _voter The address of the voter.
      * @return The number of votes used by the voter in the candidate voting phase.
@@ -476,16 +580,21 @@ contract NioElection {
         return elections[electionId].usedCandidateVotes[_voter];
     }
 
+    /**
+     * @notice Returns the number of votes used by a voter in the nominee voting phase of the current election.
+     * @param _voter The address of the voter.
+     * @return The number of votes used by the voter in the nominee voting phase.
+     */
     function getUsedNomineeVotes(address _voter) external view returns (uint256) {
         return getUsedNomineeVotes(getCurrentElectionId(), _voter);
     }
+
     /**
-     * @dev Returns the number of votes used by a voter in the nominee voting phase of a specific election.
+     * @notice Returns the number of votes used by a voter in the nominee voting phase of a specific election.
      * @param electionId The ID of the election to query.
      * @param _voter The address of the voter.
      * @return The number of votes used by the voter in the nominee voting phase.
      */
-
     function getUsedNomineeVotes(uint256 electionId, address _voter) public view returns (uint256) {
         if (electionId >= elections.length) revert InvalidElectionId(electionId);
         return elections[electionId].usedNomineeVotes[_voter];
