@@ -131,6 +131,34 @@ contract NioGovernorTest is SharedSetup {
         assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Executed));
     }
 
+    /* ============ proposalNeedsQueuing ============ */
+
+    function testProposalNeedsQueuing() public {
+        uint256 proposalId = createProposal();
+
+        // Check if the proposal needs queuing
+        bool needsQueuing = governor.proposalNeedsQueuing(proposalId);
+
+        // Since we're using GovernorTimelockAccess, the proposal should need queuing
+        assertTrue(needsQueuing, "Proposal should need queuing");
+    }
+
+    /* ============ Cancel Proposal ============ */
+
+    function testCancelProposal() public {
+        uint256 proposalId = createProposal();
+
+        // Cancel the proposal
+        (address[] memory targets, bytes[] memory data, uint256[] memory values, string memory desc) = getProposal();
+        vm.prank(address(nio0)); // The proposer should be able to cancel
+        governor.cancel(targets, values, data, keccak256(bytes(desc)));
+
+        // Check if the proposal is now in the Canceled state
+        assertEq(
+            uint8(governor.state(proposalId)), uint8(IGovernor.ProposalState.Canceled), "Proposal should be canceled"
+        );
+    }
+
     /* ============ Helper ============ */
 
     function queueProposal(uint256 hashProposal) internal returns (uint256 hash) {
