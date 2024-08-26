@@ -19,6 +19,15 @@ contract KintoIDv2 is KintoID {
 }
 
 contract KintoIDTest is SharedSetup {
+    function setUp() public virtual override {
+        super.setUp();
+
+        // upgrade KintoId to undo the harness
+        vm.startPrank(_owner);
+        _kintoID.upgradeTo(address(new KintoID(address(_walletFactory))));
+        vm.stopPrank();
+    }
+
     function testUp() public view override {
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");
