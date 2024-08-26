@@ -25,7 +25,7 @@ contract KintoMigration73DeployScript is MigrationHelper {
             privKeys
         );
 
-        EngenBadgesV2 _engenBadges = EngenBadgesV2(_getChainDeployment("EngenBadges"));
+        EngenBadges _engenBadges = EngenBadges(_getChainDeployment("EngenBadges"));
         uint256[] memory balances = _engenBadges.getAllBadges(_getChainDeployment("KintoWallet-admin"), 10);
         assertEq(balances[0], 0);
         assertEq(balances[1], 1);
