@@ -276,17 +276,8 @@ contract EngenBadgesTest is SharedSetup {
             mintIds[i][1] = i + 4;
         }
 
-        UserOperation[] memory mintOps = new UserOperation[](1);
-        mintOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(_engenBadges),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("mintBadgesBatch(address[],uint256[][])", recipients, mintIds),
-            address(_paymaster)
-        );
-
-        _entryPoint.handleOps(mintOps, payable(_owner));
+        vm.prank(address(_kintoWallet));
+        _engenBadges.mintBadgesBatch(recipients, mintIds);
 
         // Verify minting was successful
         for (uint256 i = 0; i < elements; i++) {
@@ -305,19 +296,8 @@ contract EngenBadgesTest is SharedSetup {
             burnAmounts[i][0] = 1;
         }
 
-        UserOperation[] memory burnOps = new UserOperation[](1);
-        burnOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(_engenBadges),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature(
-                "burnBadgesBatch(address[],uint256[][],uint256[][])", recipients, burnIds, burnAmounts
-            ),
-            address(_paymaster)
-        );
-
-        _entryPoint.handleOps(burnOps, payable(_owner));
+        vm.prank(address(_kintoWallet));
+        _engenBadges.burnBadgesBatch(recipients, burnIds, burnAmounts);
 
         // Verify burning was successful
         for (uint256 i = 0; i < elements; i++) {
@@ -362,18 +342,8 @@ contract EngenBadgesTest is SharedSetup {
             amounts[i][0] = 1;
         }
 
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(_engenBadges),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("burnBadgesBatch(address[],uint256[][],uint256[][])", accounts, ids, amounts),
-            address(_paymaster)
-        );
-
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(EngenBadges.BurnTooManyAddresses.selector);
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(EngenBadges.BurnTooManyAddresses.selector));
+        _engenBadges.burnBadgesBatch(accounts, ids, amounts);
     }
 }
