@@ -233,12 +233,76 @@ contract NioElectionTest is SharedSetup {
     function testElectNios() public {
         runElection();
 
-        (,,,,, uint256 electionEndTime, uint256 niosToElect) = election.getElectionDetails();
+        (,,,,, uint256 electionEndTime,) = election.getElectionDetails();
 
         address[] memory electedNios = election.getElectedNios();
         assertEq(electedNios.length, 4);
 
+        for (uint256 index = 0; index < electedNios.length; index++) {
+            assertTrue(nioNFT.balanceOf(electedNios[index]) > 0);
+        }
+        for (uint256 index = 5; index < wallets.length; index++) {
+            assertTrue(nioNFT.balanceOf(wallets[index]) == 0);
+        }
+
         assertEq(electionEndTime, block.timestamp);
+    }
+
+    function testElectNiosSorting() public {
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        // Vote for candidates with different amounts
+        vm.prank(alice);
+        election.voteForCandidate(bob, 80e18);
+        vm.prank(bob);
+        election.voteForCandidate(charlie, 90e18);
+        vm.prank(charlie);
+        election.voteForCandidate(ian, 70e18);
+        vm.prank(ian);
+        election.voteForCandidate(eve, 60e18);
+        vm.prank(eve);
+        election.voteForCandidate(frank, 50e18);
+
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        // Vote for nominees with different amounts
+        vm.prank(alice);
+        election.voteForNominee(bob, 80e18);
+        vm.prank(bob);
+        election.voteForNominee(charlie, 90e18);
+        vm.prank(charlie);
+        election.voteForNominee(ian, 10e18);
+        vm.prank(ian);
+        election.voteForNominee(eve, 60e18);
+        vm.prank(eve);
+        election.voteForNominee(frank, 70e18);
+
+        vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
+
+        election.electNios();
+
+        address[] memory electedNios = election.getElectedNios();
+
+        // Check that we have the correct number of elected Nios
+        assertEq(electedNios.length, 4);
+
+        // Check that the elected Nios are in the correct order (highest votes to lowest)
+        assertEq(electedNios[0], charlie);
+        assertEq(electedNios[1], bob);
+        assertEq(electedNios[2], frank);
+        assertEq(electedNios[3], eve);
+
+        // Verify vote counts
+        assertEq(election.getNomineeVotes(charlie), 90e18);
+        assertEq(election.getNomineeVotes(bob), 80e18);
+        assertEq(election.getNomineeVotes(frank), 70e18);
+        assertEq(election.getNomineeVotes(eve), 60e18);
+
+        // Verify that frank (lowest votes) was not elected
+        assertEq(election.getNomineeVotes(ian), 10e18);
     }
 
     function testElectNios_RevertWhenBeforeEnd() public {
