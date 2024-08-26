@@ -41,23 +41,25 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 contract KintoWalletFactoryTest is SharedSetup {
     using SignatureChecker for address;
 
-    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
+    function setUp() public override {
+        super.setUp();
+
+        address admin = createUser("admin");
+        address minter = createUser("minter");
+        address upgrader = createUser("upgrader");
+
+        vm.etch(KINTO_TOKEN, address(new BridgedKinto()).code);
+        BridgedKinto token = BridgedKinto(KINTO_TOKEN);
+        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
+
+        vm.prank(minter);
+        token.mint(address(_kintoWallet), 5e18);
+    }
 
     function testUp() public override {
         super.testUp();
         assertEq(_walletFactory.factoryWalletVersion(), 2);
         assertEq(_entryPoint.walletFactory(), address(_walletFactory));
-        address admin = createUser("admin");
-        address minter = createUser("minter");
-        address upgrader = createUser("upgrader");
-
-        BridgedKinto token = BridgedKinto(payable(address(new UUPSProxy(address(new BridgedKinto()), ""))));
-        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
-
-        vm.prank(minter);
-        token.mint(address(_kintoWallet), 5e18);
-
-        vm.etch(KINTO_TOKEN, address(token).code);
     }
 
     /* ============ Create Account ============ */

@@ -12,7 +12,6 @@ contract BridgedKintoTest is SharedSetup {
     address upgrader;
 
     BridgedKinto internal token;
-    address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     function setUp() public override {
         super.setUp();

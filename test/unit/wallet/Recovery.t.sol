@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract RecoveryTest is SharedSetup {
     using SafeERC20 for IERC20;
 
-    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
-
     function setUp() public override {
         super.setUp();
 
@@ -19,13 +17,12 @@ contract RecoveryTest is SharedSetup {
         address minter = createUser("minter");
         address upgrader = createUser("upgrader");
 
-        BridgedKinto token = BridgedKinto(payable(address(new UUPSProxy(address(new BridgedKinto()), ""))));
+        vm.etch(KINTO_TOKEN, address(new BridgedKinto()).code);
+        BridgedKinto token = BridgedKinto(KINTO_TOKEN);
         token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
 
         vm.prank(minter);
         token.mint(address(_kintoWallet), 5e18);
-
-        vm.etch(KINTO_TOKEN, address(token).code);
     }
 
     /* ============ Recovery tests ============ */
@@ -33,8 +30,10 @@ contract RecoveryTest is SharedSetup {
     function testComplete_RevertWhen_NoTokens() public {
         vm.prank(address(_walletFactory));
         _kintoWallet.startRecovery();
+
         vm.prank(address(_kintoWallet));
         _kintoWallet.cancelRecovery();
+
         vm.prank(address(_walletFactory));
         vm.expectRevert();
         _kintoWallet.startRecovery();
