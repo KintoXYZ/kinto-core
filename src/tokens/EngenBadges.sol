@@ -134,6 +134,6 @@ contract EngenBadges is
     }
 }
 
-contract EngenBadgesV2 is EngenBadges {
+contract EngenBadgesV3 is EngenBadges {
     constructor() EngenBadges() {}
 }
