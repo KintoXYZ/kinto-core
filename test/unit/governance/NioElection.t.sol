@@ -42,11 +42,11 @@ contract NioElectionTest is SharedSetup {
         nioNFT.transferOwnership(address(election));
 
         // Distribute tokens and set up KYC
-        for (uint256 i = 1; i < wallets.length; i++) {
+        for (uint256 i = 1; i < users.length; i++) {
             vm.prank(admin);
-            kToken.mint(wallets[i], kAmount);
-            vm.prank(wallets[i]);
-            kToken.delegate(wallets[i]);
+            kToken.mint(users[i], kAmount);
+            vm.prank(users[i]);
+            kToken.delegate(users[i]);
         }
     }
 
@@ -241,8 +241,8 @@ contract NioElectionTest is SharedSetup {
         for (uint256 index = 0; index < electedNios.length; index++) {
             assertTrue(nioNFT.balanceOf(electedNios[index]) > 0);
         }
-        for (uint256 index = 5; index < wallets.length; index++) {
-            assertTrue(nioNFT.balanceOf(wallets[index]) == 0);
+        for (uint256 index = 5; index < users.length; index++) {
+            assertTrue(nioNFT.balanceOf(users[index]) == 0);
         }
 
         assertEq(electionEndTime, block.timestamp);
@@ -349,23 +349,23 @@ contract NioElectionTest is SharedSetup {
     /* ============ Helper functions ============ */
 
     function submitCandidates() internal {
-        for (uint256 i = 1; i < wallets.length; i++) {
-            vm.prank(wallets[i]);
+        for (uint256 i = 1; i < users.length; i++) {
+            vm.prank(users[i]);
             election.submitCandidate();
         }
     }
 
     function voteForCandidates() internal {
-        for (uint256 i = 1; i < wallets.length; i++) {
-            vm.prank(wallets[i]);
-            election.voteForCandidate(wallets[i], halfVoteAmount);
+        for (uint256 i = 1; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.voteForCandidate(users[i], halfVoteAmount);
         }
     }
 
     function voteForNominees() internal {
-        for (uint256 i = 1; i < wallets.length; i++) {
-            vm.prank(wallets[i]);
-            election.voteForNominee(wallets[i], halfVoteAmount);
+        for (uint256 i = 1; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.voteForNominee(users[i], halfVoteAmount);
         }
     }
 

@@ -9,7 +9,7 @@ abstract contract BaseTest is AssertionHelper {
     // Reasonable block.timestamp `MAY_1_2023`
     uint32 internal constant START_TIMESTAMP = 1_682_899_200;
 
-    // users
+    // signers
     uint256 internal _ownerPk = 111;
     address payable internal _owner = payable(vm.addr(_ownerPk));
 
@@ -43,8 +43,8 @@ abstract contract BaseTest is AssertionHelper {
     uint256 internal _noKycPk = 10;
     address payable internal _noKyc = payable(vm.addr(_noKycPk));
 
-    address[] internal users;
-    uint256[] internal usersPk;
+    address[] internal signers;
+    uint256[] internal signersPk;
 
     uint256 internal admin0Pk;
     address internal admin0;
@@ -93,8 +93,8 @@ abstract contract BaseTest is AssertionHelper {
         (hannah0, hannah0Pk) = createUserWithKey("hannah0");
         (ian0, ian0Pk) = createUserWithKey("ian0");
 
-        users = [admin0, alice0, bob0, charlie0, david0, eve0, frank0, george0, hannah0, ian0];
-        usersPk = [admin0Pk, alice0Pk, bob0Pk, charlie0Pk, david0Pk, eve0Pk, frank0Pk, george0Pk, hannah0Pk, ian0Pk];
+        signers = [admin0, alice0, bob0, charlie0, david0, eve0, frank0, george0, hannah0, ian0];
+        signersPk = [admin0Pk, alice0Pk, bob0Pk, charlie0Pk, david0Pk, eve0Pk, frank0Pk, george0Pk, hannah0Pk, ian0Pk];
     }
 
     function testUp() public virtual {}

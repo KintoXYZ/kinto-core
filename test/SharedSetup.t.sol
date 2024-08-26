@@ -26,7 +26,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
     Counter counter;
     uint256[] privateKeys;
 
-    address[] internal wallets;
+    address[] internal users;
 
     address internal admin;
     address internal alice;
@@ -131,24 +131,24 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.prank(_owner);
         _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
 
-        wallets = new address[](users.length);
-        for (uint256 i = 0; i < users.length; i++) {
-            approveKYC(_kycProvider, users[i], usersPk[i]);
-            _kintoID.isKYC(users[i]);
-            vm.prank(users[i]);
-            wallets[i] = address(_walletFactory.createAccount(users[i], _recoverer, 0));
+        users = new address[](signers.length);
+        for (uint256 i = 0; i < signers.length; i++) {
+            approveKYC(_kycProvider, signers[i], signersPk[i]);
+            _kintoID.isKYC(signers[i]);
+            vm.prank(signers[i]);
+            users[i] = address(_walletFactory.createAccount(signers[i], _recoverer, 0));
         }
         // Garbage Solidity can't destruct a dynamic array
-        admin = wallets[0];
-        alice = wallets[1];
-        bob = wallets[2];
-        ian = wallets[3];
-        hannah = wallets[4];
-        george = wallets[5];
-        frank = wallets[6];
-        david = wallets[7];
-        charlie = wallets[8];
-        eve = wallets[9];
+        admin = users[0];
+        alice = users[1];
+        bob = users[2];
+        ian = users[3];
+        hannah = users[4];
+        george = users[5];
+        frank = users[6];
+        david = users[7];
+        charlie = users[8];
+        eve = users[9];
 
         // fund wallet on sponsor paymaster
         fundSponsorForApp(_owner, address(_kintoWallet));
