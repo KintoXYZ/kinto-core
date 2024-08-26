@@ -135,6 +135,19 @@ contract NioElectionTest is SharedSetup {
         assertEq(election.getCandidateVotes(alice), 50e18);
     }
 
+    function testVoteForCandidate_RevertWhenNoKyc() public {
+        election.startElection();
+
+        vm.prank(alice);
+        election.submitCandidate();
+
+        revokeKYC(_kycProvider, alice0, alice0Pk);
+
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(NioElection.KYCRequired.selector, alice));
+        election.voteForCandidate(alice, 50e18);
+    }
+
     function testVoteForCandidate_RevertWhenBeforeCandidateVoting() public {
         election.startElection();
 
@@ -167,6 +180,21 @@ contract NioElectionTest is SharedSetup {
         election.voteForNominee(alice, fullVoteAmount);
 
         assertEq(election.getNomineeVotes(alice), fullVoteAmount);
+    }
+
+    function testVoteForNominee_RevertWhenNoKyc() public {
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+        voteForCandidates();
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        revokeKYC(_kycProvider, alice0, alice0Pk);
+
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(NioElection.KYCRequired.selector, alice));
+        election.voteForNominee(alice, fullVoteAmount);
     }
 
     function testVoteForNominee_RevertWhenBeforeNomineeVoting() public {
