@@ -272,6 +272,8 @@ contract NioElectionTest is SharedSetup {
     /* ============ electNios ============ */
 
     function testElectNios() public {
+        assertFalse(election.isElectedNio(users[1]));
+
         runElection();
 
         (,,,,, uint256 electionEndTime,) = election.getElectionDetails();
@@ -288,6 +290,7 @@ contract NioElectionTest is SharedSetup {
 
         assertEq(electionEndTime, block.timestamp);
         assertEq(election.getElectionCount(), 1);
+        assertTrue(election.isElectedNio(users[1]));
     }
 
     function testElectNiosSorting() public {

@@ -287,24 +287,6 @@ contract NioElection {
     }
 
     /**
-     * @notice Checks if an address is currently an elected Nio.
-     * @param _address The address to check.
-     * @return A boolean indicating whether the address is an elected Nio.
-     */
-    function isElectedNio(address _address) internal view returns (bool) {
-        if (elections.length == 0) {
-            return false;
-        }
-        address[] memory currentNios = elections[elections.length - 1].electedNios;
-        for (uint256 i = 0; i < currentNios.length; i++) {
-            if (currentNios[i] == _address) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * @notice Sorts nominees by their vote count in descending order.
      * @dev Internal function used to determine election winners.
      * @param _electionId The ID of the election to sort nominees for.
@@ -341,6 +323,24 @@ contract NioElection {
     }
 
     /* ============ View Functions ============ */
+
+    /**
+     * @notice Checks if an address is currently an elected Nio.
+     * @param addr The address to check.
+     * @return A boolean indicating whether the address is an elected Nio.
+     */
+    function isElectedNio(address addr) public view returns (bool) {
+        if (elections.length == 0) {
+            return false;
+        }
+        address[] memory currentNios = elections[elections.length - 1].electedNios;
+        for (uint256 i = 0; i < currentNios.length; i++) {
+            if (currentNios[i] == addr) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * @notice Returns the current phase of the ongoing election.
