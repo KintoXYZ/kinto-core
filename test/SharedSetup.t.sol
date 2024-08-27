@@ -192,6 +192,9 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.prank(_faucet.owner());
         _faucet.transferOwnership(_owner);
 
+        // Send K tokens for recovery
+        deal(KINTO_TOKEN, address(_kintoWallet), 5e18);
+
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);
     }
