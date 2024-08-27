@@ -309,8 +309,13 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function getApp(address target) external view override returns (address) {
+    function getApp(address target) public view override returns (address) {
         return childToParentContract[target] != address(0) ? childToParentContract[target] : target;
+    }
+
+    //TODO:Remove on next upgrade.
+    function getSponsor(address target) external view returns (address) {
+        return getApp(target);
     }
 
     /**
