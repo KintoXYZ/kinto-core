@@ -22,8 +22,11 @@ import "@kinto-core-script/actions/deploy.s.sol";
 import "forge-std/console2.sol";
 
 abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsReader {
-    Counter counter;
-    uint256[] privateKeys;
+    Counter internal counter;
+    uint256[] internal privateKeys;
+
+    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
+    address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     // events
     event UserOperationRevertReason(

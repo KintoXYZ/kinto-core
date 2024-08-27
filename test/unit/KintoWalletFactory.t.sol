@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/KintoID.sol";
@@ -39,6 +40,21 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 
 contract KintoWalletFactoryTest is SharedSetup {
     using SignatureChecker for address;
+
+    function setUp() public override {
+        super.setUp();
+
+        address admin = createUser("admin");
+        address minter = createUser("minter");
+        address upgrader = createUser("upgrader");
+
+        vm.etch(KINTO_TOKEN, address(new BridgedKinto()).code);
+        BridgedKinto token = BridgedKinto(KINTO_TOKEN);
+        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
+
+        vm.prank(minter);
+        token.mint(address(_kintoWallet), 5e18);
+    }
 
     function testUp() public override {
         super.testUp();

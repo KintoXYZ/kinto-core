@@ -90,6 +90,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /// @dev Address of the Kinto Treasury
     address internal constant KINTO_TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+    uint256 public constant RECOVERY_PRICE = 5e18;
 
     /* ============ State Variables ============ */
 
@@ -286,6 +287,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /// @inheritdoc IKintoWallet
     function startRecovery() external override onlyFactory {
+        IERC20(KINTO_TOKEN).safeTransfer(KINTO_TREASURY, RECOVERY_PRICE);
         inRecovery = block.timestamp;
     }
 
