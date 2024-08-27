@@ -44,7 +44,9 @@ contract TransferDclmScript is MigrationHelper {
 
         // Burn tokens from RD
         _handleOps(
-            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), amount * winners.length),
+            abi.encodeWithSelector(
+                BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), amount * winners.length
+            ),
             kintoToken
         );
 
