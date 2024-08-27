@@ -13,7 +13,7 @@ contract Script is MigrationHelper {
         bytes memory bytecode =
             abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V10", bytecode);
-        saveContractAddress("KintoWalletKintoAppRegistryV10-impl", impl);
+        saveContractAddress("KintoAppRegistryV10-impl", impl);
 
         bytecode = abi.encodePacked(
             type(KintoWallet).creationCode,
