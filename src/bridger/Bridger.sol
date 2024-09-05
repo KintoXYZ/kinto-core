@@ -376,6 +376,7 @@ contract Bridger is
         if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
+
         // Bridge the final amount to Kinto
         // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
