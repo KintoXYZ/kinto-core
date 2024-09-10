@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {ERC20Permit} from "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -8,10 +10,11 @@ import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography
 
 import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
-import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
+import {BridgeWorkflow} from "@kinto-core/access/workflows/BridgeWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 
@@ -20,22 +23,84 @@ import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 
-contract WithdrawWorkflowTest is BaseTest {
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
+import {BridgerHarness} from "@kinto-core-test/harness/BridgerHarness.sol";
+import {BridgeMock} from "@kinto-core-test/mock/BridgeMock.sol";
+import {WETH} from "@kinto-core-test/helpers/WETH.sol";
+ 
+contract ERC20PermitToken is ERC20, ERC20Permit {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
+}
+
+
+contract BridgeWorkflowTest is BaseTest {
     using MessageHashUtils for bytes32;
 
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
-    WithdrawWorkflow internal withdrawWorkflow;
+    BridgeWorkflow internal bridgeWorkflow;
     ERC20Mock internal token;
+    IBridger.BridgeData internal mockBridgerData;
+    IBridge internal vault;
+    BridgerHarness internal bridger;
 
-    uint48 internal validUntil = 2;
-    uint48 internal validAfter = 0;
+    address internal dai;
+    address internal connector;
+    address internal senderAccount;
+    address internal router;
+    address internal weth;
+    address internal usde;
+    address internal wstEth;
+
+    bytes internal constant EXEC_PAYLOAD = bytes("EXEC_PAYLOAD");
+    bytes internal constant OPTIONS = bytes("OPTIONS");
+
+    uint256 internal constant MSG_GAS_LIMIT = 1e6;
+    uint256 internal constant GAS_FEE = 1e16;
 
     uint256 internal defaultAmount = 1e3 * 1e18;
 
     address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
 
+    ERC20PermitToken internal sDAI;
+    ERC20PermitToken internal sUSDe;
+
     function setUp() public override {
+        vault = new BridgeMock();
+
+        dai = makeAddr("dai");
+        senderAccount = makeAddr("sender");
+        connector = makeAddr("connector");
+        router = makeAddr("router");
+        weth = address(new WETH());
+        usde = makeAddr("usde");
+        wstEth = makeAddr("wsteth");
+
+        sDAI = new ERC20PermitToken("sDAI", "sDAI");
+        sUSDe = new ERC20PermitToken("sUSDe", "sUSDe");
+
+        // deploy a new Bridger contract
+        BridgerHarness implementation =
+            new BridgerHarness(router, address(0), address(0), weth, dai, usde, address(sUSDe), wstEth);
+        address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
+        bridger = BridgerHarness(payable(proxy));
+        vm.label(address(bridger), "bridger");
+
+        vm.prank(_owner);
+        bridger.initialize(senderAccount);
+
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(vault), true);
+
+        mockBridgerData = IBridger.BridgeData({
+            vault: address(vault),
+            gasFee: GAS_FEE,
+            msgGasLimit: MSG_GAS_LIMIT,
+            connector: connector,
+            execPayload: EXEC_PAYLOAD,
+            options: OPTIONS
+        });
+
         vm.deal(_owner, 100 ether);
         token = new ERC20Mock("Token", "TNK", 18);
 
@@ -52,31 +117,20 @@ contract WithdrawWorkflowTest is BaseTest {
         accessRegistry.upgradeAll(accessPointImpl);
         accessPoint = accessRegistry.deployFor(address(_user));
 
-        withdrawWorkflow = new WithdrawWorkflow();
+        bridgeWorkflow = new BridgeWorkflow(bridger);
 
-        accessRegistry.allowWorkflow(address(withdrawWorkflow));
+        accessRegistry.allowWorkflow(address(bridgeWorkflow));
     }
 
-    function testWithdrawERC20() public {
+    function testBridge() public {
         token.mint(address(accessPoint), defaultAmount);
 
         bytes memory data =
-            abi.encodeWithSelector(WithdrawWorkflow.withdrawERC20.selector, IERC20(token), defaultAmount);
+            abi.encodeWithSelector(BridgeWorkflow.bridge.selector, IERC20(token), defaultAmount, address(0xdead), mockBridgerData);
 
         vm.prank(_user);
-        accessPoint.execute(address(withdrawWorkflow), data);
+        accessPoint.execute(address(bridgeWorkflow), data);
 
         assertEq(token.balanceOf(_user), defaultAmount);
-    }
-
-    function testWithdrawNative() public {
-        vm.deal(address(accessPoint), defaultAmount);
-
-        bytes memory data = abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, defaultAmount);
-
-        vm.prank(_user);
-        accessPoint.execute(address(withdrawWorkflow), data);
-
-        assertEq(_user.balance, defaultAmount);
     }
 }
