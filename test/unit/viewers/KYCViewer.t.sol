@@ -99,12 +99,6 @@ contract KYCViewerTest is SharedSetup {
         vm.prank(_owner);
         _kintoID.addTrait(_owner, 840);
 
-        // Verify that the trait was set correctly
-        bool hasTraitDirect = _kintoID.hasTrait(_owner, 840);
-
-        // Check trait through KYCViewer
-        bool hasTraitViaViewer = _kycViewer.hasTrait(_owner, 840);
-
         // Get the country code
         uint16 countryCode = _kycViewer.getCountry(_owner);
 

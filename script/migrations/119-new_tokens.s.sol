@@ -20,6 +20,6 @@ contract DeployKintoScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        deployBridgedToken("SOL", "Wrapped SOL", 18, "50l4n4");
+        deployBridgedToken("SOL", "Wrapped SOL", 18, "736f6c");
     }
 }

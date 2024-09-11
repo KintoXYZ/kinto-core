@@ -292,8 +292,6 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testRegisterApp_RevertWhenAppContractIsParentContact() public {
         string memory name = "app";
-        address parentContract = address(123);
-
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
