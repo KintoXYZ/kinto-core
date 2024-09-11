@@ -39,6 +39,6 @@ contract UpgradeBridgedSolScript is MigrationHelper {
             privKeys
         );
 
-        require(weth.deciamls() == 9, "SOL upgrade failed");
+        require(sol.decimals() == 9, "SOL upgrade failed");
     }
 }
