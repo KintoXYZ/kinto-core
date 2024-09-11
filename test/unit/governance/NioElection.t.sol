@@ -124,6 +124,17 @@ contract NioElectionTest is SharedSetup {
         election.submitCandidate();
     }
 
+    function testSubmitCandidate_RevertWhenSubmitTwice() public {
+        election.startElection();
+
+        vm.prank(alice);
+        election.submitCandidate();
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(NioElection.DuplicatedCandidate.selector, alice));
+        election.submitCandidate();
+    }
+
     /* ============ voteForCandidate ============ */
 
     function testVoteForCandidate() public {

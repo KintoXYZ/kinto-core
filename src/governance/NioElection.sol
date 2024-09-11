@@ -90,6 +90,7 @@ contract NioElection {
     error ElectionAlreadyActive(uint256 electionId, uint256 startTime);
     error InvalidElectionPhase(uint256 electionId, ElectionPhase currentPhase, ElectionPhase requiredPhase);
     error ElectedNioCannotBeCandidate(address nio);
+    error DuplicatedCandidate(address candidate);
     error AlreadyVoted(address voter);
     error NoVotingPower(address voter);
     error InvalidCandidate(address candidate);
@@ -153,6 +154,8 @@ contract NioElection {
         if (isElectedNio(msg.sender)) revert ElectedNioCannotBeCandidate(msg.sender);
 
         Election storage election = elections[currentElectionId];
+        if (election.candidates[msg.sender].addr != address(0)) revert DuplicatedCandidate(msg.sender);
+
         election.candidates[msg.sender] = Candidate(msg.sender, 0);
         election.candidateList.push(msg.sender);
 
@@ -323,16 +326,7 @@ contract NioElection {
      * @return A boolean indicating whether the address is an elected Nio.
      */
     function isElectedNio(address addr) public view returns (bool) {
-        if (elections.length == 0) {
-            return false;
-        }
-        address[] memory currentNios = elections[elections.length - 1].electedNios;
-        for (uint256 i = 0; i < currentNios.length; i++) {
-            if (currentNios[i] == addr) {
-                return true;
-            }
-        }
-        return false;
+        return nioNFT.balanceOf(addr) > 0;
     }
 
     /**

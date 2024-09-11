@@ -93,6 +93,13 @@ contract NioGuardians is ERC721, Ownable, EIP712, ERC721Votes {
     }
 
     /**
+     * @notice Overrides the delegate function to prevent delegation
+     */
+    function delegateBySig(address, uint256, uint256, uint8, bytes32, bytes32) public pure override {
+        revert NoDelegate();
+    }
+
+    /**
      * @notice Internal function to increase the balance of an account
      * @param account The address of the account to increase the balance for
      * @param value The amount to increase the balance by
