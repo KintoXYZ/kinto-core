@@ -29,7 +29,6 @@ contract UpgradeBridgedSolScript is MigrationHelper {
 
         _deployImplementationAndUpgrade("SOL", "V2", bytecode);
 
-
         require(sol.decimals() == 9, "SOL upgrade failed");
     }
 }

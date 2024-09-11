@@ -15,5 +15,4 @@ contract BridgedSol is BridgedToken {
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() BridgedToken(9) {}
-
 }
