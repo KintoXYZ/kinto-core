@@ -304,6 +304,20 @@ contract NioElectionTest is SharedSetup {
         assertTrue(election.isElectedNio(users[1]));
     }
 
+    function testElectNios_RevertWhenCandidateIsNio() public {
+        runElection();
+
+        // Second election
+        (,,,,, uint256 electionEndTime,) = election.getElectionDetails();
+
+        vm.warp(electionEndTime + ELECTION_INTERVAL);
+
+        election.startElection();
+        vm.prank(users[1]);
+        vm.expectRevert(abi.encodeWithSelector(NioElection.ElectedNioCannotBeCandidate.selector, users[1]));
+        election.submitCandidate();
+    }
+
     function testElectNios_WhenLessWinnersThanRequired() public {
         assertFalse(election.isElectedNio(users[1]));
 
@@ -452,13 +466,57 @@ contract NioElectionTest is SharedSetup {
 
         // Second election
         vm.warp(electionEndTime + ELECTION_INTERVAL);
-        runElection();
+
+        election.startElection();
+        for (uint256 i = 5; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.submitCandidate();
+        }
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        for (uint256 i = 5; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.voteForCandidate(users[i], halfVoteAmount);
+        }
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        for (uint256 i = 5; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.voteForNominee(users[i], halfVoteAmount);
+        }
+        vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
+
+        election.electNios();
+
         (,,,,, electionEndTime, niosToElect) = election.getElectionDetails(1);
         assertEq(niosToElect, 5);
 
         // Third election
         vm.warp(electionEndTime + ELECTION_INTERVAL);
-        runElection();
+
+        election.startElection();
+        for (uint256 i = 1; i < 5; i++) {
+            vm.prank(users[i]);
+            election.submitCandidate();
+        }
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        for (uint256 i = 1; i < 5; i++) {
+            vm.prank(users[i]);
+            election.voteForCandidate(users[i], halfVoteAmount);
+        }
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        for (uint256 i = 1; i < 5; i++) {
+            vm.prank(users[i]);
+            election.voteForNominee(users[i], halfVoteAmount);
+        }
+        vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
+
+        election.electNios();
+
         (,,,,, electionEndTime, niosToElect) = election.getElectionDetails(2);
         assertEq(niosToElect, 4);
     }

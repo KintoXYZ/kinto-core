@@ -148,7 +148,7 @@ contract NioElection {
         if (currentPhase != ElectionPhase.CandidateSubmission) {
             revert InvalidElectionPhase(currentElectionId, currentPhase, ElectionPhase.CandidateSubmission);
         }
-        if (isElectedNio(msg.sender)) revert ElectedNioCannotBeCandidate(msg.sender);
+        if (!isEligibleForElection(msg.sender)) revert ElectedNioCannotBeCandidate(msg.sender);
 
         Election storage election = elections[currentElectionId];
         if (election.candidates[msg.sender].addr != address(0)) revert DuplicatedCandidate(msg.sender);
@@ -316,6 +316,26 @@ contract NioElection {
     }
 
     /* ============ View Functions ============ */
+
+    /**
+     * @notice Checks if an address is currently an elected Nio.
+     * @param addr The address to check.
+     * @return A boolean indicating whether the address is an elected Nio.
+     */
+    function isEligibleForElection(address addr) public view returns (bool) {
+        uint256 currentElectionId = getCurrentElectionId();
+        address[] memory nios = getElectedNios(currentElectionId);
+        // if Nios not elected yet, look for previous election
+        if (nios.length == 0 && currentElectionId > 0) {
+            nios = getElectedNios(currentElectionId - 1);
+        }
+        for (uint256 index = 0; index < nios.length; index++) {
+            if (nios[index] == addr) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /**
      * @notice Checks if an address is currently an elected Nio.
