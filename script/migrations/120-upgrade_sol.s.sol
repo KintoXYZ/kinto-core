@@ -24,20 +24,11 @@ contract UpgradeBridgedSolScript is MigrationHelper {
             return;
         }
 
-        vm.broadcast(deployerPrivateKey);
-        BridgedSol newImpl =
-            BridgedSol(payable(create2(abi.encodePacked(type(BridgedSol).creationCode))));
+        // vm.broadcast(deployerPrivateKey);
+        bytes memory bytecode = abi.encodePacked(type(BridgedSol).creationCode);
 
-        uint256[] memory privKeys = new uint256[](1);
-        privKeys[0] = deployerPrivateKey;
-        _handleOps(
-            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, newImpl, bytes("")),
-            address(adminWallet),
-            address(sol),
-            0,
-            address(0),
-            privKeys
-        );
+        _deployImplementationAndUpgrade("SOL", "V2", bytecode);
+
 
         require(sol.decimals() == 9, "SOL upgrade failed");
     }
