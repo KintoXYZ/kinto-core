@@ -94,7 +94,6 @@ contract NioElection {
     error NoVotingPower(address voter);
     error InvalidCandidate(address candidate);
     error InvalidNominee(address nominee);
-    error InsufficientEligibleCandidates(uint256 eligibleCount, uint256 required);
     error TooEarlyForNewElection(uint256 currentTime, uint256 nextElectionTime);
     error InvalidElectionId(uint256 electionId);
 
@@ -241,31 +240,25 @@ contract NioElection {
 
         Election storage election = elections[currentElectionId];
         address[] memory sortedNominees = sortNomineesByVotes(currentElectionId);
-        address[] memory winners = new address[](election.niosToElect);
         uint256 winnerCount = 0;
 
         for (uint256 i = 0; i < sortedNominees.length && winnerCount < election.niosToElect; i++) {
-            winners[winnerCount] = sortedNominees[i];
+            election.electedNios.push(sortedNominees[i]);
             winnerCount++;
         }
 
-        if (winnerCount < election.niosToElect) {
-            revert InsufficientEligibleCandidates(winnerCount, election.niosToElect);
-        }
-
-        election.electedNios = winners;
         election.electionEndTime = block.timestamp;
 
         uint256 nftStartId = election.niosToElect == 4 ? 1 : 5;
-        for (uint256 index = 0; index < winners.length; index++) {
+        for (uint256 index = 0; index < winnerCount; index++) {
             uint256 nftId = nftStartId + index;
             if (nioNFT.exists(nftId)) {
                 nioNFT.burn(nftId);
             }
-            nioNFT.mint(winners[index], nftId);
+            nioNFT.mint(election.electedNios[index], nftId);
         }
 
-        emit ElectionCompleted(currentElectionId, winners);
+        emit ElectionCompleted(currentElectionId, election.electedNios);
     }
 
     /* ============ Internal Functions ============ */

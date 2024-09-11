@@ -293,6 +293,67 @@ contract NioElectionTest is SharedSetup {
         assertTrue(election.isElectedNio(users[1]));
     }
 
+    function testElectNios_WhenLessWinnersThanRequired() public {
+        assertFalse(election.isElectedNio(users[1]));
+
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
+
+        election.electNios();
+
+        (,,,,, uint256 electionEndTime,) = election.getElectionDetails();
+
+        address[] memory electedNios = election.getElectedNios();
+        assertEq(electedNios.length, 0);
+
+        assertEq(electionEndTime, block.timestamp);
+        assertEq(election.getElectionCount(), 1);
+        assertFalse(election.isElectedNio(users[1]));
+
+        vm.warp(election.getNextElectionTime());
+
+        election.startElection();
+        submitCandidates();
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        for (uint256 i = 1; i < 3; i++) {
+            vm.prank(users[i]);
+            election.voteForCandidate(users[i], halfVoteAmount);
+        }
+        vm.warp(block.timestamp + CANDIDATE_VOTING_DURATION);
+        vm.warp(block.timestamp + COMPLIANCE_PROCESS_DURATION);
+
+        vm.warp(block.timestamp + NOMINEE_VOTING_DURATION);
+
+        election.electNios();
+
+        (,,,,, electionEndTime,) = election.getElectionDetails();
+
+        electedNios = election.getElectedNios();
+        assertEq(electedNios.length, 2);
+
+        for (uint256 index = 0; index < electedNios.length; index++) {
+            assertTrue(nioNFT.balanceOf(electedNios[index]) > 0);
+        }
+        for (uint256 index = 3; index < users.length; index++) {
+            assertTrue(nioNFT.balanceOf(users[index]) == 0);
+        }
+
+        assertEq(electionEndTime, block.timestamp);
+        assertEq(election.getElectionCount(), 2);
+        assertTrue(election.isElectedNio(users[1]));
+        assertTrue(election.isElectedNio(users[2]));
+        assertFalse(election.isElectedNio(users[3]));
+        assertFalse(election.isElectedNio(users[4]));
+        assertFalse(election.isElectedNio(users[5]));
+    }
+
     function testElectNiosSorting() public {
         election.startElection();
         submitCandidates();
