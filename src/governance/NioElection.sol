@@ -10,8 +10,6 @@ import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
-import "forge-std/console2.sol";
-
 /**
  * @title NioElection
  * @notice This contract manages the election process for Nio Guardians in the Kinto ecosystem.
@@ -62,7 +60,6 @@ contract NioElection {
     uint256 public constant CANDIDATE_SUBMISSION_DURATION = 5 days;
     uint256 public constant CANDIDATE_VOTING_DURATION = 5 days;
     uint256 public constant COMPLIANCE_PROCESS_DURATION = 5 days;
-    uint256 public constant NOMINEE_VOTING_DURATION = 15 days;
     uint256 public constant ELECTION_DURATION = 30 days;
     uint256 public constant MIN_VOTE_PERCENTAGE = 5e15; // 0.5% in wei
     uint256 public constant ELECTION_INTERVAL = 180 days; // 6 months
@@ -80,8 +77,8 @@ contract NioElection {
     event ElectionStarted(uint256 electionId, uint256 startTime, uint256 niosToElect);
     event CandidateSubmitted(uint256 electionId, address candidate);
     event NomineeSelected(uint256 electionId, address nominee, uint256 votes);
-    event CandidateVoteCast(uint256 electionId, address voter, address candidate, uint256 weight);
-    event NomineeVoteCast(uint256 electionId, address voter, address nominee, uint256 weight);
+    event CandidateVoteCast(uint256 electionId, address voter, address candidate, uint256 votes);
+    event NomineeVoteCast(uint256 electionId, address voter, address nominee, uint256 votes);
     event ElectionCompleted(uint256 electionId, address[] winners);
 
     /* ============ Errors ============ */
