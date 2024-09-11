@@ -3,9 +3,6 @@
 pragma solidity ^0.8.18;
 
 import {BridgedToken} from "./BridgedToken.sol";
-import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
-import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
-import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 /**
  * @title BridgedSOL
