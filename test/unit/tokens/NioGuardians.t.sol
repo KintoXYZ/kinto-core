@@ -58,9 +58,14 @@ contract NioGuardiansTest is SharedSetup {
     function testNoDelegate() public {
         vm.prank(admin);
         nioGuardians.mint(alice, 1);
+
         vm.prank(alice);
         vm.expectRevert(NioGuardians.NoDelegate.selector);
         nioGuardians.delegate(bob);
+
+        vm.prank(alice);
+        vm.expectRevert(NioGuardians.NoDelegate.selector);
+        nioGuardians.delegateBySig(bob, 0, 0, 0, bytes32(0), bytes32(0));
     }
 
     function testVotingPower() public {
