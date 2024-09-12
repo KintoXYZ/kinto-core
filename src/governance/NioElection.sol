@@ -134,6 +134,7 @@ contract NioElection {
         newElection.complianceProcessEndTime =
             startTime + CANDIDATE_SUBMISSION_DURATION + CANDIDATE_VOTING_DURATION + COMPLIANCE_PROCESS_DURATION;
         newElection.nomineeVotingEndTime = startTime + ELECTION_DURATION;
+        // slither-disable-next-line weak-prng 
         newElection.niosToElect = elections.length % 2 == 1 ? 4 : 5;
 
         emit ElectionStarted(elections.length - 1, startTime, newElection.niosToElect);
