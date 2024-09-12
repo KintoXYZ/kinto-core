@@ -28,10 +28,6 @@ import {BridgerHarness} from "@kinto-core-test/harness/BridgerHarness.sol";
 import {BridgeMock} from "@kinto-core-test/mock/BridgeMock.sol";
 import {WETH} from "@kinto-core-test/helpers/WETH.sol";
 
-contract ERC20PermitToken is ERC20, ERC20Permit {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
-}
-
 contract BridgeWorkflowTest is BaseTest {
     using MessageHashUtils for bytes32;
 

@@ -33,7 +33,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     /* ============ Constants ============ */
 
     /* ============ State Variables ============ */
-    uint256 public override factoryVersion;
+    uint256 public override accessPointVersion;
     UpgradeableBeacon public immutable beacon;
 
     /* ============ Internal storage ============ */
@@ -54,13 +54,13 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
     function initialize() external virtual initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        factoryVersion = 1;
+        accessPointVersion = 1;
     }
 
     /// @inheritdoc IAccessRegistry
     function upgradeAll(IAccessPoint newImpl) external override onlyOwner {
         require(address(newImpl) != address(0) && address(newImpl) != beacon.implementation(), "invalid address");
-        factoryVersion++;
+        accessPointVersion++;
         emit AccessPointFactoryUpgraded(beacon.implementation(), address(newImpl));
         beacon.upgradeTo(address(newImpl));
     }
