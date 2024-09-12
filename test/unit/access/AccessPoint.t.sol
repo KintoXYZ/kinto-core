@@ -59,12 +59,18 @@ contract AccessPointTest is BaseTest {
         accessRegistry.allowWorkflow(address(workflowMock));
     }
 
-    function testSwapAndBridge() public {
+    function testExecuteBatch() public {
         vm.deal(_user, 100 ether);
 
-        bytes memory data = abi.encodeWithSelector(WorkflowMock.answer.selector);
+        address[] memory target = new address[](2);
+        target[0] = address(workflowMock);
+        target[1] = address(workflowMock);
+
+        bytes[] memory data = new bytes[](2);
+        data[0] = abi.encodeWithSelector(WorkflowMock.answer.selector);
+        data[1] = abi.encodeWithSelector(WorkflowMock.answer.selector);
 
         vm.prank(_user);
-        accessPoint.execute(address(workflowMock), data);
+        accessPoint.executeBatch(target, data);
     }
 }
