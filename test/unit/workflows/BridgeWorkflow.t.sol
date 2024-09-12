@@ -27,11 +27,10 @@ import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {BridgerHarness} from "@kinto-core-test/harness/BridgerHarness.sol";
 import {BridgeMock} from "@kinto-core-test/mock/BridgeMock.sol";
 import {WETH} from "@kinto-core-test/helpers/WETH.sol";
- 
+
 contract ERC20PermitToken is ERC20, ERC20Permit {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) ERC20Permit(name) {}
 }
-
 
 contract BridgeWorkflowTest is BaseTest {
     using MessageHashUtils for bytes32;
@@ -62,11 +61,11 @@ contract BridgeWorkflowTest is BaseTest {
 
     address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
 
-    ERC20PermitToken internal sDAI;
-    ERC20PermitToken internal sUSDe;
-
     function setUp() public override {
-        vault = new BridgeMock();
+        vm.deal(_owner, 100 ether);
+        token = new ERC20Mock("Token", "TNK", 18);
+
+        vault = new BridgeMock(address(token));
 
         dai = makeAddr("dai");
         senderAccount = makeAddr("sender");
@@ -76,12 +75,9 @@ contract BridgeWorkflowTest is BaseTest {
         usde = makeAddr("usde");
         wstEth = makeAddr("wsteth");
 
-        sDAI = new ERC20PermitToken("sDAI", "sDAI");
-        sUSDe = new ERC20PermitToken("sUSDe", "sUSDe");
-
         // deploy a new Bridger contract
         BridgerHarness implementation =
-            new BridgerHarness(router, address(0), address(0), weth, dai, usde, address(sUSDe), wstEth);
+            new BridgerHarness(router, address(0), address(0), weth, dai, usde, address(0), wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
         vm.label(address(bridger), "bridger");
@@ -100,9 +96,6 @@ contract BridgeWorkflowTest is BaseTest {
             execPayload: EXEC_PAYLOAD,
             options: OPTIONS
         });
-
-        vm.deal(_owner, 100 ether);
-        token = new ERC20Mock("Token", "TNK", 18);
 
         // use random address for access point implementation to avoid circular dependency
         UpgradeableBeacon beacon = new UpgradeableBeacon(address(this), address(this));
@@ -123,14 +116,17 @@ contract BridgeWorkflowTest is BaseTest {
     }
 
     function testBridge() public {
+        vm.deal(_user, 100 ether);
+
         token.mint(address(accessPoint), defaultAmount);
 
-        bytes memory data =
-            abi.encodeWithSelector(BridgeWorkflow.bridge.selector, IERC20(token), defaultAmount, address(0xdead), mockBridgerData);
+        bytes memory data = abi.encodeWithSelector(
+            BridgeWorkflow.bridge.selector, IERC20(token), defaultAmount, address(0xdead), mockBridgerData
+        );
 
         vm.prank(_user);
-        accessPoint.execute(address(bridgeWorkflow), data);
+        accessPoint.execute{value: GAS_FEE}(address(bridgeWorkflow), data);
 
-        assertEq(token.balanceOf(_user), defaultAmount);
+        assertEq(token.balanceOf(address(accessPoint)), 0);
     }
 }

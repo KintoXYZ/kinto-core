@@ -16,7 +16,7 @@ import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/harness/BridgerHarness.sol";
-import "@kinto-core-test/mock/BridgeMock.sol";
+import {BridgeMock} from "@kinto-core-test/mock/BridgeMock.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract ERC20PermitToken is ERC20, ERC20Permit {
@@ -65,7 +65,7 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         sDAI = new ERC20PermitToken("sDAI", "sDAI");
         sUSDe = new ERC20PermitToken("sUSDe", "sUSDe");
 
-        vault = new BridgeMock();
+        vault = new BridgeMock(address(sDAI));
 
         // deploy a new Bridger contract
         BridgerHarness implementation =
@@ -141,7 +141,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.depositBySig{value: GAS_FEE}(permitSignature, sigdata, bytes(""), mockBridgerData);
 
         assertEq(bridger.nonces(_user), nonce + 1);
-        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore + amountToDeposit);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(bridger)), balanceBefore);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(vault)), amountToDeposit);
     }
 
     function testDepositBySig_RevertWhen_CallerIsNotOwnerOrSender() public {
@@ -241,7 +242,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         bridger.depositPermit2{value: GAS_FEE}(permitSingle, permitSignature, sigData, bytes(""), mockBridgerData);
 
         assertEq(sDAI.balanceOf(_user), 0);
-        assertEq(sDAI.balanceOf(address(bridger)), amountToDeposit);
+        assertEq(sDAI.balanceOf(address(bridger)), 0);
+        assertEq(ERC20(assetToDeposit).balanceOf(address(vault)), amountToDeposit);
     }
 
     function testDepositPermit2_RevertWhen_NotOwner() public {
@@ -338,7 +340,8 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         );
 
         assertEq(sDAI.balanceOf(_user), 0);
-        assertEq(sDAI.balanceOf(address(bridger)), amountToDeposit);
+        assertEq(sDAI.balanceOf(address(bridger)), 0);
+        assertEq(sDAI.balanceOf(address(vault)), amountToDeposit);
     }
 
     function testDepositERC20_RevertWhenInvalidBridge() public {

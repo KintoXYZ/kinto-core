@@ -17,19 +17,18 @@ contract BridgeWorkflow {
      * @param asset The address of the input asset.
      * @param amount The amount of the input asset.
      */
-    event Bridged(
-        address indexed wallet,
-        address indexed asset,
-        uint256 amount
-    );
+    event Bridged(address indexed wallet, address indexed asset, uint256 amount);
 
     IBridger public immutable bridger;
 
-    constructor (IBridger bridger_) {
+    constructor(IBridger bridger_) {
         bridger = bridger_;
     }
 
-    function bridge(address asset, uint256 amount, address wallet, IBridger.BridgeData calldata bridgeData) payable external {
+    function bridge(address asset, uint256 amount, address wallet, IBridger.BridgeData calldata bridgeData)
+        external
+        payable
+    {
         if (bridger.bridgeVaults(bridgeData.vault) == false) revert IBridger.InvalidVault(bridgeData.vault);
 
         // Approve max allowance to save on gas for future transfers
@@ -40,16 +39,9 @@ contract BridgeWorkflow {
         // Bridge the amount to Kinto
         // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
-            wallet,
-            amount,
-            bridgeData.msgGasLimit,
-            bridgeData.connector,
-            bridgeData.execPayload,
-            bridgeData.options
+            wallet, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
         );
 
         emit Bridged(wallet, asset, amount);
-
     }
-
 }
