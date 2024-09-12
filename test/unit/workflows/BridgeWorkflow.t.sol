@@ -125,8 +125,34 @@ contract BridgeWorkflowTest is BaseTest {
         );
 
         vm.prank(_user);
+        vm.expectEmit(true, true, true, true);
+        emit BridgeWorkflow.Bridged(address(0xdead), address(token), defaultAmount);
+        vm.expectCall(
+            address(vault),
+            GAS_FEE,
+            abi.encodeCall(
+                vault.bridge, (address(0xdead), defaultAmount, MSG_GAS_LIMIT, connector, EXEC_PAYLOAD, OPTIONS)
+            )
+        );
         accessPoint.execute{value: GAS_FEE}(address(bridgeWorkflow), data);
 
         assertEq(token.balanceOf(address(accessPoint)), 0);
+    }
+
+    function testBridge_RevertWhenInvalidVault() public {
+        vm.prank(_owner);
+        bridger.setBridgeVault(address(vault), false);
+
+        vm.deal(_user, 100 ether);
+
+        token.mint(address(accessPoint), defaultAmount);
+
+        bytes memory data = abi.encodeWithSelector(
+            BridgeWorkflow.bridge.selector, IERC20(token), defaultAmount, address(0xdead), mockBridgerData
+        );
+
+        vm.prank(_user);
+        vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidVault.selector, address(vault)));
+        accessPoint.execute{value: GAS_FEE}(address(bridgeWorkflow), data);
     }
 }
