@@ -270,4 +270,10 @@ interface IBridger {
      * @return Swap router address.
      */
     function swapRouter() external view returns (address);
+
+    /**
+     * @notice Check if the vault is registered.
+     * @return True if registered.
+     */
+    function bridgeVaults(address vault) external view returns (bool);
 }
