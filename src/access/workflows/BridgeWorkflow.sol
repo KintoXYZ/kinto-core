@@ -30,6 +30,9 @@ contract BridgeWorkflow {
         payable
     {
         if (bridger.bridgeVaults(bridgeData.vault) == false) revert IBridger.InvalidVault(bridgeData.vault);
+        if (amount == 0) {
+            amount = IERC20(asset).balanceOf(address(this));
+        }
 
         // Approve max allowance to save on gas for future transfers
         if (IERC20(asset).allowance(address(this), bridgeData.vault) < amount) {
