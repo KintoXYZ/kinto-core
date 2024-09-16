@@ -18,6 +18,7 @@ import {
   createPimlicoPaymasterClient,
 } from "permissionless/clients/pimlico";
 import {
+  getContract,
   encodeFunctionData,
   http,
   createPublicClient,
@@ -99,7 +100,7 @@ async function callWorkflow(
         ],
         name: "execute",
         outputs: [{ name: "response", type: "bytes" }],
-        stateMutability: "nonpayable",
+        stateMutability: "payable",
         type: "function",
       },
     ],
@@ -107,6 +108,99 @@ async function callWorkflow(
   });
 
   console.log("Generated callData:", callData);
+
+  // BridgeWorkflow
+  const bridgeWorkflow = "0xDd53a659E428A7d5bc472112CD7B4e06cd548D4B";
+
+  // cast abi-encode "bridge((address,uint256,address,(address,uint256,uint256,address,bytes,bytes)))" "(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,1,0x2e2B1c42E38f5af81771e65D87729E57ABD1337a,(0x...,1))"
+
+  const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+  const kintoAdmin = "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a";
+  const wethVault = "0x4D585D346DFB27b297C37F480a82d4cAB39491Bb";
+  const vaultAbi = [
+    {
+      inputs: [
+        { name: "connector", type: "address" },
+        { name: "msgGasLimit", type: "uint256" },
+        { name: "payloadSize", type: "uint256" },
+      ],
+      name: "getMinFees",
+      outputs: [{ name: "totalFees", type: "uint256" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ];
+
+  const wethConnector = "0x47469683AEAD0B5EF2c599ff34d55C3D998393Bf";
+
+  const fees = await publicClient.readContract({
+    address: wethVault,
+    abi: vaultAbi,
+    functionName: "getMinFees",
+    args: [wethConnector, 500_000, 322],
+  });
+  console.log("fees:", fees);
+
+  const bridgeCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [
+          { name: "asset", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "wallet", type: "address" },
+          {
+            name: "bridgeData",
+            type: "tuple",
+            components: [
+              { name: "vault", type: "address" },
+              { name: "gasFee", type: "uint256" },
+              { name: "msgGasLimit", type: "uint256" },
+              { name: "connector", type: "address" },
+              { name: "execPayload", type: "bytes" },
+              { name: "options", type: "bytes" },
+            ],
+          },
+        ],
+        name: "bridge",
+        outputs: [],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ],
+    args: [
+      weth,
+      1n, // Use BigInt for uint256
+      kintoAdmin,
+      {
+        vault: wethVault,
+        gasFee: fees,
+        msgGasLimit: 500000n, // Use BigInt for uint256
+        connector: wethConnector,
+        execPayload: "0x", // empty bytes
+        options: "0x", // empty bytes
+      },
+    ],
+  });
+
+  console.log("Generated brideCalldata:", bridgeCalldata);
+
+  const brideWorkflowCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [
+          { name: "target", type: "address" },
+          { name: "data", type: "bytes" },
+        ],
+        name: "execute",
+        outputs: [{ name: "response", type: "bytes" }],
+        stateMutability: "nonpayable",
+        type: "function",
+      },
+    ],
+    args: [bridgeWorkflow, bridgeCalldata],
+  });
+
+  console.log("Generated brideWorkflowCalldata:", brideWorkflowCalldata);
 
   const gasPrice = await bundlerClient.getUserOperationGasPrice();
 
@@ -133,7 +227,7 @@ async function callWorkflow(
     nonce: accountNonce,
     factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
     factoryData: isAccountDeployed ? undefined : factoryData,
-    callData: callData,
+    callData: brideWorkflowCalldata,
     maxFeePerGas: gasPrice.fast.maxFeePerGas,
     maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
     // dummy signature, needs to be there so the SimpleAccount doesn't immediately revert because of invalid signature length
