@@ -77,9 +77,9 @@ async function callWorkflow(
   });
   console.log("Calculated sender address:", senderAddress);
 
-  const bytecode = await publicClient.getBytecode({ address: senderAddress });
+  const bytecode = await publicClient.getCode({ address: senderAddress });
   let isAccountDeployed = false;
-  if (bytecode.length > 0) {
+  if (!!bytecode && bytecode.length > 0) {
     isAccountDeployed = true;
   }
   console.log("isAccountDeployed:", isAccountDeployed);
@@ -110,9 +110,27 @@ async function callWorkflow(
 
   const gasPrice = await bundlerClient.getUserOperationGasPrice();
 
+  const accountAbi = [
+    {
+      inputs: [],
+      name: "getNonce",
+      outputs: [{ name: "nonce", type: "uint256" }],
+      stateMutability: "view",
+      type: "function",
+    },
+  ];
+
+  // Assuming you already have `senderAddress` as the address of the deployed account contract
+  const accountNonce = await publicClient.readContract({
+    address: senderAddress, // the smart account address
+    abi: accountAbi, // ABI of the account to fetch the nonce
+    functionName: "getNonce", // assuming getNonce is the function name
+  });
+  console.log("Account abstraction nonce:", accountNonce);
+
   const userOperation = {
     sender: senderAddress,
-    nonce: 0n,
+    nonce: accountNonce,
     factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
     factoryData: isAccountDeployed ? undefined : factoryData,
     callData: callData,
