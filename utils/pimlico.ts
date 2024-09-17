@@ -86,10 +86,22 @@ async function callWorkflow(
   console.log("isAccountDeployed:", isAccountDeployed);
 
   // WethWorkflow
-  const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
+  const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+  const wethWorkflow = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
   // cast abi-encode "deposit(uint256)" 0.01ether
-  const data =
-    "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
+
+  const depositCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [{ name: "amount", type: "uint256" }],
+        name: "deposit",
+        outputs: [],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ],
+    args: [1n],
+  });
 
   const callData = encodeFunctionData({
     abi: [
@@ -104,7 +116,7 @@ async function callWorkflow(
         type: "function",
       },
     ],
-    args: [target, data],
+    args: [wethWorkflow, depositCalldata],
   });
 
   console.log("Generated callData:", callData);
@@ -114,7 +126,6 @@ async function callWorkflow(
 
   // cast abi-encode "bridge((address,uint256,address,(address,uint256,uint256,address,bytes,bytes)))" "(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,1,0x2e2B1c42E38f5af81771e65D87729E57ABD1337a,(0x...,1))"
 
-  const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
   const kintoAdmin = "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a";
   const wethVault = "0x4D585D346DFB27b297C37F480a82d4cAB39491Bb";
   const vaultAbi = [
@@ -184,23 +195,26 @@ async function callWorkflow(
 
   console.log("Generated brideCalldata:", bridgeCalldata);
 
-  const brideWorkflowCalldata = encodeFunctionData({
+  const executeBatchCalldata = encodeFunctionData({
     abi: [
       {
         inputs: [
-          { name: "target", type: "address" },
-          { name: "data", type: "bytes" },
+          { name: "target", type: "address[]" },
+          { name: "data", type: "bytes[]" },
         ],
-        name: "execute",
-        outputs: [{ name: "response", type: "bytes" }],
-        stateMutability: "nonpayable",
+        name: "executeBatch",
+        outputs: [{ name: "response", type: "bytes[]" }],
+        stateMutability: "payable",
         type: "function",
       },
     ],
-    args: [bridgeWorkflow, bridgeCalldata],
+    args: [
+      [wethWorkflow, bridgeWorkflow],
+      [depositCalldata, bridgeCalldata],
+    ],
   });
 
-  console.log("Generated brideWorkflowCalldata:", brideWorkflowCalldata);
+  console.log("Generated executeBatchCalldata:", executeBatchCalldata);
 
   const gasPrice = await bundlerClient.getUserOperationGasPrice();
 
@@ -227,7 +241,7 @@ async function callWorkflow(
     nonce: accountNonce,
     factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
     factoryData: isAccountDeployed ? undefined : factoryData,
-    callData: brideWorkflowCalldata,
+    callData: executeBatchCalldata,
     maxFeePerGas: gasPrice.fast.maxFeePerGas,
     maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
     // dummy signature, needs to be there so the SimpleAccount doesn't immediately revert because of invalid signature length
