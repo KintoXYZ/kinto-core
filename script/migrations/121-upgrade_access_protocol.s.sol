@@ -59,7 +59,7 @@ contract DeployScript is Script, MigrationHelper {
 
         vm.broadcast(deployerPrivateKey);
         registry.upgradeAll(newImpl);
-        saveContractAddress("AccessPointV4-impl", accessRegistryImpl);
+        saveContractAddress("AccessPointV4-impl", address(newImpl));
 
         vm.broadcast(deployerPrivateKey);
         swapWorkflow = new SwapWorkflow((EXCHANGE_PROXY));
