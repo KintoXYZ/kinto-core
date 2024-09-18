@@ -15,7 +15,7 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
-import "@kinto-core/wallet/KintoWallet.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
 import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";

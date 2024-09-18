@@ -6,17 +6,21 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/IKintoEntryPoint.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IEngenCredits.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../governance/EngenGovernance.sol";
-import "../interfaces/IKintoAppRegistry.sol";
-import "../libraries/ByteSignature.sol";
+import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
+import {Constants} from "@kinto-core/Const.sol";
+
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/IKintoEntryPoint.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IEngenCredits.sol";
+import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import "@kinto-core/governance/EngenGovernance.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import "@kinto-core/libraries/ByteSignature.sol";
 
 import "forge-std/console2.sol";
 
@@ -243,12 +247,35 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /// @inheritdoc IKintoWallet
     function isFunderWhitelisted(address funder) external view override returns (bool) {
         if (isBridgeContract(funder)) return true;
+        if (getAccessPoint() == funder) return true;
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == funder) {
                 return true;
             }
         }
         return funderWhitelist[funder];
+    }
+
+    /// @inheritdoc IKintoWallet
+    function getAccessPoint() public view returns (address) {
+        return Create2.computeAddress(
+            bytes32(abi.encodePacked(owners[0])),
+            keccak256(
+                abi.encodePacked(
+                    // The reason we need to import the exact bytecode is that Solidity adds metadata,
+                    // including an IPFS hash, to the bytecode,
+                    // which may change even if the actual bytecode remains the same.
+                    Constants.safeBeaconProxyCreationCode,
+                    // access beacon
+                    abi.encode(
+                        address(0xfe56e9D6F04D427D557dff1615398632BB7Dd3e6),
+                        abi.encodeCall(IAccessPoint.initialize, (owners[0]))
+                    )
+                )
+            ),
+            // access registry
+            0xA000000eaA652c7023530b603844471294B811c4
+        );
     }
 
     /* ============ Token & App whitelists ============ */

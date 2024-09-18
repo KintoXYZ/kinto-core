@@ -15,7 +15,7 @@ contract SafeBeaconProxy is BeaconProxy {
      * @dev Initializes the proxy with `beacon`.
      *
      * If `data` is nonempty, it's used as data in a delegate call to the implementation returned by the beacon. This
-     * will typically be an encoded function call, and allows initializating the storage of the proxy like a Solidity
+     * will typically be an encoded function call, and allows initializing the storage of the proxy like a Solidity
      * constructor.
      *
      * Requirements:
