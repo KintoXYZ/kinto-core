@@ -7,10 +7,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
+
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
-import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {Constants} from "@kinto-core/Const.sol";
 
 import "@kinto-core/interfaces/IKintoID.sol";
@@ -269,7 +269,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                     // access beacon
                     abi.encode(
                         address(0xfe56e9D6F04D427D557dff1615398632BB7Dd3e6),
-                        abi.encodeCall(IAccessPoint.initialize, (owners[0]))
+                        abi.encodeWithSignature("initialize(address)", owners[0])
                     )
                 )
             ),
