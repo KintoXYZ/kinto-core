@@ -187,6 +187,47 @@ contract NioElectionTest is SharedSetup {
         election.voteForCandidate(alice, 50e18);
     }
 
+    function testVoteForCandidate_RevertWhenMaxNomineesReached() public {
+        election.startElection();
+
+        address[] memory signers = new address[](26);
+        uint256[] memory signersPk = new uint256[](26);
+        address[] memory users = new address[](26);
+        for (uint256 i = 0; i < signers.length; i++) {
+            (signers[i], signersPk[i]) = makeAddrAndKey(vm.toString(i));
+            approveKYC(_kycProvider, signers[i], signersPk[i]);
+            _kintoID.isKYC(signers[i]);
+            vm.prank(signers[i]);
+            users[i] = address(_walletFactory.createAccount(signers[i], _recoverer, 0));
+        }
+
+        // Distribute tokens and set up KYC
+        for (uint256 i = 1; i < users.length; i++) {
+            vm.prank(admin);
+            kToken.mint(users[i], kAmount);
+            vm.prank(users[i]);
+            kToken.delegate(users[i]);
+        }
+
+        // Submit all candidates
+        for (uint256 i = 1; i < users.length; i++) {
+            vm.prank(users[i]);
+            election.submitCandidate();
+        }
+
+        vm.warp(block.timestamp + CANDIDATE_SUBMISSION_DURATION);
+
+        // Vote for the first 25 candidates to make them nominees
+        for (uint256 i = 1; i < 25; i++) {
+            vm.prank(users[i]);
+            election.voteForCandidate(users[i], halfVoteAmount);
+        }
+        // Try to vote for the 26th candidate, which should revert
+        vm.expectRevert(abi.encodeWithSelector(NioElection.MaxNomineesReached.selector));
+        vm.prank(users[25]);
+        election.voteForCandidate(users[25], halfVoteAmount);
+    }
+
     /* ============ voteForNominee ============ */
 
     function testVoteForNominee() public {

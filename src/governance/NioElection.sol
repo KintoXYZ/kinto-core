@@ -10,6 +10,8 @@ import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 
+import "forge-std/console2.sol";
+
 /**
  * @title NioElection
  * @notice This contract manages the election process for Nio Guardians in the Kinto ecosystem.
@@ -63,6 +65,7 @@ contract NioElection {
     uint256 public constant ELECTION_DURATION = 30 days;
     uint256 public constant MIN_VOTE_PERCENTAGE = 5e15; // 0.5% in wei
     uint256 public constant ELECTION_INTERVAL = 180 days; // 6 months
+    uint256 public constant MAX_NOMINEES = 25; // New constant for maximum number of nominees
 
     BridgedKinto public immutable kToken;
     NioGuardians public immutable nioNFT;
@@ -94,6 +97,7 @@ contract NioElection {
     error InvalidNominee(address nominee);
     error TooEarlyForNewElection(uint256 currentTime, uint256 nextElectionTime);
     error InvalidElectionId(uint256 electionId);
+    error MaxNomineesReached();
 
     /* ============ Constructor ============ */
 
@@ -192,6 +196,7 @@ contract NioElection {
         uint256 threshold = totalVotableTokens * MIN_VOTE_PERCENTAGE / 1e18;
 
         if ($candidate.votes >= threshold && election.nominees[candidate].addr == address(0)) {
+            if (election.nomineeList.length >= (MAX_NOMINEES - 1)) revert MaxNomineesReached();
             election.nominees[candidate] = Nominee(candidate, 0);
             election.nomineeList.push(candidate);
             emit NomineeSelected(currentElectionId, candidate, $candidate.votes);
