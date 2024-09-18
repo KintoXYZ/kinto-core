@@ -3,9 +3,10 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core-test/SharedSetup.t.sol";
+import "@kinto-core-test/helpers/ArrayHelpers.sol";
 
 contract FunderTest is SharedSetup {
-    /* ============ Funder Whitelist ============ */
+    using ArrayHelpers for *;
 
     function testUp() public override {
         super.testUp();
@@ -16,50 +17,22 @@ contract FunderTest is SharedSetup {
     }
 
     function testSetFunderWhitelist() public {
-        address[] memory funders = new address[](1);
-        funders[0] = address(23);
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.setFunderWhitelist([address(23)].toMemoryArray(), [true].toMemoryArray());
 
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
-            address(_paymaster)
-        );
-
-        _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_kintoWallet.isFunderWhitelisted(address(23)), true);
     }
 
     function testSetFunderWhitelist_RevertWhen_LengthMismatch() public {
-        address[] memory funders = new address[](2);
-        funders[0] = address(23);
-        funders[1] = address(24);
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoWallet.LengthMismatch.selector));
+        _kintoWallet.setFunderWhitelist([address(23), address(24)].toMemoryArray(), [true].toMemoryArray());
+    }
 
-        bool[] memory flags = new bool[](1);
-        flags[0] = true;
-
-        UserOperation[] memory userOps = new UserOperation[](1);
-        userOps[0] = _createUserOperation(
-            address(_kintoWallet),
-            address(_kintoWallet),
-            _kintoWallet.getNonce(),
-            privateKeys,
-            abi.encodeWithSignature("setFunderWhitelist(address[],bool[])", funders, flags),
-            address(_paymaster)
-        );
-
-        vm.expectEmit(true, true, true, false);
-        emit UserOperationRevertReason(
-            _entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes("")
-        );
-        vm.recordLogs();
-        _entryPoint.handleOps(userOps, payable(_owner));
-        assertRevertReasonEq(IKintoWallet.LengthMismatch.selector);
+    function testIsFunderWhitelisted() public view {
+        assertEq(_kintoWallet.isFunderWhitelisted(0x0f1b7bd7762662B23486320AA91F30312184f70C), true);
+        assertEq(_kintoWallet.isFunderWhitelisted(0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0), true);
+        assertEq(_kintoWallet.isFunderWhitelisted(0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B), true);
+        assertEq(_kintoWallet.isFunderWhitelisted(_kintoWallet.getAccessPoint()), true);
     }
 }
