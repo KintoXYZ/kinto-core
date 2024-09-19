@@ -11,7 +11,7 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
+import {Constants} from "@kinto-core/Const.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 
@@ -105,7 +105,7 @@ contract AccessRegistryTest is BaseTest {
             bytes32(abi.encodePacked(_user)),
             keccak256(
                 abi.encodePacked(
-                    type(SafeBeaconProxy).creationCode,
+                    Constants.safeBeaconProxyCreationCode,
                     abi.encode(address(accessRegistry.beacon()), abi.encodeCall(IAccessPoint.initialize, (_user)))
                 )
             ),
