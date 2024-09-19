@@ -15,8 +15,7 @@ import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler
 
 import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
-
-import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
+import {Constants} from "@kinto-core/Const.sol";
 
 import "../interfaces/IAccessRegistry.sol";
 
@@ -92,7 +91,7 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
             bytes32(abi.encodePacked(owner)),
             keccak256(
                 abi.encodePacked(
-                    type(SafeBeaconProxy).creationCode,
+                    Constants.safeBeaconProxyCreationCode,
                     abi.encode(address(beacon), abi.encodeCall(IAccessPoint.initialize, (owner)))
                 )
             )
@@ -156,7 +155,14 @@ contract AccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable, I
 
         // Deploy the accessPoint with CREATE2.
         accessPoint = IAccessPoint(
-            payable(new SafeBeaconProxy{salt: salt}(address(beacon), abi.encodeCall(IAccessPoint.initialize, (owner))))
+            Create2.deploy(
+                0,
+                salt,
+                abi.encodePacked(
+                    Constants.safeBeaconProxyCreationCode,
+                    abi.encode(address(beacon), abi.encodeWithSignature("initialize(address)", owner))
+                )
+            )
         );
 
         // Associate the owner and the accessPoint.
