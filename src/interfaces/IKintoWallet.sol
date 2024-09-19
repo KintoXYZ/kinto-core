@@ -303,11 +303,18 @@ interface IKintoWallet {
     function appSigner(address app) external view returns (address);
 
     /**
-     * @notice Checks if an app is whitelisted
+     * @notice Checks if an app is whitelisted by user
      * @param app The address of the app to check
      * @return Whether the app is whitelisted
      */
     function appWhitelist(address app) external view returns (bool);
+
+    /**
+     * @notice Checks if an app is whitelisted by user or a system app
+     * @param app The address of the app to check
+     * @return Whether the app is approved
+     */
+    function isAppApproved(address app) external view returns (bool);
 
     /**
      * @notice The KintoAppRegistry contract used by this wallet

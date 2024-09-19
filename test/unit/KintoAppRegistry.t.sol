@@ -605,6 +605,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(updatedSystemApps[1], newSystemApps[1]);
 
         // Check isSystemApp mapping
+        assertTrue(_kintoWallet.isAppApproved(address(1)));
         assertTrue(_kintoAppRegistry.isSystemApp(address(1)));
         assertTrue(_kintoAppRegistry.isSystemApp(address(2)));
         assertFalse(_kintoAppRegistry.isSystemApp(address(3)));
