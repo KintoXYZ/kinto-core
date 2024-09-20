@@ -15,7 +15,7 @@ import {TokenCallbackHandler} from "@aa-v7/samples/callback/TokenCallbackHandler
 
 import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
-import {Constants} from "@kinto-core/Const.sol";
+import {Constants} from "@kinto-core/libraries/Const.sol";
 
 import "../interfaces/IAccessRegistry.sol";
 
