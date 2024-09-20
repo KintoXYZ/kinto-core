@@ -292,6 +292,11 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
+    /// @inheritdoc IKintoWallet
+    function isAppApproved(address app) external view override returns (bool) {
+        return appWhitelist[app] || appRegistry.isSystemApp(app);
+    }
+
     /* ============ App Keys ============ */
 
     /// @inheritdoc IKintoWallet

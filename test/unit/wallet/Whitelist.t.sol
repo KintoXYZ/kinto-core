@@ -21,6 +21,7 @@ contract WhitelistTest is SharedSetup {
         whitelistApp(address(counter), true);
 
         assertTrue(_kintoWallet.appWhitelist(address(counter)));
+        assertTrue(_kintoWallet.isAppApproved(address(counter)));
     }
 
     function testWhitelistAppRemovesAppKey() public {
