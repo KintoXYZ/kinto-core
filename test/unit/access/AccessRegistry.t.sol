@@ -11,7 +11,7 @@ import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {WithdrawWorkflow} from "@kinto-core/access/workflows/WithdrawWorkflow.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
-import {Constants} from "@kinto-core/Const.sol";
+import {Constants} from "@kinto-core/libraries/Const.sol";
 
 import {AccessRegistryHarness} from "@kinto-core-test/harness/AccessRegistryHarness.sol";
 

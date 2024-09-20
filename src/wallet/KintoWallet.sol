@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
-import {Constants} from "@kinto-core/Const.sol";
+import {Constants} from "@kinto-core/libraries/Const.sol";
 
 import "@kinto-core/interfaces/IKintoID.sol";
 import "@kinto-core/interfaces/IKintoEntryPoint.sol";
