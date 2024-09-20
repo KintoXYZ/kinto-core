@@ -2172,6 +2172,25 @@
         },
         {
           "type": "function",
+          "name": "getSponsor",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getSystemApps",
           "inputs": [],
           "outputs": [
@@ -11867,6 +11886,19 @@
         },
         {
           "type": "function",
+          "name": "getAccessPoint",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getInsurancePrice",
           "inputs": [
             {
@@ -11981,6 +12013,25 @@
               "name": "",
               "type": "uint256",
               "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "isAppApproved",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
             }
           ],
           "stateMutability": "view"
