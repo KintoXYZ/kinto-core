@@ -43,7 +43,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Safe Account
         assertEq(bridger.owner(), 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82, "Invalid Owner");
 
-        console.log("BridgerV10-impl at: %s", newImpl);
-        saveContractAddress("BridgerV10-impl", newImpl);
+        console.log("BridgerV11-impl at: %s", newImpl);
+        saveContractAddress("BridgerV11-impl", newImpl);
     }
 }
