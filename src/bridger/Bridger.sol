@@ -222,17 +222,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
-        if (msg.value != bridgeData.gasFee) revert InvalidAmount(msg.value);
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -266,17 +257,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
-        if (msg.value != bridgeData.gasFee) revert InvalidAmount(msg.value);
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer.
         PERMIT2.permit(depositData.signer, permitSingle, permit2Signature);
 
@@ -305,8 +287,8 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant returns (uint256) {
-        if (msg.value != bridgeData.gasFee) revert InvalidAmount(msg.value);
+    ) external override whenNotPaused nonReentrant returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -323,7 +305,8 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
-        if (msg.value != (amount + bridgeData.gasFee)) revert InvalidAmount(amount);
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
+        if (msg.value != amount) revert InvalidAmount(amount);
         if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
