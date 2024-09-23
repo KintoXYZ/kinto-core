@@ -4,6 +4,9 @@ pragma solidity ^0.8.18;
 import {IERC721} from "@openzeppelin-5.0.1/contracts/token/ERC721/IERC721.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 import {NioGuardians} from "@kinto-core/tokens/NioGuardians.sol";
@@ -17,7 +20,7 @@ import "forge-std/console2.sol";
  * @notice This contract manages the election process for Nio Guardians in the Kinto ecosystem.
  * It handles candidate submission, voting, and the final election of Nios.
  */
-contract NioElection {
+contract NioElection is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /* ============ Types ============ */
 
     enum ElectionPhase {
@@ -112,6 +115,19 @@ contract NioElection {
         nioNFT = _nioNFT;
         kintoID = _kintoID;
     }
+
+    /// @dev initialize the proxy
+    function initialize() external virtual initializer {
+        __UUPSUpgradeable_init();
+        __Ownable_init(msg.sender);
+    }
+
+    /**
+     * @notice Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the factory is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {}
 
     /* ============ External Functions ============ */
 
