@@ -305,8 +305,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
-        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
-        if (msg.value != amount) revert InvalidAmount(amount);
+        if (msg.value != (amount + bridgeData.gasFee)) revert InvalidAmount(amount);
         if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);

@@ -446,10 +446,9 @@ contract BridgerTest is SignatureHelper, SharedSetup {
         vm.prank(_owner);
         bridger.setBridgeVault(address(vault), false);
 
-        vm.deal(address(bridger), GAS_FEE);
         vm.prank(_user);
         vm.expectRevert(abi.encodeWithSelector(IBridger.InvalidVault.selector, address(vault)));
-        bridger.depositETH{value: amountToDeposit}(
+        bridger.depositETH{value: amountToDeposit + GAS_FEE}(
             amountToDeposit, kintoWallet, address(sDAI), 1, bytes(""), mockBridgerData
         );
     }
