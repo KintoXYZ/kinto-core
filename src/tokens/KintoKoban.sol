@@ -104,15 +104,15 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
         if (value > TOTAL_TRANSFER_LIMIT) {
             return 3; // Exceeds transfer limit
         }
-    
-        // Use kintoID for KYC checks
-        if (!kintoID.isKYC(from) || !kintoID.isKYC(to)) {
-            return 1; // Either sender or recipient is not KYCed
-        }
-    
+
         // Get the owner of the KintoID NFT for both wallets
         address fromOwner = IKintoWallet(from).owners(0); // Owner of the KintoID for sender
         address toOwner = IKintoWallet(to).owners(0); // Owner of the KintoID for recipient
+    
+        // Use kintoID for KYC checks
+        if (!kintoID.isKYC(fromOwner) || !kintoID.isKYC(toOwner)) {
+            return 1; // Either sender or recipient is not KYCed
+        }
     
         // Check if the sender and recipient have the required country traits
         bool fromFlagged = false;
