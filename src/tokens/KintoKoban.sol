@@ -13,11 +13,11 @@ import "../interfaces/IKintoID.sol";
  * @notice ERC20 token with Kinto functionalities for KYC and country restrictions. Compatible with ERC1404.
  */
 contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    uint256 public MAX_SUPPLY_LIMIT; // Set once during initialization
-    uint256 public TOTAL_TRANSFER_LIMIT; // Set once during initialization
+    uint256 public MAX_SUPPLY_LIMIT;
+    uint256 public TOTAL_TRANSFER_LIMIT;
 
-    IKintoWalletFactory public walletFactory; // Reference to the KintoWalletFactory
-    IKintoID public kintoID; // Reference to the KintoID contract
+    IKintoWalletFactory public walletFactory;
+    IKintoID public kintoID;
 
     // Country list and mode (true for allow, false for deny)
     uint256[] public countryList; // Array of country IDs
@@ -51,8 +51,8 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
 
         walletFactory = IKintoWalletFactory(_walletFactory);
         kintoID = IKintoID(_kintoID);
-        MAX_SUPPLY_LIMIT = _maxSupply; // Now allowed
-        TOTAL_TRANSFER_LIMIT = _maxTransferAmount; // Now allowed
+        MAX_SUPPLY_LIMIT = _maxSupply;
+        TOTAL_TRANSFER_LIMIT = _maxTransferAmount;
         allowMode = false; // Blacklist by default (will allow all since the list is empty)
     }
 
