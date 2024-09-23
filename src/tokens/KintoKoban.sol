@@ -108,17 +108,14 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
         // Get the owner of the KintoID NFT for both wallets
         address fromOwner = IKintoWallet(from).owners(0); // Owner of the KintoID for sender
         address toOwner = IKintoWallet(to).owners(0); // Owner of the KintoID for recipient
-    
         // Use kintoID for KYC checks
         if (!kintoID.isKYC(fromOwner) || !kintoID.isKYC(toOwner)) {
             return 1; // Either sender or recipient is not KYCed
         }
-    
         // Check if the sender and recipient have the required country traits
         bool fromFlagged = false;
         bool toFlagged = false;
-    
-        for (uint256 i = 0; i < countryList.length; i++) { // Iterate through the countryList array
+        for (uint256 i = 0; i < countryList.length; i++) {
             if (kintoID.hasTrait(fromOwner, uint16(countryList[i]))) {
                 fromFlagged = true; // Sender has an allowed trait
             }
@@ -126,7 +123,7 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
                 toFlagged = true; // Recipient has an allowed trait
             }
         }
-    
+
         if (allowMode) {
             // Allow mode: both must have at least one allowed trait
             if (!fromFlagged || !toFlagged) {
@@ -138,7 +135,7 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
                 return 2; // Either sender or recipient country is denied
             }
         }
-    
+
         return 0; // Success
     }
 
@@ -177,7 +174,7 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
      */
     function getCountryListLength() external view returns (uint256) {
         return countryList.length;
-}
+    }
 
     /**
      * @notice Sets the mode for the country list
