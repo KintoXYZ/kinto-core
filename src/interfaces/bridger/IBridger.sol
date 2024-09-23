@@ -68,6 +68,10 @@ interface IBridger {
     /// @param signer The signer.
     error InvalidSigner(address signer);
 
+    /// @notice Balance is too low for bridge operation.
+    /// @param amount The amount required.
+    error BalanceTooLow(uint256 amount, uint256 balance);
+
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
     error InvalidAmount(uint256 amount);
@@ -162,7 +166,7 @@ interface IBridger {
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of tokens into the Kinto L2.
@@ -179,7 +183,7 @@ interface IBridger {
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
@@ -200,7 +204,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.

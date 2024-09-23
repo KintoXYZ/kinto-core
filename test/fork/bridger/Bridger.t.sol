@@ -205,8 +205,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
 
         uint256 nonce = bridger.nonces(_user);
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_owner);
-        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, bytes(""), data);
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), data);
         assertEq(bridger.nonces(_user), nonce + 1);
 
         assertEq(ERC20(asset).balanceOf(address(bridger)), bridgerBalanceBefore);
@@ -243,8 +244,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
 
         uint256 nonce = bridger.nonces(_user);
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_owner);
-        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, bytes(""), data);
+        bridger.depositBySig(permitSignature, sigdata, bytes(""), data);
         assertEq(bridger.nonces(_user), nonce + 1);
 
         uint256 shares = ERC4626(sUSDe).previewDeposit(amountToDeposit);
@@ -300,8 +302,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         bytes memory swapCalldata =
             vm.readFile("./test/data/swap-dai-to-wsteth-quote.json").readBytes(".transaction.data");
 
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(bridger.senderAccount());
-        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
 
         assertEq(bridger.nonces(_user), nonce + 1);
         // DAI balance should stay the same
@@ -365,8 +368,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' --header '0x-api-key: key' | jq > ./test/data/swap-dai-to-usdc-arb.json
         bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-usdc-arb.json").readBytes(".transaction.data");
 
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_owner);
-        bridger.depositBySig{value: data.gasFee}(permitSignature, sigdata, swapCalldata, data);
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
         assertEq(bridger.nonces(_user), nonce + 1);
 
         uint256 shares = ERC4626(wUSDM).previewDeposit(999540308859980121);
@@ -396,7 +400,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-usdc-arb.json").readBytes(".transaction.data");
 
         vm.prank(_owner);
-        bridger.depositETH{value: data.gasFee + amountToDeposit}(
+        bridger.depositETH{value: amountToDeposit + data.gasFee}(
             amountToDeposit, kintoWalletL2, wUSDM, 2875045291784398741161, swapCalldata, data
         );
 
@@ -427,7 +431,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-usdc-arb.json").readBytes(".transaction.data");
 
         vm.prank(_owner);
-        bridger.depositETH{value: data.gasFee + amountToDeposit}(
+        bridger.depositETH{value: amountToDeposit + data.gasFee}(
             amountToDeposit, kintoWalletL2, stUSD, 2861397724198764848285, swapCalldata, data
         );
 
@@ -463,8 +467,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_user);
-        bridger.depositERC20{value: data.gasFee}(
+        bridger.depositERC20(
             assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountOut, swapCalldata, data
         );
 
@@ -499,8 +504,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_user);
-        bridger.depositERC20{value: data.gasFee}(
+        bridger.depositERC20(
             assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit * 1e10, bytes(""), data
         );
 
@@ -535,8 +541,9 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
+        vm.deal(address(bridger), data.gasFee);
         vm.prank(_user);
-        bridger.depositERC20{value: data.gasFee}(
+        bridger.depositERC20(
             assetToDeposit, amountToDeposit, kintoWalletL2, SOLV_BTC_ARBITRUM, amountToDeposit, bytes(""), data
         );
 
