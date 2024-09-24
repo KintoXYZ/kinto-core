@@ -18,7 +18,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IDAI} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
@@ -413,6 +413,33 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
+        if (inputAsset == sUSDe) {
+            IERC20(sUSDe).safeApprove(sUSDe, amount);
+            amount = IERC4626(sUSDe).withdraw(amount, address(this), address(this));
+        }
+
+        if (inputAsset == SOLV_BTC) {
+            amount = ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createRedemption(SOLV_BTC_POOL_ID, amount);
+        }
+
+        if (inputAsset == wUSDM) {
+            IERC20(wUSDM).safeApprove(wUSDM, amount);
+            amount = IERC4626(wUSDM).withdraw(amount, address(this), address(this));
+            // 0 coin == USDC
+            // 1 coin == USDM
+            IERC20(USDM).safeApprove(usdmCurvePool, amount);
+            amount = ICurveStableSwapNG(usdmCurvePool).exchange(1, 0, amount, 0);
+        }
+
+        if (inputAsset == stUSD) {
+            IERC20(stUSD).safeApprove(stUSD, amount);
+            amount = IERC4626(stUSD).deposit(amount, address(this));
+
+            IERC20(USDA).safeApprove(angleSwapper, amount);
+            // We can ignore minReceive here because we enforce the minimal amount for final asset (stUSD).
+            amount = IAngleSwapper(angleSwapper).swapExactInput(amount, 0, USDA, USDC, address(this), 0);
+        }
+
         // If the final asset is different from the input asset, perform the swap
         if (finalAsset != inputAsset) {
             amountBought = _fillQuote(
@@ -429,7 +456,7 @@ contract Bridger is
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
-            amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
+            amountBought = IERC4626(sUSDe).deposit(balance, address(this));
         }
 
         // If the final asset is wUSDM, then swap USDC to USDM and wrap it.

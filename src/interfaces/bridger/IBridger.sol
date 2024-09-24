@@ -33,20 +33,6 @@ interface IDAI {
 }
 
 /**
- * @title IsUSDe
- * @notice Interface for sUSDe token operations.
- */
-interface IsUSDe is IERC20 {
-    /**
-     * @notice Deposit USDe tokens and receive sUSDe tokens.
-     * @param amount Amount of USDe tokens to deposit.
-     * @param recipient Address to receive the sUSDe tokens.
-     * @return Amount of sUSDe tokens received.
-     */
-    function deposit(uint256 amount, address recipient) external returns (uint256);
-}
-
-/**
  * @title IBridger
  * @notice Interface for Bridger contract operations.
  */
