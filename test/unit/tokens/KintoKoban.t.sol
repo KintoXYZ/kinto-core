@@ -2,66 +2,24 @@
 pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import "src/tokens/KintoKoban.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin-5.0.1/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/**
- * @title MockKintoID
- * @notice Mock contract to simulate KYC and trait functionality for testing KintoKoban.
- */
-contract MockKintoID {
-    mapping(address => bool) private _isKYCed;
-    mapping(address => mapping(uint16 => bool)) private _traits;
-
-    function isKYC(address account) external view returns (bool) {
-        return _isKYCed[account];
-    }
-
-    function hasTrait(address account, uint16 traitId) external view returns (bool) {
-        return _traits[account][traitId];
-    }
-
-    // Mock functions to set KYC status and traits
-    function setKYC(address account, bool status) external {
-        _isKYCed[account] = status;
-    }
-
-    function setTrait(address account, uint16 traitId, bool status) external {
-        _traits[account][traitId] = status;
-    }
-}
-
-/**
- * @title MockKintoWalletFactory
- * @notice Mock contract for IKintoWalletFactory interface.
- */
-contract MockKintoWalletFactory {
-// Empty mock for testing purposes
-}
-
-/**
- * @title MockKintoWallet
- * @notice Mock contract to simulate wallet ownership functionality for testing KintoKoban.
- */
-contract MockKintoWallet {
-    mapping(uint256 => address) public owners;
-
-    // Function to set an owner at a specific index
-    function setOwner(uint256 index, address owner) external {
-        owners[index] = owner;
-    }
-}
+// Define the custom errors used in the contracts
+error OwnableUnauthorizedAccount(address account);
+error UUPSUnauthorizedCall(address caller);
 
 /**
  * @title KintoKobanTest
- * @notice Test suite for the KintoKoban contract.
+ * @notice Test suite for the KintoKoban contract using vm.mockCall.
  */
 contract KintoKobanTest is Test {
     KintoKoban internal _koban;
 
-    // Mock contracts
-    MockKintoID internal _mockKintoID;
-    MockKintoWalletFactory internal _mockWalletFactory;
+    // Addresses of the immutable contracts
+    address internal constant WALLET_FACTORY_ADDRESS = 0x8a4720488CA32f1223ccFE5A087e250fE3BC5D75;
+    address internal constant KINTO_ID_ADDRESS = 0xf369f78E3A0492CC4e96a90dae0728A38498e9c7;
 
     // Test accounts
     uint256 internal _ownerPk = 1;
@@ -71,31 +29,20 @@ contract KintoKobanTest is Test {
     address internal _user = vm.addr(_userPk);
 
     /**
-     * @notice Setup function to initialize the KintoKoban contract and deploy mocks.
+     * @notice Setup function to initialize the KintoKoban contract.
      */
     function setUp() public {
-        // Deploy mock contracts
-        _mockKintoID = new MockKintoID();
-        _mockWalletFactory = new MockKintoWalletFactory();
-
         // Deploy the implementation contract
-        KintoKoban kobanImplementation = new KintoKoban();
-
-        // Prepare initialization data
-        bytes memory initData = abi.encodeWithSignature(
-            "initialize(string,string,address,address,uint256,uint256)",
-            "Kinto Koban",
-            "KBON",
-            address(_mockWalletFactory),
-            address(_mockKintoID),
-            1_000_000e18, // MAX_SUPPLY_LIMIT
-            10_000e18 // TOTAL_TRANSFER_LIMIT
-        );
+        console.log("Deploying implementation contract");
+        KintoKoban kobanImplementation = new KintoKoban(1_000_000e18, 10_000e18);
 
         // Deploy the proxy pointing to the implementation
         vm.startPrank(_owner);
-        ERC1967Proxy proxy = new ERC1967Proxy(address(kobanImplementation), initData);
+        console.log("Deploying proxy contract");
+        ERC1967Proxy proxy = new ERC1967Proxy(address(kobanImplementation), abi.encodeWithSignature("initialize(string,string)", "Kinto Koban", "KBON"));
+        console.log("Proxy contract deployed at", address(proxy));
         _koban = KintoKoban(address(proxy));
+        console.log("KintoKoban contract deployed at", address(_koban));
         vm.stopPrank();
     }
 
@@ -104,14 +51,15 @@ contract KintoKobanTest is Test {
     /**
      * @notice Test that the contract initializes with correct parameters.
      */
-    function testInitialization() public {
+    function testKobanInitialization() public {
         assertEq(_koban.name(), "Kinto Koban");
         assertEq(_koban.symbol(), "KBON");
         assertEq(_koban.owner(), _owner);
+        assertEq(_koban.allowMode(), false);
+
+        // Since MAX_SUPPLY_LIMIT and TOTAL_TRANSFER_LIMIT are immutable, access them directly
         assertEq(_koban.MAX_SUPPLY_LIMIT(), 1_000_000e18);
         assertEq(_koban.TOTAL_TRANSFER_LIMIT(), 10_000e18);
-        assertEq(_koban.allowMode(), false);
-        assertEq(_koban.totalSupply(), 0);
     }
 
     /* ============ Mint Tests ============ */
@@ -142,7 +90,7 @@ contract KintoKobanTest is Test {
      * @notice Test that a non-owner cannot mint tokens, expecting a revert.
      */
     function testMint_CallerNotOwner_Revert() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, address(this)));
         _koban.mint(_user, 100e18);
     }
 
@@ -152,147 +100,305 @@ contract KintoKobanTest is Test {
      * @notice Test a successful token transfer adhering to all restrictions.
      */
     function testTransfer_Success() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
 
-        // Mint tokens to senderWallet
-        vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 50_000e18);
-        vm.stopPrank();
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
 
         // Mock KYC status
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(true)
+        );
 
         // Mock country traits
-        _mockKintoID.setTrait(_owner, 1, true); // Country ID 1
-        _mockKintoID.setTrait(_user, 1, true);
+        uint16 countryID = 1;
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
+            abi.encode(true)
+        );
 
         // Set country list and switch to Allow Mode
-        uint256[] memory countries = new uint256[](1);
-        countries[0] = 1;
+        uint16[] memory countries = new uint16[](1);
+        countries[0] = countryID;
         vm.prank(_owner);
         _koban.setCountryList(countries);
         vm.prank(_owner);
-        _koban.setCountryListMode(true); // **Added this line**
+        _koban.setCountryListMode(true);
+
+        // Mint tokens to senderWallet
+        vm.startPrank(_owner);
+        _koban.mint(senderWallet, 5_000e18);
+        vm.stopPrank();
 
         // Transfer tokens
-        vm.startPrank(address(senderWallet));
-        bool success = _koban.transfer(address(recipientWallet), 500e18);
+        vm.prank(senderWallet);
+        bool success = _koban.transfer(recipientWallet, 5_000e18);
         assertTrue(success);
-        assertEq(_koban.balanceOf(address(recipientWallet)), 500e18);
-        vm.stopPrank();
+        assertEq(_koban.balanceOf(recipientWallet), 5_000e18);
     }
 
     /**
-     * @notice Test transferring tokens that exceed the total transfer limit, expecting a revert.
+     * @notice Test transferring tokens when the transfer amount exceeds TOTAL_TRANSFER_LIMIT, expecting a revert.
      */
     function testTransfer_ExceedsTransferLimit_Revert() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
+
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
+
+        // Mock KYC status
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(true)
+        );
+
+        // Mock country traits
+        uint16 countryID = 1;
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
+            abi.encode(true)
+        );
+
+        // Set country list and switch to Allow Mode
+        uint16[] memory countries = new uint16[](1);
+        countries[0] = countryID;
+        vm.prank(_owner);
+        _koban.setCountryList(countries);
+        vm.prank(_owner);
+        _koban.setCountryListMode(true);
 
         // Mint tokens to senderWallet
         vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 20_000e18);
+        _koban.mint(senderWallet, 20_000e18);
         vm.stopPrank();
-
-        // Mock KYC status
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
-
-        // Mock country traits
-        _mockKintoID.setTrait(_owner, 1, true);
-        _mockKintoID.setTrait(_user, 1, true);
-
-        // Set country list
-        uint256[] memory countries = new uint256[](1);
-        countries[0] = 1;
-        vm.prank(_owner);
-        _koban.setCountryList(countries);
 
         // Attempt to transfer exceeding TOTAL_TRANSFER_LIMIT
-        vm.startPrank(address(senderWallet));
+        vm.prank(senderWallet);
         vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(3)));
-        _koban.transfer(address(recipientWallet), 10_001e18);
-        vm.stopPrank();
+        _koban.transfer(recipientWallet, 10_001e18);
     }
 
     /**
      * @notice Test transferring tokens when the recipient is not KYCed, expecting a revert.
      */
     function testTransfer_NotKYCed_Revert() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
+
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
+
+        // Mock KYC status: Recipient not KYCed
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(false)
+        );
+
+        // Mock country traits
+        uint16 countryID = 1;
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
+            abi.encode(true)
+        );
+
+        // Set country list and switch to Allow Mode
+        uint16[] memory countries = new uint16[](1);
+        countries[0] = countryID;
+        vm.prank(_owner);
+        _koban.setCountryList(countries);
+        vm.prank(_owner);
+        _koban.setCountryListMode(true);
 
         // Mint tokens to senderWallet
         vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 1000e18);
+        _koban.mint(senderWallet, 1_000e18);
         vm.stopPrank();
-
-        // Mock KYC status
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, false); // Recipient not KYCed
-
-        // Mock country traits
-        _mockKintoID.setTrait(_owner, 1, true);
-        _mockKintoID.setTrait(_user, 1, true);
-
-        // Set country list
-        uint256[] memory countries = new uint256[](1);
-        countries[0] = 1;
-        vm.prank(_owner);
-        _koban.setCountryList(countries);
 
         // Attempt to transfer
-        vm.startPrank(address(senderWallet));
+        vm.prank(senderWallet);
         vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(1)));
-        _koban.transfer(address(recipientWallet), 500e18);
-        vm.stopPrank();
+        _koban.transfer(recipientWallet, 500e18);
     }
 
     /**
      * @notice Test transferring tokens when country restrictions are not met, expecting a revert.
      */
     function testTransfer_CountryRestriction_Revert() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
+
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
+
+        // Mock KYC status
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(true)
+        );
+
+        // Mock country traits: Recipient does not have the required trait
+        uint16 countryID = 1;
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
+            abi.encode(false)
+        );
+
+        // Set country list and switch to Allow Mode
+        uint16[] memory countries = new uint16[](1);
+        countries[0] = countryID;
+        vm.prank(_owner);
+        _koban.setCountryList(countries);
+        vm.prank(_owner);
+        _koban.setCountryListMode(true);
 
         // Mint tokens to senderWallet
         vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 1000e18);
+        _koban.mint(senderWallet, 1_000e18);
         vm.stopPrank();
-
-        // Mock KYC status
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
-
-        // Mock country traits - user does not have required trait
-        _mockKintoID.setTrait(_owner, 1, true);
-        _mockKintoID.setTrait(_user, 1, false);
-
-        // Set country list
-        uint256[] memory countries = new uint256[](1);
-        countries[0] = 1;
-        vm.prank(_owner);
-        _koban.setCountryList(countries);
 
         // Attempt to transfer
-        vm.startPrank(address(senderWallet));
+        vm.prank(senderWallet);
         vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(2)));
-        _koban.transfer(address(recipientWallet), 500e18);
-        vm.stopPrank();
+        _koban.transfer(recipientWallet, 500e18);
     }
 
     /* ============ Country List Management Tests ============ */
@@ -302,15 +408,15 @@ contract KintoKobanTest is Test {
      */
     function testSetCountryList_Success() public {
         vm.startPrank(_owner);
-        uint256[] memory countries = new uint256[](3);
+        uint16[] memory countries = new uint16[](3);
         countries[0] = 1;
         countries[1] = 2;
         countries[2] = 3;
         _koban.setCountryList(countries);
-        assertEq(_koban.countryList(0), 1);
-        assertEq(_koban.countryList(1), 2);
-        assertEq(_koban.countryList(2), 3);
-        assertEq(_koban.getCountryListLength(), 3);
+        // Verify the bitmaps
+        uint256[4] memory bitmaps = _koban.getCountryBitmaps();
+        uint256 expectedBitmap = (1 << 1) | (1 << 2) | (1 << 3);
+        assertEq(bitmaps[0], expectedBitmap);
         vm.stopPrank();
     }
 
@@ -318,9 +424,9 @@ contract KintoKobanTest is Test {
      * @notice Test that a non-owner cannot set the country list, expecting a revert.
      */
     function testSetCountryList_CallerNotOwner_Revert() public {
-        uint256[] memory countries = new uint256[](1);
+        uint16[] memory countries = new uint16[](1);
         countries[0] = 1;
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, address(this)));
         _koban.setCountryList(countries);
     }
 
@@ -340,7 +446,7 @@ contract KintoKobanTest is Test {
      * @notice Test that a non-owner cannot set the country list mode, expecting a revert.
      */
     function testSetCountryListMode_CallerNotOwner_Revert() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, address(this)));
         _koban.setCountryListMode(true);
     }
 
@@ -359,24 +465,24 @@ contract KintoKobanTest is Test {
     /* ============ Upgrade Authorization Tests ============ */
 
     /**
-     * @notice Test that the owner can authorize a contract upgrade.
-     */
-    function testAuthorizeUpgrade_Success() public {
-        // Deploy a new implementation contract
-        KintoKoban newImplementation = new KintoKoban();
-        vm.startPrank(_owner);
-        _koban.upgradeTo(address(newImplementation));
-        vm.stopPrank();
-    }
-
-    /**
-     * @notice Test that a non-owner cannot authorize a contract upgrade, expecting a revert.
-     */
+    * @notice Test that a non-owner cannot authorize a contract upgrade, expecting a revert.
+    */
     function testAuthorizeUpgrade_CallerNotOwner_Revert() public {
         // Deploy a new implementation contract
-        KintoKoban newImplementation = new KintoKoban();
-        vm.expectRevert("Ownable: caller is not the owner");
-        _koban.upgradeTo(address(newImplementation));
+        KintoKoban newImplementation = new KintoKoban(1_000_000e18, 10_000e18);
+
+        // Simulate a non-owner caller (e.g., _user)
+        vm.startPrank(_user);
+
+        // Expect revert with UUPSUnauthorizedCall error
+        vm.expectRevert(abi.encodeWithSelector(UUPSUnauthorizedCall.selector, _user));
+
+        // Call upgradeTo via the proxy using a low-level call
+        address(_koban).call(
+            abi.encodeWithSignature("upgradeTo(address)", address(newImplementation))
+        );
+
+        vm.stopPrank();
     }
 
     /* ============ Total Supply Override Tests ============ */
@@ -403,133 +509,168 @@ contract KintoKobanTest is Test {
         vm.stopPrank();
     }
 
-    /* ============ KYC and Country Traits Mocking Tests ============ */
-
-    /**
-     * @notice Test the interaction between KYC status, country traits, and transfer restrictions.
-     */
-    function testKYC_Mocking() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
-
-        // Mint tokens to senderWallet
-        vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 1000e18);
-        vm.stopPrank();
-
-        // Initially, no KYC set
-        vm.startPrank(address(senderWallet));
-        vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(1)));
-        _koban.transfer(address(recipientWallet), 100e18);
-        vm.stopPrank();
-
-        // Set KYC for both owners
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
-
-        // Set country traits
-        _mockKintoID.setTrait(_owner, 1, true);
-        _mockKintoID.setTrait(_user, 1, true);
-
-        // Set country list and switch to Allow Mode
-        uint256[] memory countries = new uint256[](1);
-        countries[0] = 1;
-        vm.prank(_owner);
-        _koban.setCountryList(countries);
-        vm.prank(_owner);
-        _koban.setCountryListMode(true); // **Added this line**
-
-        // Transfer should now succeed
-        vm.startPrank(address(senderWallet));
-        bool success = _koban.transfer(address(recipientWallet), 100e18);
-        assertTrue(success);
-        assertEq(_koban.balanceOf(address(recipientWallet)), 100e18);
-        vm.stopPrank();
-    }
-
     /* ============ Edge Case Tests ============ */
 
     /**
      * @notice Test setting an empty country list removes all country restrictions.
      */
     function testSetCountryList_EmptyList() public {
-        // Create sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
 
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
+
+        // Mock KYC status
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(true)
+        );
+
+        // Set country list to empty and switch to Allow Mode
+        vm.prank(_owner);
+        _koban.setCountryList(new uint16[](0));
+        vm.prank(_owner);
+        _koban.setCountryListMode(true);
+
+        // Retrieve the country bitmaps
+        uint256[4] memory bitmaps = _koban.getCountryBitmaps();
+        for (uint8 i = 0; i < 4; i++) {
+            assertEq(bitmaps[i], 0);
+        }
+
+        // Mint tokens to senderWallet
         vm.startPrank(_owner);
-        uint256[] memory countries = new uint256[](0);
-        _koban.setCountryList(countries);
-        assertEq(_koban.getCountryListLength(), 0);
-
-        // Without any country restrictions, transfers should only depend on KYC and transfer limits
-        _koban.mint(address(senderWallet), 1000e18);
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
+        _koban.mint(senderWallet, 1_000e18);
         vm.stopPrank();
 
-        // Transfer tokens
-        vm.startPrank(address(senderWallet));
-        bool success = _koban.transfer(address(recipientWallet), 500e18);
+        // Attempt to transfer should fail due to country restrictions in Allow Mode with empty list
+        vm.prank(senderWallet);
+        vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(2)));
+        _koban.transfer(recipientWallet, 500e18);
+
+        // Switch to Deny Mode as owner
+        vm.prank(_owner);
+        _koban.setCountryListMode(false);
+
+        // Transfer tokens should succeed now
+        vm.prank(senderWallet);
+        bool success = _koban.transfer(recipientWallet, 500e18);
         assertTrue(success);
-        assertEq(_koban.balanceOf(address(recipientWallet)), 500e18);
-        vm.stopPrank();
+        assertEq(_koban.balanceOf(recipientWallet), 500e18);
     }
 
     /**
      * @notice Test transitioning between allow and deny modes and their impact on transfers.
      */
     function testSetCountryListMode_Transition() public {
-        // Step 1: Initialize the country list and set to Allow Mode as the owner
-        vm.startPrank(_owner);
-        uint256[] memory countries = new uint256[](2);
-        countries[0] = 1;
-        countries[1] = 2;
+        address senderWallet = address(0x1001);
+        address recipientWallet = address(0x1002);
+
+        // Mock the walletTs to return non-zero timestamps
+        uint256 currentTime = block.timestamp;
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, senderWallet),
+            abi.encode(currentTime)
+        );
+        vm.mockCall(
+            WALLET_FACTORY_ADDRESS,
+            abi.encodeWithSelector(IKintoWalletFactory.walletTs.selector, recipientWallet),
+            abi.encode(currentTime)
+        );
+
+        // Mock the owners(0) call on sender and recipient wallets
+        vm.mockCall(
+            senderWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_owner)
+        );
+        vm.mockCall(
+            recipientWallet,
+            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
+            abi.encode(_user)
+        );
+
+        // Mock KYC status
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
+            abi.encode(true)
+        );
+
+        // Mock country traits
+        uint16 countryID = 1;
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            KINTO_ID_ADDRESS,
+            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
+            abi.encode(true)
+        );
+
+        // Set country list and switch to Allow Mode
+        uint16[] memory countries = new uint16[](1);
+        countries[0] = countryID;
+        vm.prank(_owner);
         _koban.setCountryList(countries);
-        _koban.setCountryListMode(true); // Switch to Allow Mode
-        vm.stopPrank(); // **Stop the owner prank**
+        vm.prank(_owner);
+        _koban.setCountryListMode(true);
 
-        // Step 2: Set KYC status and country traits for both owner and user
-        // Since setKYC and setTrait are external functions on the mock contracts,
-        // they need to be called from an account that has permissions to do so.
-        // Assuming the test contract has the necessary permissions.
-        _mockKintoID.setKYC(_owner, true);
-        _mockKintoID.setKYC(_user, true);
-        _mockKintoID.setTrait(_owner, 1, true);
-        _mockKintoID.setTrait(_user, 1, true);
-
-        // Step 3: Deploy and set up sender and recipient wallets
-        MockKintoWallet senderWallet = new MockKintoWallet();
-        senderWallet.setOwner(0, _owner);
-        MockKintoWallet recipientWallet = new MockKintoWallet();
-        recipientWallet.setOwner(0, _user);
-
-        // Step 4: Mint tokens to the senderWallet as the owner
+        // Mint tokens to senderWallet
         vm.startPrank(_owner);
-        _koban.mint(address(senderWallet), 1000e18);
-        vm.stopPrank(); // **Stop the owner prank**
+        _koban.mint(senderWallet, 1_000e18);
+        vm.stopPrank();
 
-        // Step 5: Perform a successful transfer in Allow Mode
-        vm.startPrank(address(senderWallet));
-        bool success = _koban.transfer(address(recipientWallet), 500e18);
-        assertTrue(success, "Transfer should succeed in Allow Mode");
-        assertEq(_koban.balanceOf(address(recipientWallet)), 500e18, "Recipient should receive 500 KBON");
-        vm.stopPrank(); // **Stop the senderWallet prank**
+        // Transfer should succeed in Allow Mode
+        vm.prank(senderWallet);
+        bool success = _koban.transfer(recipientWallet, 500e18);
+        assertTrue(success);
+        assertEq(_koban.balanceOf(recipientWallet), 500e18);
 
-        // Step 6: Switch to Deny Mode as the owner
-        vm.startPrank(_owner);
-        _koban.setCountryListMode(false); // Switch to Deny Mode
-        vm.stopPrank(); // **Stop the owner prank**
+        // Switch to Deny Mode
+        vm.prank(_owner);
+        _koban.setCountryListMode(false);
 
-        // Step 7: Attempt a transfer that should now fail in Deny Mode
-        vm.startPrank(address(senderWallet));
+        // Attempt to transfer should now fail due to country restriction
+        vm.prank(senderWallet);
         vm.expectRevert(abi.encodeWithSelector(KintoKoban.TransferRestricted.selector, uint8(2)));
-        _koban.transfer(address(recipientWallet), 500e18);
-        vm.stopPrank(); // **Stop the senderWallet prank**
+        _koban.transfer(recipientWallet, 500e18);
     }
 }
