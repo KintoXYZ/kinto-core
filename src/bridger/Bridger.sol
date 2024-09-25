@@ -414,12 +414,6 @@ contract Bridger is
             amount = IERC4626(sUSDe).withdraw(amount, address(this), address(this));
         }
 
-        if (inputAsset == SOLV_BTC) {
-            IERC20(SOLV_BTC).safeApprove(SOLV_SFT_WRAP_ROUTER, amount);
-            ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createRedemption(SOLV_BTC_POOL_ID, amount);
-            amount = IERC20(WBTC).balanceOf(address(this));
-        }
-
         if (inputAsset == wUSDM) {
             IERC20(wUSDM).safeApprove(wUSDM, amount);
             amount = IERC4626(wUSDM).withdraw(amount, address(this), address(this));
