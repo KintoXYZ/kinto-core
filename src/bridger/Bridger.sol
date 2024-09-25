@@ -430,9 +430,9 @@ contract Bridger is
             amount = IERC4626(stUSD).deposit(amount, address(this));
 
             IERC20(USDA).safeApprove(angleSwapper, amount);
-            // USDA 18 decimals, USDC 6 decimals, allow 5% slippage
+            // USDA 18 decimals, USDC 6 decimals, allow 1% slippage
             amount = IAngleSwapper(angleSwapper).swapExactInput(
-                amount, amount * 95 / 100 / 1e12, USDA, USDC, address(this), 0
+                amount, amount * 99 / 100 / 1e12, USDA, USDC, address(this), 0
             );
         }
 
