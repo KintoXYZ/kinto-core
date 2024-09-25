@@ -18,7 +18,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
@@ -410,20 +410,8 @@ contract Bridger is
         }
 
         if (inputAsset == wUSDM) {
-            IERC20(wUSDM).safeApprove(wUSDM, amount);
             amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
             inputAsset = USDM;
-        }
-
-        if (inputAsset == stUSD) {
-            IERC20(stUSD).safeApprove(stUSD, amount);
-            amount = IERC4626(stUSD).deposit(amount, address(this));
-
-            IERC20(USDA).safeApprove(angleSwapper, amount);
-            // USDA 18 decimals, USDC 6 decimals, allow 1% slippage
-            amount = IAngleSwapper(angleSwapper).swapExactInput(
-                amount, amount * 99 / 100 / 1e12, USDA, USDC, address(this), 0
-            );
         }
 
         // If the final asset is different from the input asset, perform the swap

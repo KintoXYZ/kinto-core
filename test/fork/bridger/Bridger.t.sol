@@ -119,6 +119,15 @@ abstract contract BridgeDataHelper is Constants {
             execPayload: bytes(""),
             options: bytes("")
         });
+
+        bridgeData[ARBITRUM_CHAINID][DAI_ARBITRUM] = IBridger.BridgeData({
+            vault: 0x36E2DBe085eE4d028fD60f70670f662365d0E978,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x4b7945796aFe4d2fCe6D271bF7773b5163E1bcC1,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
     }
 }
 
@@ -416,8 +425,8 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
-    // wUSDM to WETH
 
+    // wUSDM to WETH
     function testDepositERC20_WhenWusdmToWeth() public {
         setUpArbitrumFork();
         vm.rollFork(257328223); // block number in which the 0x API data was fetched
