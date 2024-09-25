@@ -409,14 +409,10 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
-        if (inputAsset == sUSDe) {
-            IERC20(sUSDe).safeApprove(sUSDe, amount);
-            amount = IERC4626(sUSDe).withdraw(amount, address(this), address(this));
-        }
-
         if (inputAsset == wUSDM) {
             IERC20(wUSDM).safeApprove(wUSDM, amount);
-            amount = IERC4626(wUSDM).withdraw(amount, address(this), address(this));
+            amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
+            inputAsset = USDM;
         }
 
         if (inputAsset == stUSD) {

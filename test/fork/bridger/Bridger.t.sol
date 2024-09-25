@@ -84,6 +84,15 @@ abstract contract BridgeDataHelper is Constants {
             options: bytes("")
         });
 
+        bridgeData[ARBITRUM_CHAINID][WETH_ARBITRUM] = IBridger.BridgeData({
+            vault: 0x4D585D346DFB27b297C37F480a82d4cAB39491Bb,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x47469683AEAD0B5EF2c599ff34d55C3D998393Bf,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
         bridgeData[ARBITRUM_CHAINID][wUSDM] = IBridger.BridgeData({
             vault: 0x500c8337782a9f82C5376Ea71b66A749cE42b507,
             gasFee: 1e16,
@@ -406,6 +415,44 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         uint256 shares = ERC4626(wUSDM).previewDeposit(264112831900159671031);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
+    }
+    // wUSDM to WETH
+
+    function testDepositERC20_WhenWusdmToWeth() public {
+        setUpArbitrumFork();
+        vm.rollFork(257328223); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][WETH_ARBITRUM];
+        address assetToDeposit = wUSDM;
+        uint256 amountToDeposit = 1e18;
+        uint256 balanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // USDM to WETH quote's swapData
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-usmd-to-weth-arb.json").readBytes(".transaction.data");
+
+        uint256 amountOut = 406379773601548;
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_user);
+        bridger.depositERC20(
+            assetToDeposit, amountToDeposit, kintoWalletL2, WETH_ARBITRUM, amountOut, swapCalldata, data
+        );
+
+        assertEq(ERC20(WETH_ARBITRUM).balanceOf(address(bridger)), balanceBefore, "Invalid balance of the Bridger");
+        assertEq(
+            ERC20(WETH_ARBITRUM).balanceOf(data.vault), vaultBalanceBefore + amountOut, "Invalid balance of the Vault"
+        );
     }
 
     // ETH to stUSD
