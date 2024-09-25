@@ -380,7 +380,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // ETH to wUSDM
     function testDepositETH_WhenEthToWUSDM() public {
         setUpArbitrumFork();
-        vm.rollFork(238827860); // block number in which the 0x API data was fetched
+        vm.rollFork(257072953); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
@@ -394,16 +394,16 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
-        // ETH to USDC quote's swapData
-        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' --header '0x-api-key: key' | jq > ./test/data/swap-weth-to-usdc-arb.json
-        bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-usdc-arb.json").readBytes(".transaction.data");
+        // ETH to USDM quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' -H '0x-api-key: key' -H '0x-version: v2' | jq > ./test/data/swap-weth-to-usdm-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-usdm-arb.json").readBytes(".transaction.data");
 
         vm.prank(_owner);
         bridger.depositETH{value: amountToDeposit + data.gasFee}(
-            amountToDeposit, kintoWalletL2, wUSDM, 2875045291784398741161, swapCalldata, data
+            amountToDeposit, kintoWalletL2, wUSDM, 251959574561240729584, swapCalldata, data
         );
 
-        uint256 shares = ERC4626(wUSDM).previewDeposit(2992578788088147868788);
+        uint256 shares = ERC4626(wUSDM).previewDeposit(264112831900159671031);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
@@ -521,6 +521,8 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
     // SolvBTC to SolvBTC
     function testDepositERC20_WhenSolvBtcToDai() public {
+        // not possible due to SolvBTC redemption taking more than one tx to transfer WBTC
+        vm.skip(true);
         setUpArbitrumFork();
         vm.rollFork(257028313);
         upgradeBridger();
