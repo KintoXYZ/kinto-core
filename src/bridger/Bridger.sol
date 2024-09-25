@@ -109,8 +109,6 @@ contract Bridger is
     bytes32 public immutable override domainSeparator;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
-    /// @notice The address of the Curve pool for USDM.
-    address public immutable usdmCurvePool;
     /// @notice The address of Angel Swapper on Arbitrum.
     address public constant angleSwapper = 0xD253b62108d1831aEd298Fc2434A5A8e4E418053;
 
@@ -150,7 +148,6 @@ contract Bridger is
      */
     constructor(
         address exchange,
-        address usdmCurveAmm,
         address usdc,
         address weth,
         address dai,
@@ -169,7 +166,6 @@ contract Bridger is
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
-        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
@@ -419,16 +415,14 @@ contract Bridger is
         }
 
         if (inputAsset == SOLV_BTC) {
-            amount = ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createRedemption(SOLV_BTC_POOL_ID, amount);
+            IERC20(SOLV_BTC).safeApprove(SOLV_SFT_WRAP_ROUTER, amount);
+            ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createRedemption(SOLV_BTC_POOL_ID, amount);
+            amount = IERC20(WBTC).balanceOf(address(this));
         }
 
         if (inputAsset == wUSDM) {
             IERC20(wUSDM).safeApprove(wUSDM, amount);
             amount = IERC4626(wUSDM).withdraw(amount, address(this), address(this));
-            // 0 coin == USDC
-            // 1 coin == USDM
-            IERC20(USDM).safeApprove(usdmCurvePool, amount);
-            amount = ICurveStableSwapNG(usdmCurvePool).exchange(1, 0, amount, 0);
         }
 
         if (inputAsset == stUSD) {
@@ -436,8 +430,10 @@ contract Bridger is
             amount = IERC4626(stUSD).deposit(amount, address(this));
 
             IERC20(USDA).safeApprove(angleSwapper, amount);
-            // We can ignore minReceive here because we enforce the minimal amount for final asset (stUSD).
-            amount = IAngleSwapper(angleSwapper).swapExactInput(amount, 0, USDA, USDC, address(this), 0);
+            // USDA 18 decimals, USDC 6 decimals, allow 5% slippage
+            amount = IAngleSwapper(angleSwapper).swapExactInput(
+                amount, amount * 95 / 100 / 1e12, USDA, USDC, address(this), 0
+            );
         }
 
         // If the final asset is different from the input asset, perform the swap
@@ -461,15 +457,8 @@ contract Bridger is
 
         // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
         if (finalAsset == wUSDM) {
-            // 0 coin == USDC
-            // 1 coin == USDM
-            uint256 balance = IERC20(USDC).balanceOf(address(this));
-            IERC20(USDC).safeApprove(usdmCurvePool, balance);
-            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
-            amountBought =
-                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
             // wrap USDM to wUSDM
-            balance = IERC20(USDM).balanceOf(address(this));
+            uint256 balance = IERC20(USDM).balanceOf(address(this));
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }

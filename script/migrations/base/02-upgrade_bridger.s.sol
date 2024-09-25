@@ -31,9 +31,8 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Set USDe and sUSDe to zero, as staking USDe is not supported on Base.
         // Set Curve pool and USDC to zero as we do not support USDM on Base.
         vm.broadcast(deployerPrivateKey);
-        address newImpl = address(
-            new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, address(0), address(0), address(0), address(0))
-        );
+        address newImpl =
+            address(new Bridger(EXCHANGE_PROXY, address(0), WETH, address(0), address(0), address(0), address(0)));
 
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));

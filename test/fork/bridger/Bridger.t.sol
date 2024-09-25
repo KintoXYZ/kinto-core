@@ -159,7 +159,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         BridgerHarness newImpl = new BridgerHarness(
             EXCHANGE_PROXY,
-            block.chainid == ARBITRUM_CHAINID ? USDM_CURVE_POOL_ARBITRUM : address(0),
             block.chainid == ARBITRUM_CHAINID ? USDC_ARBITRUM : address(0),
             WETH,
             DAI,
@@ -516,6 +515,45 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(
             ERC20(SOLV_BTC_ARBITRUM).balanceOf(data.vault),
             vaultSolvBtcBalanceBefore + amountToDeposit * 1e10,
+            "Invalid balance of the Vault"
+        );
+    }
+
+    // SolvBTC to SolvBTC
+    function testDepositERC20_WhenSolvBtcToDai() public {
+        setUpArbitrumFork();
+        vm.rollFork(257028313);
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][DAI_ARBITRUM];
+        address assetToDeposit = SOLV_BTC_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 bridgerBalanceBefore = ERC20(DAI_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(DAI_ARBITRUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // WBTC to DAI quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f&sellToken=0xaf88d065e77c8cC2239327C5EDb3A432268e5831&sellAmount=1000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' --header '0x-api-key: key' | jq > ./test/data/swap-wbtc-to-dai-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-wbtc-to-dai-arb.json").readBytes(".transaction.data");
+
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_user);
+        bridger.depositERC20(assetToDeposit, amountToDeposit, kintoWalletL2, DAI_ARBITRUM, 0, swapCalldata, data);
+
+        assertEq(
+            ERC20(DAI_ARBITRUM).balanceOf(address(bridger)), bridgerBalanceBefore, "Invalid balance of the Bridger"
+        );
+        assertEq(
+            ERC20(DAI_ARBITRUM).balanceOf(data.vault),
+            vaultBalanceBefore + amountToDeposit,
             "Invalid balance of the Vault"
         );
     }

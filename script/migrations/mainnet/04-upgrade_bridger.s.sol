@@ -31,7 +31,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
 
         // Deploy implementation
         vm.broadcast(deployerPrivateKey);
-        newImpl = address(new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, DAI, USDe, sUSDe, wstETH));
+        newImpl = address(new Bridger(EXCHANGE_PROXY, address(0), WETH, DAI, USDe, sUSDe, wstETH));
         // Stop broadcast because the Owner is Safe account
 
         bridger = Bridger(payable(bridgerAddress));
