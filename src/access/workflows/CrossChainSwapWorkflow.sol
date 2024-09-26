@@ -10,7 +10,9 @@ import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 
 contract CrossChainSwapWorkflow {
+    using SafeERC20 for IERC20;
     /// @notice The address of the Bridger contract
+
     IBridger public immutable bridger;
 
     constructor(IBridger bridger_) {
@@ -26,6 +28,15 @@ contract CrossChainSwapWorkflow {
         bytes calldata swapCallData,
         IBridger.BridgeData calldata bridgeData
     ) external payable returns (uint256 amountOut) {
+        if (amount == 0) {
+            amount = IERC20(inputAsset).balanceOf(address(this));
+        }
+
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(inputAsset).allowance(address(this), address(bridger)) < amount) {
+            IERC20(inputAsset).forceApprove(address(bridger), type(uint256).max);
+        }
+
         return bridger.depositERC20(inputAsset, amount, kintoWallet, finalAsset, minReceive, swapCallData, bridgeData);
     }
 }
