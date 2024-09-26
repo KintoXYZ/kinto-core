@@ -33,16 +33,14 @@ contract KintoKobanTest is Test {
      */
     function setUp() public {
         // Deploy the implementation contract
-        console.log("Deploying implementation contract");
         KintoKoban kobanImplementation = new KintoKoban(1_000_000e18, 10_000e18);
 
         // Deploy the proxy pointing to the implementation
         vm.startPrank(_owner);
-        console.log("Deploying proxy contract");
-        ERC1967Proxy proxy = new ERC1967Proxy(address(kobanImplementation), abi.encodeWithSignature("initialize(string,string)", "Kinto Koban", "KBON"));
-        console.log("Proxy contract deployed at", address(proxy));
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(kobanImplementation), abi.encodeWithSignature("initialize(string,string)", "Kinto Koban", "KBON")
+        );
         _koban = KintoKoban(address(proxy));
-        console.log("KintoKoban contract deployed at", address(_koban));
         vm.stopPrank();
     }
 
@@ -117,40 +115,20 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(true)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(true));
 
         // Mock country traits
         uint16 countryID = 1;
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID), abi.encode(true)
         );
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID), abi.encode(true)
         );
 
         // Set country list and switch to Allow Mode
@@ -194,40 +172,20 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(true)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(true));
 
         // Mock country traits
         uint16 countryID = 1;
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID), abi.encode(true)
         );
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID), abi.encode(true)
         );
 
         // Set country list and switch to Allow Mode
@@ -270,40 +228,20 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status: Recipient not KYCed
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(false)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(false));
 
         // Mock country traits
         uint16 countryID = 1;
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID), abi.encode(true)
         );
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID), abi.encode(true)
         );
 
         // Set country list and switch to Allow Mode
@@ -346,40 +284,20 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(true)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(true));
 
         // Mock country traits: Recipient does not have the required trait
         uint16 countryID = 1;
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID), abi.encode(true)
         );
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
-            abi.encode(false)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID), abi.encode(false)
         );
 
         // Set country list and switch to Allow Mode
@@ -465,8 +383,8 @@ contract KintoKobanTest is Test {
     /* ============ Upgrade Authorization Tests ============ */
 
     /**
-    * @notice Test that a non-owner cannot authorize a contract upgrade, expecting a revert.
-    */
+     * @notice Test that a non-owner cannot authorize a contract upgrade, expecting a revert.
+     */
     function testAuthorizeUpgrade_CallerNotOwner_Revert() public {
         // Deploy a new implementation contract
         KintoKoban newImplementation = new KintoKoban(1_000_000e18, 10_000e18);
@@ -478,9 +396,7 @@ contract KintoKobanTest is Test {
         vm.expectRevert(abi.encodeWithSelector(UUPSUnauthorizedCall.selector, _user));
 
         // Call upgradeTo via the proxy using a low-level call
-        address(_koban).call(
-            abi.encodeWithSignature("upgradeTo(address)", address(newImplementation))
-        );
+        address(_koban).call(abi.encodeWithSignature("upgradeTo(address)", address(newImplementation)));
 
         vm.stopPrank();
     }
@@ -532,28 +448,12 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(true)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(true));
 
         // Set country list to empty and switch to Allow Mode
         vm.prank(_owner);
@@ -609,40 +509,20 @@ contract KintoKobanTest is Test {
         );
 
         // Mock the owners(0) call on sender and recipient wallets
-        vm.mockCall(
-            senderWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_owner)
-        );
-        vm.mockCall(
-            recipientWallet,
-            abi.encodeWithSelector(IKintoWallet.owners.selector, 0),
-            abi.encode(_user)
-        );
+        vm.mockCall(senderWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_owner));
+        vm.mockCall(recipientWallet, abi.encodeWithSelector(IKintoWallet.owners.selector, 0), abi.encode(_user));
 
         // Mock KYC status
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _owner),
-            abi.encode(true)
-        );
-        vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.isKYC.selector, _user),
-            abi.encode(true)
-        );
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _owner), abi.encode(true));
+        vm.mockCall(KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.isKYC.selector, _user), abi.encode(true));
 
         // Mock country traits
         uint16 countryID = 1;
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _owner, countryID), abi.encode(true)
         );
         vm.mockCall(
-            KINTO_ID_ADDRESS,
-            abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID),
-            abi.encode(true)
+            KINTO_ID_ADDRESS, abi.encodeWithSelector(IKintoID.hasTrait.selector, _user, countryID), abi.encode(true)
         );
 
         // Set country list and switch to Allow Mode

@@ -5,6 +5,7 @@ import "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/ERC20Upgradeable.s
 import "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-5.0.1/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "../interfaces/IKintoWalletFactory.sol";
 import "../interfaces/IKintoID.sol";
 
@@ -12,7 +13,13 @@ import "../interfaces/IKintoID.sol";
  * @title KintoKoban
  * @notice ERC20 token with Kinto functionalities for KYC and country restrictions. Compatible with ERC1404.
  */
-contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract KintoKoban is
+    Initializable,
+    ERC20Upgradeable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    AccessControlUpgradeable
+{
     uint256 public immutable MAX_SUPPLY_LIMIT;
     uint256 public immutable TOTAL_TRANSFER_LIMIT;
 
@@ -49,6 +56,7 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
         __ERC20_init(name, symbol);
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
+        __AccessControl_init();
         allowMode = false; // Blacklist by default (will allow all since the list is empty)
     }
 
@@ -105,7 +113,7 @@ contract KintoKoban is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPS
         if (WALLET_FACTORY.walletTs(from) == 0 || WALLET_FACTORY.walletTs(to) == 0) {
             return NOT_KYCED_CODE; // Either sender or recipient is not a wallet
         }
-        
+
         // Get the owner of the KintoID NFT for both wallets
         address fromOwner = IKintoWallet(from).owners(0); // Owner of the KintoID for sender
         address toOwner = IKintoWallet(to).owners(0); // Owner of the KintoID for recipient
