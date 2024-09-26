@@ -33,7 +33,7 @@ contract DeployScript is Script, MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         CrossChainSwapWorkflow crossChainSwapWorkflow =
             new CrossChainSwapWorkflow(IBridger(_getChainDeployment("Bridger")));
-        saveContractAddress("CrossChainSwapWorkflow", address(crossChainSwapWorkflow));
+        saveContractAddress("CrossChainSwapWorkflowV2", address(crossChainSwapWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(crossChainSwapWorkflow));
