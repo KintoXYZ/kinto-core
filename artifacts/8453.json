@@ -1343,7 +1343,7 @@
           ]
         }
       ],
-      "address": "0x3BE1d6f9442fe9fA62Fa311eb7874198fa29B66E"
+      "address": "0x23FC304a9F1F902a21A9A3f664601da07df93a6A"
     },
     "SwapWorkflow": {
       "abi": [
@@ -1491,7 +1491,7 @@
           ]
         }
       ],
-      "address": "0x26ce50540b23573176d6C9e37B7109C94342E30D"
+      "address": "0x2FE89913dd94c63C3Cdf2B50C27b836E46005Dc6"
     },
     "WethWorkflow": {
       "abi": [
