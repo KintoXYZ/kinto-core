@@ -1,7 +1,7 @@
 {
   "transactions": [
     {
-      "hash": "0xf80d0c121a6fb34602037d9e6cbcd37582e1df1f288f3cb3fb5b0ca813bd783e",
+      "hash": null,
       "transactionType": "CREATE",
       "contractName": "Bridger",
       "contractAddress": "0x21d3921b50617bdef223207118950b0b577e4007",
@@ -27,42 +27,11 @@
       "isFixedGasLimit": false
     }
   ],
-  "receipts": [
-    {
-      "status": "0x1",
-      "cumulativeGasUsed": "0xcf7a14",
-      "logs": [
-        {
-          "address": "0x21d3921b50617bdef223207118950b0b577e4007",
-          "topics": [
-            "0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498"
-          ],
-          "data": "0x00000000000000000000000000000000000000000000000000000000000000ff",
-          "blockHash": "0x89146233c345d6eab968a6b65dfc408fae07beb2355100dd5baf95307f348543",
-          "blockNumber": "0x13defdc",
-          "transactionHash": "0xf80d0c121a6fb34602037d9e6cbcd37582e1df1f288f3cb3fb5b0ca813bd783e",
-          "transactionIndex": "0x8a",
-          "logIndex": "0xa2",
-          "removed": false
-        }
-      ],
-      "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000400400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "type": "0x2",
-      "transactionHash": "0xf80d0c121a6fb34602037d9e6cbcd37582e1df1f288f3cb3fb5b0ca813bd783e",
-      "transactionIndex": "0x8a",
-      "blockHash": "0x89146233c345d6eab968a6b65dfc408fae07beb2355100dd5baf95307f348543",
-      "blockNumber": "0x13defdc",
-      "gasUsed": "0x38542f",
-      "effectiveGasPrice": "0x6dd15f787",
-      "from": "0x660ad4b5a74130a4796b4d54bc6750ae93c86e6c",
-      "to": null,
-      "contractAddress": "0x21d3921b50617bdef223207118950b0b577e4007"
-    }
-  ],
+  "receipts": [],
   "libraries": [],
   "pending": [],
   "returns": {},
-  "timestamp": 1727372162,
+  "timestamp": 1727365704,
   "chain": 1,
   "commit": "a794018"
 }
