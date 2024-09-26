@@ -32,13 +32,19 @@ contract TransferDclmScript is MigrationHelper {
 
         // Burn tokens from RD
         _handleOps(
-            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), kadai_amount + devchallenge_amount),
+            abi.encodeWithSelector(
+                BridgedToken.burn.selector,
+                _getChainDeployment("RewardsDistributor"),
+                kadai_amount + devchallenge_amount
+            ),
             kintoToken
         );
 
         // Mint tokens to winner address
         _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner, kadai_amount), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, devchallenge_winner, devchallenge_amount), kintoToken);
+        _handleOps(
+            abi.encodeWithSelector(BridgedToken.mint.selector, devchallenge_winner, devchallenge_amount), kintoToken
+        );
 
         // Check that tokens received
         assertEq(ERC20(kintoToken).balanceOf(kadai_winner) - kadai_balanceBefore, kadai_amount);
