@@ -72,8 +72,7 @@ contract BridgeWorkflowTest is BaseTest {
         wstEth = makeAddr("wsteth");
 
         // deploy a new Bridger contract
-        BridgerHarness implementation =
-            new BridgerHarness(router, address(0), address(0), weth, dai, usde, address(0), wstEth);
+        BridgerHarness implementation = new BridgerHarness(router, address(0), weth, dai, usde, address(0), wstEth);
         address proxy = address(new UUPSProxy{salt: 0}(address(implementation), ""));
         bridger = BridgerHarness(payable(proxy));
         vm.label(address(bridger), "bridger");

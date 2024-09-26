@@ -18,7 +18,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
@@ -109,8 +109,6 @@ contract Bridger is
     bytes32 public immutable override domainSeparator;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
-    /// @notice The address of the Curve pool for USDM.
-    address public immutable usdmCurvePool;
     /// @notice The address of Angel Swapper on Arbitrum.
     address public constant angleSwapper = 0xD253b62108d1831aEd298Fc2434A5A8e4E418053;
 
@@ -150,7 +148,6 @@ contract Bridger is
      */
     constructor(
         address exchange,
-        address usdmCurveAmm,
         address usdc,
         address weth,
         address dai,
@@ -169,7 +166,6 @@ contract Bridger is
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
-        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
@@ -413,6 +409,11 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
+        if (inputAsset == wUSDM) {
+            amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
+            inputAsset = USDM;
+        }
+
         // If the final asset is different from the input asset, perform the swap
         if (finalAsset != inputAsset) {
             amountBought = _fillQuote(
@@ -429,20 +430,13 @@ contract Bridger is
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
-            amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
+            amountBought = IERC4626(sUSDe).deposit(balance, address(this));
         }
 
         // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
         if (finalAsset == wUSDM) {
-            // 0 coin == USDC
-            // 1 coin == USDM
-            uint256 balance = IERC20(USDC).balanceOf(address(this));
-            IERC20(USDC).safeApprove(usdmCurvePool, balance);
-            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
-            amountBought =
-                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
             // wrap USDM to wUSDM
-            balance = IERC20(USDM).balanceOf(address(this));
+            uint256 balance = IERC20(USDM).balanceOf(address(this));
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }

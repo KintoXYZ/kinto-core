@@ -4,6 +4,11 @@ pragma solidity ^0.8.18;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
+interface IWstEth {
+    function unwrap(uint256 amount) external returns (uint256);
+    function stETH() external view returns (address);
+}
+
 /**
  * @title IDAI
  * @notice Interface for DAI token operations.
@@ -30,20 +35,6 @@ interface IDAI {
         bytes32 r,
         bytes32 s
     ) external;
-}
-
-/**
- * @title IsUSDe
- * @notice Interface for sUSDe token operations.
- */
-interface IsUSDe is IERC20 {
-    /**
-     * @notice Deposit USDe tokens and receive sUSDe tokens.
-     * @param amount Amount of USDe tokens to deposit.
-     * @param recipient Address to receive the sUSDe tokens.
-     * @return Amount of sUSDe tokens received.
-     */
-    function deposit(uint256 amount, address recipient) external returns (uint256);
 }
 
 /**
