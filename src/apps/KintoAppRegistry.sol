@@ -328,13 +328,20 @@ contract KintoAppRegistry is
      *      5. Permits CREATE and CREATE2 operations for eligible EOAs
      *      6. Allows dev EOAs to call their respective apps
      */
-    function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
+    function isContractCallAllowedFromEOA(address sender, address to, bytes calldata callData, uint256 value)
+        external
+        view
+        returns (bool)
+    {
+        // extract the function selector from the callData
+        bytes4 selector = bytes4(callData[:4]);
+
         // Calls to system contracts are allwed for any EOA
         if (isSystemContract[to]) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
         if (to == address(0) || to == CREATE2) {
-            address wallet = deployerToWallet[from];
+            address wallet = deployerToWallet[sender];
             // Only dev wallets can deploy
             if (wallet == address(0)) return false;
             // Deny if wallet has no KYC
@@ -343,14 +350,15 @@ contract KintoAppRegistry is
             return true;
         }
 
-        // Contract calls are allowed only from dev EOAs to app's contracts
+        // Contract calls are allowed only sender dev EOAs to app's contracts
         address app = childToParentContract[to] != address(0)
             ? childToParentContract[to]
             : devEoaToApp[to] != address(0) ? devEoaToApp[to] : to;
 
         // Dev EOAs are allowed to call their respective apps
         // Dev EOAs can send ETH to each other
-        if (devEoaToApp[from] == app || (devEoaToApp[from] == devEoaToApp[to] && devEoaToApp[from] != address(0))) {
+        if (devEoaToApp[sender] == app || (devEoaToApp[sender] == devEoaToApp[to] && devEoaToApp[sender] != address(0)))
+        {
             // Deny if wallet has no KYC
             address walletOwner = ownerOf(_appMetadata[app].tokenId);
             // App owner must be a wallet
