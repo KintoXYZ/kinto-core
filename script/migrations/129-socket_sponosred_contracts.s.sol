@@ -28,9 +28,6 @@ contract Script is MigrationHelper {
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
-        assertEq(
-            kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("SOL")), true
-        );
+        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("SOL")), true);
     }
 }
-
