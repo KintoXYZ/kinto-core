@@ -25,4 +25,3 @@ contract DeployKintoScript is MigrationHelper {
         deployBridgedToken("rsUSDe", "rsUSDe", 18, "2505DE");
     }
 }
-
