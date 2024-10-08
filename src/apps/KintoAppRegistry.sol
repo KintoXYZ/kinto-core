@@ -446,6 +446,11 @@ contract KintoAppRegistry is
             return true;
         }
 
+        if (destination == address(0)) {
+            // CREATE is not allowed
+            return false;
+        }
+
         return false;
     }
 

@@ -443,13 +443,14 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     }
 
     function setSystemContracts() public {
-        address[] memory systemContracts = new address[](6);
+        address[] memory systemContracts = new address[](7);
         systemContracts[0] = address(kintoID);
         systemContracts[1] = address(factory);
         systemContracts[2] = address(kintoRegistry); // appRegistryAddress
         systemContracts[3] = address(bundleBulker); // bundleBulker
         systemContracts[4] = 0x000000000000000000000000000000000000006E; // arbRetrayableTx
         systemContracts[5] = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // create2Factory
+        systemContracts[6] = address(entryPoint); // create2Factory
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoRegistry.updateSystemContracts(systemContracts);
     }
