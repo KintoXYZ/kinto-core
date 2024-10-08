@@ -73,12 +73,13 @@ contract KintoAppRegistry is
     /// @notice
     address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
+    /// @notice
+    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
+
     bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
     bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
     bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
-    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS = 0x4b1d7cf5;
     bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
-    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
     bytes4 public constant SELECTOR_SP_WITHDRAW_TO = 0x205c2878;
     bytes4 public constant SELECTOR_SP_DEPOSIT = 0xd0e30db0;
     bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
@@ -255,14 +256,22 @@ contract KintoAppRegistry is
 
     /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
-        emit SystemContractsUpdated(systemContracts, newSystemContracts);
+        address[] memory newSystemContractsExtra = new address[](newSystemContracts.length + 4);
+        newSystemContractsExtra[0] = address(this);
+        newSystemContractsExtra[1] = ENTRYPOINT_V6;
+        newSystemContractsExtra[2] = ENTRYPOINT_V7;
+        newSystemContractsExtra[3] = ARB_RETRAYABLE_TX;
+        for (uint256 i = 0; i < newSystemContracts.length; i++) {
+            newSystemContractsExtra[i + 4] = newSystemContracts[i];
+        }
+        emit SystemContractsUpdated(systemContracts, newSystemContractsExtra);
         for (uint256 index = 0; index < systemContracts.length; index++) {
             isSystemContract[systemContracts[index]] = false;
         }
-        for (uint256 index = 0; index < newSystemContracts.length; index++) {
-            isSystemContract[newSystemContracts[index]] = true;
+        for (uint256 index = 0; index < newSystemContractsExtra.length; index++) {
+            isSystemContract[newSystemContractsExtra[index]] = true;
         }
-        systemContracts = newSystemContracts;
+        systemContracts = newSystemContractsExtra;
     }
 
     /// @inheritdoc IKintoAppRegistry
@@ -285,6 +294,7 @@ contract KintoAppRegistry is
         // cleanup old
         if (walletToDeployer[wallet] != address(0)) {
             delete deployerToWallet[walletToDeployer[wallet]];
+            delete walletToDeployer[wallet];
         }
 
         emit DeployerSet(deployer);
@@ -333,11 +343,6 @@ contract KintoAppRegistry is
     /// @inheritdoc IKintoAppRegistry
     function getApp(address target) public view override returns (address) {
         return childToParentContract[target] != address(0) ? childToParentContract[target] : target;
-    }
-
-    //TODO:Remove on next upgrade.
-    function getSponsor(address target) external view returns (address) {
-        return getApp(target);
     }
 
     function isEntryPoint(address addr) public pure returns (bool) {
@@ -453,7 +458,7 @@ contract KintoAppRegistry is
             return false;
         }
 
-        // Calls to system contracts are allwed for any EOA
+        // Calls to system contracts are allowed for any EOA
         if (isSystemContract[destination]) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
