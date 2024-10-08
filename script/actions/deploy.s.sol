@@ -211,18 +211,22 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         bytecode = abi.encodePacked(
             type(KintoWalletFactory).creationCode, abi.encode(address(wallet), address(kintoRegistry), address(kintoID))
         );
-        address implementation = _deployImplementation("KintoWalletFactory", bytecode, false);
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        address implementation = Create2.deploy(0, 0, bytecode);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         factory.upgradeTo(implementation);
 
         // upgrade app registry
         bytecode =
             abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(address(factory), address(paymaster)));
-        implementation = _deployImplementation("KintoAppRegistry", bytecode, false);
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        implementation = Create2.deploy(0, 0, bytecode);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoRegistry.upgradeTo(implementation);
 
         if (write) vm.writeLine(_getAddressesFile(), "}\n");
+
+        setSystemContracts();
     }
 
     function deployKintoID() public returns (KintoID _kintoID, KintoID _kintoIDImpl) {
@@ -436,6 +440,18 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(engenCredits)));
         address implementation = _deployImplementation("EngenGovernance", bytecode, false);
         _governance = EngenGovernance(payable(implementation));
+    }
+
+    function setSystemContracts() public {
+        address[] memory systemContracts = new address[](6);
+        systemContracts[0] = address(kintoID);
+        systemContracts[1] = address(factory);
+        systemContracts[2] = address(kintoRegistry); // appRegistryAddress
+        systemContracts[3] = address(bundleBulker); // bundleBulker
+        systemContracts[4] = 0x000000000000000000000000000000000000006E; // arbRetrayableTx
+        systemContracts[5] = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // create2Factory
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        kintoRegistry.updateSystemContracts(systemContracts);
     }
 
     /// @dev deploys both proxy and implementation contracts from deployer
