@@ -376,7 +376,10 @@ interface IKintoAppRegistry {
      * @param value Value
      * @return A boolean indicating whether the call is allowed (true) or not (false)
      */
-    function isContractCallAllowedFromEOA(address sender, address to, bytes calldata callData, uint256 value) external view returns (bool);
+    function isContractCallAllowedFromEOA(address sender, address to, bytes calldata callData, uint256 value)
+        external
+        view
+        returns (bool);
 
     /* ============ Constants and Attributes ============ */
 

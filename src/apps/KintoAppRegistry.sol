@@ -13,6 +13,7 @@ import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 /**
  * @title KintoAppRegistry
@@ -54,6 +55,9 @@ contract KintoAppRegistry is
     /// @notice The address of the CREATE2 contract
     address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
+    /// @notice The SponsorPaymaster contract
+    SponsorPaymaster public immutable paymaster;
+
     /// @notice The KintoWalletFactory contract
     IKintoWalletFactory public immutable override walletFactory;
 
@@ -62,6 +66,23 @@ contract KintoAppRegistry is
 
     /// @notice The address of the admin deployer
     address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+
+    /// @notice
+    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+
+    /// @notice
+    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+
+    bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
+    bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
+    bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
+    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS = 0x4b1d7cf5;
+    bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
+    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
+    bytes4 public constant SELECTOR_SP_WITHDRAW_TO = 0x205c2878;
+    bytes4 public constant SELECTOR_SP_DEPOSIT = 0xd0e30db0;
+    bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
+    bytes4 public constant SELECTOR_EMPTY = 0x00000000;
 
     /* ============ State Variables ============ */
 
@@ -113,9 +134,10 @@ contract KintoAppRegistry is
      * @notice Constructs the KintoAppRegistry contract
      * @param _walletFactory The address of the KintoWalletFactory contract
      */
-    constructor(IKintoWalletFactory _walletFactory) {
+    constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster) {
         _disableInitializers();
         walletFactory = _walletFactory;
+        paymaster = _paymaster;
         kintoID = IKintoID(_walletFactory.kintoID());
     }
 
@@ -318,6 +340,29 @@ contract KintoAppRegistry is
         return getApp(target);
     }
 
+    function isEntryPoint(address addr) public pure returns (bool) {
+        return addr == ENTRYPOINT_V6 || addr == ENTRYPOINT_V7;
+    }
+
+    function isEntryPointWithdraw(bytes4 selector) public pure returns (bool) {
+        return selector == SELECTOR_EP_WITHDRAW_TO || selector == SELECTOR_EP_WITHDRAW_STAKE;
+    }
+
+    function isHandleOps(address addr, bytes4 selector) public pure returns (bool) {
+        return isEntryPoint(addr) && (selector == SELECTOR_EP_HANDLEOPS || selector == SELECTOR_EP_HANDLE_OPS_V7);
+    }
+
+    function forbiddenEPFunctions(bytes4 selector) public pure returns (bool) {
+        return (
+            selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT
+                || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_OPS_V7
+        );
+    }
+
+    function paymasterFunctionNotAllowed(bytes4 selector) public pure returns (bool) {
+        return selector == SELECTOR_SP_WITHDRAW_TO || selector == SELECTOR_SP_DEPOSIT;
+    }
+
     /**
      * @inheritdoc IKintoAppRegistry
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
@@ -328,19 +373,51 @@ contract KintoAppRegistry is
      *      5. Permits CREATE and CREATE2 operations for eligible EOAs
      *      6. Allows dev EOAs to call their respective apps
      */
-    function isContractCallAllowedFromEOA(address sender, address to, bytes calldata callData, uint256 value)
+    function isContractCallAllowedFromEOA(address sender, address destination, bytes calldata callData, uint256 value)
         external
         view
         returns (bool)
     {
+        (value);
         // extract the function selector from the callData
-        bytes4 selector = bytes4(callData[:4]);
+        bytes4 selector = callData.length > 0 ? bytes4(callData[:4]) : bytes4(0);
+
+        if (isEntryPoint(destination) && isEntryPointWithdraw(selector)) {
+            // function withdrawStake(address payable withdrawAddress) external;
+            // function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount) external;
+            address paramAddress = abi.decode(callData[4:36], (address));
+
+            if (sender != paramAddress) {
+                // Trying to withdrawTo/withdrawStake from EntryPoint to a param different than the sender
+                return false;
+            }
+        }
+
+        if (isHandleOps(destination, selector)) {
+            // function handleOps(PackedUserOperation[] calldata ops, address payable beneficiary) external;
+            (, address beneficiary) = abi.decode(callData[4:], (bytes32, address));
+
+            if (sender != beneficiary) {
+                // Trying to handleOps from EntryPoint to a beneficiary different than the sender
+                return false;
+            }
+        }
+
+        if (isEntryPoint(destination) && forbiddenEPFunctions(selector)) {
+            // EntryPoint depositTo, HandleAggregatedOps and fallback functions are not allowed
+            return false;
+        }
+
+        if (destination == address(paymaster) && paymasterFunctionNotAllowed(selector)) {
+            // SponsorPaymaster withDrawTo() and deposit() are not allowed
+            return false;
+        }
 
         // Calls to system contracts are allwed for any EOA
-        if (isSystemContract[to]) return true;
+        if (isSystemContract[destination]) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
-        if (to == address(0) || to == CREATE2) {
+        if (destination == address(0) || destination == CREATE2) {
             address wallet = deployerToWallet[sender];
             // Only dev wallets can deploy
             if (wallet == address(0)) return false;
@@ -351,14 +428,16 @@ contract KintoAppRegistry is
         }
 
         // Contract calls are allowed only sender dev EOAs to app's contracts
-        address app = childToParentContract[to] != address(0)
-            ? childToParentContract[to]
-            : devEoaToApp[to] != address(0) ? devEoaToApp[to] : to;
+        address app = childToParentContract[destination] != address(0)
+            ? childToParentContract[destination]
+            : devEoaToApp[destination] != address(0) ? devEoaToApp[destination] : destination;
 
         // Dev EOAs are allowed to call their respective apps
         // Dev EOAs can send ETH to each other
-        if (devEoaToApp[sender] == app || (devEoaToApp[sender] == devEoaToApp[to] && devEoaToApp[sender] != address(0)))
-        {
+        if (
+            devEoaToApp[sender] == app
+                || (devEoaToApp[sender] == devEoaToApp[destination] && devEoaToApp[sender] != address(0))
+        ) {
             // Deny if wallet has no KYC
             address walletOwner = ownerOf(_appMetadata[app].tokenId);
             // App owner must be a wallet
@@ -470,5 +549,7 @@ contract KintoAppRegistry is
 }
 
 contract KintoAppRegistryV17 is KintoAppRegistry {
-    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
+    constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
+        KintoAppRegistry(_walletFactory, _paymaster)
+    {}
 }
