@@ -355,7 +355,7 @@ contract KintoAppRegistry is
     function forbiddenEPFunctions(bytes4 selector) public pure returns (bool) {
         return (
             selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT
-                || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_OPS_V7
+                || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7
         );
     }
 
