@@ -80,8 +80,6 @@ contract KintoAppRegistry is
     bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
     bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
     bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
-    bytes4 public constant SELECTOR_SP_WITHDRAW_TO = 0x205c2878;
-    bytes4 public constant SELECTOR_SP_DEPOSIT = 0xd0e30db0;
     bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
     bytes4 public constant SELECTOR_EMPTY = 0x00000000;
 
@@ -361,9 +359,6 @@ contract KintoAppRegistry is
         return selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT;
     }
 
-    function paymasterFunctionNotAllowed(bytes4 selector) public pure returns (bool) {
-        return selector == SELECTOR_SP_WITHDRAW_TO || selector == SELECTOR_SP_DEPOSIT;
-    }
 
     /**
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
@@ -450,11 +445,6 @@ contract KintoAppRegistry is
 
         if (isEntryPoint(destination) && forbiddenEPFunctions(selector)) {
             // EntryPoint depositTo, HandleAggregatedOps and fallback functions are not allowed
-            return false;
-        }
-
-        if (destination == address(paymaster) && paymasterFunctionNotAllowed(selector)) {
-            // SponsorPaymaster withDrawTo() and deposit() are not allowed
             return false;
         }
 
