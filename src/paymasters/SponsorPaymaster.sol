@@ -30,11 +30,11 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
     }
 
     /// @inheritdoc IPaymaster
-    function validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 maxCost
-    ) external override returns (bytes memory context, uint256 validationData) {
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        external
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
         _requireFromEntryPoint();
         return _validatePaymasterUserOp(userOp, userOpHash, maxCost);
     }
@@ -45,18 +45,13 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      * @param userOpHash - The hash of the user operation.
      * @param maxCost    - The maximum cost of the user operation.
      */
-    function _validatePaymasterUserOp(
-        UserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 maxCost
-    ) internal virtual returns (bytes memory context, uint256 validationData);
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        internal
+        virtual
+        returns (bytes memory context, uint256 validationData);
 
     /// @inheritdoc IPaymaster
-    function postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) external override {
+    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) external override {
         _requireFromEntryPoint();
         _postOp(mode, context, actualGasCost);
     }
@@ -74,16 +69,11 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      * @param context       - The context value returned by validatePaymasterUserOp
      * @param actualGasCost - Actual gas used so far (without this postOp call).
      */
-    function _postOp(
-        PostOpMode mode,
-        bytes calldata context,
-        uint256 actualGasCost
-    ) internal virtual {
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual {
         (mode, context, actualGasCost); // unused params
         // subclass must override this method if validatePaymasterUserOp returns a context
         revert("must override");
     }
-
 
     /**
      * Add stake for this paymaster.
@@ -238,7 +228,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         }
         entryPoint.depositTo{value: msg.value}(address(this));
     }
-
 
     /**
      * Unlocks deposit, so that it can be withdrawn.

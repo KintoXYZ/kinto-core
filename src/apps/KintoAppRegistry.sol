@@ -359,7 +359,6 @@ contract KintoAppRegistry is
         return selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT;
     }
 
-
     /**
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
      *      1. Allows calls to system contracts from any EOA
