@@ -353,14 +353,54 @@ contract KintoAppRegistry is
     }
 
     function forbiddenEPFunctions(bytes4 selector) public pure returns (bool) {
-        return (
-            selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT
-                || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7
-        );
+        return selector == SELECTOR_EMPTY || selector == SELECTOR_EP_DEPOSIT;
     }
 
     function paymasterFunctionNotAllowed(bytes4 selector) public pure returns (bool) {
         return selector == SELECTOR_SP_WITHDRAW_TO || selector == SELECTOR_SP_DEPOSIT;
+    }
+
+    /**
+     * @dev This function checks various conditions to decide if an EOA can call a specific contract:
+     *      1. Allows calls to system contracts from any EOA
+     *      2. Checks if the EOA has a linked wallet
+     *      3. Verifies if dev mode is enabled on the wallet
+     *      4. Ensures the wallet owner has completed KYC
+     *      5. Permits CREATE and CREATE2 operations for eligible EOAs
+     *      6. Allows dev EOAs to call their respective apps
+     */
+    function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
+        // Calls to system contracts are allwed for any EOA
+        if (isSystemContract[to]) return true;
+
+        // Deployer EOAs are allowed to use CREATE and CREATE2
+        if (to == address(0) || to == CREATE2) {
+            address wallet = deployerToWallet[from];
+            // Only dev wallets can deploy
+            if (wallet == address(0)) return false;
+            // Deny if wallet has no KYC
+            if (!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
+            // Permit if EOA have a wallet, dev mode and KYC
+            return true;
+        }
+
+        // Contract calls are allowed only from dev EOAs to app's contracts
+        address app = childToParentContract[to] != address(0)
+            ? childToParentContract[to]
+            : devEoaToApp[to] != address(0) ? devEoaToApp[to] : to;
+
+        // Dev EOAs are allowed to call their respective apps
+        // Dev EOAs can send ETH to each other
+        if (devEoaToApp[from] == app || (devEoaToApp[from] == devEoaToApp[to] && devEoaToApp[from] != address(0))) {
+            // Deny if wallet has no KYC
+            address walletOwner = ownerOf(_appMetadata[app].tokenId);
+            // App owner must be a wallet
+            if (walletFactory.walletTs(walletOwner) == 0) return false;
+            if (!kintoID.isKYC(IKintoWallet(walletOwner).owners(0))) return false;
+            return true;
+        }
+
+        return false;
     }
 
     /**
