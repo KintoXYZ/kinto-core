@@ -75,6 +75,15 @@ abstract contract BridgeDataHelper is Constants {
             options: bytes("")
         });
 
+        bridgeData[ETHEREUM_CHAINID][EUSD_ETHEREUM] = IBridger.BridgeData({
+            vault: 0xDB0e855F55ff35dA8754e5297925bd6c4Cb1Fa48,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0x895b6c1413243562128a9281a7f8891640Ca073f,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
         bridgeData[ETHEREUM_CHAINID][ENA_ETHEREUM] = IBridger.BridgeData({
             vault: 0x351d8894fB8bfa1b0eFF77bFD9Aab18eA2da8fDd,
             gasFee: 1e16,
@@ -177,7 +186,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         BridgerHarness newImpl = new BridgerHarness(
             EXCHANGE_PROXY,
-            block.chainid == ARBITRUM_CHAINID ? USDC_ARBITRUM : address(0),
+            block.chainid == ARBITRUM_CHAINID ? USDC_ARBITRUM : USDC_ETHEREUM,
             WETH,
             DAI,
             USDe,
@@ -334,6 +343,64 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
             vaultAssetOutBalanceBefore + 283975689912282,
             "Invalid Vault assetOut balance"
         );
+    }
+
+    // DAI to eUSD
+    function testDepositBySig_WhenDaiToEUSD() public {
+        vm.rollFork(20924996); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][EUSD_ETHEREUM];
+        address assetToDeposit = DAI_ETHEREUM;
+        uint256 amountToDeposit = 1e18;
+        uint256 sharesBefore = ERC20(EUSD_ETHEREUM).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(EUSD_ETHEREUM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            EUSD_ETHEREUM,
+            amountToDeposit,
+            968e3,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // DAI to USDC quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=1&buyToken=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&sellAmount=1000000000000000000&taker=0x0f1b7bd7762662B23486320AA91F30312184f70C' -H '0x-api-key: key' -H '0x-version: v2' | jq > ./test/data/swap-dai-to-usdc-eth.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-dai-to-usdc-eth.json").readBytes(".transaction.data");
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_owner);
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
+        assertEq(bridger.nonces(_user), nonce + 1);
+
+        uint256 shares = ERC4626(wUSDM).previewDeposit(999994255037510828);
+        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
     // DAI to wUSDM

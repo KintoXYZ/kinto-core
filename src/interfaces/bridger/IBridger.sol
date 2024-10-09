@@ -4,6 +4,13 @@ pragma solidity ^0.8.18;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
+interface IeUsdRouter {
+    function deposit(address depositAsset, uint256 depositAmount, uint256 minimumMint)
+        external
+        payable
+        returns (uint256 shares);
+}
+
 interface IWstEth {
     function unwrap(uint256 amount) external returns (uint256);
     function stETH() external view returns (address);
