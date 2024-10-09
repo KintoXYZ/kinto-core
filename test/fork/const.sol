@@ -15,8 +15,10 @@ contract Constants {
     address internal constant wstETH_ETHEREUM = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address internal constant sDAI_ETHEREUM = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address internal constant ENA_ETHEREUM = 0x57e114B691Db790C35207b2e685D4A43181e6061;
+    address internal constant EUSD_ETHEREUM = 0x939778D83b46B456224A33Fb59630B11DEC56663;
     address internal constant USDM_CURVE_POOL_ARBITRUM = 0x4bD135524897333bec344e50ddD85126554E58B4;
     address internal constant USDC_ARBITRUM = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    address internal constant USDC_ETHEREUM = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant WBTC_ARBITRUM = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
     address internal constant SOLV_BTC_ARBITRUM = 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0;
     address internal constant WETH_ARBITRUM = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;

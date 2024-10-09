@@ -18,10 +18,9 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IeUsdRouter, IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
-import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
 import {IAngleSwapper} from "@kinto-core/interfaces/external/IAngleSwapper.sol";
 import {ISftWrapRouter} from "@kinto-core/interfaces/external/ISftWrapRouter.sol";
 
@@ -90,6 +89,10 @@ contract Bridger is
     bytes32 public constant SOLV_BTC_POOL_ID = 0x488def4a346b409d5d57985a160cd216d29d4f555e1b716df4e04e2374d2d9f6;
     /// @notice stUSD pool id on Arbitrum.
     address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
+    /// @notice The address of the eUSD token on Ethereum.
+    address public constant eUSD = 0x939778D83b46B456224A33Fb59630B11DEC56663;
+    /// @notice The address of the eUSD router on Ethereum.
+    address public constant EUSD_ROUTER = 0xA5C0bc543Ae9e522d0d8829191D759c0f0BcD098;
     /// @notice USDA pool id on Arbitrum.
     address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
     /// @notice The WETH contract instance.
@@ -419,11 +422,21 @@ contract Bridger is
             amountBought = _fillQuote(
                 amount,
                 IERC20(inputAsset),
-                // If the final asset is sUSDe, swap to USDe first and then stake
-                // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
+                // If the final asset is eUSD, swap to USDC first and then deposit
+                // If the final asset is sUSDe, swap to USDe first and then deposit
+                // If the final asset is wUSDM, swap to USDC first, and then deposit
                 IERC20(_getFinalAssetByAsset(finalAsset)),
                 swapCallData
             );
+        }
+
+        // If the final asset is eUSD, deposit USDC to eUSD.
+        if (finalAsset == eUSD) {
+            uint256 balance = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeApprove(eUSD, balance);
+            // `minimumMint` is set to zero, because this is what official UI does.
+            // No idea if the mint is always 1 to 1 for stables
+            amountBought = IeUsdRouter(EUSD_ROUTER).deposit(USDC, balance, 0);
         }
 
         // If the final asset is sUSDe, stake USDe to sUSDe.
@@ -466,6 +479,9 @@ contract Bridger is
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
+        if (finalAsset == eUSD) {
+            return USDC;
+        }
         if (finalAsset == sUSDe) {
             return USDe;
         }
