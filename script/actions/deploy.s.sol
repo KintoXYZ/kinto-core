@@ -443,10 +443,11 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     }
 
     function setSystemContracts() public {
-        address[] memory systemContracts = new address[](3);
+        address[] memory systemContracts = new address[](4);
         systemContracts[0] = address(kintoID);
         systemContracts[1] = address(factory);
-        systemContracts[2] = address(bundleBulker); // bundleBulker
+        systemContracts[2] = address(bundleBulker);
+        systemContracts[3] = address(entryPoint);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoRegistry.updateSystemContracts(systemContracts);
     }
