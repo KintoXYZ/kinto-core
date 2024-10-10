@@ -351,7 +351,7 @@ contract MigrateOwnershipScript is MigrationHelper {
             Ownable(addr).transferOwnership(ownerWallet);
         }
 
-        console2.log('kintoID:', address(kintoID));
+        console2.log("kintoID:", address(kintoID));
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
         vm.startBroadcast();
         kintoID.grantRole(kintoID.DEFAULT_ADMIN_ROLE(), ownerWallet);
@@ -359,6 +359,6 @@ contract MigrateOwnershipScript is MigrationHelper {
         kintoID.grantRole(kintoID.KYC_PROVIDER_ROLE(), ownerWallet);
         vm.stopBroadcast();
 
-        console2.log('All roles granted to the owner wallet!');
+        console2.log("All roles granted to the owner wallet!");
     }
 }
