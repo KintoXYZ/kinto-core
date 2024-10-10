@@ -51,7 +51,7 @@ contract KintoID is
     uint256 public override lastMonitoredAt;
 
     // Metadata for each minted token
-    mapping(address => IKintoID.Metadata) private _kycmetas;
+    mapping(address => IKintoID.Metadata) internal _kycmetas;
 
     /// @dev We include a nonce in every hashed message, and increment the nonce as part of a
     /// state-changing operation, so as to prevent replay attacks, i.e. the reuse of a signature.
@@ -348,7 +348,7 @@ contract KintoID is
      * @param _days Days to be checked.
      * @return true if the account was monitored in the last x days.
      */
-    function isSanctionsMonitored(uint32 _days) public view override returns (bool) {
+    function isSanctionsMonitored(uint32 _days) public view virtual override returns (bool) {
         return block.timestamp - lastMonitoredAt < _days * (1 days);
     }
 
@@ -357,7 +357,7 @@ contract KintoID is
      * @param _account account to be checked.
      * @return true if the account is sanctions safe.
      */
-    function isSanctionsSafe(address _account) public view override returns (bool) {
+    function isSanctionsSafe(address _account) public view virtual override returns (bool) {
         return isSanctionsMonitored(7) && _kycmetas[_account].sanctionsCount == 0;
     }
 
@@ -367,7 +367,7 @@ contract KintoID is
      * @param _countryId country id to be checked.
      * @return true if the account is sanctions safe in a given country.
      */
-    function isSanctionsSafeIn(address _account, uint16 _countryId) external view override returns (bool) {
+    function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
         return isSanctionsMonitored(7) && !_kycmetas[_account].sanctions.get(_countryId);
     }
 
