@@ -236,7 +236,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         vm.prank(_paymaster.owner());
         _paymaster.upgradeTo(address(_paymasterImpl));
 
-        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
+        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory, _paymaster);
         vm.prank(_kintoAppRegistry.owner());
         _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
