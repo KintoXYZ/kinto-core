@@ -254,11 +254,12 @@ contract KintoAppRegistry is
 
     /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
-        address[] memory newSystemContractsExtra = new address[](newSystemContracts.length + 4);
+        address[] memory newSystemContractsExtra = new address[](newSystemContracts.length + 5);
         newSystemContractsExtra[0] = address(this);
         newSystemContractsExtra[1] = ENTRYPOINT_V6;
         newSystemContractsExtra[2] = ENTRYPOINT_V7;
         newSystemContractsExtra[3] = ARB_RETRAYABLE_TX;
+        newSystemContractsExtra[4] = address(paymaster);
         for (uint256 i = 0; i < newSystemContracts.length; i++) {
             newSystemContractsExtra[i + 4] = newSystemContracts[i];
         }
