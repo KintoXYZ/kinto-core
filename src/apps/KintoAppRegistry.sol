@@ -261,7 +261,7 @@ contract KintoAppRegistry is
         newSystemContractsExtra[3] = ARB_RETRAYABLE_TX;
         newSystemContractsExtra[4] = address(paymaster);
         for (uint256 i = 0; i < newSystemContracts.length; i++) {
-            newSystemContractsExtra[i + 4] = newSystemContracts[i];
+            newSystemContractsExtra[i + 5] = newSystemContracts[i];
         }
         emit SystemContractsUpdated(systemContracts, newSystemContractsExtra);
         for (uint256 index = 0; index < systemContracts.length; index++) {

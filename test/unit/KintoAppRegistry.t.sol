@@ -514,7 +514,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testUpdateSystemContracts() public {
         // Initial empty system contracts array
         address[] memory initialSystemContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(initialSystemContracts.length, 7);
+        assertEq(initialSystemContracts.length, 9);
 
         // Update system contracts array
         address[] memory newSystemContracts = new address[](2);
@@ -526,9 +526,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify the system contracts array is updated
         address[] memory updatedSystemContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedSystemContracts.length, newSystemContracts.length + 4);
-        assertEq(updatedSystemContracts[4], newSystemContracts[0]);
-        assertEq(updatedSystemContracts[5], newSystemContracts[1]);
+        assertEq(updatedSystemContracts.length, newSystemContracts.length + 5);
+        assertEq(updatedSystemContracts[5], newSystemContracts[0]);
+        assertEq(updatedSystemContracts[6], newSystemContracts[1]);
     }
 
     function testUpdateSystemContractsWithDifferentLength() public {
@@ -542,9 +542,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify initial update
         address[] memory updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 6);
-        assertEq(updatedContracts[4], address(1));
-        assertEq(updatedContracts[5], address(2));
+        assertEq(updatedContracts.length, 7);
+        assertEq(updatedContracts[5], address(1));
+        assertEq(updatedContracts[6], address(2));
 
         // Update with 3 contracts (increasing length)
         address[] memory newContracts = new address[](3);
@@ -557,10 +557,10 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify update with increased length
         updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 7);
-        assertEq(updatedContracts[4], address(3));
-        assertEq(updatedContracts[5], address(4));
-        assertEq(updatedContracts[6], address(5));
+        assertEq(updatedContracts.length, 8);
+        assertEq(updatedContracts[5], address(3));
+        assertEq(updatedContracts[6], address(4));
+        assertEq(updatedContracts[7], address(5));
 
         // Update with 1 contract (decreasing length)
         address[] memory finalContracts = new address[](1);
@@ -571,8 +571,8 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify update with decreased length
         updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 5);
-        assertEq(updatedContracts[4], address(6));
+        assertEq(updatedContracts.length, 6);
+        assertEq(updatedContracts[5], address(6));
     }
 
     function testUpdateSystemContracts_RevertWhen_CallerIsNotOwner() public {
