@@ -77,13 +77,16 @@ contract KintoIDTest is SharedSetup {
         uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
         assertEq(_kintoID.isKYC(_user), false);
+
         _kintoID.mintIndividualKyc(sigdata, traits);
+
         assertEq(_kintoID.isKYC(_user), true);
         assertEq(_kintoID.isIndividual(_user), true);
         assertEq(_kintoID.mintedAt(_user), block.timestamp);
         assertEq(_kintoID.hasTrait(_user, 1), false);
         assertEq(_kintoID.hasTrait(_user, 2), false);
         assertEq(_kintoID.balanceOf(_user), 1);
+        assertEq(address(_user).balance, 1 ether / 2000);
     }
 
     function testMintCompanyKYC() public {
@@ -100,6 +103,7 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.hasTrait(_user, 2), true);
         assertEq(_kintoID.hasTrait(_user, 5), true);
         assertEq(_kintoID.balanceOf(_user), 1);
+        assertEq(address(_user).balance, 1 ether / 2000);
     }
 
     function testMintIndividualKYC_RevertWhen_InvalidSender() public {
