@@ -21,8 +21,10 @@ contract KintoIDv2 is KintoID {
 contract KintoIDTest is SharedSetup {
     function setUp() public virtual override {
         super.setUp();
+        vm.startPrank(_owner);
         KintoIDv2 _implementationWithFaucet = new KintoIDv2(address(_walletFactory), address(_faucet));
         _kintoID.upgradeTo(address(_implementationWithFaucet));
+        vm.stopPrank();
     }
 
     /* ============ Upgrade tests ============ */
