@@ -174,8 +174,8 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_DepositLocked() public {
-        uint256 balance = _user.balance;
         approveKYC(_kycProvider, _user, _userPk);
+        uint256 balance = _user.balance;
 
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(_user);
