@@ -14,6 +14,9 @@ contract ContractCallTest is SharedSetup {
     bytes4 internal emptySelector = bytes4(0);
     bytes4 internal selector = hex"deadcafe";
     bytes internal selectorCalldata = hex"deadcafe";
+    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
     function setUp() public virtual override {
         super.setUp();
@@ -203,6 +206,14 @@ contract ContractCallTest is SharedSetup {
     function testIsContractCallAllowedFromEOA_WhenInvalidCases() public view {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(0), new bytes(0), 0), false);
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(0x123), new bytes(0), 0), false);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenHardcodedSystemContracts() public view {
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, selectorCalldata, 0));
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, selectorCalldata, 0));
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ARB_RETRAYABLE_TX, new bytes(0), 0));
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(_paymaster), new bytes(0), 0));
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(_kintoAppRegistry), new bytes(0), 0));
     }
 
     /* ============ Helpers ============ */
