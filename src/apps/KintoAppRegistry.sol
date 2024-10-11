@@ -107,7 +107,7 @@ contract KintoAppRegistry is
     address[] public override systemContracts;
 
     /// @notice Mapping to check if an address is a system contract
-    mapping(address => bool) public override isSystemContract;
+    mapping(address => bool) private _isSystemContract;
 
     /// @notice Mapping of deployer EOAs to their associated wallet addresses
     mapping(address => address) public override deployerToWallet;
@@ -254,23 +254,14 @@ contract KintoAppRegistry is
 
     /// @inheritdoc IKintoAppRegistry
     function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
-        address[] memory newSystemContractsExtra = new address[](newSystemContracts.length + 5);
-        newSystemContractsExtra[0] = address(this);
-        newSystemContractsExtra[1] = ENTRYPOINT_V6;
-        newSystemContractsExtra[2] = ENTRYPOINT_V7;
-        newSystemContractsExtra[3] = ARB_RETRAYABLE_TX;
-        newSystemContractsExtra[4] = address(paymaster);
-        for (uint256 i = 0; i < newSystemContracts.length; i++) {
-            newSystemContractsExtra[i + 5] = newSystemContracts[i];
-        }
-        emit SystemContractsUpdated(systemContracts, newSystemContractsExtra);
+        emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
-            isSystemContract[systemContracts[index]] = false;
+            _isSystemContract[systemContracts[index]] = false;
         }
-        for (uint256 index = 0; index < newSystemContractsExtra.length; index++) {
-            isSystemContract[newSystemContractsExtra[index]] = true;
+        for (uint256 index = 0; index < newSystemContracts.length; index++) {
+            _isSystemContract[newSystemContracts[index]] = true;
         }
-        systemContracts = newSystemContractsExtra;
+        systemContracts = newSystemContracts;
     }
 
     /// @inheritdoc IKintoAppRegistry
@@ -371,7 +362,7 @@ contract KintoAppRegistry is
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
         // Calls to system contracts are allwed for any EOA
-        if (isSystemContract[to]) return true;
+        if (isSystemContract(to)) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
         if (to == address(0) || to == CREATE2) {
@@ -449,7 +440,7 @@ contract KintoAppRegistry is
         }
 
         // Calls to system contracts are allowed for any EOA
-        if (isSystemContract[destination]) return true;
+        if (isSystemContract(destination)) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
         if (destination == address(0) || destination == CREATE2) {
@@ -495,8 +486,23 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
+    function isSystemContract(address addr) public view override returns (bool) {
+        return addr == address(this) || addr == ENTRYPOINT_V6 || addr == ENTRYPOINT_V7 || addr == ARB_RETRAYABLE_TX
+            || addr == address(paymaster) || _isSystemContract[addr];
+    }
+
+    /// @inheritdoc IKintoAppRegistry
     function getSystemContracts() external view returns (address[] memory) {
-        return systemContracts;
+        address[] memory finalContracts = new address[](systemContracts.length + 5);
+        finalContracts[0] = address(this);
+        finalContracts[1] = ENTRYPOINT_V6;
+        finalContracts[2] = ENTRYPOINT_V7;
+        finalContracts[3] = ARB_RETRAYABLE_TX;
+        finalContracts[4] = address(paymaster);
+        for (uint256 i = 0; i < systemContracts.length; i++) {
+            finalContracts[i + 5] = systemContracts[i];
+        }
+        return finalContracts;
     }
 
     /// @inheritdoc IKintoAppRegistry
@@ -588,7 +594,7 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV17 is KintoAppRegistry {
+contract KintoAppRegistryV19 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
         KintoAppRegistry(_walletFactory, _paymaster)
     {}
