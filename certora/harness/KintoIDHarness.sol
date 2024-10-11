@@ -5,7 +5,7 @@ import { KintoID } from "src/KintoID.sol";
 
 contract KintoIDHarness is KintoID {
 
-    constructor(address _walletFactory) KintoID(_walletFactory) {}
+    constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 
     function unsafeOwnerOf(uint256 tokenId) external view returns (address) {
         return _ownerOf(tokenId);
