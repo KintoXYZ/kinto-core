@@ -35,7 +35,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     // calculated cost of the postOp
     uint256 public constant COST_OF_POST = 200_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 530_000;
-    uint256 public constant MAX_COST_OF_PREVERIFICATION = 2_500_000;
+    uint256 public constant MAX_COST_OF_PREVERIFICATION = 4_000_000;
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
@@ -350,6 +350,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV11 is SponsorPaymaster {
+contract SponsorPaymasterV13 is SponsorPaymaster {
     constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }
