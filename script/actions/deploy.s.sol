@@ -202,7 +202,8 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         (engenGovernance) = deployGovernance();
 
         // deploy & upgrade KintoID implementation (passing the factory)
-        bytes memory bytecode = abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory), address(faucet)));
+        bytes memory bytecode =
+            abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory), address(faucet)));
         kintoIDImpl = KintoID(_deployImplementation("KintoID", type(KintoID).creationCode, bytecode, true));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         kintoID.upgradeTo(address(kintoIDImpl));
