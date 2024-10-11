@@ -11,7 +11,7 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 
 contract KintoIDv2 is KintoID {
-    constructor(address _walletFactory) KintoID(_walletFactory) {}
+    constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -19,15 +19,17 @@ contract KintoIDv2 is KintoID {
 }
 
 contract KintoIDTest is SharedSetup {
-    function testUp() public view override {
-        assertEq(_kintoID.name(), "Kinto ID");
-        assertEq(_kintoID.symbol(), "KINTOID");
+    function setUp() public virtual override {
+        super.setUp();
+        KintoIDv2 _implementationWithFaucet = new KintoIDv2(address(_walletFactory), address(_faucet));
+        _kintoID.upgradeTo(address(_implementationWithFaucet));
     }
+
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
         _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
@@ -36,7 +38,7 @@ contract KintoIDTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
 
         bytes memory err = abi.encodePacked(
             "AccessControl: account ",
@@ -58,7 +60,7 @@ contract KintoIDTest is SharedSetup {
         // upgrade from the _upgrader account
         assertEq(true, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
 
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
         vm.prank(_upgrader);
         _kintoID.upgradeTo(address(_implementationV2));
 
