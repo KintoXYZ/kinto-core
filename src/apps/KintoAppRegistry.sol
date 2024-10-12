@@ -362,7 +362,7 @@ contract KintoAppRegistry is
      */
     function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
         // Calls to system contracts are allwed for any EOA
-        if (isSystemContract(to)) return true;
+        if (_isSystemContract[to]) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
         if (to == address(0) || to == CREATE2) {
@@ -395,7 +395,6 @@ contract KintoAppRegistry is
     }
 
     /**
-     * @inheritdoc IKintoAppRegistry
      * @dev This function checks various conditions to decide if an EOA can call a specific contract:
      *      1. Allows calls to system contracts from any EOA
      *      2. Checks if the EOA has a linked wallet
