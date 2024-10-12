@@ -24,6 +24,9 @@ contract KintoAppRegistryTest is SharedSetup {
     address internal appContract0 = makeAddr("appContract0");
     address internal sponsorContract0 = makeAddr("sponsorContract0");
     address internal sponsorContract1 = makeAddr("sponsorContract1");
+    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
     function setUp() public virtual override {
         super.setUp();
@@ -48,6 +51,13 @@ contract KintoAppRegistryTest is SharedSetup {
             KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI(),
             "https://kinto.xyz/metadata/kintoapp/"
         );
+
+        address[] memory systemContracts = _kintoAppRegistry.getSystemContracts();
+        assertEq(systemContracts[0], address(_kintoAppRegistry));
+        assertEq(systemContracts[1], address(ENTRYPOINT_V6));
+        assertEq(systemContracts[2], address(ENTRYPOINT_V7));
+        assertEq(systemContracts[3], address(ARB_RETRAYABLE_TX));
+        assertEq(systemContracts[4], address(_paymaster));
     }
 
     /* ============ Upgrade ============ */
