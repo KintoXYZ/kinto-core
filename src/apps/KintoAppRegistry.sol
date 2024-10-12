@@ -593,7 +593,7 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV19 is KintoAppRegistry {
+contract KintoAppRegistryV20 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
         KintoAppRegistry(_walletFactory, _paymaster)
     {}
