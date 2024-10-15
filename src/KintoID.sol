@@ -13,6 +13,7 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol";
 
 import {IKintoID} from "./interfaces/IKintoID.sol";
+import {IFaucet} from "./interfaces/IFaucet.sol";
 
 /**
  * @title Kinto ID
@@ -63,13 +64,14 @@ contract KintoID is
     mapping(address => address) public override recoveryTargets;
 
     address public immutable override walletFactory;
-
+    address public immutable override faucet;
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _walletFactory) {
+    constructor(address _walletFactory, address _faucet) {
         _disableInitializers();
         walletFactory = _walletFactory;
+        faucet = _faucet;
     }
 
     function initialize() external initializer {
@@ -174,6 +176,7 @@ contract KintoID is
 
         nonces[_signatureData.signer]++;
         _safeMint(_signatureData.signer, _tokenId);
+        IFaucet(faucet).claimOnCreation(_signatureData.signer);
     }
 
     /* ============ Burn ============ */
@@ -518,5 +521,5 @@ contract KintoID is
 }
 
 contract KintoIDV7 is KintoID {
-    constructor(address _walletFactory) KintoID(_walletFactory) {}
+    constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 }

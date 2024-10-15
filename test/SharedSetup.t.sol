@@ -108,6 +108,9 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.prank(_owner);
         _kintoID.grantRole(role, _kycProvider);
 
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
         // approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
 
