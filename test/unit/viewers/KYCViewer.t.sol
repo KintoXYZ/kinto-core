@@ -99,12 +99,6 @@ contract KYCViewerTest is SharedSetup {
         vm.prank(_owner);
         _kintoID.addTrait(_owner, 840);
 
-        // Verify that the trait was set correctly
-        bool hasTraitDirect = _kintoID.hasTrait(_owner, 840);
-
-        // Check trait through KYCViewer
-        bool hasTraitViaViewer = _kycViewer.hasTrait(_owner, 840);
-
         // Get the country code
         uint16 countryCode = _kycViewer.getCountry(_owner);
 
@@ -131,7 +125,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.walletBalance, address(_kintoWallet).balance);
         assertEq(userInfo.walletPolicy, _kintoWallet.signerPolicy());
         assertEq(userInfo.walletOwners.length, 1);
-        assertEq(userInfo.claimedFaucet, false);
+        assertEq(userInfo.claimedFaucet, true);
         assertEq(userInfo.engenCreditsEarned, 5e18);
         assertEq(userInfo.engenCreditsClaimed, 0);
         assertEq(userInfo.hasNFT, true);
@@ -154,7 +148,7 @@ contract KYCViewerTest is SharedSetup {
         assertEq(userInfo.walletOwners.length, 0);
         assertEq(userInfo.engenCreditsEarned, 0);
         assertEq(userInfo.engenCreditsClaimed, 0);
-        assertEq(userInfo.claimedFaucet, false);
+        assertEq(userInfo.claimedFaucet, true);
         assertEq(userInfo.hasNFT, true);
         assertEq(userInfo.isKYC, _kycViewer.isKYC(_owner));
     }

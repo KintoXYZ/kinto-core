@@ -2,7 +2,7 @@ const fs = require('fs');
 const csv = require('csv-parse/sync');
 
 // Read the CSV file
-const input = fs.readFileSync('./script/data/weETH_final_distribution.csv', 'utf8');
+const input = fs.readFileSync('./script/data/ETHFI_finalv2_distribution.csv', 'utf8');
 
 // Parse the CSV data
 const records = csv.parse(input, {
@@ -16,14 +16,15 @@ let totalTokens = 0n;
 
 records.forEach(record => {
   console.log('record:', record)
-  const wallet = record['Kinto Wallet'];
+  const wallet = record['wallet'];
   console.log('wallet:', wallet)
-  const amountStr = record['August 17'];
+  const amountStr = record['ETHFI'];
   // Remove the comma and convert to cents (multiply by 100)
-  const valueInCents = BigInt(Math.round(parseFloat(amountStr .replace(",", "")) * 100));
+  // 5,294.84289046560000000
+  const valueInCents = BigInt(Math.round(parseFloat(amountStr.replace(",", "")) * 1e17));
 
-  // Multiply by 10^16 to get to 1e18 (since we're already at 100 cents)
-  const amount = valueInCents * BigInt(10**16);
+  // Multiply by 10 to get to 1e18 (since we're already at 1e17 cents)
+  const amount = valueInCents * BigInt(10);
   console.log('amount:', amount)
 
   totalTokens += amount;
@@ -37,6 +38,6 @@ records.forEach(record => {
 console.log('totalTokens:', totalTokens)
 
 // Write the output to a JSON file
-fs.writeFileSync('./script/data/weETH_final_distribution.json', JSON.stringify(output, null, 2));
+fs.writeFileSync('./script/data/ETHFI_finalv2_distribution.json', JSON.stringify(output, null, 2));
 
 console.log('Conversion complete. Check output.json for the result.');

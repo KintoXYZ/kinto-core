@@ -2,10 +2,47 @@
 
 pragma solidity ^0.8.18;
 
-import "@kinto-core-test/SharedSetup.t.sol";
+import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Errors} from "@openzeppelin-5.0.1/contracts/interfaces/draft-IERC6093.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 
 contract RecoveryTest is SharedSetup {
+    using SafeERC20 for IERC20;
+
+    function setUp() public override {
+        super.setUp();
+
+        address admin = createUser("admin");
+        address minter = createUser("minter");
+        address upgrader = createUser("upgrader");
+
+        vm.etch(KINTO_TOKEN, address(new BridgedKinto()).code);
+        BridgedKinto token = BridgedKinto(KINTO_TOKEN);
+        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
+
+        vm.prank(minter);
+        token.mint(address(_kintoWallet), 5e18);
+    }
+
     /* ============ Recovery tests ============ */
+
+    function testComplete_RevertWhen_NoTokens() public {
+        vm.prank(address(_walletFactory));
+        _kintoWallet.startRecovery();
+
+        vm.prank(address(_kintoWallet));
+        _kintoWallet.cancelRecovery();
+
+        vm.prank(address(_walletFactory));
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, address(_kintoWallet), 0, 5e18)
+        );
+        _kintoWallet.startRecovery();
+    }
 
     function testStartRecovery() public {
         vm.prank(address(_walletFactory));

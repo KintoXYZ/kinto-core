@@ -6,4 +6,5 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title Interface for Solv Wrap Router
 interface ISftWrapRouter {
     function createSubscription(bytes32 poolId, uint256 currencyAmount) external returns (uint256 shareValue);
+    function createRedemption(bytes32 poolId, uint256 redeemAmount) external returns (uint256 redemptionId);
 }

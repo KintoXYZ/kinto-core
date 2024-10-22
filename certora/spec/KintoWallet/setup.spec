@@ -36,7 +36,7 @@ methods {
     function _.isKYC(address account) external with (env e) => isKYC_CVL(e.block.timestamp, account) expect bool;
 
     /// appRegistry
-    function appRegistry.getSponsor(address) external returns (address) envfree;
+    function appRegistry.getApp(address) external returns (address) envfree;
     function appRegistry.tokenURI(uint256) external returns (string) => NONDET DELETE;
 }
 

@@ -111,7 +111,7 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(metadata.gasLimitPeriod, appLimits[2]);
         assertEq(metadata.gasLimitCost, appLimits[3]);
         assertEq(_kintoAppRegistry.isSponsored(parentContract, appContract0), true);
-        assertEq(_kintoAppRegistry.getSponsor(appContract0), parentContract);
+        assertEq(_kintoAppRegistry.getApp(appContract0), parentContract);
         assertEq(metadata.devEOAs[0], eoas[0]);
 
         // check child limits
@@ -292,8 +292,6 @@ contract KintoAppRegistryTest is SharedSetup {
 
     function testRegisterApp_RevertWhenAppContractIsParentContact() public {
         string memory name = "app";
-        address parentContract = address(123);
-
         approveKYC(_kycProvider, _user, _userPk);
 
         address[] memory appContracts = new address[](1);
@@ -583,6 +581,130 @@ contract KintoAppRegistryTest is SharedSetup {
         vm.prank(_user);
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.updateSystemContracts(newSystemContracts);
+    }
+
+    /* ============ updateSystemApps ============ */
+
+    function testUpdateSystemApps() public {
+        // Initial empty system apps array
+        address[] memory initialSystemApps = _kintoAppRegistry.getSystemApps();
+        assertEq(initialSystemApps.length, 0);
+
+        // Update system apps array
+        address[] memory newSystemApps = new address[](2);
+        newSystemApps[0] = address(1);
+        newSystemApps[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(newSystemApps);
+
+        // Verify the system apps array is updated
+        address[] memory updatedSystemApps = _kintoAppRegistry.getSystemApps();
+        assertEq(updatedSystemApps.length, newSystemApps.length);
+        assertEq(updatedSystemApps[0], newSystemApps[0]);
+        assertEq(updatedSystemApps[1], newSystemApps[1]);
+
+        // Check isSystemApp mapping
+        assertTrue(_kintoWallet.isAppApproved(address(1)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(1)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(2)));
+        assertFalse(_kintoAppRegistry.isSystemApp(address(3)));
+    }
+
+    function testUpdateSystemAppsWithDifferentLength() public {
+        // Initial update with 2 apps
+        address[] memory initialApps = new address[](2);
+        initialApps[0] = address(1);
+        initialApps[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(initialApps);
+
+        // Verify initial update
+        address[] memory updatedApps = _kintoAppRegistry.getSystemApps();
+        assertEq(updatedApps.length, 2);
+        assertEq(updatedApps[0], address(1));
+        assertEq(updatedApps[1], address(2));
+
+        // Update with 3 apps (increasing length)
+        address[] memory newApps = new address[](3);
+        newApps[0] = address(3);
+        newApps[1] = address(4);
+        newApps[2] = address(5);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(newApps);
+
+        // Verify update with increased length
+        updatedApps = _kintoAppRegistry.getSystemApps();
+        assertEq(updatedApps.length, 3);
+        assertEq(updatedApps[0], address(3));
+        assertEq(updatedApps[1], address(4));
+        assertEq(updatedApps[2], address(5));
+
+        // Check isSystemApp mapping
+        assertFalse(_kintoAppRegistry.isSystemApp(address(1)));
+        assertFalse(_kintoAppRegistry.isSystemApp(address(2)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(3)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(4)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(5)));
+
+        // Update with 1 app (decreasing length)
+        address[] memory finalApps = new address[](1);
+        finalApps[0] = address(6);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(finalApps);
+
+        // Verify update with decreased length
+        updatedApps = _kintoAppRegistry.getSystemApps();
+        assertEq(updatedApps.length, 1);
+        assertEq(updatedApps[0], address(6));
+
+        // Check isSystemApp mapping
+        assertFalse(_kintoAppRegistry.isSystemApp(address(3)));
+        assertFalse(_kintoAppRegistry.isSystemApp(address(4)));
+        assertFalse(_kintoAppRegistry.isSystemApp(address(5)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(6)));
+    }
+
+    function testUpdateSystemApps_RevertWhen_CallerIsNotOwner() public {
+        address[] memory newSystemApps = new address[](2);
+        newSystemApps[0] = address(1);
+        newSystemApps[1] = address(2);
+
+        vm.prank(_user);
+        vm.expectRevert("Ownable: caller is not the owner");
+        _kintoAppRegistry.updateSystemApps(newSystemApps);
+    }
+
+    function testUpdateSystemApps_CorrectlyUpdatesIsSystemAppMapping() public {
+        // Initial update
+        address[] memory initialApps = new address[](2);
+        initialApps[0] = address(1);
+        initialApps[1] = address(2);
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(initialApps);
+
+        // Verify initial mapping
+        assertTrue(_kintoAppRegistry.isSystemApp(address(1)));
+        assertTrue(_kintoAppRegistry.isSystemApp(address(2)));
+        assertFalse(_kintoAppRegistry.isSystemApp(address(3)));
+
+        // Update with new apps
+        address[] memory newApps = new address[](2);
+        newApps[0] = address(2); // Keep one existing app
+        newApps[1] = address(3); // Add a new app
+
+        vm.prank(_owner);
+        _kintoAppRegistry.updateSystemApps(newApps);
+
+        // Verify updated mapping
+        assertFalse(_kintoAppRegistry.isSystemApp(address(1))); // Should be removed
+        assertTrue(_kintoAppRegistry.isSystemApp(address(2))); // Should still be true
+        assertTrue(_kintoAppRegistry.isSystemApp(address(3))); // Should be added
+        assertFalse(_kintoAppRegistry.isSystemApp(address(4))); // Random address should be false
     }
 
     /* ============ updateReservedContracts ============ */

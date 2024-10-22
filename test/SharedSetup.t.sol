@@ -23,8 +23,11 @@ import "@kinto-core-script/actions/deploy.s.sol";
 import "forge-std/console2.sol";
 
 abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsReader {
-    Counter counter;
-    uint256[] privateKeys;
+    Counter internal counter;
+    uint256[] internal privateKeys;
+
+    address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
+    address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     address[] internal users;
 
@@ -116,13 +119,16 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         // upgrade KintoId to avoid stale KYC on wrap
         vm.startPrank(_owner);
-        _kintoID.upgradeTo(address(new KintoIdHarness(address(_walletFactory))));
+        _kintoID.upgradeTo(address(new KintoIdHarness(address(_walletFactory), address(_faucet))));
         vm.stopPrank();
 
         // grant kyc provider role to _kycProvider on kintoID
         bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
         vm.prank(_owner);
         _kintoID.grantRole(role, _kycProvider);
+
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
 
         // approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
@@ -226,6 +232,9 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         vm.prank(_faucet.owner());
         _faucet.transferOwnership(_owner);
+
+        // Send K tokens for recovery
+        deal(KINTO_TOKEN, address(_kintoWallet), 5e18);
 
         // change _kintoWallet owner to _owner so we use it on tests
         changeWalletOwner(_owner, _kycProvider);

@@ -33,16 +33,16 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
 
     /* ============ Modifiers ============ */
 
-    modifier onlyFromEntryPointOrOwner(address target) {
-        _onlyFromEntryPointOrOwner(target);
+    modifier onlyFromEntryPointOrOwner() {
+        _onlyFromEntryPointOrOwner();
         _;
     }
 
     // Require the function call went through EntryPoint or owner
-    function _onlyFromEntryPointOrOwner(address target) internal view {
+    function _onlyFromEntryPointOrOwner() internal view {
         // Check that the caller is either the owner or an envoy with permission.
         if (!(msg.sender == address(entryPoint()) || msg.sender == owner)) {
-            revert ExecutionUnauthorized(owner, msg.sender, target);
+            revert ExecutionUnauthorized(owner, msg.sender);
         }
     }
 
@@ -94,11 +94,26 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
         external
         payable
         override
-        onlyFromEntryPointOrOwner(target)
+        onlyFromEntryPointOrOwner
         returns (bytes memory response)
     {
         // Delegate call to the target contract, and handle the response.
         response = _execute(target, data);
+    }
+
+    function executeBatch(address[] calldata target, bytes[] calldata data)
+        external
+        payable
+        override
+        onlyFromEntryPointOrOwner
+        returns (bytes[] memory responses)
+    {
+        if (target.length != data.length) revert ExecuteInvalidInput();
+        responses = new bytes[](target.length);
+        for (uint256 index = 0; index < target.length; index++) {
+            // Delegate call to the target contract, and store the response.
+            responses[index] = _execute(target[index], data[index]);
+        }
     }
 
     /* ============ Internal Functions ============ */
@@ -116,8 +131,11 @@ contract AccessPoint is IAccessPoint, Initializable, BaseAccount, TokenCallbackH
 
         // Delegate call to the target contract.
         bool success;
-        // slither-disable-next-line controlled-delegatecall
+        // slither-disable-start controlled-delegatecall
+        // slither-disable-start delegatecall-loop
         (success, response) = target.delegatecall(data);
+        // slither-disable-end controlled-delegatecall
+        // slither-disable-end delegatecall-loop
 
         // Log the execution.
         emit Execute(target, data, response);

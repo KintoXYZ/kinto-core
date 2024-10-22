@@ -31,9 +31,8 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         // Set USDe and sUSDe to zero, as staking USDe is not supported on Base.
         // Set Curve pool and USDC to zero as we do not support USDM on Base.
         vm.broadcast(deployerPrivateKey);
-        address newImpl = address(
-            new Bridger(EXCHANGE_PROXY, address(0), address(0), WETH, address(0), address(0), address(0), address(0))
-        );
+        address newImpl =
+            address(new Bridger(EXCHANGE_PROXY, address(0), WETH, address(0), address(0), address(0), address(0)));
 
         vm.prank(bridger.owner());
         bridger.upgradeTo(address(newImpl));
@@ -42,6 +41,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         assertEq(bridger.senderAccount(), SENDER_ACCOUNT, "Invalid Sender Account");
         // Mamori Safe
         assertEq(bridger.owner(), 0x45e9deAbb4FdD048Ae38Fce9D9E8d68EC6f592a2, "Invalid Owner");
-        saveContractAddress("BridgerV4-impl", newImpl);
+        saveContractAddress("BridgerV6-impl", newImpl);
     }
 }

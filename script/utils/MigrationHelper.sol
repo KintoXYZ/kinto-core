@@ -15,7 +15,7 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
-import "@kinto-core/wallet/KintoWallet.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
 import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
@@ -131,7 +131,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
             _upgradeWallet(impl);
         } else {
             try Ownable(proxy).owner() returns (address owner) {
-                if (owner != kintoAdminWallet) {
+                if (owner != kintoAdminWallet && owner != address(0)) {
                     console2.log(
                         "%s contract is not owned by the KintoWallet-admin, its owner is %s",
                         contractName,

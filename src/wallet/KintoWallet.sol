@@ -6,23 +6,33 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
+
 import "@aa/core/BaseAccount.sol";
 import "@aa/samples/callback/TokenCallbackHandler.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/IKintoEntryPoint.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IEngenCredits.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../governance/EngenGovernance.sol";
-import "../interfaces/IKintoAppRegistry.sol";
-import "../libraries/ByteSignature.sol";
+import {Constants} from "@kinto-core/libraries/Const.sol";
+
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/IKintoEntryPoint.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IEngenCredits.sol";
+import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import "@kinto-core/governance/EngenGovernance.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import "@kinto-core/libraries/ByteSignature.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title KintoWallet
- * @dev Kinto Smart Contract Wallet. Supports EIP-4337.
- *     has execute, eth handling methods and has a single signer
- *     that can send requests through the entryPoint.
+ * @notice A smart contract wallet supporting EIP-4337 with advanced features including multi-signature support,
+ *         recovery mechanisms, and app-specific integrations. This wallet is designed to work within the
+ *         Kinto ecosystem, providing enhanced security and flexibility for users.
+ * @dev Implements account abstraction (EIP-4337) and integrates with various Kinto ecosystem contracts
+ *      such as KintoID for KYC, KintoAppRegistry for app management, and KintoWalletFactory for deployment.
+ *      The contract includes sophisticated signature validation, execution methods, and recovery processes.
+ *      It's designed to be upgradeable and interact securely with whitelisted applications and funders.
  */
 contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKintoWallet {
     using ECDSA for bytes32;
@@ -30,59 +40,120 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     using Address for address;
 
     /* ============ Constants & Immutables ============ */
+
+    /// @inheritdoc IKintoWallet
     IKintoID public immutable override kintoID;
+
+    /// @dev The EntryPoint contract
     IEntryPoint private immutable _entryPoint;
+
+    /// @inheritdoc IKintoWallet
     IKintoAppRegistry public immutable override appRegistry;
+
+    /// @inheritdoc IKintoWallet
     IKintoWalletFactory public immutable override factory;
 
+    /// @inheritdoc IKintoWallet
     uint8 public constant override MAX_SIGNERS = 4;
+
+    /// @inheritdoc IKintoWallet
     uint8 public constant override SINGLE_SIGNER = 1;
+
+    /// @inheritdoc IKintoWallet
     uint8 public constant override MINUS_ONE_SIGNER = 2;
+
+    /// @inheritdoc IKintoWallet
     uint8 public constant override ALL_SIGNERS = 3;
+
+    /// @inheritdoc IKintoWallet
     uint8 public constant override TWO_SIGNERS = 4;
+
+    /// @inheritdoc IKintoWallet
     uint256 public constant override RECOVERY_TIME = 7 days;
-    uint256 public constant WALLET_TARGET_LIMIT = 3; // max number of calls to wallet within a batch
+
+    /// @inheritdoc IKintoWallet
+    uint256 public constant WALLET_TARGET_LIMIT = 5;
+
+    /// @dev Constant indicating successful signature validation
     uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
-    address internal constant SOCKET = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
-    address internal constant ADMIN_WALLET = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
+
+    /// @dev Address of the Bridger contract on Mainnet
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
+
+    /// @dev Address of the Bridger contract on Arbitrum
     address internal constant BRIDGER_ARBITRUM = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
+
+    /// @dev Address of the Bridger contract on Base
     address internal constant BRIDGER_BASE = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
-    address internal constant REWARDS_DISTRIBUTOR = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
+
+    /// @dev Address of the Kinto Token contract
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
+
+    /// @dev Address of the WETH contract
     address internal constant WETH = 0x0E7000967bcB5fC76A5A89082db04ed0Bf9548d8;
+
+    /// @dev Address of the Kinto Treasury
     address internal constant KINTO_TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+    uint256 public constant RECOVERY_PRICE = 5e18;
 
     /* ============ State Variables ============ */
 
-    uint8 public override signerPolicy = 1; // 1 = single signer, 2 = n-1 required, 3 = all required
-    uint256 public override inRecovery; // 0 if not in recovery, timestamp when initiated otherwise
+    /// @inheritdoc IKintoWallet
+    uint8 public override signerPolicy = 1;
 
+    /// @inheritdoc IKintoWallet
+    uint256 public override inRecovery;
+
+    /// @inheritdoc IKintoWallet
     address[] public override owners;
+
+    /// @inheritdoc IKintoWallet
     address public override recoverer;
+
+    /// @inheritdoc IKintoWallet
     mapping(address => bool) public override funderWhitelist;
+
+    /// @inheritdoc IKintoWallet
     mapping(address => address) public override appSigner;
+
+    /// @inheritdoc IKintoWallet
     mapping(address => bool) public override appWhitelist;
 
-    uint256 public override insurancePolicy = 0; // 0 = basic, 1 = premium, 2 = custom
+    /// @inheritdoc IKintoWallet
+    uint256 public override insurancePolicy = 0;
+
+    /// @inheritdoc IKintoWallet
     uint256 public override insuranceTimestamp;
 
     /* ============ Events ============ */
 
+    /// @notice Emitted when the wallet is initialized
     event KintoWalletInitialized(IEntryPoint indexed entryPoint, address indexed owner);
+
+    /// @notice Emitted when the wallet policy is changed
     event WalletPolicyChanged(uint256 newPolicy, uint256 oldPolicy);
+
+    /// @notice Emitted when the recoverer is changed
     event RecovererChanged(address indexed newRecoverer, address indexed recoverer);
+
+    /// @notice Emitted when the signers are changed
     event SignersChanged(address[] newSigners, address[] oldSigners);
+
+    /// @notice Emitted when an app key is created
     event AppKeyCreated(address indexed appKey, address indexed signer);
+
+    /// @notice Emitted when the insurance policy is changed
     event InsurancePolicyChanged(uint256 indexed newPolicy, uint256 indexed oldPolicy);
 
     /* ============ Modifiers ============ */
 
+    /// @notice Ensures the function is called by the wallet itself
     modifier onlySelf() {
         _onlySelf();
         _;
     }
 
+    /// @notice Ensures the function is called by the factory
     modifier onlyFactory() {
         _onlyFactory();
         _;
@@ -90,6 +161,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Constructor & Initializers ============ */
 
+    /**
+     * @notice Constructs the KintoWallet contract
+     * @param __entryPoint The EntryPoint contract address
+     * @param _kintoID The KintoID contract address
+     * @param _kintoApp The KintoAppRegistry contract address
+     * @param _factory The KintoWalletFactory contract address
+     */
     constructor(
         IEntryPoint __entryPoint,
         IKintoID _kintoID,
@@ -103,13 +181,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         _disableInitializers();
     }
 
+    /// @notice Allows the contract to receive Ether
     receive() external payable {}
 
-    /**
-     * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
-     * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
-     * the implementation by calling `upgradeTo()`
-     */
+    /// @inheritdoc IKintoWallet
     function initialize(address anOwner, address _recoverer) external virtual initializer onlyFactory {
         owners.push(anOwner);
         signerPolicy = SINGLE_SIGNER;
@@ -119,9 +194,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Execution methods ============ */
 
-    /**
-     * execute a transaction (called directly from entryPoint)
-     */
+    /// @inheritdoc IKintoWallet
     function execute(address dest, uint256 value, bytes calldata func) external override {
         _requireFromEntryPoint();
         _executeInner(dest, value, func, dest);
@@ -129,17 +202,16 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         inRecovery = 0;
     }
 
-    /**
-     * execute a sequence of transactions
-     */
+    /// @inheritdoc IKintoWallet
     function executeBatch(address[] calldata dest, uint256[] calldata values, bytes[] calldata func)
         external
         override
     {
         _requireFromEntryPoint();
         if (dest.length != func.length || values.length != dest.length) revert LengthMismatch();
+        address lastDest = dest[dest.length - 1];
         for (uint256 i = 0; i < dest.length; i++) {
-            _executeInner(dest[i], values[i], func[i], dest[dest.length - 1]);
+            _executeInner(dest[i], values[i], func[i], lastDest);
         }
         // if can transact, cancel recovery
         inRecovery = 0;
@@ -147,19 +219,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Signer Management ============ */
 
-    /**
-     * @dev Change signer policy
-     * @param newPolicy new policy
-     */
+    /// @inheritdoc IKintoWallet
     function setSignerPolicy(uint8 newPolicy) public override onlySelf {
         _checkSignerPolicy(newPolicy, owners.length);
         _setSignerPolicy(newPolicy);
     }
 
-    /**
-     * @dev Change signers and policy (if new)
-     * @param newSigners new signers array
-     */
+    /// @inheritdoc IKintoWallet
     function resetSigners(address[] calldata newSigners, uint8 newPolicy) external override onlySelf {
         if (newSigners.length == 0) revert EmptySigners();
         if (newSigners[0] != owners[0]) revert InvalidSigner(); // first signer must be the same unless recovery
@@ -170,11 +236,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Whitelist Management ============ */
 
-    /**
-     * @dev Changed the valid funderWhitelist addresses
-     * @param newWhitelist new funders array
-     * @param flags whether to allow or disallow the funder
-     */
+    /// @inheritdoc IKintoWallet
     function setFunderWhitelist(address[] calldata newWhitelist, bool[] calldata flags) external override onlySelf {
         if (newWhitelist.length != flags.length) revert LengthMismatch();
         for (uint256 i = 0; i < newWhitelist.length; i++) {
@@ -182,13 +244,10 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
-    /**
-     * @dev Check if a funder is whitelisted or an owner
-     * @param funder funder address
-     * @return whether the funder is whitelisted
-     */
+    /// @inheritdoc IKintoWallet
     function isFunderWhitelisted(address funder) external view override returns (bool) {
         if (isBridgeContract(funder)) return true;
+        if (getAccessPoint() == funder) return true;
         for (uint256 i = 0; i < owners.length; i++) {
             if (owners[i] == funder) {
                 return true;
@@ -197,13 +256,31 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return funderWhitelist[funder];
     }
 
+    /// @inheritdoc IKintoWallet
+    function getAccessPoint() public view returns (address) {
+        return Create2.computeAddress(
+            bytes32(abi.encodePacked(owners[0])),
+            keccak256(
+                abi.encodePacked(
+                    // The reason we need to import the exact bytecode is that Solidity adds metadata,
+                    // including an IPFS hash, to the bytecode,
+                    // which may change even if the actual bytecode remains the same.
+                    Constants.safeBeaconProxyCreationCode,
+                    // access beacon
+                    abi.encode(
+                        address(0xfe56e9D6F04D427D557dff1615398632BB7Dd3e6),
+                        abi.encodeWithSignature("initialize(address)", owners[0])
+                    )
+                )
+            ),
+            // access registry
+            0xA000000eaA652c7023530b603844471294B811c4
+        );
+    }
+
     /* ============ Token & App whitelists ============ */
 
-    /**
-     * @dev Allows the wallet to transact with specific apps
-     * @param apps apps array
-     * @param flags whether to allow or disallow the app
-     */
+    /// @inheritdoc IKintoWallet
     function whitelistApp(address[] calldata apps, bool[] calldata flags) external override onlySelf {
         if (apps.length != flags.length) revert LengthMismatch();
         for (uint256 i = 0; i < apps.length; i++) {
@@ -215,13 +292,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
+    /// @inheritdoc IKintoWallet
+    function isAppApproved(address app) external view override returns (bool) {
+        return appWhitelist[app] || appRegistry.isSystemApp(app);
+    }
+
     /* ============ App Keys ============ */
 
-    /**
-     * @dev Set the app key for a specific app
-     * @param app app address
-     * @param signer signer for the app
-     */
+    /// @inheritdoc IKintoWallet
     function setAppKey(address app, address signer) public override onlySelf {
         // Allow 0 in signer to allow revoking the appkey
         if (app == address(0)) revert InvalidApp();
@@ -231,11 +309,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         emit AppKeyCreated(app, signer);
     }
 
-    /**
-     * @dev Whitelist an app and set the app key
-     * @param app app address
-     * @param signer signer for the app
-     */
+    /// @inheritdoc IKintoWallet
     function whitelistAppAndSetKey(address app, address signer) external override onlySelf {
         appWhitelist[app] = true;
         setAppKey(app, signer);
@@ -243,19 +317,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Recovery Process ============ */
 
-    /**
-     * @dev Start the recovery process
-     * Can only be called by the factory through a privileged signer
-     */
+    /// @inheritdoc IKintoWallet
     function startRecovery() external override onlyFactory {
+        IERC20(KINTO_TOKEN).safeTransfer(KINTO_TREASURY, RECOVERY_PRICE);
         inRecovery = block.timestamp;
     }
 
-    /**
-     * @dev Finish the recovery process and resets the signers
-     * Can only be called by the factory through a privileged signer
-     * @param newSigners new signers array
-     */
+    /// @inheritdoc IKintoWallet
     function completeRecovery(address[] calldata newSigners) external override onlyFactory {
         if (newSigners.length == 0) revert EmptySigners();
         if (inRecovery == 0) revert RecoveryNotStarted();
@@ -267,20 +335,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         inRecovery = 0;
     }
 
-    /**
-     * @dev Change the recoverer
-     * @param newRecoverer new recoverer address
-     */
+    /// @inheritdoc IKintoWallet
     function changeRecoverer(address newRecoverer) external override onlyFactory {
         if (newRecoverer == address(0) || newRecoverer == recoverer) revert InvalidRecoverer();
         emit RecovererChanged(newRecoverer, recoverer);
         recoverer = newRecoverer;
     }
 
-    /**
-     * @dev Cancel the recovery process
-     * Can only be called by the account holder if he regains access to his wallet
-     */
+    /// @inheritdoc IKintoWallet
     function cancelRecovery() public override onlySelf {
         if (inRecovery > 0) {
             inRecovery = 0;
@@ -289,11 +351,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Insurance Policy ============ */
 
-    /**
-     * @dev Set the premium policy
-     * @param newPolicy new policy
-     * @param paymentToken token to pay for the policy
-     */
+    /// @inheritdoc IKintoWallet
     function setInsurancePolicy(uint256 newPolicy, address paymentToken) external override onlySelf {
         if (paymentToken != WETH && paymentToken != KINTO_TOKEN) revert InvalidInsurancePayment(paymentToken);
         if (newPolicy > 2 || newPolicy == insurancePolicy) revert InvalidInsurancePolicy(newPolicy);
@@ -306,11 +364,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         insuranceTimestamp = block.timestamp;
     }
 
-    /**
-     * @dev Get the price of the policy
-     * @param newPolicy new policy
-     * @param paymentToken token to pay for the policy
-     */
+    /// @inheritdoc IKintoWallet
     function getInsurancePrice(uint256 newPolicy, address paymentToken) public pure override returns (uint256) {
         uint256 basicPrice = 10e18;
         if (paymentToken == WETH) {
@@ -330,10 +384,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return super.getNonce();
     }
 
+    /// @inheritdoc IKintoWallet
     function getOwnersCount() external view override returns (uint256) {
         return owners.length;
     }
 
+    /// @inheritdoc IKintoWallet
     function getOwners() external view override returns (address[] memory) {
         return owners;
     }
@@ -356,18 +412,8 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (!kintoID.isKYC(owners[0])) return SIG_VALIDATION_FAILED; // check first owner is KYC'ed
 
         (address target, bool batch) = _decodeCallData(userOp.callData);
-        address app = appRegistry.getSponsor(target);
+        address app = appRegistry.getApp(target);
         bytes32 hashData = userOpHash.toEthSignedMessageHash();
-
-        // todo: remove socket once the app key flow and pimlico errors are gone
-        if ((app == SOCKET || app == REWARDS_DISTRIBUTOR) && address(this) != ADMIN_WALLET) {
-            if (_verifySingleSignature(owners[0], hashData, userOp.signature) == SIG_VALIDATION_SUCCESS) {
-                return ((target != address(this)) && (!batch || _verifyBatch(app, userOp.callData, true)))
-                    ? SIG_VALIDATION_SUCCESS
-                    : SIG_VALIDATION_FAILED;
-            }
-            return SIG_VALIDATION_FAILED;
-        }
 
         // if using an app key, no calls to wallet are allowed
         // check if an app key is set
@@ -396,18 +442,26 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /* ============ Internal/Private Functions ============ */
 
-    /// @dev when `executeBatch` batches user actions, we use the last action on the batch to identify who is the sponsor that will
-    // be paying for all the actions within that batch. The following rules must be met:
-    // - all targets must be either a sponsored contract or a child (same if using an app key)
-    // - no more than WALLET_TARGET_LIMIT ops allowed. If using an app key, NO wallet calls are allowed
-    function _verifyBatch(address sponsor, bytes calldata callData, bool appKey) private view returns (bool) {
+    /**
+     * @notice Verifies batch operations in user actions
+     * @dev When `executeBatch` batches user actions, we use the last action
+     *  on the batch to identify the app that will
+     * be paying for all the actions within that batch. The following rules must be met:
+     * - All targets must be either a sponsored contract or a child (same if using an app key)
+     * - No more than WALLET_TARGET_LIMIT ops allowed. If using an app key, NO wallet calls are allowed
+     * @param app The address of the sponsoring contract
+     * @param callData The calldata of the batch operation
+     * @param appKey Whether an app key is being used
+     * @return bool Indicates whether the batch operation is valid
+     */
+    function _verifyBatch(address app, bytes calldata callData, bool appKey) private view returns (bool) {
         (address[] memory targets,,) = abi.decode(callData[4:], (address[], uint256[], bytes[]));
         uint256 walletCalls = 0;
 
         // if app key is true, ensure its rules are respected (no wallet calls are allowed and all targets are sponsored or child)
         if (appKey) {
             for (uint256 i = 0; i < targets.length; i++) {
-                if (targets[i] == address(this) || !appRegistry.isSponsored(sponsor, targets[i])) {
+                if (targets[i] == address(this) || !appRegistry.isSponsored(app, targets[i])) {
                     return false;
                 }
             }
@@ -419,7 +473,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
                     if (walletCalls > WALLET_TARGET_LIMIT) {
                         return false;
                     }
-                } else if (!appRegistry.isSponsored(sponsor, targets[i])) {
+                } else if (!appRegistry.isSponsored(app, targets[i])) {
                     return false;
                 }
             }
@@ -427,7 +481,14 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return true;
     }
 
-    // @notice ensures signer has signed the hash
+    /**
+     * @notice Verifies a single signature against a given signer and data hash
+     * @dev Uses ECDSA recovery to verify the signature
+     * @param signer The address of the signer
+     * @param hashData The hash of the data to be signed
+     * @param signature The signature to verify
+     * @return uint256 Returns SIG_VALIDATION_SUCCESS if the signature is valid, SIG_VALIDATION_FAILED otherwise
+     */
     function _verifySingleSignature(address signer, bytes32 hashData, bytes memory signature)
         private
         pure
@@ -439,7 +500,13 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         return _packValidationData(false, 0, 0);
     }
 
-    // @notice ensures required signers have signed the hash
+    /**
+     * @notice Verifies multiple signatures against a given data hash
+     * @dev Checks if the required number of valid signatures are present based on the current signer policy
+     * @param hashData The hash of the data to be signed
+     * @param signature The concatenated signatures to verify
+     * @return bool Indicates whether the required number of valid signatures are present
+     */
     function _verifyMultipleSignatures(bytes32 hashData, bytes memory signature) private view returns (bool) {
         // calculate required signers
         uint256 requiredSigners;
@@ -474,8 +541,9 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     }
 
     /**
-     * @dev Change signer policy
-     * @param newPolicy new policy
+     * @notice Changes the signer policy for the wallet
+     * @dev Updates the signerPolicy state variable and emits a WalletPolicyChanged event
+     * @param newPolicy The new signer policy to set
      */
     function _setSignerPolicy(uint8 newPolicy) internal {
         if (newPolicy == 0 || newPolicy > 4 || newPolicy == signerPolicy) {
@@ -486,8 +554,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         signerPolicy = newPolicy;
     }
 
-    // @dev SINGLE_SIGNER policy expects the wallet to have only one owner though this is not enforced.
-    // Any "extra" owners won't be considered when validating the signature.
+    /**
+     * @notice Resets the signers for the wallet and optionally changes the policy
+     * @dev Updates the owners array and optionally calls _setSignerPolicy
+     * @param newSigners The new set of signers
+     * @param newPolicy The new signer policy to set
+     */
     function _resetSigners(address[] calldata newSigners, uint8 newPolicy) internal {
         if (newSigners.length > MAX_SIGNERS) revert MaxSignersExceeded(newSigners.length);
         if (newSigners[0] == address(0) || !kintoID.isKYC(newSigners[0])) revert KYCRequired();
@@ -515,6 +587,12 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         emit SignersChanged(newSigners, owners);
     }
 
+    /**
+     * @notice Checks if the new signer policy is valid for the given number of signers
+     * @dev Validates the policy against the number of signers to ensure it's a valid configuration
+     * @param newPolicy The new signer policy to check
+     * @param newSigners The number of new signers
+     */
     function _checkSignerPolicy(uint8 newPolicy, uint256 newSigners) internal view {
         // reverting to SingleSigner is not allowed for security reasons
         if (newPolicy == SINGLE_SIGNER && signerPolicy != SINGLE_SIGNER) {
@@ -527,32 +605,56 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         }
     }
 
+    /**
+     * @notice Ensures the function is called by the wallet itself
+     * @dev Throws an error if the caller is not the wallet contract
+     */
     function _onlySelf() internal view {
         // directly through the account itself (which gets redirected through execute())
         if (msg.sender != address(this)) revert OnlySelf();
     }
 
+    /**
+     * @notice Ensures the function is called by the factory
+     * @dev Throws an error if the caller is not the wallet factory
+     */
     function _onlyFactory() internal view {
         //directly through the factory
         if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
     }
 
+    /**
+     * @notice Executes a single transaction from the wallet
+     * @dev Performs checks on the destination and executes the transaction
+     * @param dest The destination address for the transaction
+     * @param value The amount of ETH to send with the transaction
+     * @param func The function data to execute
+     * @param lastAddress The last address in the batch (used for identifying the sponsor)
+     */
     function _executeInner(address dest, uint256 value, bytes calldata func, address lastAddress) internal {
-        // if target is a contract, check if it's whitelisted
-        address sponsor = appRegistry.getSponsor(lastAddress);
-        bool validChild = dest == lastAddress || appRegistry.isSponsored(sponsor, dest);
-        bool isNotAppSponsored = !appWhitelist[sponsor] || !validChild;
-        bool isNotSystemApproved = dest != address(this) && sponsor != SOCKET && sponsor != REWARDS_DISTRIBUTOR;
-        if (isNotAppSponsored && isNotSystemApproved) {
-            revert AppNotWhitelisted(sponsor, dest);
+        address app = appRegistry.getApp(lastAddress);
+        // wallet is always whitelisted to call itself
+        if (dest != address(this) && !appWhitelist[app] && !appRegistry.isSystemApp(app)) {
+            revert AppNotWhitelisted(app, dest);
+        }
+
+        // wallet is always sponsored to call itself
+        if (dest != address(this) && !appRegistry.isSponsored(app, dest)) {
+            revert AppNotSponsored(app, dest);
         }
 
         dest.functionCallWithValue(func, value);
     }
 
-    // extracts `target` contract and whether it is an execute or executeBatch call from the callData
-    // @dev the last op on a batch MUST always be a contract whose sponsor is the one we want to
-    // bear with the gas cost of all ops
+    /**
+     * @notice Decodes the calldata to extract target contract and operation type
+     * @dev Extracts `target` contract and whether it is an execute or executeBatch call from the callData
+     * The last op on a batch MUST always be a contract whose sponsor is the one we want to
+     * bear with the gas cost of all ops
+     * @param callData The calldata to decode
+     * @return target The target contract address
+     * @return batched Whether the call is a batch operation
+     */
     function _decodeCallData(bytes calldata callData) private pure returns (address target, bool batched) {
         bytes4 selector = bytes4(callData[:4]); // extract the function selector from the callData
 

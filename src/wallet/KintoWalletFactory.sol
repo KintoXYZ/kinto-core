@@ -232,7 +232,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param recoverer The recoverer address
      */
     function sendMoneyToRecoverer(address wallet, address recoverer) external payable override {
-        if (recoverer.balance > 0) revert InvalidRecoverer(recoverer);
         if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
         if (recoverer != IKintoWallet(wallet).recoverer()) {
             revert OnlyRecoverer(recoverer, IKintoWallet(wallet).recoverer());

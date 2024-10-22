@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import "@aa/interfaces/IEntryPoint.sol";
 import "@aa/core/EntryPoint.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 
 import "@kinto-core/wallet/KintoWalletFactory.sol";
 import "@kinto-core/KintoID.sol";
@@ -39,6 +40,21 @@ contract KintoWalletFactoryUpgrade is KintoWalletFactory {
 
 contract KintoWalletFactoryTest is SharedSetup {
     using SignatureChecker for address;
+
+    function setUp() public override {
+        super.setUp();
+
+        address admin = createUser("admin");
+        address minter = createUser("minter");
+        address upgrader = createUser("upgrader");
+
+        vm.etch(KINTO_TOKEN, address(new BridgedKinto()).code);
+        BridgedKinto token = BridgedKinto(KINTO_TOKEN);
+        token.initialize("KINTO TOKEN", "KINTO", admin, minter, upgrader);
+
+        vm.prank(minter);
+        token.mint(address(_kintoWallet), 5e18);
+    }
 
     function testUp() public override {
         super.testUp();
@@ -357,8 +373,9 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         vm.deal(_user, 1 ether);
         vm.prank(_user);
+        uint256 balance = address(_user2).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
-        assertEq(address(_user2).balance, 1e18);
+        assertEq(address(_user2).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() public {
@@ -381,8 +398,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
         revokeKYC(_kycProvider, _owner, _ownerPk);
         vm.prank(_owner);
+        uint256 balance = address(_user).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user));
-        assertEq(address(_user).balance, 1e18);
+        assertEq(address(_user).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCProvider_WhenTargetKYCProvider() public {
@@ -578,13 +596,6 @@ contract KintoWalletFactoryTest is SharedSetup {
         _walletFactory.sendMoneyToRecoverer{value: amount}(address(_kintoWallet), _recoverer);
 
         assertEq(_recoverer.balance, amount);
-    }
-
-    function testSendMoneyToRecoverer_RevertWhenInvalidRecoverer() public {
-        vm.deal(_recoverer, 1);
-        vm.prank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidRecoverer.selector, address(_recoverer)));
-        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), _recoverer);
     }
 
     function testSendMoneyToRecoverer_RevertWhenInvalidWallet() public {

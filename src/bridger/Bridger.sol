@@ -18,7 +18,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
@@ -109,8 +109,6 @@ contract Bridger is
     bytes32 public immutable override domainSeparator;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
-    /// @notice The address of the Curve pool for USDM.
-    address public immutable usdmCurvePool;
     /// @notice The address of Angel Swapper on Arbitrum.
     address public constant angleSwapper = 0xD253b62108d1831aEd298Fc2434A5A8e4E418053;
 
@@ -150,7 +148,6 @@ contract Bridger is
      */
     constructor(
         address exchange,
-        address usdmCurveAmm,
         address usdc,
         address weth,
         address dai,
@@ -169,7 +166,6 @@ contract Bridger is
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
-        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
@@ -222,16 +218,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -265,16 +253,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer.
         PERMIT2.permit(depositData.signer, permitSingle, permit2Signature);
 
@@ -303,7 +283,8 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+    ) external override whenNotPaused nonReentrant returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -320,6 +301,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
+        if (msg.value != (amount + bridgeData.gasFee)) revert InvalidAmount(amount);
         if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
@@ -376,6 +358,7 @@ contract Bridger is
         if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
+
         // Bridge the final amount to Kinto
         // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
@@ -426,6 +409,11 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
+        if (inputAsset == wUSDM) {
+            amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
+            inputAsset = USDM;
+        }
+
         // If the final asset is different from the input asset, perform the swap
         if (finalAsset != inputAsset) {
             amountBought = _fillQuote(
@@ -442,20 +430,13 @@ contract Bridger is
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
-            amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
+            amountBought = IERC4626(sUSDe).deposit(balance, address(this));
         }
 
         // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
         if (finalAsset == wUSDM) {
-            // 0 coin == USDC
-            // 1 coin == USDM
-            uint256 balance = IERC20(USDC).balanceOf(address(this));
-            IERC20(USDC).safeApprove(usdmCurvePool, balance);
-            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
-            amountBought =
-                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
             // wrap USDM to wUSDM
-            balance = IERC20(USDM).balanceOf(address(this));
+            uint256 balance = IERC20(USDM).balanceOf(address(this));
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }

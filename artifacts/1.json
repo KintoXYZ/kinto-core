@@ -1,5 +1,487 @@
 {
   "contracts": {
+    "AccessPoint": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "entryPoint_",
+              "type": "address",
+              "internalType": "contract IEntryPoint"
+            },
+            {
+              "name": "registry_",
+              "type": "address",
+              "internalType": "contract IAccessRegistry"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "fallback",
+          "stateMutability": "payable"
+        },
+        {
+          "type": "receive",
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "entryPoint",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IEntryPoint"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "execute",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "data",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "response",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "executeBatch",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "data",
+              "type": "bytes[]",
+              "internalType": "bytes[]"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "responses",
+              "type": "bytes[]",
+              "internalType": "bytes[]"
+            }
+          ],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "getNonce",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "initialize",
+          "inputs": [
+            {
+              "name": "owner_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "onERC1155BatchReceived",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes4",
+              "internalType": "bytes4"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "onERC1155Received",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes4",
+              "internalType": "bytes4"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "onERC721Received",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes4",
+              "internalType": "bytes4"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "owner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "registry",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IAccessRegistry"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "supportsInterface",
+          "inputs": [
+            {
+              "name": "interfaceId",
+              "type": "bytes4",
+              "internalType": "bytes4"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "validateUserOp",
+          "inputs": [
+            {
+              "name": "userOp",
+              "type": "tuple",
+              "internalType": "struct PackedUserOperation",
+              "components": [
+                {
+                  "name": "sender",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "nonce",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "initCode",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "callData",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "accountGasLimits",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "preVerificationGas",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "gasFees",
+                  "type": "bytes32",
+                  "internalType": "bytes32"
+                },
+                {
+                  "name": "paymasterAndData",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "signature",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "userOpHash",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "missingAccountFunds",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "validationData",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "event",
+          "name": "Execute",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "data",
+              "type": "bytes",
+              "indexed": false,
+              "internalType": "bytes"
+            },
+            {
+              "name": "response",
+              "type": "bytes",
+              "indexed": false,
+              "internalType": "bytes"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Initialized",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "uint64",
+              "indexed": false,
+              "internalType": "uint64"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "ECDSAInvalidSignature",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ECDSAInvalidSignatureLength",
+          "inputs": [
+            {
+              "name": "length",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ECDSAInvalidSignatureS",
+          "inputs": [
+            {
+              "name": "s",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ExecuteInvalidInput",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ExecutionReverted",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ExecutionUnauthorized",
+          "inputs": [
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "caller",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FallbackIsNotAllowed",
+          "inputs": [
+            {
+              "name": "data",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidInitialization",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "NotInitializing",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "TargetNotContract",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "WorkflowUnauthorized",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ]
+    },
     "AccessRegistry": {
       "abi": [
         {
@@ -22,6 +504,19 @@
               "name": "",
               "type": "string",
               "internalType": "string"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "accessPointVersion",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "stateMutability": "view"
@@ -107,19 +602,6 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
-        },
-        {
-          "type": "function",
-          "name": "factoryVersion",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -407,6 +889,32 @@
         },
         {
           "type": "error",
+          "name": "Create2EmptyBytecode",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "Create2FailedDeployment",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "Create2InsufficientBalance",
+          "inputs": [
+            {
+              "name": "balance",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "needed",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "ERC1967InvalidImplementation",
           "inputs": [
             {
@@ -526,6 +1034,599 @@
       ],
       "address": "0xA000000eaA652c7023530b603844471294B811c4"
     },
+    "BridgeWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "bridger_",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "bridge",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "bridger",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "Bridged",
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "asset",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "InvalidVault",
+          "inputs": [
+            {
+              "name": "vault",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x7034Db4B0302545Fd1949fC3d4FEFd7bcfE22b8b"
+    },
+    "CrossChainSwapWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "bridger_",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "bridger",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "swapAndBridge",
+          "inputs": [
+            {
+              "name": "inputAsset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "finalAsset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "minReceive",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "swapCallData",
+              "type": "bytes",
+              "internalType": "bytes"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x6722D8BD348e81bDF6bAAD57FA96265EF9C695A6"
+    },
+    "SwapWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "_exchangeProxy",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "exchangeProxy",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "fillQuote",
+          "inputs": [
+            {
+              "name": "tokenIn",
+              "type": "address",
+              "internalType": "contract IERC20"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "tokenOut",
+              "type": "address",
+              "internalType": "contract IERC20"
+            },
+            {
+              "name": "swapCallData",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "event",
+          "name": "SwapExecuted",
+          "inputs": [
+            {
+              "name": "tokenIn",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            },
+            {
+              "name": "tokenOut",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AmountOutTooLow",
+          "inputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minAmountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x26ce50540b23573176d6C9e37B7109C94342E30D"
+    },
+    "WethWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "_weth",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "deposit",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "weth",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IWETH"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "withdraw",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        }
+      ],
+      "address": "0x19452D4C2b2422d0623e1A5F0Caa9a52C2Cf55B5"
+    },
+    "WithdrawWorkflow": {
+      "abi": [
+        {
+          "type": "function",
+          "name": "withdrawERC20",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "contract IERC20"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "withdrawNative",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "NativeWithdrawalFailed",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0xdC70c1c6c49AC9B3cA50E2F9079843545646524a"
+    },
     "Bridger": {
       "abi": [
         {
@@ -533,11 +1634,6 @@
           "inputs": [
             {
               "name": "exchange",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "usdmCurveAmm",
               "type": "address",
               "internalType": "address"
             },
@@ -658,6 +1754,19 @@
         },
         {
           "type": "function",
+          "name": "USDA",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "USDC",
           "inputs": [],
           "outputs": [
@@ -730,6 +1839,38 @@
               "name": "",
               "type": "uint256",
               "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "angleSwapper",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "bridgeVaults",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
             }
           ],
           "stateMutability": "view"
@@ -845,7 +1986,7 @@
               "internalType": "uint256"
             }
           ],
-          "stateMutability": "payable"
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -926,7 +2067,7 @@
               "internalType": "uint256"
             }
           ],
-          "stateMutability": "payable"
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -1159,7 +2300,7 @@
               "internalType": "uint256"
             }
           ],
-          "stateMutability": "payable"
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -1287,6 +2428,24 @@
         },
         {
           "type": "function",
+          "name": "setBridgeVault",
+          "inputs": [
+            {
+              "name": "vault",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "flag",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "setSenderAccount",
           "inputs": [
             {
@@ -1297,6 +2456,19 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "stUSD",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -1361,19 +2533,6 @@
           ],
           "outputs": [],
           "stateMutability": "payable"
-        },
-        {
-          "type": "function",
-          "name": "usdmCurvePool",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -1549,6 +2708,22 @@
         },
         {
           "type": "error",
+          "name": "BalanceTooLow",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "balance",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "DepositBySigResult",
           "inputs": [
             {
@@ -1585,6 +2760,17 @@
           "inputs": [
             {
               "name": "signer",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidVault",
+          "inputs": [
+            {
+              "name": "vault",
               "type": "address",
               "internalType": "address"
             }
@@ -4691,6 +5877,11 @@
               "name": "_kintoApp",
               "type": "address",
               "internalType": "contract IKintoAppRegistry"
+            },
+            {
+              "name": "_factory",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
             }
           ],
           "stateMutability": "nonpayable"
@@ -4740,6 +5931,19 @@
         },
         {
           "type": "function",
+          "name": "RECOVERY_PRICE",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "RECOVERY_TIME",
           "inputs": [],
           "outputs": [
@@ -4754,6 +5958,19 @@
         {
           "type": "function",
           "name": "SINGLE_SIGNER",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint8",
+              "internalType": "uint8"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "TWO_SIGNERS",
           "inputs": [],
           "outputs": [
             {
@@ -4922,6 +6139,19 @@
         },
         {
           "type": "function",
+          "name": "factory",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoWalletFactory"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "funderWhitelist",
           "inputs": [
             {
@@ -4941,6 +6171,43 @@
         },
         {
           "type": "function",
+          "name": "getAccessPoint",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getInsurancePrice",
+          "inputs": [
+            {
+              "name": "newPolicy",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "paymentToken",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
           "name": "getNonce",
           "inputs": [],
           "outputs": [
@@ -4948,6 +6215,19 @@
               "name": "",
               "type": "uint256",
               "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getOwners",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
             }
           ],
           "stateMutability": "view"
@@ -4995,6 +6275,51 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "insurancePolicy",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "insuranceTimestamp",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "isAppApproved",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -5182,7 +6507,7 @@
               "internalType": "address[]"
             },
             {
-              "name": "policy",
+              "name": "newPolicy",
               "type": "uint8",
               "internalType": "uint8"
             }
@@ -5221,6 +6546,24 @@
               "name": "flags",
               "type": "bool[]",
               "internalType": "bool[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "setInsurancePolicy",
+          "inputs": [
+            {
+              "name": "newPolicy",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "paymentToken",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "outputs": [],
@@ -5472,6 +6815,25 @@
         },
         {
           "type": "event",
+          "name": "InsurancePolicyChanged",
+          "inputs": [
+            {
+              "name": "newPolicy",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
+            },
+            {
+              "name": "oldPolicy",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "KintoWalletInitialized",
           "inputs": [
             {
@@ -5548,8 +6910,35 @@
         },
         {
           "type": "error",
+          "name": "AppNotSponsored",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "addr",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "AppNotWhitelisted",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "addr",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
@@ -5568,12 +6957,50 @@
         },
         {
           "type": "error",
+          "name": "InvalidDevMode",
+          "inputs": [
+            {
+              "name": "newDevMode",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidInsurancePayment",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidInsurancePolicy",
+          "inputs": [
+            {
+              "name": "newPolicy",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "InvalidPolicy",
           "inputs": [
             {
-              "name": "policy",
+              "name": "newPolicy",
               "type": "uint8",
               "internalType": "uint8"
+            },
+            {
+              "name": "newSigners",
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ]
         },
@@ -5594,11 +7021,6 @@
         },
         {
           "type": "error",
-          "name": "InvalidSingleSignerPolicy",
-          "inputs": []
-        },
-        {
-          "type": "error",
           "name": "KYCRequired",
           "inputs": []
         },
@@ -5610,7 +7032,13 @@
         {
           "type": "error",
           "name": "MaxSignersExceeded",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "newSigners",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
           "type": "error",

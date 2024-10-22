@@ -87,6 +87,15 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 
     /**
+     * @dev Claim via Kinto ID when it is minting
+     * @param _receiver Address of the receiver
+     */
+    function claimOnCreation(address _receiver) external {
+        if (msg.sender != address(kintoID)) revert OnlyKintoID();
+        _privateClaim(_receiver);
+    }
+
+    /**
      * @dev Function to withdraw all eth by owner
      */
     function withdrawAll() external override onlyOwner {
@@ -139,6 +148,6 @@ contract Faucet is Initializable, UUPSUpgradeable, OwnableUpgradeable, IFaucet {
     }
 }
 
-contract FaucetV8 is Faucet {
+contract FaucetV9 is Faucet {
     constructor(address _kintoWalletFactory) Faucet(_kintoWalletFactory) {}
 }

@@ -11,7 +11,7 @@ import "@kinto-core-test/SharedSetup.t.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 
 contract KintoIDv2 is KintoID {
-    constructor(address _walletFactory) KintoID(_walletFactory) {}
+    constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 
     function newFunction() public pure returns (uint256) {
         return 1;
@@ -24,19 +24,25 @@ contract KintoIDTest is SharedSetup {
 
         // upgrade KintoId to undo the harness
         vm.startPrank(_owner);
-        _kintoID.upgradeTo(address(new KintoID(address(_walletFactory))));
+        _kintoID.upgradeTo(address(new KintoID(address(_walletFactory), address(_faucet))));
         vm.stopPrank();
     }
 
-    function testUp() public view override {
+    function testUp() public override {
         assertEq(_kintoID.name(), "Kinto ID");
         assertEq(_kintoID.symbol(), "KINTOID");
+
+        vm.startPrank(_owner);
+        KintoIDv2 _implementationWithFaucet = new KintoIDv2(address(_walletFactory), address(_faucet));
+        _kintoID.upgradeTo(address(_implementationWithFaucet));
+        vm.stopPrank();
     }
+
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
         vm.startPrank(_owner);
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
         _kintoID.upgradeTo(address(_implementationV2));
 
         // ensure that the _proxy is now pointing to the new implementation
@@ -45,7 +51,7 @@ contract KintoIDTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
 
         bytes memory err = abi.encodePacked(
             "AccessControl: account ",
@@ -67,7 +73,7 @@ contract KintoIDTest is SharedSetup {
         // upgrade from the _upgrader account
         assertEq(true, _kintoID.hasRole(_kintoID.UPGRADER_ROLE(), _upgrader));
 
-        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory));
+        KintoIDv2 _implementationV2 = new KintoIDv2(address(_walletFactory), address(_faucet));
         vm.prank(_upgrader);
         _kintoID.upgradeTo(address(_implementationV2));
 
@@ -82,13 +88,16 @@ contract KintoIDTest is SharedSetup {
         uint16[] memory traits = new uint16[](0);
         vm.startPrank(_kycProvider);
         assertEq(_kintoID.isKYC(_user), false);
+
         _kintoID.mintIndividualKyc(sigdata, traits);
+
         assertEq(_kintoID.isKYC(_user), true);
         assertEq(_kintoID.isIndividual(_user), true);
         assertEq(_kintoID.mintedAt(_user), block.timestamp);
         assertEq(_kintoID.hasTrait(_user, 1), false);
         assertEq(_kintoID.hasTrait(_user, 2), false);
         assertEq(_kintoID.balanceOf(_user), 1);
+        assertEq(address(_user).balance, 1 ether / 2000);
     }
 
     function testMintCompanyKYC() public {
@@ -105,6 +114,7 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.hasTrait(_user, 2), true);
         assertEq(_kintoID.hasTrait(_user, 5), true);
         assertEq(_kintoID.balanceOf(_user), 1);
+        assertEq(address(_user).balance, 1 ether / 2000);
     }
 
     function testMintIndividualKYC_RevertWhen_InvalidSender() public {
