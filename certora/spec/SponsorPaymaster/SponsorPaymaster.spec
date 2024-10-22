@@ -60,8 +60,8 @@ rule balanceOnlyIncreasesByDeposit(address account, method f) filtered{f -> !vie
 /// @title The balance of any app can decrease at most by the eth max cost.
 rule balanceDecreaseIsAtMostMaxCost(address app, method f) 
 filtered{f -> !viewOrUpgrade(f) &&
-    f.selector != sig:withdrawTokensTo(address,uint256).selector &&
-{    
+    f.selector != sig:withdrawTokensTo(address,uint256).selector}
+{
     uint256 balanceBefore = balances(app);
     env e;
     mathint ethMaxCost;
