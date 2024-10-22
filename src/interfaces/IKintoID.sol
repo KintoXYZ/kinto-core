@@ -101,4 +101,6 @@ interface IKintoID {
     function domainSeparator() external view returns (bytes32);
 
     function walletFactory() external view returns (address);
+
+    function faucet() external view returns (address);
 }

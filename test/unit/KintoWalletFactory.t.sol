@@ -373,8 +373,9 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         vm.deal(_user, 1 ether);
         vm.prank(_user);
+        uint256 balance = address(_user2).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
-        assertEq(address(_user2).balance, 1e18);
+        assertEq(address(_user2).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() public {
@@ -397,8 +398,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
         revokeKYC(_kycProvider, _owner, _ownerPk);
         vm.prank(_owner);
+        uint256 balance = address(_user).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user));
-        assertEq(address(_user).balance, 1e18);
+        assertEq(address(_user).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCProvider_WhenTargetKYCProvider() public {
