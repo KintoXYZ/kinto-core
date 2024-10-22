@@ -7,7 +7,6 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 
 contract BridgedKintoTest is SharedSetup {
-    address admin;
     address minter;
     address upgrader;
 
@@ -16,7 +15,6 @@ contract BridgedKintoTest is SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        admin = createUser("admin");
         minter = createUser("minter");
         upgrader = createUser("upgrader");
 
@@ -40,6 +38,9 @@ contract BridgedKintoTest is SharedSetup {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Kinto Token");
         assertEq(token.symbol(), "K");
+        assertEq(token.decimals(), 18);
+        assertEq(token.nonces(_user), 0);
+        assertEq(token.CLOCK_MODE(), "mode=timestamp");
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
