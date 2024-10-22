@@ -607,9 +607,4 @@ contract KintoWalletFactoryTest is SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, address(123), _recoverer));
         _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), address(123));
     }
-
-    function testSendMoneyToRecoverer_RevertWhenInvalidSender() public {
-        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidSender.selector, address(this)));
-        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), _recoverer);
-    }
 }
