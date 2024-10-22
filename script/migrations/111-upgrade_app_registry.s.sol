@@ -10,9 +10,17 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        bytes memory bytecode =
-            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
-        address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V18", bytecode);
-        saveContractAddress("KintoAppRegistryV18-impl", impl);
+        bytes memory bytecode = abi.encodePacked(
+            type(KintoAppRegistry).creationCode,
+            abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("SponsorPaymaster"))
+        );
+        address impl = _deployImplementationAndUpgrade("KintoAppRegistry", "V20", bytecode);
+        saveContractAddress("KintoAppRegistryV20", impl);
+
+        KintoAppRegistry registry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
+
+        assertEq(address(registry.paymaster()), _getChainDeployment("SponsorPaymaster"));
+        assertEq(address(registry.walletFactory()), _getChainDeployment("KintoWalletFactory"));
+        assertEq(address(registry.ENTRYPOINT_V7()), 0x0000000071727De22E5E9d8BAf0edAc6f37da032);
     }
 }

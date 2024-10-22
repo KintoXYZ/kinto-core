@@ -25,6 +25,9 @@ methods {
 
     // IERC721Receiver
     function _.onERC721Received(address,address,uint256,bytes) external => NONDET;
+
+    // IFaucet
+    function _.claimOnCreation(address) external => NONDET;
 }
 
 /*

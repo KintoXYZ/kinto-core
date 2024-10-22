@@ -14,7 +14,9 @@ contract KintoAppRegistryV2 is KintoAppRegistry {
         return 1;
     }
 
-    constructor(IKintoWalletFactory _walletFactory) KintoAppRegistry(_walletFactory) {}
+    constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
+        KintoAppRegistry(_walletFactory, _paymaster)
+    {}
 }
 
 contract KintoAppRegistryTest is SharedSetup {
@@ -22,6 +24,9 @@ contract KintoAppRegistryTest is SharedSetup {
     address internal appContract0 = makeAddr("appContract0");
     address internal sponsorContract0 = makeAddr("sponsorContract0");
     address internal sponsorContract1 = makeAddr("sponsorContract1");
+    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
     function setUp() public virtual override {
         super.setUp();
@@ -46,6 +51,13 @@ contract KintoAppRegistryTest is SharedSetup {
             KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI(),
             "https://kinto.xyz/metadata/kintoapp/"
         );
+
+        address[] memory systemContracts = _kintoAppRegistry.getSystemContracts();
+        assertEq(systemContracts[0], address(_kintoAppRegistry));
+        assertEq(systemContracts[1], address(ENTRYPOINT_V6));
+        assertEq(systemContracts[2], address(ENTRYPOINT_V7));
+        assertEq(systemContracts[3], address(ARB_RETRAYABLE_TX));
+        assertEq(systemContracts[4], address(_paymaster));
     }
 
     /* ============ Upgrade ============ */
@@ -53,7 +65,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testUpgradeTo() public {
         vm.startPrank(_owner);
 
-        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory, _paymaster);
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
         assertEq(KintoAppRegistryV2(address(_kintoAppRegistry)).newFunction(), 1);
 
@@ -61,7 +73,7 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory);
+        KintoAppRegistryV2 _implementationV2 = new KintoAppRegistryV2(_walletFactory, _paymaster);
         vm.expectRevert("Ownable: caller is not the owner");
         _kintoAppRegistry.upgradeTo(address(_implementationV2));
     }
@@ -512,7 +524,7 @@ contract KintoAppRegistryTest is SharedSetup {
     function testUpdateSystemContracts() public {
         // Initial empty system contracts array
         address[] memory initialSystemContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(initialSystemContracts.length, 0);
+        assertEq(initialSystemContracts.length, 9);
 
         // Update system contracts array
         address[] memory newSystemContracts = new address[](2);
@@ -524,9 +536,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify the system contracts array is updated
         address[] memory updatedSystemContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedSystemContracts.length, newSystemContracts.length);
-        assertEq(updatedSystemContracts[0], newSystemContracts[0]);
-        assertEq(updatedSystemContracts[1], newSystemContracts[1]);
+        assertEq(updatedSystemContracts.length, newSystemContracts.length + 5);
+        assertEq(updatedSystemContracts[5], newSystemContracts[0]);
+        assertEq(updatedSystemContracts[6], newSystemContracts[1]);
     }
 
     function testUpdateSystemContractsWithDifferentLength() public {
@@ -540,9 +552,9 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify initial update
         address[] memory updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 2);
-        assertEq(updatedContracts[0], address(1));
-        assertEq(updatedContracts[1], address(2));
+        assertEq(updatedContracts.length, 7);
+        assertEq(updatedContracts[5], address(1));
+        assertEq(updatedContracts[6], address(2));
 
         // Update with 3 contracts (increasing length)
         address[] memory newContracts = new address[](3);
@@ -555,10 +567,10 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify update with increased length
         updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 3);
-        assertEq(updatedContracts[0], address(3));
-        assertEq(updatedContracts[1], address(4));
-        assertEq(updatedContracts[2], address(5));
+        assertEq(updatedContracts.length, 8);
+        assertEq(updatedContracts[5], address(3));
+        assertEq(updatedContracts[6], address(4));
+        assertEq(updatedContracts[7], address(5));
 
         // Update with 1 contract (decreasing length)
         address[] memory finalContracts = new address[](1);
@@ -569,8 +581,8 @@ contract KintoAppRegistryTest is SharedSetup {
 
         // Verify update with decreased length
         updatedContracts = _kintoAppRegistry.getSystemContracts();
-        assertEq(updatedContracts.length, 1);
-        assertEq(updatedContracts[0], address(6));
+        assertEq(updatedContracts.length, 6);
+        assertEq(updatedContracts[5], address(6));
     }
 
     function testUpdateSystemContracts_RevertWhen_CallerIsNotOwner() public {
@@ -879,77 +891,6 @@ contract KintoAppRegistryTest is SharedSetup {
             [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
             new address[](0)
         );
-    }
-
-    /* ============ isContractCallAllowedFromEOA ============ */
-
-    function testIsContractCallAllowedFromEOA_WhenSystemContract() public {
-        // Update system contracts array
-        address[] memory newSystemContracts = new address[](2);
-        newSystemContracts[0] = address(1);
-        newSystemContracts[1] = address(2);
-
-        vm.prank(_owner);
-        _kintoAppRegistry.updateSystemContracts(newSystemContracts);
-
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(1)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(2)), true);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenRandomEOACreate2() public view {
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(CREATE2)), false);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenRandomEOACreate() public view {
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0)), false);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenRandomEOA() public view {
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead)), false);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenCreate2() public {
-        vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
-
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(CREATE2)), true);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenCreate() public {
-        vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
-
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(0)), true);
-    }
-
-    function testIsContractCallAllowedFromEOA_WhenDevEOA() public {
-        address[] memory appContracts = new address[](2);
-        appContracts[0] = address(11);
-        mockContractBytecode(appContracts[0]);
-        appContracts[1] = address(22);
-        mockContractBytecode(appContracts[1]);
-
-        address[] memory devEOAs = new address[](3);
-        devEOAs[0] = _owner;
-        devEOAs[1] = _user;
-        devEOAs[2] = _user2;
-
-        uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
-
-        resetSigners(devEOAs, 1);
-
-        vm.prank(address(_kintoWallet));
-        _kintoAppRegistry.registerApp(
-            "test", address(99), appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], devEOAs
-        );
-
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_owner, address(11)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(11)), true);
-        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(22)), true);
     }
 
     /* ============ setDeployerEOA ============ */

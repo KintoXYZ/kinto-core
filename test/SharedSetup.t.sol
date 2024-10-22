@@ -8,6 +8,7 @@ import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/sample/Counter.sol";
 
+import "@kinto-core-test/harness/KintoIdHarness.sol";
 import "@kinto-core-test/harness/KintoWalletHarness.sol";
 import "@kinto-core-test/harness/SponsorPaymasterHarness.sol";
 import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
@@ -27,6 +28,19 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+
+    address[] internal users;
+
+    address internal admin;
+    address internal alice;
+    address internal bob;
+    address internal ian;
+    address internal hannah;
+    address internal george;
+    address internal frank;
+    address internal david;
+    address internal charlie;
+    address internal eve;
 
     // events
     event UserOperationRevertReason(
@@ -103,6 +117,11 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _inflator = KintoInflator(contracts.inflator);
         _engenGovernance = EngenGovernance(contracts.engenGovernance);
 
+        // upgrade KintoId to avoid stale KYC on wrap
+        vm.startPrank(_owner);
+        _kintoID.upgradeTo(address(new KintoIdHarness(address(_walletFactory), address(_faucet))));
+        vm.stopPrank();
+
         // grant kyc provider role to _kycProvider on kintoID
         bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
         vm.prank(_owner);
@@ -117,6 +136,25 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         // deploy latest KintoWallet version through wallet factory
         vm.prank(_owner);
         _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
+
+        users = new address[](signers.length);
+        for (uint256 i = 0; i < signers.length; i++) {
+            approveKYC(_kycProvider, signers[i], signersPk[i]);
+            _kintoID.isKYC(signers[i]);
+            vm.prank(signers[i]);
+            users[i] = address(_walletFactory.createAccount(signers[i], _recoverer, 0));
+        }
+        // Garbage Solidity can't destruct a dynamic array
+        admin = users[0];
+        alice = users[1];
+        bob = users[2];
+        ian = users[3];
+        hannah = users[4];
+        george = users[5];
+        frank = users[6];
+        david = users[7];
+        charlie = users[8];
+        eve = users[9];
 
         // fund wallet on sponsor paymaster
         fundSponsorForApp(_owner, address(_kintoWallet));

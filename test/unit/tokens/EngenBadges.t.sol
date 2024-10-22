@@ -13,7 +13,6 @@ contract EngenBadgesUpgrade is EngenBadges {
 
 contract EngenBadgesTest is SharedSetup {
     string _uri = "https://kinto.xyz/api/v1/get-badge-nft/{id}";
-    address alice;
 
     function setUp() public override {
         super.setUp();
@@ -21,7 +20,6 @@ contract EngenBadgesTest is SharedSetup {
         fundSponsorForApp(_owner, address(_kintoWallet));
 
         registerApp(address(_kintoWallet), "engen badges", address(_engenBadges), new address[](0));
-        alice = createUser("alice");
 
         whitelistApp(address(_engenBadges));
 
