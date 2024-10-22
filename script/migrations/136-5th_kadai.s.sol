@@ -29,13 +29,17 @@ contract TransferDclmScript is MigrationHelper {
         address kadai_winner_3 = 0x39f8F1d7b4aC6087eE65445355cfbc95Da62cb54;
 
         address kintoToken = _getChainDeployment("KINTO");
-            uint256 kadai_balanceBefore_1 = ERC20(kintoToken).balanceOf(kadai_winner_1);
-            uint256 kadai_balanceBefore_2 = ERC20(kintoToken).balanceOf(kadai_winner_2);
-            uint256 kadai_balanceBefore_3 = ERC20(kintoToken).balanceOf(kadai_winner_3);
+        uint256 kadai_balanceBefore_1 = ERC20(kintoToken).balanceOf(kadai_winner_1);
+        uint256 kadai_balanceBefore_2 = ERC20(kintoToken).balanceOf(kadai_winner_2);
+        uint256 kadai_balanceBefore_3 = ERC20(kintoToken).balanceOf(kadai_winner_3);
 
         // Burn tokens from RD
         _handleOps(
-            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), kadai_amount_1 + kadai_amount_2 + kadai_amount_3),
+            abi.encodeWithSelector(
+                BridgedToken.burn.selector,
+                _getChainDeployment("RewardsDistributor"),
+                kadai_amount_1 + kadai_amount_2 + kadai_amount_3
+            ),
             kintoToken
         );
 
