@@ -35,6 +35,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     IKintoWallet private immutable _implAddress;
     IKintoID public immutable override kintoID;
     IKintoAppRegistry public immutable override appRegistry;
+    IRewardsDistributor public immutable override rewardsDistributor;
 
     /* ============ State Variables ============ */
 
@@ -55,12 +56,13 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID) {
+    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID, IRewardsDistributor _rewardsDistributor) {
         _disableInitializers();
 
         _implAddress = _implAddressP;
         appRegistry = _appRegistry;
         kintoID = _kintoID;
+        rewardsDistributor = _rewardsDistributor;
     }
 
     /* ============ External/Public methods ============ */
@@ -126,7 +128,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-
+        // Claim new user rewards
+        rewardsDistributor.newUserClaim(address(ret));
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
