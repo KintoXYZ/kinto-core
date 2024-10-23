@@ -15,8 +15,8 @@ contract DeployScript is MigrationHelper {
             abi.encode(address(0), _getChainDeployment("KintoAppRegistry"), _getChainDeployment("KintoID"))
         );
 
-        address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V21", bytecode);
-        saveContractAddress("KintoWalletFactoryV21-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KintoWalletFactory", "V22", bytecode);
+        saveContractAddress("KintoWalletFactoryV22-impl", impl);
 
         KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
         assertEq(address(factory.kintoID()), _getChainDeployment("KintoID"));
