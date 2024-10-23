@@ -9,14 +9,15 @@ import "@openzeppelin/contracts/access/IAccessControl.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
+import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../interfaces/IFaucet.sol";
-import "../interfaces/IKintoWalletFactory.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IKintoAppRegistry.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import "@kinto-core/interfaces/IFaucet.sol";
+import "@kinto-core/interfaces/IKintoWalletFactory.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 /**
  * @title KintoWalletFactory
@@ -35,7 +36,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     IKintoWallet private immutable _implAddress;
     IKintoID public immutable override kintoID;
     IKintoAppRegistry public immutable override appRegistry;
-    IRewardsDistributor public immutable override rewardsDistributor;
+    RewardsDistributor public immutable override rewardsDistributor;
 
     /* ============ State Variables ============ */
 
@@ -60,7 +61,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         IKintoWallet _implAddressP,
         IKintoAppRegistry _appRegistry,
         IKintoID _kintoID,
-        IRewardsDistributor _rewardsDistributor
+        RewardsDistributor _rewardsDistributor
     ) {
         _disableInitializers();
 
@@ -320,7 +321,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 }
 
 contract KintoWalletFactoryV22 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID)
-        KintoWalletFactory(_implAddressP, _appRegistry, _kintoID)
-    {}
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        RewardsDistributor _rewardsDistributor
+    ) KintoWalletFactory(_implAddressP, _appRegistry, _kintoID, _rewardsDistributor) {}
 }

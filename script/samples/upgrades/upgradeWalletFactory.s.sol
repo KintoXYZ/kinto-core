@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../../src/wallet/KintoWallet.sol";
-import "../../../src/wallet/KintoWalletFactory.sol";
-import "../../../src/apps/KintoAppRegistry.sol";
+import "@kinto-core/wallet/KintoWallet.sol";
+import "@kinto-core/wallet/KintoWalletFactory.sol";
+import "@kinto-core/apps/KintoAppRegistry.sol";
 
 import "../../../test/helpers/ArtifactsReader.sol";
 
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
+
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-
-contract KintoWalletFactoryNewVersion is KintoWalletFactory {
-    constructor(KintoWallet _impl, KintoAppRegistry _app, IKintoID _kintoID)
-        KintoWalletFactory(_impl, _app, _kintoID)
-    {}
-}
 
 /// @notice This script upgrades the KintoWalletFactory implementation
 contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
@@ -23,10 +19,11 @@ contract KintoWalletFactoryUpgradeScript is ArtifactsReader {
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy new version of KintoWalletFactory
-        KintoWalletFactoryNewVersion _newImplementation = new KintoWalletFactoryNewVersion(
+        KintoWalletFactory _newImplementation = new KintoWalletFactory(
             KintoWallet(payable(_getChainDeployment("KintoWallet-impl"))),
             KintoAppRegistry(_getChainDeployment("KintoAppRegistry")),
-            IKintoID(_getChainDeployment("KintoID"))
+            IKintoID(_getChainDeployment("KintoID")),
+            RewardsDistributor(_getChainDeployment("RewardsDistributor"))
         );
 
         // upgrade KintoWalletFactory to new version

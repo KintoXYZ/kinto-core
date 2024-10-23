@@ -13,10 +13,11 @@ import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessContro
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 
 import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 
-contract RewardsDistributorTest is ForkTest {
+contract RewardsDistributorTest is SharedSetup {
     RewardsDistributor internal distributor;
     ERC20Mock internal kinto;
     bytes32 internal root = 0x4f75b6d95fab3aedde221f8f5020583b4752cbf6a155ab4e5405fe92881f80e6;
@@ -30,16 +31,22 @@ contract RewardsDistributorTest is ForkTest {
         kinto = new ERC20Mock("Kinto Token", "KINTO", 18);
 
         vm.startPrank(_owner);
-        distributor =
-            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
+        distributor = RewardsDistributor(
+            address(
+                new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime, address(_walletFactory))), "")
+            )
+        );
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
     }
 
     function testUp() public override {
         vm.startPrank(_owner);
-        distributor =
-            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
+        distributor = RewardsDistributor(
+            address(
+                new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime, address(_walletFactory))), "")
+            )
+        );
         distributor.initialize(root, bonusAmount);
         vm.stopPrank();
 
@@ -207,8 +214,11 @@ contract RewardsDistributorTest is ForkTest {
 
     function testClaim_RevertWhenMaxLimitExceeded() public {
         vm.startPrank(_owner);
-        RewardsDistributor distr =
-            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
+        RewardsDistributor distr = RewardsDistributor(
+            address(
+                new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime, address(_walletFactory))), "")
+            )
+        );
         distr.initialize(root, 0);
         vm.stopPrank();
         uint256 amount = 1e18;
@@ -290,8 +300,11 @@ contract RewardsDistributorTest is ForkTest {
 
     function testTotalLimitPerQuarter() public {
         vm.startPrank(_owner);
-        RewardsDistributor distr =
-            RewardsDistributor(address(new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime)), "")));
+        RewardsDistributor distr = RewardsDistributor(
+            address(
+                new UUPSProxy{salt: 0}(address(new RewardsDistributor(kinto, startTime, address(_walletFactory))), "")
+            )
+        );
         distr.initialize(root, 0);
         vm.stopPrank();
 

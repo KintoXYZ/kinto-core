@@ -75,10 +75,10 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     error InvalidProof(bytes32[] proof, bytes32 leaf);
 
     /**
-     * @notice Thrown when the caller is not the KintoWalletFactory.
+     * @notice Thrown when the caller is not the walletFactory.
      * @param caller The caller address.
      */
-    error OnlyKintoWalletFactory(address caller);
+    error OnlyWalletFactory(address caller);
 
     /**
      * @notice Thrown when the Engen rewards already claimed by the user.
@@ -109,7 +109,8 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice The address of Kinto token.
     IERC20 public immutable KINTO;
 
-    address public immutable kintoWalletFactory;
+    /// @notice The address of Kinto Wallet Factory.
+    address public immutable walletFactory;
 
     /// @notice Total amount of tokens to give away during liquidity mining. 4 million tokens.
     uint256 public constant totalTokens = 4_000_000 * 1e18;
@@ -155,11 +156,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param kinto_ The address of the Kinto token.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, uint256 startTime_, address kintoWalletFactory) {
+    constructor(IERC20 kinto_, uint256 startTime_, address walletFactory_) {
         _disableInitializers();
 
         KINTO = kinto_;
         startTime = startTime_;
+        walletFactory = walletFactory_;
     }
 
     /**
@@ -265,8 +267,8 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param wallet The address of the wallet to claim the reward for.
      */
     function newUserClaim(address wallet) external nonReentrant {
-        if (msg.sender == kintoWalletFactory) {
-            revert OnlyKintoWalletFactory(msg.sender);
+        if (msg.sender != walletFactory) {
+            revert OnlyWalletFactory(msg.sender);
         }
         if (claimedByUser[wallet] > 0) {
             revert AlreadyClaimed(wallet);
