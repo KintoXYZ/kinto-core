@@ -67,7 +67,9 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testCreateAccount() public {
         vm.prank(address(_owner));
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+
         assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 1e18);
     }
 
     function testCreateAccount_WhenAlreadyExists() public {
