@@ -56,7 +56,12 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID, IRewardsDistributor _rewardsDistributor) {
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        IRewardsDistributor _rewardsDistributor
+    ) {
         _disableInitializers();
 
         _implAddress = _implAddressP;

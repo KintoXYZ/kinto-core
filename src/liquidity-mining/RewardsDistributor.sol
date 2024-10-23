@@ -268,6 +268,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         if (msg.sender == kintoWalletFactory) {
             revert OnlyKintoWalletFactory(msg.sender);
         }
+        if (claimedByUser[wallet] > 0) {
+            revert AlreadyClaimed(wallet);
+        }
         claimedByUser[wallet] += NEW_USER_REWARD;
         totalClaimed += NEW_USER_REWARD;
         KINTO.safeTransfer(wallet, NEW_USER_REWARD);
