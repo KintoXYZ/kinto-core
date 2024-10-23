@@ -118,6 +118,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice Total number of quarters 40 == 10 years.
     uint256 public constant quarters = 10 * 4;
 
+    /// @notice New user rewards in K tokens upon wallet creation.
     uint256 public constant NEW_USER_REWARD = 1 * 1e18;
 
     /* ============ State Variables ============ */
