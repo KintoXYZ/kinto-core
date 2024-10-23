@@ -118,9 +118,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (owner == address(0) || recoverer == address(0)) revert InvalidInput();
         if (!kintoID.isKYC(owner) || owner != msg.sender) revert KYCRequired();
         address addr = getAddress(owner, recoverer, salt);
-        uint256 codeSize = addr.code.length;
 
-        if (codeSize > 0) {
+        if (addr.code.length > 0) {
             return IKintoWallet(payable(addr));
         }
 

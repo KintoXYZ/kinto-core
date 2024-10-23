@@ -383,4 +383,18 @@ contract RewardsDistributorTest is SharedSetup {
             38978619272429166666666
         ); // 39k for a 30 days in 11'th quarter
     }
+
+    function testNewUserClaim_RevertWhen_NotFactory() public {
+        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.OnlyWalletFactory.selector, address(this)));
+        distributor.newUserClaim(address(_kintoWallet));
+    }
+
+    function testNewUserClaim_RevertWhen_AlreadyClaimed() public {
+        vm.prank(address(_owner));
+        _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+
+        vm.expectRevert(abi.encodeWithSelector(RewardsDistributor.AlreadyClaimed.selector, address(_kintoWallet)));
+        vm.prank(address(_walletFactory));
+        _rewardsDistributor.newUserClaim(address(_kintoWallet));
+    }
 }
