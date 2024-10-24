@@ -60,9 +60,9 @@ contract DeployScript is MigrationHelper {
         (bool isMember,) = accessManager.hasRole(0, kintoAdminWallet);
         assertTrue(isMember);
 
-        saveContractAddress("AccessManager", proxy);
+        saveContractAddress("AccessManager", address(accessManager));
 
-        (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(AccessManager).creationCode, abi.encode(kintoAdminWallet))), "010600");
+        (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(NioGovernor).creationCode, abi.encode(nioNFT, accessManager))), "010600");
         NioGovernor governor = new NioGovernor{salt: salt}(nioNFT, address(accessManager));
         assertEq(address(governor), address(expectedAddress));
 
