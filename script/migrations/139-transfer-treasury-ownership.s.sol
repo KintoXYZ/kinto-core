@@ -17,9 +17,9 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager")); 
-        address treasury =_getChainDeployment("Treasury"); 
-        address governor  =_getChainDeployment("NioGovernor "); 
+        AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager"));
+        address treasury = _getChainDeployment("Treasury");
+        address governor = _getChainDeployment("NioGovernor ");
 
         _whitelistApp(address(accessManager));
 
@@ -28,11 +28,22 @@ contract DeployScript is MigrationHelper {
         selectors[1] = Treasury.sendETH.selector;
         selectors[2] = Treasury.batchSendFunds.selector;
 
-        _handleOps(abi.encodeWithSelector(AccessManager.setTargetFunctionRole.selector, treasury, selectors, NIO_GOVERNOR_ROLE), address(accessManager));
+        _handleOps(
+            abi.encodeWithSelector(AccessManager.setTargetFunctionRole.selector, treasury, selectors, NIO_GOVERNOR_ROLE),
+            address(accessManager)
+        );
 
-        _handleOps(abi.encodeWithSelector(AccessManager.grantRole.selector, NIO_GOVERNOR_ROLE, governor, uint32(NIO_EXECUTION_DELAY)), address(accessManager));
+        _handleOps(
+            abi.encodeWithSelector(
+                AccessManager.grantRole.selector, NIO_GOVERNOR_ROLE, governor, uint32(NIO_EXECUTION_DELAY)
+            ),
+            address(accessManager)
+        );
 
-        _handleOps(abi.encodeWithSelector(AccessManager.labelRole.selector, NIO_GOVERNOR_ROLE, 'NIO_GOVERNOR_ROLE'), address(accessManager));
+        _handleOps(
+            abi.encodeWithSelector(AccessManager.labelRole.selector, NIO_GOVERNOR_ROLE, "NIO_GOVERNOR_ROLE"),
+            address(accessManager)
+        );
 
         _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, accessManager), address(treasury));
 
