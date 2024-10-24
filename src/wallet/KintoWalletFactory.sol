@@ -9,14 +9,15 @@ import "@openzeppelin/contracts/access/IAccessControl.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
+import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../interfaces/IFaucet.sol";
-import "../interfaces/IKintoWalletFactory.sol";
-import "../interfaces/IKintoWallet.sol";
-import "../interfaces/IKintoAppRegistry.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import "@kinto-core/interfaces/IFaucet.sol";
+import "@kinto-core/interfaces/IKintoWalletFactory.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 /**
  * @title KintoWalletFactory
@@ -35,6 +36,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     IKintoWallet private immutable _implAddress;
     IKintoID public immutable override kintoID;
     IKintoAppRegistry public immutable override appRegistry;
+    RewardsDistributor public immutable override rewardsDistributor;
 
     /* ============ State Variables ============ */
 
@@ -55,12 +57,18 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID) {
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        RewardsDistributor _rewardsDistributor
+    ) {
         _disableInitializers();
 
         _implAddress = _implAddressP;
         appRegistry = _appRegistry;
         kintoID = _kintoID;
+        rewardsDistributor = _rewardsDistributor;
     }
 
     /* ============ External/Public methods ============ */
@@ -110,9 +118,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (owner == address(0) || recoverer == address(0)) revert InvalidInput();
         if (!kintoID.isKYC(owner) || owner != msg.sender) revert KYCRequired();
         address addr = getAddress(owner, recoverer, salt);
-        uint256 codeSize = addr.code.length;
 
-        if (codeSize > 0) {
+        if (addr.code.length > 0) {
             return IKintoWallet(payable(addr));
         }
 
@@ -126,7 +133,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-
+        // Claim new user rewards
+        rewardsDistributor.newUserClaim(address(ret));
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
@@ -311,8 +319,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     }
 }
 
-contract KintoWalletFactoryV22 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP, IKintoAppRegistry _appRegistry, IKintoID _kintoID)
-        KintoWalletFactory(_implAddressP, _appRegistry, _kintoID)
-    {}
+contract KintoWalletFactoryV23 is KintoWalletFactory {
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        RewardsDistributor _rewardsDistributor
+    ) KintoWalletFactory(_implAddressP, _appRegistry, _kintoID, _rewardsDistributor) {}
 }

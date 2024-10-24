@@ -15,6 +15,7 @@ import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/AATestScaffolding.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 // scripts & migrations
@@ -81,6 +82,8 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.label(address(_faucet), "Faucet");
         vm.label(address(_bridgerL2), "BridgerL2");
         vm.label(address(_engenGovernance), "EngenGovernance");
+        vm.label(address(_bridgedKinto), "BridgedKinto");
+        vm.label(address(_rewardsDistributor), "RewardsDistributor");
     }
 
     function deployCounter() public {
@@ -116,6 +119,8 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _bridgerL2 = BridgerL2(contracts.bridgerL2);
         _inflator = KintoInflator(contracts.inflator);
         _engenGovernance = EngenGovernance(contracts.engenGovernance);
+        _bridgedKinto = BridgedKinto(contracts.bridgedKinto);
+        _rewardsDistributor = RewardsDistributor(contracts.rewardsDistributor);
 
         // upgrade KintoId to avoid stale KYC on wrap
         vm.startPrank(_owner);
@@ -132,6 +137,11 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         // approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
+
+        // give K tokens to RD
+        vm.startPrank(_owner);
+        _bridgedKinto.mint(address(_rewardsDistributor), _rewardsDistributor.totalTokens());
+        vm.stopPrank();
 
         // deploy latest KintoWallet version through wallet factory
         vm.prank(_owner);

@@ -29,8 +29,8 @@ contract KintoWalletUpgrade is KintoWallet {
 }
 
 contract KintoWalletFactoryUpgrade is KintoWalletFactory {
-    constructor(KintoWallet _impl, IKintoAppRegistry _app, IKintoID _kintoID)
-        KintoWalletFactory(_impl, _app, _kintoID)
+    constructor(KintoWallet _impl, IKintoAppRegistry _app, IKintoID _kintoID, RewardsDistributor _rewardsDistributor)
+        KintoWalletFactory(_impl, _app, _kintoID, _rewardsDistributor)
     {}
 
     function newFunction() public pure returns (uint256) {
@@ -67,7 +67,9 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testCreateAccount() public {
         vm.prank(address(_owner));
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+
         assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 1e18);
     }
 
     function testCreateAccount_WhenAlreadyExists() public {
@@ -105,7 +107,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID, _rewardsDistributor);
         vm.prank(_owner);
         _walletFactory.upgradeTo(address(_newImplementation));
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
@@ -114,7 +116,7 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         address someone = _user2;
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID, _rewardsDistributor);
 
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);

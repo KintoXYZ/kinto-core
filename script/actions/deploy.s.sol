@@ -2,7 +2,10 @@
 pragma solidity ^0.8.18;
 
 import "@aa/core/EntryPoint.sol";
+
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 import "@kinto-core/KintoID.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
@@ -10,6 +13,7 @@ import "@kinto-core/viewers/KYCViewer.sol";
 import "@kinto-core/viewers/WalletViewer.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/apps/KintoAppRegistry.sol";
@@ -22,9 +26,11 @@ import "@kinto-core/governance/EngenGovernance.sol";
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+
 import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
 
-import "forge-std/console.sol";
+import "forge-std/console2.sol";
 import "forge-std/Script.sol";
 
 contract DeployerScript is Create2Helper, DeployerHelper {
@@ -47,6 +53,14 @@ contract DeployerScript is Create2Helper, DeployerHelper {
     // Kinto Registry
     KintoAppRegistry public kintoRegistry;
     KintoAppRegistry public registryImpl;
+
+    // BridgedKinto
+    BridgedKinto public bridgedKinto;
+    BridgedKinto public bridgedKintoImpl;
+
+    // RewardsDistributor
+    RewardsDistributor public rewardsDistributor;
+    RewardsDistributor public rewardsDistributorImpl;
 
     // KYC Viewer
     KYCViewer public viewer;
@@ -91,6 +105,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
     // if set, will broadcast transactions with this private key
     uint256 privateKey;
+    address owner;
 
     function setUp() public {}
 
@@ -109,11 +124,14 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         BridgerL2 bridgerL2;
         KintoInflator inflator;
         EngenGovernance engenGovernance;
+        RewardsDistributor rewardsDistributor;
+        BridgedKinto bridgedKinto;
     }
 
     // @dev this is used for tests
     function runAndReturnResults(uint256 _privateKey) public returns (DeployedContracts memory contracts) {
         privateKey = _privateKey;
+        owner = privateKey > 0 ? vm.addr(privateKey) : msg.sender;
         write = false;
         log = false;
 
@@ -135,7 +153,9 @@ contract DeployerScript is Create2Helper, DeployerHelper {
             faucet,
             bridgerL2,
             inflator,
-            engenGovernance
+            engenGovernance,
+            rewardsDistributor,
+            bridgedKinto
         );
     }
 
@@ -198,8 +218,17 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         // deploy WalletViewer
         (walletViewer, walletViewerImpl) = deployWalletViewer();
 
-        // depploy governance
+        // deploy governance
         (engenGovernance) = deployGovernance();
+
+        // deploy bridgedKinto
+        (bridgedKinto, bridgedKintoImpl) = deployBridgedKinto();
+
+        // deploy rewardsDistributor
+        (rewardsDistributor, rewardsDistributorImpl) = deployRewardsDistributor();
+
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        bridgedKinto.setMiningContract(address(rewardsDistributor));
 
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode =
@@ -210,7 +239,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         // upgrade factory
         bytecode = abi.encodePacked(
-            type(KintoWalletFactory).creationCode, abi.encode(address(wallet), address(kintoRegistry), address(kintoID))
+            type(KintoWalletFactory).creationCode, abi.encode(wallet, kintoRegistry, kintoID, rewardsDistributor)
         );
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         address implementation = Create2.deploy(0, 0, bytecode);
@@ -218,8 +247,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         factory.upgradeTo(implementation);
 
         // upgrade app registry
-        bytecode =
-            abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(address(factory), address(paymaster)));
+        bytecode = abi.encodePacked(type(KintoAppRegistry).creationCode, abi.encode(factory, paymaster));
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         implementation = Create2.deploy(0, 0, bytecode);
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
@@ -265,8 +293,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         // deploy factory implementation
         bytes memory creationCode = type(KintoWalletFactory).creationCode;
-        bytes memory bytecode =
-            abi.encodePacked(creationCode, abi.encode(address(dummy), address(dummy), address(kintoID)));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(dummy, dummy, kintoID, dummy));
         address implementation = _deployImplementation("KintoWalletFactory", bytecode, false);
         address proxy = _deployProxy("KintoWalletFactory", implementation, false);
 
@@ -308,7 +335,6 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         _sponsorPaymaster = SponsorPaymaster(payable(proxy));
         _sponsorPaymasterImpl = SponsorPaymaster(payable(implementation));
 
-        address owner = privateKey > 0 ? vm.addr(privateKey) : msg.sender;
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _sponsorPaymaster.initialize(owner, kintoRegistry, kintoID); // owner is the address that deploys the paymaster
     }
@@ -441,6 +467,23 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(engenCredits)));
         address implementation = _deployImplementation("EngenGovernance", bytecode, false);
         _governance = EngenGovernance(payable(implementation));
+    }
+
+    function deployBridgedKinto() public returns (BridgedKinto proxy, BridgedKinto impl) {
+        bytes memory creationCode = type(BridgedKinto).creationCode;
+        impl = BridgedKinto(_deployImplementation("BridgedKinto", abi.encodePacked(creationCode), false));
+        proxy = BridgedKinto(_deployProxy("BridgedKinto", address(impl), false));
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        proxy.initialize("Kinto Token", "K", owner, owner, owner);
+    }
+
+    function deployRewardsDistributor() public returns (RewardsDistributor proxy, RewardsDistributor impl) {
+        bytes memory creationCode = type(RewardsDistributor).creationCode;
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(bridgedKinto, 1_682_899_200, factory));
+        impl = RewardsDistributor(_deployImplementation("RewardsDistributor", bytecode, false));
+        proxy = RewardsDistributor(_deployProxy("RewardsDistributor", address(impl), false));
+        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
+        proxy.initialize(bytes32(""), 0);
     }
 
     function setSystemContracts() public {

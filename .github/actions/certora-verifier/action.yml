@@ -25,9 +25,9 @@ runs:
     - name: Install solc
       shell: bash
       run: |
-        wget https://github.com/ethereum/solidity/releases/download/v0.8.18/solc-static-linux
+        wget https://github.com/ethereum/solidity/releases/download/v0.8.24/solc-static-linux
         chmod +x solc-static-linux
-        sudo mv solc-static-linux /usr/local/bin/solc8.18
+        sudo mv solc-static-linux /usr/local/bin/solc8.24
    
     - name: Verify
       run: |
