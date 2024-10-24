@@ -63,6 +63,7 @@ contract DeployScript is MigrationHelper {
         saveContractAddress("AccessManager", address(accessManager));
 
         (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(NioGovernor).creationCode, abi.encode(nioNFT, accessManager))), "010600");
+        vm.broadcast(deployerPrivateKey);
         NioGovernor governor = new NioGovernor{salt: salt}(nioNFT, address(accessManager));
         assertEq(address(governor), address(expectedAddress));
 
