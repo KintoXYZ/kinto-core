@@ -15,7 +15,9 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        (bytes32 salt, address expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(NioGuardians).creationCode, abi.encode(kintoAdminWallet))), "010000");
+        (bytes32 salt, address expectedAddress) = mineSalt(
+            keccak256(abi.encodePacked(type(NioGuardians).creationCode, abi.encode(kintoAdminWallet))), "010000"
+        );
 
         vm.broadcast(deployerPrivateKey);
         NioGuardians nioNFT = new NioGuardians{salt: salt}(address(kintoAdminWallet));
@@ -36,7 +38,8 @@ contract DeployScript is MigrationHelper {
 
         saveContractAddress("NioElectionV1-impl", address(election));
 
-        (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(election, ""))), "010E1E");
+        (salt, expectedAddress) =
+            mineSalt(keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(election, ""))), "010E1E");
 
         vm.broadcast(deployerPrivateKey);
         address proxy = address(new UUPSProxy{salt: salt}(address(election), ""));
@@ -51,7 +54,9 @@ contract DeployScript is MigrationHelper {
 
         saveContractAddress("NioElection", proxy);
 
-        (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(AccessManager).creationCode, abi.encode(kintoAdminWallet))), "ACC000");
+        (salt, expectedAddress) = mineSalt(
+            keccak256(abi.encodePacked(type(AccessManager).creationCode, abi.encode(kintoAdminWallet))), "ACC000"
+        );
 
         vm.broadcast(deployerPrivateKey);
         AccessManager accessManager = new AccessManager{salt: salt}(kintoAdminWallet);
@@ -62,7 +67,9 @@ contract DeployScript is MigrationHelper {
 
         saveContractAddress("AccessManager", address(accessManager));
 
-        (salt, expectedAddress) = mineSalt(keccak256(abi.encodePacked(type(NioGovernor).creationCode, abi.encode(nioNFT, accessManager))), "010600");
+        (salt, expectedAddress) = mineSalt(
+            keccak256(abi.encodePacked(type(NioGovernor).creationCode, abi.encode(nioNFT, accessManager))), "010600"
+        );
         vm.broadcast(deployerPrivateKey);
         NioGovernor governor = new NioGovernor{salt: salt}(nioNFT, address(accessManager));
         assertEq(address(governor), address(expectedAddress));
