@@ -152,10 +152,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     mapping(address => uint256) public unlockBlock;
 
     // rate & cost limits per user per app: user => app => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
 
     // rate limit across apps: user => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
 
     IKintoAppRegistry public override appRegistry;
