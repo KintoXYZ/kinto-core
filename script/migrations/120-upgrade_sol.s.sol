@@ -17,7 +17,6 @@ contract UpgradeBridgedSolScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        IKintoWallet adminWallet = IKintoWallet(_getChainDeployment("KintoWallet-admin"));
         sol = BridgedSol(payable(_getChainDeployment("SOL")));
         if (address(sol) == address(0)) {
             console2.log("SOL has to be deployed");

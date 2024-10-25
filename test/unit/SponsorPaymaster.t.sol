@@ -174,8 +174,8 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_DepositLocked() public {
-        uint256 balance = _user.balance;
         approveKYC(_kycProvider, _user, _userPk);
+        uint256 balance = _user.balance;
 
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(_user);
@@ -215,33 +215,6 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.expectRevert(ISponsorPaymaster.InvalidTarget.selector);
         vm.prank(_owner);
         _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
-    }
-
-    function testWithrawTo_WhenCallerIsOwner() public {
-        uint256 deposited = _paymaster.getDeposit();
-        approveKYC(_kycProvider, _user, _userPk);
-
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
-
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_owner));
-
-        assertEq(_paymaster.getDeposit(), deposited + 10e18);
-
-        deposited = _paymaster.getDeposit();
-
-        uint256 balBefore = address(_owner).balance;
-        vm.prank(_owner);
-        _paymaster.withdrawTo(payable(_owner), deposited);
-
-        assertEq(address(_paymaster).balance, 0);
-        assertEq(address(_owner).balance, balBefore + deposited);
-    }
-
-    function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
     }
 
     /* ============ depositInfo ============ */

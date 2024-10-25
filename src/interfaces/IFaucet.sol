@@ -7,6 +7,7 @@ interface IFaucet {
     /* ============ Errors ============ */
     error OnlyOwner();
     error OnlyFactory();
+    error OnlyKintoID();
     error NotEnoughETH();
     error FaucetNotActive();
     error AlreadyClaimed();
@@ -28,6 +29,8 @@ interface IFaucet {
     function claimKintoETH() external;
 
     function claimKintoETH(SignatureData calldata _signatureData) external;
+
+    function claimOnCreation(address _receiver) external;
 
     function withdrawAll() external;
 

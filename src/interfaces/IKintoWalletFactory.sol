@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {IKintoWallet} from "./IKintoWallet.sol";
-import {IKintoID} from "./IKintoID.sol";
-import {IKintoAppRegistry} from "./IKintoAppRegistry.sol";
-import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IFaucet} from "@kinto-core/interfaces/IFaucet.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 
 interface IKintoWalletFactory {
     /* ============ Errors ============ */
@@ -66,6 +68,8 @@ interface IKintoWalletFactory {
     function kintoID() external view returns (IKintoID);
 
     function appRegistry() external view returns (IKintoAppRegistry);
+
+    function rewardsDistributor() external view returns (RewardsDistributor);
 
     function beacon() external view returns (UpgradeableBeacon);
 

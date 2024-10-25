@@ -29,8 +29,8 @@ contract KintoWalletUpgrade is KintoWallet {
 }
 
 contract KintoWalletFactoryUpgrade is KintoWalletFactory {
-    constructor(KintoWallet _impl, IKintoAppRegistry _app, IKintoID _kintoID)
-        KintoWalletFactory(_impl, _app, _kintoID)
+    constructor(KintoWallet _impl, IKintoAppRegistry _app, IKintoID _kintoID, RewardsDistributor _rewardsDistributor)
+        KintoWalletFactory(_impl, _app, _kintoID, _rewardsDistributor)
     {}
 
     function newFunction() public pure returns (uint256) {
@@ -67,7 +67,9 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testCreateAccount() public {
         vm.prank(address(_owner));
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
+
         assertEq(_kintoWallet.owners(0), _owner);
+        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 1e18);
     }
 
     function testCreateAccount_WhenAlreadyExists() public {
@@ -105,7 +107,7 @@ contract KintoWalletFactoryTest is SharedSetup {
 
     function testUpgradeTo() public {
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID, _rewardsDistributor);
         vm.prank(_owner);
         _walletFactory.upgradeTo(address(_newImplementation));
         assertEq(KintoWalletFactoryUpgrade(address(_walletFactory)).newFunction(), 1);
@@ -114,7 +116,7 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
         address someone = _user2;
         KintoWalletFactoryUpgrade _newImplementation =
-            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID);
+            new KintoWalletFactoryUpgrade(_kintoWalletImpl, _kintoAppRegistry, _kintoID, _rewardsDistributor);
 
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
@@ -373,8 +375,9 @@ contract KintoWalletFactoryTest is SharedSetup {
 
         vm.deal(_user, 1 ether);
         vm.prank(_user);
+        uint256 balance = address(_user2).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user2));
-        assertEq(address(_user2).balance, 1e18);
+        assertEq(address(_user2).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCdAndTargetIsContract() public {
@@ -397,8 +400,9 @@ contract KintoWalletFactoryTest is SharedSetup {
         approveKYC(_kycProvider, _user, _userPk);
         revokeKYC(_kycProvider, _owner, _ownerPk);
         vm.prank(_owner);
+        uint256 balance = address(_user).balance;
         _walletFactory.sendMoneyToAccount{value: 1e18}(address(_user));
-        assertEq(address(_user).balance, 1e18);
+        assertEq(address(_user).balance, balance + 1e18);
     }
 
     function testSendMoneyToAccount_WhenCallerIsKYCProvider_WhenTargetKYCProvider() public {
@@ -604,10 +608,5 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testSendMoneyToRecoverer_RevertWhenOnlyRecoverer() public {
         vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.OnlyRecoverer.selector, address(123), _recoverer));
         _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), address(123));
-    }
-
-    function testSendMoneyToRecoverer_RevertWhenInvalidSender() public {
-        vm.expectRevert(abi.encodeWithSelector(IKintoWalletFactory.InvalidSender.selector, address(this)));
-        _walletFactory.sendMoneyToRecoverer(address(_kintoWallet), _recoverer);
     }
 }

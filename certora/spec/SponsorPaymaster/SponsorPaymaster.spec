@@ -7,23 +7,12 @@ use invariant initializingIsDisabled filtered{f -> !upgradeMethods(f)}
 /// @title The sum of user balances is covered by the EntryPoint deposit of the Paymaster.
 invariant PaymasterEthSolvency()
     to_mathint(getDeposit()) >= sumOfUserBalances
-    filtered{f -> !upgradeMethods(f) &&
-    /// The owner is supposed to be restircted from calling this function: 
-    f.selector != sig:withdrawTo(address,uint256).selector}
+    filtered{f -> !upgradeMethods(f)}
     {
         preserved with (env e) {
             require !senderIsSelf(e);
         }
     }
-
-/// @title Only the contract owner may call withdrawTo().
-rule onlyOwnerCalls_withdrawTo() {
-    env e;
-    address _owner = owner();
-    calldataarg args;
-    withdrawTo(e, args);
-    assert e.msg.sender == _owner;
-}
 
 /// @title The gas cost post-op cannot depend on the user address.
 /// The contract spent can only change for the post-op context account.
@@ -71,9 +60,8 @@ rule balanceOnlyIncreasesByDeposit(address account, method f) filtered{f -> !vie
 /// @title The balance of any app can decrease at most by the eth max cost.
 rule balanceDecreaseIsAtMostMaxCost(address app, method f) 
 filtered{f -> !viewOrUpgrade(f) &&
-    f.selector != sig:withdrawTokensTo(address,uint256).selector &&
-    f.selector != sig:withdrawTo(address,uint256).selector} 
-{    
+    f.selector != sig:withdrawTokensTo(address,uint256).selector}
+{
     uint256 balanceBefore = balances(app);
     env e;
     mathint ethMaxCost;
@@ -270,7 +258,7 @@ filtered{f -> !viewOrUpgrade(f)} {
 /// @title No operation can front-run and make a call to withdrawTokensTo() revert.
 rule cannotDos_withdrawTokensTo(method f)
 /// The owner is supposed to be restircted from calling this function:  
-filtered{f -> !viewOrUpgrade(f) && f.selector != sig:withdrawTo(address,uint256).selector} {
+filtered{f -> !viewOrUpgrade(f)} {
     env e1;
     require e1.block.number > 0;
     address target; uint256 amount;

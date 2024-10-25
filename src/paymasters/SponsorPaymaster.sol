@@ -1,18 +1,120 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@aa/core/BasePaymaster.sol";
+
+import "@aa/interfaces/IPaymaster.sol";
+import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 
 import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
+
+/**
+ * Helper class for creating a paymaster.
+ * provides helper methods for staking.
+ * Validates that the postOp is called only by the entryPoint.
+ */
+abstract contract BasePaymaster is IPaymaster, Ownable {
+    IEntryPoint public immutable entryPoint;
+
+    constructor(IEntryPoint _entryPoint) {
+        entryPoint = _entryPoint;
+    }
+
+    /// @inheritdoc IPaymaster
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        external
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
+        _requireFromEntryPoint();
+        return _validatePaymasterUserOp(userOp, userOpHash, maxCost);
+    }
+
+    /**
+     * Validate a user operation.
+     * @param userOp     - The user operation.
+     * @param userOpHash - The hash of the user operation.
+     * @param maxCost    - The maximum cost of the user operation.
+     */
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        internal
+        virtual
+        returns (bytes memory context, uint256 validationData);
+
+    /// @inheritdoc IPaymaster
+    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) external override {
+        _requireFromEntryPoint();
+        _postOp(mode, context, actualGasCost);
+    }
+
+    /**
+     * Post-operation handler.
+     * (verified to be called only through the entryPoint)
+     * @dev If subclass returns a non-empty context from validatePaymasterUserOp,
+     *      it must also implement this method.
+     * @param mode          - Enum with the following options:
+     *                        opSucceeded - User operation succeeded.
+     *                        opReverted  - User op reverted. still has to pay for gas.
+     *                        postOpReverted - User op succeeded, but caused postOp (in mode=opSucceeded) to revert.
+     *                                         Now this is the 2nd call, after user's op was deliberately reverted.
+     * @param context       - The context value returned by validatePaymasterUserOp
+     * @param actualGasCost - Actual gas used so far (without this postOp call).
+     */
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual {
+        (mode, context, actualGasCost); // unused params
+        // subclass must override this method if validatePaymasterUserOp returns a context
+        revert("must override");
+    }
+
+    /**
+     * Add stake for this paymaster.
+     * This method can also carry eth value to add to the current stake.
+     * @param unstakeDelaySec - The unstake delay for this paymaster. Can only be increased.
+     */
+    function addStake(uint32 unstakeDelaySec) external payable onlyOwner {
+        entryPoint.addStake{value: msg.value}(unstakeDelaySec);
+    }
+
+    /**
+     * Return current paymaster's deposit on the entryPoint.
+     */
+    function getDeposit() public view returns (uint256) {
+        return entryPoint.balanceOf(address(this));
+    }
+
+    /**
+     * Unlock the stake, in order to withdraw it.
+     * The paymaster can't serve requests once unlocked, until it calls addStake again
+     */
+    function unlockStake() external onlyOwner {
+        entryPoint.unlockStake();
+    }
+
+    /**
+     * Withdraw the entire paymaster's stake.
+     * stake must be unlocked first (and then wait for the unstakeDelay to be over)
+     * @param withdrawAddress - The address to send withdrawn value.
+     */
+    function withdrawStake(address payable withdrawAddress) external onlyOwner {
+        entryPoint.withdrawStake(withdrawAddress);
+    }
+
+    /**
+     * Validate the call is made from a valid entrypoint
+     */
+    function _requireFromEntryPoint() internal virtual {
+        require(msg.sender == address(entryPoint), "Sender not EntryPoint");
+    }
+}
 
 /**
  * @notice An ETH-based paymaster that accepts ETH deposits
@@ -50,10 +152,13 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     mapping(address => uint256) public unlockBlock;
 
     // rate & cost limits per user per app: user => app => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
 
     // rate limit across apps: user => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
 
     IKintoAppRegistry public override appRegistry;
@@ -124,7 +229,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (msg.sender == account) {
             lockTokenDeposit();
         }
-        deposit();
+        entryPoint.depositTo{value: msg.value}(address(this));
     }
 
     /**
@@ -144,8 +249,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
-     * Withdraw ETH
-     * can only be called after unlock() is called in a previous block.
+     * Withdraw ETH can only be called after unlock() is called in a previous block.
      * @param target address to send to
      * @param amount amount to withdraw
      */
@@ -350,6 +454,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV13 is SponsorPaymaster {
+contract SponsorPaymasterV14 is SponsorPaymaster {
     constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }

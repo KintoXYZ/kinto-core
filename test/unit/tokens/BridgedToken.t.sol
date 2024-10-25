@@ -10,28 +10,26 @@ import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 import {BridgedTokenHarness} from "@kinto-core-test/harness/BridgedTokenHarness.sol";
 
 contract BridgedTokenTest is BaseTest {
-    address admin;
     address minter;
     address upgrader;
-    address alice;
 
     BridgedToken token;
 
     function setUp() public override {
-        admin = createUser("admin");
+        super.setUp();
+
         minter = createUser("minter");
         upgrader = createUser("upgrader");
-        alice = createUser("alice");
 
         token = BridgedToken(address(new UUPSProxy(address(new BridgedToken(18)), "")));
-        token.initialize("Stablecoin", "DAI", admin, minter, upgrader);
+        token.initialize("Stablecoin", "DAI", admin0, minter, upgrader);
     }
 
     function testUp() public view override {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");
-        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin0));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
     }
@@ -39,7 +37,7 @@ contract BridgedTokenTest is BaseTest {
     /* ============ 6 decimal token ============ */
     function testTokenDecimals() public {
         BridgedToken token6 = BridgedToken(address(new UUPSProxy(address(new BridgedToken(6)), "")));
-        token6.initialize("USDC", "USDC", admin, minter, upgrader);
+        token6.initialize("USDC", "USDC", admin0, minter, upgrader);
         assertEq(token6.decimals(), 6);
     }
 
@@ -47,35 +45,39 @@ contract BridgedTokenTest is BaseTest {
 
     function testMint() public {
         vm.prank(minter);
-        token.mint(alice, 1000);
+        token.mint(alice0, 1000);
 
-        assertEq(token.balanceOf(alice), 1000);
+        assertEq(token.balanceOf(alice0), 1000);
     }
 
     function testBurn() public {
         vm.prank(minter);
-        token.mint(alice, 1000);
+        token.mint(alice0, 1000);
 
         vm.prank(minter);
-        token.burn(alice, 500);
+        token.burn(alice0, 500);
 
-        assertEq(token.balanceOf(alice), 500);
+        assertEq(token.balanceOf(alice0), 500);
     }
 
     function testMint_RevertWhen_NotUnauthorized() public {
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.MINTER_ROLE())
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice0, token.MINTER_ROLE()
+            )
         );
-        vm.prank(alice); // alice does not have MINTER_ROLE
-        token.mint(alice, 1000);
+        vm.prank(alice0); // alice0 does not have MINTER_ROLE
+        token.mint(alice0, 1000);
     }
 
     function testBurn_RevertWhen_NotUnauthorized() public {
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.MINTER_ROLE())
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice0, token.MINTER_ROLE()
+            )
         );
-        vm.prank(alice); // alice does not have MINTER_ROLE
-        token.burn(alice, 500);
+        vm.prank(alice0); // alice0 does not have MINTER_ROLE
+        token.burn(alice0, 500);
     }
 
     /* ============ Proxy ============ */
@@ -91,7 +93,7 @@ contract BridgedTokenTest is BaseTest {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");
-        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin0));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
     }
@@ -101,10 +103,10 @@ contract BridgedTokenTest is BaseTest {
         // Only the upgrader can upgrade the contract
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.UPGRADER_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice0, token.UPGRADER_ROLE()
             )
         );
-        vm.prank(alice);
+        vm.prank(alice0);
         token.upgradeToAndCall(address(newImpl), bytes(""));
 
         vm.prank(upgrader);
@@ -116,7 +118,7 @@ contract BridgedTokenTest is BaseTest {
         assertEq(token.totalSupply(), 0);
         assertEq(token.name(), "Stablecoin");
         assertEq(token.symbol(), "DAI");
-        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin));
+        assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), admin0));
         assertTrue(token.hasRole(token.MINTER_ROLE(), minter));
         assertTrue(token.hasRole(token.UPGRADER_ROLE(), upgrader));
     }

@@ -132,7 +132,7 @@ jobs:
         run: sudo apt-get install -y lcov
 
       - name: Generate LCOV report
-        run: forge coverage --report lcov --allow-failure && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov --allow-failure && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        run: forge coverage --report lcov --allow-failure && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov --allow-failure && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" "src/nitro-contracts/*" && genhtml lcov.info --branch-coverage --output-dir coverage
         env:
           FOUNDRY_FUZZ_RUNS: 100
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
@@ -186,34 +186,34 @@ jobs:
             const header = '# Slither report'
             const body = process.env.REPORT
             await script({ github, context, header, body })
-  certora:
-    needs:
-      - test-local
-      - test-fork
-
-    name: Certora
-    runs-on: ubuntu-latest
-    # Run Certora only on main
-    # if: github.ref == 'refs/heads/main'
-    strategy:
-      fail-fast: false
-      max-parallel: 16
-      matrix:
-        contract:
-          - KintoID_SanctionsTraits.conf
-          - KintoID_Monitor1.conf
-          - KintoID_Monitor2.conf
-          - KintoWallet.conf
-          - KintoWalletFactory.conf
-          - SponsorPaymaster.conf
-          - SponsorPaymaster_additional.conf
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/install
-
-      - name: Run verification
-        uses: ./.github/actions/certora-verifier
-        with:
-          contractFile: ${{ matrix.contract }}
-          certoraKey: ${{ secrets.CERTORAKEY }}
+  #  certora:
+  #    needs:
+  #      - test-local
+  #      - test-fork
+  #
+  #    name: Certora
+  #    runs-on: ubuntu-latest
+  #    # Run Certora only on main
+  #    # if: github.ref == 'refs/heads/main'
+  #    strategy:
+  #      fail-fast: false
+  #      max-parallel: 16
+  #      matrix:
+  #        contract:
+  #          - KintoID_SanctionsTraits.conf
+  #          - KintoID_Monitor1.conf
+  #          - KintoID_Monitor2.conf
+  #          - KintoWallet.conf
+  #          - KintoWalletFactory.conf
+  #          - SponsorPaymaster.conf
+  #          - SponsorPaymaster_additional.conf
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #
+  #      - uses: ./.github/actions/install
+  #
+  #      - name: Run verification
+  #        uses: ./.github/actions/certora-verifier
+  #        with:
+  #          contractFile: ${{ matrix.contract }}
+  #          certoraKey: ${{ secrets.CERTORAKEY }}

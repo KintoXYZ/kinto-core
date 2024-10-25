@@ -23,6 +23,7 @@ import "@kinto-core/bridger/BridgerL2.sol";
 import "@kinto-core/Faucet.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
 import "@kinto-core/governance/EngenGovernance.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -45,7 +46,6 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWallet;
 
-    // Others
     EngenCredits _engenCredits;
     EngenBadges _engenBadges;
     SponsorPaymaster _paymaster;
@@ -56,6 +56,8 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     KintoInflator _inflator;
     TimelockController _engenTimelock;
     EngenGovernance _engenGovernance;
+    RewardsDistributor _rewardsDistributor;
+    BridgedKinto _bridgedKinto;
 
     /* ============ convenience methods ============ */
 
@@ -236,7 +238,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         vm.prank(_paymaster.owner());
         _paymaster.upgradeTo(address(_paymasterImpl));
 
-        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
+        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory, _paymaster);
         vm.prank(_kintoAppRegistry.owner());
         _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }

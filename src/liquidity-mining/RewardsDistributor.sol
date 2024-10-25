@@ -51,6 +51,13 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     event UserEngenClaimed(address indexed user, uint256 indexed amount);
 
+    /**
+     * @notice Emitted once `user` claims the new user reward.
+     * @param user The user which claimed.
+     * @param amount Amount of tokens claimed.
+     */
+    event NewUserReward(address indexed user, uint256 indexed amount);
+
     /* ============ Errors ============ */
 
     /**
@@ -66,6 +73,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param leaf The leaf node.
      */
     error InvalidProof(bytes32[] proof, bytes32 leaf);
+
+    /**
+     * @notice Thrown when the caller is not the walletFactory.
+     * @param caller The caller address.
+     */
+    error OnlyWalletFactory(address caller);
 
     /**
      * @notice Thrown when the Engen rewards already claimed by the user.
@@ -96,11 +109,17 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice The address of Kinto token.
     IERC20 public immutable KINTO;
 
+    /// @notice The address of Kinto Wallet Factory.
+    address public immutable walletFactory;
+
     /// @notice Total amount of tokens to give away during liquidity mining. 4 million tokens.
     uint256 public constant totalTokens = 4_000_000 * 1e18;
 
     /// @notice Total number of quarters 40 == 10 years.
     uint256 public constant quarters = 10 * 4;
+
+    /// @notice New user rewards in K tokens upon wallet creation.
+    uint256 public constant NEW_USER_REWARD = 1 * 1e18;
 
     /* ============ State Variables ============ */
 
@@ -138,11 +157,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param kinto_ The address of the Kinto token.
      * @param startTime_ The starting time of the mining program.
      */
-    constructor(IERC20 kinto_, uint256 startTime_) {
+    constructor(IERC20 kinto_, uint256 startTime_, address walletFactory_) {
         _disableInitializers();
 
         KINTO = kinto_;
         startTime = startTime_;
+        walletFactory = walletFactory_;
     }
 
     /**
@@ -241,6 +261,23 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
         // Emit an event indicating that the user has claimed tokens
         emit UserClaimed(user, amount);
+    }
+
+    /**
+     * @notice Allows a new user to claim the new user reward.
+     * @param wallet The address of the wallet to claim the reward for.
+     */
+    function newUserClaim(address wallet) external nonReentrant {
+        if (msg.sender != walletFactory) {
+            revert OnlyWalletFactory(msg.sender);
+        }
+        if (claimedByUser[wallet] > 0) {
+            revert AlreadyClaimed(wallet);
+        }
+        claimedByUser[wallet] += NEW_USER_REWARD;
+        totalClaimed += NEW_USER_REWARD;
+        KINTO.safeTransfer(wallet, NEW_USER_REWARD);
+        emit NewUserReward(wallet, NEW_USER_REWARD);
     }
 
     /**

@@ -8,12 +8,14 @@ import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/sample/Counter.sol";
 
+import "@kinto-core-test/harness/KintoIdHarness.sol";
 import "@kinto-core-test/harness/KintoWalletHarness.sol";
 import "@kinto-core-test/harness/SponsorPaymasterHarness.sol";
 import "@kinto-core-test/harness/KintoAppRegistryHarness.sol";
 import "@kinto-core-test/helpers/UserOp.sol";
 import "@kinto-core-test/helpers/AATestScaffolding.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {ForkTest} from "@kinto-core-test/helpers/ForkTest.sol";
 
 // scripts & migrations
@@ -27,6 +29,19 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+
+    address[] internal users;
+
+    address internal admin;
+    address internal alice;
+    address internal bob;
+    address internal ian;
+    address internal hannah;
+    address internal george;
+    address internal frank;
+    address internal david;
+    address internal charlie;
+    address internal eve;
 
     // events
     event UserOperationRevertReason(
@@ -67,6 +82,8 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.label(address(_faucet), "Faucet");
         vm.label(address(_bridgerL2), "BridgerL2");
         vm.label(address(_engenGovernance), "EngenGovernance");
+        vm.label(address(_bridgedKinto), "BridgedKinto");
+        vm.label(address(_rewardsDistributor), "RewardsDistributor");
     }
 
     function deployCounter() public {
@@ -102,18 +119,52 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _bridgerL2 = BridgerL2(contracts.bridgerL2);
         _inflator = KintoInflator(contracts.inflator);
         _engenGovernance = EngenGovernance(contracts.engenGovernance);
+        _bridgedKinto = BridgedKinto(contracts.bridgedKinto);
+        _rewardsDistributor = RewardsDistributor(contracts.rewardsDistributor);
+
+        // upgrade KintoId to avoid stale KYC on wrap
+        vm.startPrank(_owner);
+        _kintoID.upgradeTo(address(new KintoIdHarness(address(_walletFactory), address(_faucet))));
+        vm.stopPrank();
 
         // grant kyc provider role to _kycProvider on kintoID
         bytes32 role = _kintoID.KYC_PROVIDER_ROLE();
         vm.prank(_owner);
         _kintoID.grantRole(role, _kycProvider);
 
+        vm.prank(_owner);
+        _faucet.startFaucet{value: 1 ether}();
+
         // approve wallet's owner KYC
         approveKYC(_kycProvider, _owner, _ownerPk);
+
+        // give K tokens to RD
+        vm.startPrank(_owner);
+        _bridgedKinto.mint(address(_rewardsDistributor), _rewardsDistributor.totalTokens());
+        vm.stopPrank();
 
         // deploy latest KintoWallet version through wallet factory
         vm.prank(_owner);
         _kintoWallet = _walletFactory.createAccount(_owner, _recoverer, 0);
+
+        users = new address[](signers.length);
+        for (uint256 i = 0; i < signers.length; i++) {
+            approveKYC(_kycProvider, signers[i], signersPk[i]);
+            _kintoID.isKYC(signers[i]);
+            vm.prank(signers[i]);
+            users[i] = address(_walletFactory.createAccount(signers[i], _recoverer, 0));
+        }
+        // Garbage Solidity can't destruct a dynamic array
+        admin = users[0];
+        alice = users[1];
+        bob = users[2];
+        ian = users[3];
+        hannah = users[4];
+        george = users[5];
+        frank = users[6];
+        david = users[7];
+        charlie = users[8];
+        eve = users[9];
 
         // fund wallet on sponsor paymaster
         fundSponsorForApp(_owner, address(_kintoWallet));
