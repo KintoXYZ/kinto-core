@@ -16,7 +16,7 @@ contract ViewerTest is BaseTest {
 
     function setUp() public override {
         // Deploy Viewer contract
-        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer()), "")));
+        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer(address(0))), "")));
         viewer.initialize();
 
         token0 = new ERC20Mock("token0", "TNK0", 18);
@@ -29,7 +29,7 @@ contract ViewerTest is BaseTest {
     }
 
     function testInitialize() public {
-        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer()), "")));
+        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer(address(0))), "")));
         viewer.initialize();
 
         assertEq(viewer.owner(), address(this));
