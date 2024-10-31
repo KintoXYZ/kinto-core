@@ -131,6 +131,38 @@ contract ContractCallTest is SharedSetup {
             ),
             false
         );
+
+        bytes memory handleAggregatedOpsCallData = abi.encodeWithSelector(bytes4(0x4b1d7cf5), new bytes(0), beneficiary);
+        bytes memory handleAggregatedOpsV7CallData =
+            abi.encodeWithSelector(bytes4(0xdbed18e0), new bytes(0), beneficiary);
+
+        // Test handleAggregatedOps
+        assertEq(
+            _kintoAppRegistry.isContractCallAllowedFromEOA(
+                beneficiary, _kintoAppRegistry.ENTRYPOINT_V6(), handleAggregatedOpsCallData, 0
+            ),
+            true
+        );
+        assertEq(
+            _kintoAppRegistry.isContractCallAllowedFromEOA(
+                _user, _kintoAppRegistry.ENTRYPOINT_V6(), handleAggregatedOpsCallData, 0
+            ),
+            false
+        );
+
+        // Test handleAggregatedOps V7
+        assertEq(
+            _kintoAppRegistry.isContractCallAllowedFromEOA(
+                beneficiary, _kintoAppRegistry.ENTRYPOINT_V7(), handleAggregatedOpsV7CallData, 0
+            ),
+            true
+        );
+        assertEq(
+            _kintoAppRegistry.isContractCallAllowedFromEOA(
+                _user, _kintoAppRegistry.ENTRYPOINT_V7(), handleAggregatedOpsV7CallData, 0
+            ),
+            false
+        );
     }
 
     function testIsContractCallAllowedFromEOA_WhenForbiddenEntryPointFunctions() public view {

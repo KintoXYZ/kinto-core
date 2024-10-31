@@ -78,6 +78,8 @@ contract KintoAppRegistry is
 
     bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
     bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
+    bytes4 public constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
+    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
     bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
     bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
     bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
@@ -344,7 +346,11 @@ contract KintoAppRegistry is
     }
 
     function isHandleOps(address addr, bytes4 selector) public pure returns (bool) {
-        return isEntryPoint(addr) && (selector == SELECTOR_EP_HANDLEOPS || selector == SELECTOR_EP_HANDLE_OPS_V7);
+        return isEntryPoint(addr)
+            && (
+                selector == SELECTOR_EP_HANDLEOPS || selector == SELECTOR_EP_HANDLE_OPS_V7
+                    || selector == SELECTOR_EP_HANDLEO_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7
+            );
     }
 
     function forbiddenEPFunctions(bytes4 selector) public pure returns (bool) {
@@ -593,7 +599,7 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV20 is KintoAppRegistry {
+contract KintoAppRegistryV21 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
         KintoAppRegistry(_walletFactory, _paymaster)
     {}
