@@ -20,29 +20,25 @@ contract Script is MigrationHelper {
     function run() public override {
         super.run();
 
-        // ETH
-        deployBridgedToken("aETH", "Aave WETH", 18, "AE7000");
         // WBTC
-        deployBridgedToken("aWBTC", "Aave WBTC ", 8, "A0B7C0");
-        // weETH
-        deployBridgedToken("aweETH", "Aave weETH", 18, "A0EE70");
-        // USDC
-        deployBridgedToken("aUSDC", "Aave weETH", 6, "A06DC0");
+        deployBridgedToken("WBTC", "WBTC ", 8, "0B7C00");
         // USDT
-        deployBridgedToken("aUSDT", "Aave USDT", 6, "A06D70");
+        deployBridgedToken("USDT", "USDT", 6, "06D700");
         // ARB
-        deployBridgedToken("aARB", "Aave ARB", 18, "AA9B00");
+        deployBridgedToken("ARB", "ARB", 18, "A9B000");
         // DAI
-        deployBridgedToken("aDAI", "Aave DAI", 18, "ADA100");
+        deployBridgedToken("DAI", "DAI", 18, "DA1000");
         // LINK
-        deployBridgedToken("aLINK", "Aave LINK", 18, "A11000");
+        deployBridgedToken("LINK", "LINK", 18, "110000");
         // GHO
-        deployBridgedToken("aGHO", "Aave Gho", 18, "A60000");
+        deployBridgedToken("GHO", "Gho", 18, "600000");
         // rETH
-        deployBridgedToken("arETH", "Aave rETH", 18, "A9E700");
+        deployBridgedToken("rETH", "rETH", 18, "9E7000");
         // cbETH
-        deployBridgedToken("acbETH", "Aave cbETH", 18, "ACBE70");
+        deployBridgedToken("cbETH", "cbETH", 18, "CBE700");
         // cbBTC
-        deployBridgedToken("acbBTC", "Aave cbBTC", 8, "ACBB7C");
+        deployBridgedToken("cbBTC", "Coinbase Wrapped BTC", 8, "CBB7C0");
+        // AAVE
+        deployBridgedToken("AAVE", "Aave Token", 18, "AA0E00");
     }
 }
