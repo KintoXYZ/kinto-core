@@ -21,21 +21,19 @@ contract Script is MigrationHelper {
         super.run();
 
         // WBTC
-        deployBridgedToken("WBTC", "WBTC ", 8, "0B7C00");
+        deployBridgedToken("WBTC", "Wrapped BTC", 8, "0B7C00");
         // USDT
-        deployBridgedToken("USDT", "USDT", 6, "06D700");
+        deployBridgedToken("USDT", "Tether USD", 6, "06D700");
         // ARB
-        deployBridgedToken("ARB", "ARB", 18, "A9B000");
-        // DAI
-        deployBridgedToken("DAI", "DAI", 18, "DA1000");
+        deployBridgedToken("ARB", "Arbitrum", 18, "A9B000");
         // LINK
-        deployBridgedToken("LINK", "LINK", 18, "110000");
+        deployBridgedToken("LINK", "ChainLink Token", 18, "110000");
         // GHO
-        deployBridgedToken("GHO", "Gho", 18, "600000");
+        deployBridgedToken("GHO", "Gho Token", 18, "600000");
         // rETH
-        deployBridgedToken("rETH", "rETH", 18, "9E7000");
+        deployBridgedToken("rETH", "Rocket Pool ETH", 18, "9E7000");
         // cbETH
-        deployBridgedToken("cbETH", "cbETH", 18, "CBE700");
+        deployBridgedToken("cbETH", "Coinbase Wrapped Staked ETH", 18, "CBE700");
         // cbBTC
         deployBridgedToken("cbBTC", "Coinbase Wrapped BTC", 8, "CBB7C0");
         // AAVE
