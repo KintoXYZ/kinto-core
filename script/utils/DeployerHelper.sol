@@ -56,11 +56,12 @@ abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
             vm.writeFile(path, "{}");
         }
 
-        string memory json = vm.readFile(path);
-        string[] memory keys = vm.parseJsonKeys(json, "$");
-        for (uint256 index = 0; index < keys.length; index++) {
-            vm.serializeString(contractName, keys[index], json.readString(string.concat(".", keys[index])));
-        }
-        vm.writeJson(vm.serializeAddress(contractName, contractName, addr), path);
+        // Execute jq with direct JSON object
+        string[] memory inputs = new string[](3);
+        inputs[0] = "jq";
+        inputs[1] = string.concat('. + {"', contractName, '": "', vm.toString(addr), '"}');
+        inputs[2] = path;
+
+        vm.writeFile(path, string(vm.ffi(inputs)));
     }
 }
