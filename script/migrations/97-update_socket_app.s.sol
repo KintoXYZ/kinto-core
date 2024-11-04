@@ -12,7 +12,7 @@ contract KintoMigration97DeployScript is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
         address socketApp = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc; // Socket-DL contract
-        address[] memory appContracts = new address[](20);
+        address[] memory appContracts = new address[](21);
 
         // controllers
         appContracts[0] = address(0xaBc64E84c653e0f077c0178E4b1fAC01Bfcc20b0); // DAI controller
@@ -35,6 +35,7 @@ contract KintoMigration97DeployScript is MigrationHelper {
         appContracts[17] = address(0x7DA5691fB59740cF02CC7dc16743Be9dCBf685b5); // stUSD controller
         appContracts[18] = address(0xe5b6205CfC03786Fc554c40767A591b8dCBC1E76); // stEUR controller
         appContracts[19] = address(0xa968C2771d5E984979589ef8f6fA59D5818a208F); // SOL controller
+        appContracts[20] = address(0xaE7f260b74f289ab3701fb01Cbf81bCD76454222); // SPX controller
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),
