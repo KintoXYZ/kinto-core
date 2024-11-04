@@ -46,7 +46,7 @@ contract Script is MigrationHelper {
         deployBridgedToken("acbBTC", "Aave cbBTC", 8, "ACBB7C");
         // Aave
         deployBridgedToken("aAAVE", "Aave AAVE", 18, "AAA0E0");
-        // wstETH 
+        // wstETH
         deployBridgedToken("awstETH", "Aave wstETH", 18, "A067E7");
     }
 }
