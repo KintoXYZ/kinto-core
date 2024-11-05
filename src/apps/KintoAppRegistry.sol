@@ -454,7 +454,10 @@ contract KintoAppRegistry is
         if (isSystemContract(destination)) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
-        if (destination == address(0) || destination == CREATE2 || destination == ARB_WASM || destination == ARB_WASM_CACHE) {
+        if (
+            destination == address(0) || destination == CREATE2 || destination == ARB_WASM
+                || destination == ARB_WASM_CACHE
+        ) {
             address wallet = deployerToWallet[sender];
             // Only dev wallets can deploy
             if (wallet == address(0)) return false;
