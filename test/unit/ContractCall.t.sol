@@ -17,6 +17,9 @@ contract ContractCallTest is SharedSetup {
     address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
     address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
     address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
+    address public constant ARB_WASM = 0x0000000000000000000000000000000000000071;
+    address public constant ARB_WASM_CACHE = 0x0000000000000000000000000000000000000072;
+
 
     function setUp() public virtual override {
         super.setUp();
@@ -45,6 +48,14 @@ contract ContractCallTest is SharedSetup {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0), selectorCalldata, 0), false);
     }
 
+    function testIsContractCallAllowedFromEOA_WhenRandomEOAArbWasm() public view {
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(ARB_WASM), selectorCalldata, 0), false);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenRandomEOAArbWasmCache() public view {
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(ARB_WASM_CACHE), selectorCalldata, 0), false);
+    }
+
     function testIsContractCallAllowedFromEOA_WhenRandomEOA() public view {
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, address(0xdead), selectorCalldata, 0), false);
     }
@@ -63,6 +74,20 @@ contract ContractCallTest is SharedSetup {
         _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
 
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(0), selectorCalldata, 0), true);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenWasm() public {
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(ARB_WASM), selectorCalldata, 0), true);
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenWasmCache() public {
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.setDeployerEOA(address(_kintoWallet), address(0xde));
+
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(address(0xde), address(ARB_WASM_CACHE), selectorCalldata, 0), true);
     }
 
     function testIsContractCallAllowedFromEOA_WhenEntryPointWithdraw() public view {

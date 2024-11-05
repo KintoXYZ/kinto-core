@@ -76,6 +76,12 @@ contract KintoAppRegistry is
     /// @notice
     address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
+    /// @notice
+    address public constant ARB_WASM = 0x0000000000000000000000000000000000000071;
+
+    /// @notice
+    address public constant ARB_WASM_CACHE = 0x0000000000000000000000000000000000000072;
+
     bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
     bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
     bytes4 public constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
@@ -448,7 +454,7 @@ contract KintoAppRegistry is
         if (isSystemContract(destination)) return true;
 
         // Deployer EOAs are allowed to use CREATE and CREATE2
-        if (destination == address(0) || destination == CREATE2) {
+        if (destination == address(0) || destination == CREATE2 || destination == ARB_WASM || destination == ARB_WASM_CACHE) {
             address wallet = deployerToWallet[sender];
             // Only dev wallets can deploy
             if (wallet == address(0)) return false;
