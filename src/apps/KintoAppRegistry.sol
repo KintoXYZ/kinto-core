@@ -67,28 +67,43 @@ contract KintoAppRegistry is
     /// @notice The address of the admin deployer
     address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
 
-    /// @notice
+    /// @notice Address of the EntryPoint v6 contract that processes UserOperations
     address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
 
-    /// @notice
+    /// @notice Address of the EntryPoint v7 contract that processes UserOperations
     address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
-    /// @notice
+    /// @notice Address of the Arbitrum retryable transaction contract
     address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
-    /// @notice
+    /// @notice Address of the Arbitrum WASM executor contract
     address public constant ARB_WASM = 0x0000000000000000000000000000000000000071;
 
-    /// @notice
+    /// @notice Address of the Arbitrum WASM cache contract
     address public constant ARB_WASM_CACHE = 0x0000000000000000000000000000000000000072;
 
+    /// @notice Function selector for EntryPoint's withdrawStake function
     bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
+
+    /// @notice Function selector for EntryPoint's withdrawTo function
     bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
+
+    /// @notice Function selector for EntryPoint's handleAggregatedOps function
     bytes4 public constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
+
+    /// @notice Function selector for EntryPoint v7's handleAggregatedOps function
     bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
+
+    /// @notice Function selector for EntryPoint's handleOps function
     bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
+
+    /// @notice Function selector for EntryPoint v7's handleOps function
     bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
+
+    /// @notice Function selector for EntryPoint's deposit function
     bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
+
+    /// @notice Empty function selector used for validation checks
     bytes4 public constant SELECTOR_EMPTY = 0x00000000;
 
     /* ============ State Variables ============ */
