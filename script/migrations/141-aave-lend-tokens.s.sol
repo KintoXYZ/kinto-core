@@ -36,7 +36,7 @@ contract Script is MigrationHelper {
         deployBridgedToken("aEthUSDC", "Aave Ethereum USDC", 6, "AE06DC");
         deployBridgedToken("aArbUSDC", "Aave Arbitrum USDC", 6, "AA06DC");
         deployBridgedToken("aBasUSDC", "Aave Base USDC", 6, "AB06DC");
-       // // USDT
+        // USDT
         deployBridgedToken("aEthUSDT", "Aave Ethereum USDT", 6, "AE06D7");
         deployBridgedToken("aArbUSDT", "Aave Arbitrum USDT", 6, "AA06D7");
         deployBridgedToken("aBasUSDT", "Aave Base USDT", 6, "AB06D7");
