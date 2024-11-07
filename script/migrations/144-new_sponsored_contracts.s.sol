@@ -18,20 +18,22 @@ contract Script is MigrationHelper {
 
         address socketApp = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc;
 
-        // _handleOps(
-        //     abi.encodeWithSelector(
-        //         KintoAppRegistry.setSponsoredContracts.selector,
-        //         socketApp,
-        //         [_getChainDeployment("GHO"), _getChainDeployment("cbETH"), _getChainDeployment("cbBTC"), _getChainDeployment("LINK"), _getChainDeployment("rETH")].toMemoryArray(),
-        //         [true, true, true, true, true].toMemoryArray()
-        //     ),
-        //     address(_getChainDeployment("KintoAppRegistry"))
-        // );
+        _handleOps(
+            abi.encodeWithSelector(
+                KintoAppRegistry.setSponsoredContracts.selector,
+                socketApp,
+                [_getChainDeployment("ARB"), _getChainDeployment("AAVE")].toMemoryArray(),
+                [true, true].toMemoryArray()
+            ),
+            address(_getChainDeployment("KintoAppRegistry"))
+        );
 
-        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("cbETH")), true);
+        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("ARB")), true);
         assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("cbBTC")), true);
         assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("rETH")), true);
         assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("GHO")), true);
         assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("LINK")), true);
+        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("ARB")), true);
+        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("AAVE")), true);
     }
 }

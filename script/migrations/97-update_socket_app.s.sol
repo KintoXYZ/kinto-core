@@ -12,7 +12,7 @@ contract KintoMigration97DeployScript is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
 
         address socketApp = 0x3e9727470C66B1e77034590926CDe0242B5A3dCc; // Socket-DL contract
-        address[] memory appContracts = new address[](21);
+        address[] memory appContracts = new address[](28);
 
         // controllers
         appContracts[0] = address(0xaBc64E84c653e0f077c0178E4b1fAC01Bfcc20b0); // DAI controller
@@ -36,6 +36,13 @@ contract KintoMigration97DeployScript is MigrationHelper {
         appContracts[18] = address(0xe5b6205CfC03786Fc554c40767A591b8dCBC1E76); // stEUR controller
         appContracts[19] = address(0xa968C2771d5E984979589ef8f6fA59D5818a208F); // SOL controller
         appContracts[20] = address(0xaE7f260b74f289ab3701fb01Cbf81bCD76454222); // SPX controller
+        appContracts[21] = address(0x45113356a5b8b1ba8A8Bc75dcAAc42bE06663880); // rETH controller
+        appContracts[22] = address(0x2d82862810e1B040B8EA419dc309572364E574e7); // GHO controller
+        appContracts[23] = address(0x5f40795576557877d0fEd93b5A9ea8a195924862); // LINK controller
+        appContracts[24] = address(0x19E5C67db27284907978F4Fd856403346816BF87); // ARB controller
+        appContracts[25] = address(0x5324a41FaC86C0D6CD301B3144124fD3c399Fd87); // AAVE controller
+        appContracts[26] = address(0x8cd4725D32CcFB201A25F1E1a18260E53F37C927); // cbETH controller
+        appContracts[27] = address(0xB0FC8B7fb66958fe813475bBDC91c1Ac75725442); // cbBTC controller
 
         uint256[4] memory appLimits = [
             kintoAppRegistry.RATE_LIMIT_PERIOD(),

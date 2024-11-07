@@ -10,6 +10,14 @@ library ArrayHelpers {
         ret[0] = array[0];
         return ret;
     }
+
+    function toMemoryArray(bool[2] memory array) internal pure returns (bool[] memory) {
+        bool[] memory ret = new bool[](2);
+        ret[0] = array[0];
+        ret[1] = array[1];
+        return ret;
+    }
+
     function toMemoryArray(bool[5] memory array) internal pure returns (bool[] memory) {
         bool[] memory ret = new bool[](5);
         ret[0] = array[0];
@@ -40,6 +48,7 @@ library ArrayHelpers {
         ret[2] = array[2];
         return ret;
     }
+
     function toMemoryArray(address[4] memory array) internal pure returns (address[] memory) {
         address[] memory ret = new address[](4);
         ret[0] = array[0];
@@ -48,6 +57,7 @@ library ArrayHelpers {
         ret[3] = array[3];
         return ret;
     }
+
     function toMemoryArray(address[5] memory array) internal pure returns (address[] memory) {
         address[] memory ret = new address[](5);
         ret[0] = array[0];
