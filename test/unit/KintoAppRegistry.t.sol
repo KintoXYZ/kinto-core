@@ -929,6 +929,262 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.deployerToWallet(oldDeployer), address(0));
     }
 
+    /* ============ Add App Contracts ============ */
+
+    function testAddAppContracts() public {
+        // First register an app
+        address parentContract = address(123);
+        address[] memory initialContracts = new address[](1);
+        initialContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Create new contracts to add
+        address[] memory newContracts = new address[](2);
+        newContracts[0] = sponsorContract0;
+        newContracts[1] = sponsorContract1;
+
+        // Add new contracts
+        vm.prank(address(_kintoWallet));
+        vm.expectEmit(true, true, true, true);
+        emit IKintoAppRegistry.AppContractsAdded(parentContract, newContracts);
+        _kintoAppRegistry.addAppContracts(parentContract, newContracts);
+
+        // Verify the contracts were added correctly
+        IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
+        assertEq(metadata.appContracts.length, 3);
+        assertEq(metadata.appContracts[0], appContract0);
+        assertEq(metadata.appContracts[1], sponsorContract0);
+        assertEq(metadata.appContracts[2], sponsorContract1);
+
+        // Verify childToParentContract mappings
+        assertEq(_kintoAppRegistry.childToParentContract(appContract0), parentContract);
+        assertEq(_kintoAppRegistry.childToParentContract(sponsorContract0), parentContract);
+        assertEq(_kintoAppRegistry.childToParentContract(sponsorContract1), parentContract);
+    }
+
+    function testAddAppContracts_RevertWhen_NotOwner() public {
+        address parentContract = address(123);
+
+        // Register initial app
+        address[] memory initialContracts = new address[](1);
+        initialContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Try to add contracts from non-owner address
+        address[] memory newContracts = new address[](1);
+        newContracts[0] = sponsorContract0;
+
+        vm.prank(_user);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.InvalidAppOwner.selector, _user, address(_kintoWallet))
+        );
+        _kintoAppRegistry.addAppContracts(parentContract, newContracts);
+    }
+
+    function testAddAppContracts_RevertWhen_ContractAlreadyRegistered() public {
+        address parentContract = address(123);
+
+        // Register initial app
+        address[] memory initialContracts = new address[](1);
+        initialContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Try to add a contract that's already registered
+        address[] memory newContracts = new address[](1);
+        newContracts[0] = appContract0;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractAlreadyRegistered.selector, appContract0));
+        _kintoAppRegistry.addAppContracts(parentContract, newContracts);
+    }
+
+    function testAddAppContracts_RevertWhen_ContractHasNoBytecode() public {
+        address parentContract = address(123);
+
+        // Register initial app
+        address[] memory initialContracts = new address[](1);
+        initialContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Try to add a contract with no bytecode
+        address[] memory newContracts = new address[](1);
+        address contractWithNoBytecode = address(0x1234);
+        newContracts[0] = contractWithNoBytecode;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.ContractHasNoBytecode.selector, contractWithNoBytecode)
+        );
+        _kintoAppRegistry.addAppContracts(parentContract, newContracts);
+    }
+
+    /* ============ Remove App Contracts ============ */
+
+    function testRemoveAppContracts() public {
+        // First register an app with multiple contracts
+        address parentContract = address(123);
+        address[] memory initialContracts = new address[](3);
+        initialContracts[0] = appContract0;
+        initialContracts[1] = sponsorContract0;
+        initialContracts[2] = sponsorContract1;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Remove contracts
+        address[] memory contractsToRemove = new address[](2);
+        contractsToRemove[0] = sponsorContract0;
+        contractsToRemove[1] = sponsorContract1;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectEmit(true, true, true, true);
+        emit IKintoAppRegistry.AppContractsRemoved(parentContract, contractsToRemove);
+        _kintoAppRegistry.removeAppContracts(parentContract, contractsToRemove);
+
+        // Verify contracts were removed correctly
+        IKintoAppRegistry.Metadata memory metadata = _kintoAppRegistry.getAppMetadata(parentContract);
+        assertEq(metadata.appContracts.length, 1);
+        assertEq(metadata.appContracts[0], appContract0);
+
+        // Verify childToParentContract mappings were cleared
+        assertEq(_kintoAppRegistry.childToParentContract(appContract0), parentContract);
+        assertEq(_kintoAppRegistry.childToParentContract(sponsorContract0), address(0));
+        assertEq(_kintoAppRegistry.childToParentContract(sponsorContract1), address(0));
+    }
+
+    function testRemoveAppContracts_RevertWhen_NotOwner() public {
+        address parentContract = address(123);
+
+        // Register initial app
+        address[] memory initialContracts = new address[](2);
+        initialContracts[0] = appContract0;
+        initialContracts[1] = sponsorContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Try to remove contracts from non-owner address
+        address[] memory contractsToRemove = new address[](1);
+        contractsToRemove[0] = sponsorContract0;
+
+        vm.prank(_user);
+        vm.expectRevert(
+            abi.encodeWithSelector(IKintoAppRegistry.InvalidAppOwner.selector, _user, address(_kintoWallet))
+        );
+        _kintoAppRegistry.removeAppContracts(parentContract, contractsToRemove);
+    }
+
+    function testRemoveAppContracts_RevertWhen_ContractNotRegistered() public {
+        address parentContract = address(123);
+
+        // Register initial app
+        address[] memory initialContracts = new address[](1);
+        initialContracts[0] = appContract0;
+
+        uint256[] memory appLimits = new uint256[](4);
+        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
+        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
+        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
+        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+
+        vm.prank(address(_kintoWallet));
+        _kintoAppRegistry.registerApp(
+            "test",
+            parentContract,
+            initialContracts,
+            [appLimits[0], appLimits[1], appLimits[2], appLimits[3]],
+            new address[](0)
+        );
+
+        // Try to remove a contract that's not registered
+        address[] memory contractsToRemove = new address[](1);
+        contractsToRemove[0] = sponsorContract0;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractNotRegistered.selector, sponsorContract0));
+        _kintoAppRegistry.removeAppContracts(parentContract, contractsToRemove);
+    }
+
     /* ============ Helpers ============ */
 
     // Helper function to mock contract bytecode
