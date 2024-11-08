@@ -68,6 +68,12 @@ interface IKintoAppRegistry {
     /// @param target The address of the contract without bytecode
     error ContractHasNoBytecode(address target);
 
+    error ContractAlreadyRegistered(address addr);
+
+    error ContractNotRegistered(address addr);
+
+    error InvalidAppOwner(address sender, address owner);
+
     /* ============ Events ============ */
 
     /// @notice Emitted when a new app is registered
@@ -81,6 +87,10 @@ interface IKintoAppRegistry {
     /// @param owner The address of the app owner
     /// @param timestamp The timestamp of the update
     event AppUpdated(address indexed app, address owner, uint256 timestamp);
+
+    event AppContractsAdded(address indexed app, address[] contracts);
+
+    event AppContractsRemoved(address indexed app, address[] contracts);
 
     /// @notice Emitted when DSA is enabled for an app
     /// @param app The address of the app
@@ -179,6 +189,20 @@ interface IKintoAppRegistry {
         uint256[4] calldata appLimits,
         address[] calldata devEOAs
     ) external;
+
+    /**
+     * @notice Adds new app contracts to an existing app
+     * @param app The parent app contract address
+     * @param newContracts Array of new contract addresses to add
+     */
+    function addAppContracts(address app, address[] calldata newContracts) external;
+
+    /**
+     * @notice Removes app contracts from an existing app
+     * @param app The parent app contract address
+     * @param contractsToRemove Array of contract addresses to remove
+     */
+    function removeAppContracts(address app, address[] calldata contractsToRemove) external;
 
     /**
      * @notice Overrides the parent contract of a child contract

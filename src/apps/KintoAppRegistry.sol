@@ -216,6 +216,78 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
+    function addAppContracts(address app, address[] calldata newContracts) external {
+        // Check if caller is the app owner
+        uint256 tokenId = _appMetadata[app].tokenId;
+        if (msg.sender != ownerOf(tokenId)) {
+            revert InvalidAppOwner(msg.sender, ownerOf(tokenId));
+        }
+
+        // Validate and add each new contract
+        for (uint256 i = 0; i < newContracts.length; i++) {
+            address newContract = newContracts[i];
+
+            // Perform all the same validations as in updateMetadata
+            if (walletFactory.walletTs(newContract) > 0) revert CannotRegisterWallet(newContract);
+            if (childToParentContract[newContract] != address(0)) revert ContractAlreadyRegistered(newContract);
+            if (newContract == app) revert ChildAlreadyRegistered(newContract);
+            if (isReservedContract[newContract]) revert ReservedContract(newContract);
+            if (newContract.code.length == 0) revert ContractHasNoBytecode(newContract);
+
+            // Add to childToParentContract mapping
+            childToParentContract[newContract] = app;
+            // Push to appContracts array in storage
+            _appMetadata[app].appContracts.push(newContract);
+        }
+
+        emit AppContractsAdded(app, newContracts);
+    }
+
+    /// @inheritdoc IKintoAppRegistry
+    function removeAppContracts(address app, address[] calldata contractsToRemove) external {
+        // Check if caller is the app owner
+        uint256 tokenId = _appMetadata[app].tokenId;
+        if (msg.sender != ownerOf(tokenId)) {
+            revert InvalidAppOwner(msg.sender, ownerOf(tokenId));
+        }
+
+        // Get reference to storage array
+        address[] storage currentContracts = _appMetadata[app].appContracts;
+
+        // For each contract to remove
+        for (uint256 i = 0; i < contractsToRemove.length; i++) {
+            address contractToRemove = contractsToRemove[i];
+
+            // Verify the contract is registered to this app
+            if (childToParentContract[contractToRemove] != app) {
+                revert ContractNotRegistered(contractToRemove);
+            }
+
+            // Find and remove the contract from the array
+            bool found = false;
+            for (uint256 j = 0; j < currentContracts.length; j++) {
+                if (currentContracts[j] == contractToRemove) {
+                    // Remove from childToParentContract mapping
+                    delete childToParentContract[contractToRemove];
+
+                    // Move the last element to the position being deleted
+                    currentContracts[j] = currentContracts[currentContracts.length - 1];
+                    // Remove the last element
+                    currentContracts.pop();
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                revert ContractNotRegistered(contractToRemove);
+            }
+        }
+
+        emit AppContractsRemoved(app, contractsToRemove);
+    }
+
+    /// @inheritdoc IKintoAppRegistry
     function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags) external override {
         if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
