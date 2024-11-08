@@ -316,7 +316,7 @@ contract KintoAppRegistryTest is SharedSetup {
         appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
 
         vm.prank(address(_kintoWallet));
-        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, appContract0));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractAlreadyRegistered.selector, appContract0));
         _kintoAppRegistry.registerApp(
             name, appContract0, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], new address[](0)
         );
@@ -348,7 +348,7 @@ contract KintoAppRegistryTest is SharedSetup {
         );
 
         vm.prank(address(_kintoWallet));
-        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ChildAlreadyRegistered.selector, appContract0));
+        vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractAlreadyRegistered.selector, appContract0));
         _kintoAppRegistry.registerApp(
             "test 5",
             address(2),

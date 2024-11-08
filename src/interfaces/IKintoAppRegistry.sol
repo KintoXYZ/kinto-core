@@ -22,10 +22,6 @@ interface IKintoAppRegistry {
     /// @param parent The address of the parent contract
     error ParentAlreadyChild(address parent);
 
-    /// @notice Thrown when a child contract is already registered
-    /// @param child The address of the child contract
-    error ChildAlreadyRegistered(address child);
-
     /// @notice Thrown when attempting to register a reserved contract as an app contract
     /// @param target The address of the reserved contract
     error ReservedContract(address target);

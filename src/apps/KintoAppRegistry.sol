@@ -228,11 +228,7 @@ contract KintoAppRegistry is
             address newContract = newContracts[i];
 
             // Perform all the same validations as in updateMetadata
-            if (walletFactory.walletTs(newContract) > 0) revert CannotRegisterWallet(newContract);
-            if (childToParentContract[newContract] != address(0)) revert ContractAlreadyRegistered(newContract);
-            if (newContract == app) revert ChildAlreadyRegistered(newContract);
-            if (isReservedContract[newContract]) revert ReservedContract(newContract);
-            if (newContract.code.length == 0) revert ContractHasNoBytecode(newContract);
+            _checkAddAppContract(app, newContract);
 
             // Add to childToParentContract mapping
             childToParentContract[newContract] = app;
@@ -589,6 +585,14 @@ contract KintoAppRegistry is
 
     /* =========== Internal methods =========== */
 
+    function _checkAddAppContract(address app, address newContract) internal view {
+        if (walletFactory.walletTs(newContract) > 0) revert CannotRegisterWallet(newContract);
+        if (childToParentContract[newContract] != address(0)) revert ContractAlreadyRegistered(newContract);
+        if (newContract == app) revert ContractAlreadyRegistered(newContract);
+        if (isReservedContract[newContract]) revert ReservedContract(newContract);
+        if (newContract.code.length == 0) revert ContractHasNoBytecode(newContract);
+    }
+
     /**
      * @notice Updates the metadata of an app
      * @param tokenId The token ID of the app
@@ -636,13 +640,8 @@ contract KintoAppRegistry is
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             address appContract = appContracts[i];
-            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet(appContract);
-            if (
-                childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
-            ) revert ChildAlreadyRegistered(appContract);
-            if (appContract == parentContract) revert ChildAlreadyRegistered(appContract);
-            if (isReservedContract[appContract]) revert ReservedContract(appContract);
-            if (appContract.code.length == 0) revert ContractHasNoBytecode(appContract);
+
+            _checkAddAppContract(parentContract, appContract);
 
             childToParentContract[appContract] = parentContract;
         }
