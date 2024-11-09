@@ -43,10 +43,6 @@ contract KintoAppRegistryTest is SharedSetup {
         assertEq(_kintoAppRegistry.owner(), _owner);
         assertEq(_kintoAppRegistry.name(), "Kinto APP");
         assertEq(_kintoAppRegistry.symbol(), "KINTOAPP");
-        assertEq(_kintoAppRegistry.RATE_LIMIT_PERIOD(), 1 minutes);
-        assertEq(_kintoAppRegistry.RATE_LIMIT_THRESHOLD(), 10);
-        assertEq(_kintoAppRegistry.GAS_LIMIT_PERIOD(), 30 days);
-        assertEq(_kintoAppRegistry.GAS_LIMIT_THRESHOLD(), 1e16);
         assertEq(
             KintoAppRegistryHarness(address(_kintoAppRegistry)).exposed_baseURI(),
             "https://kinto.xyz/metadata/kintoapp/"
@@ -90,10 +86,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         // register app
         uint256 balanceBefore = _kintoAppRegistry.balanceOf(address(_kintoWallet));
@@ -214,10 +210,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         // register app
         vm.prank(address(_kintoWallet));
@@ -310,10 +306,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractAlreadyRegistered.selector, appContract0));
@@ -332,10 +328,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         // register app
         vm.prank(address(_kintoWallet));
@@ -359,7 +355,6 @@ contract KintoAppRegistryTest is SharedSetup {
     }
 
     function testUpdateMetadata_RevertWhen_CallerIsNotDeveloper() public {
-        vm.prank(address(_kintoWallet));
         registerApp(address(_kintoWallet), "app", address(0), new address[](0));
 
         // update app
@@ -382,10 +377,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(0x1234); // An address without bytecode
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ContractHasNoBytecode.selector, address(0x1234)));
@@ -490,10 +485,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -831,10 +826,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = address(0x1234); // This is the reserved contract
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         vm.expectRevert(abi.encodeWithSelector(IKintoAppRegistry.ReservedContract.selector, address(0x1234)));
@@ -858,10 +853,10 @@ contract KintoAppRegistryTest is SharedSetup {
         appContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -938,10 +933,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -984,10 +979,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -1017,10 +1012,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -1048,10 +1043,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -1085,10 +1080,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[2] = sponsorContract1;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -1129,10 +1124,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[1] = sponsorContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(
@@ -1162,10 +1157,10 @@ contract KintoAppRegistryTest is SharedSetup {
         initialContracts[0] = appContract0;
 
         uint256[] memory appLimits = new uint256[](4);
-        appLimits[0] = _kintoAppRegistry.RATE_LIMIT_PERIOD();
-        appLimits[1] = _kintoAppRegistry.RATE_LIMIT_THRESHOLD();
-        appLimits[2] = _kintoAppRegistry.GAS_LIMIT_PERIOD();
-        appLimits[3] = _kintoAppRegistry.GAS_LIMIT_THRESHOLD();
+        appLimits[0] = RATE_LIMIT_PERIOD;
+        appLimits[1] = RATE_LIMIT_THRESHOLD;
+        appLimits[2] = GAS_LIMIT_PERIOD;
+        appLimits[3] = GAS_LIMIT_THRESHOLD;
 
         vm.prank(address(_kintoWallet));
         _kintoAppRegistry.registerApp(

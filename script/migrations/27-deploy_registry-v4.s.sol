@@ -17,7 +17,6 @@ contract KintoMigration27DeployScript is MigrationHelper {
 
         // check KintoID is set on Registry
         IKintoAppRegistry registry = IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
-        require(address(registry.kintoID()) == _getChainDeployment("KintoID"), "KintoID not set on Registry");
 
         // check we can't call registerApp without being KYC'd
         try registry.registerApp(

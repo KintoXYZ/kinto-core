@@ -40,50 +40,38 @@ contract KintoAppRegistry is
 {
     /* ============ Constants ============ */
 
-    /// @notice The default period for rate limiting, set to 1 minute
-    uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
-
-    /// @notice The default threshold for rate limiting, set to 10 calls
-    uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
-
-    /// @notice The default period for gas limiting, set to 30 days
-    uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
-
-    /// @notice The default threshold for gas limiting, set to 0.01 ether
-    uint256 public constant override GAS_LIMIT_THRESHOLD = 0.01 ether;
-
     /// @notice The address of the CREATE2 contract
-    address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    address private constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     /// @notice The SponsorPaymaster contract
-    SponsorPaymaster public immutable paymaster;
+    SponsorPaymaster private immutable paymaster;
 
     /// @notice The KintoWalletFactory contract
-    IKintoWalletFactory public immutable override walletFactory;
+    IKintoWalletFactory private immutable walletFactory;
 
     /// @notice The KintoID contract
-    IKintoID public immutable kintoID;
+    IKintoID private immutable kintoID;
 
     /// @notice The address of the admin deployer
-    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+    address private constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
 
     /// @notice
-    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    address private constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
 
     /// @notice
-    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address private constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
     /// @notice
-    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
+    address private constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
-    bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
-    bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
-    bytes4 public constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
-    bytes4 public constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
-    bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
-    bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
-    bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
-    bytes4 public constant SELECTOR_EMPTY = 0x00000000;
+    bytes4 private constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
+    bytes4 private constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
+    bytes4 private constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
+    bytes4 private constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
+    bytes4 private constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
+    bytes4 private constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
+    bytes4 private constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
+    bytes4 private constant SELECTOR_EMPTY = 0x00000000;
 
     /* ============ State Variables ============ */
 
@@ -155,7 +143,9 @@ contract KintoAppRegistry is
      * @notice Authorizes the upgrade of the contract
      * @param newImplementation The address of the new implementation
      */
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override {
+        _checkOwner();
+    }
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -299,19 +289,22 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function enableDSA(address app) external override onlyOwner {
+    function enableDSA(address app) external override {
+        _checkOwner();
         if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled(app);
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function overrideChildToParentContract(address child, address parent) external override onlyOwner {
+    function overrideChildToParentContract(address child, address parent) external override {
+        _checkOwner();
         childToParentContract[child] = parent;
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateSystemApps(address[] calldata newSystemApps) external onlyOwner {
+    function updateSystemApps(address[] calldata newSystemApps) external {
+        _checkOwner();
         emit SystemAppsUpdated(systemApps, newSystemApps);
         for (uint256 index = 0; index < systemApps.length; index++) {
             isSystemApp[systemApps[index]] = false;
@@ -323,7 +316,8 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
+    function updateSystemContracts(address[] calldata newSystemContracts) external {
+        _checkOwner();
         emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
             _isSystemContract[systemContracts[index]] = false;
@@ -335,7 +329,8 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateReservedContracts(address[] calldata newReservedContracts) external onlyOwner {
+    function updateReservedContracts(address[] calldata newReservedContracts) external {
+        _checkOwner();
         emit ReservedContractsUpdated(reservedContracts, newReservedContracts);
         for (uint256 index = 0; index < reservedContracts.length; index++) {
             isReservedContract[reservedContracts[index]] = false;
@@ -389,10 +384,14 @@ contract KintoAppRegistry is
         uint256 gasLimitCost = _appMetadata[app].gasLimitCost;
 
         // Assign values to the return array
-        limits[0] = rateLimitPeriod != 0 ? rateLimitPeriod : RATE_LIMIT_PERIOD;
-        limits[1] = rateLimitNumber != 0 ? rateLimitNumber : RATE_LIMIT_THRESHOLD;
-        limits[2] = gasLimitPeriod != 0 ? gasLimitPeriod : GAS_LIMIT_PERIOD;
-        limits[3] = gasLimitCost != 0 ? gasLimitCost : GAS_LIMIT_THRESHOLD;
+        // The default period for rate limiting, set to 1 minute
+        limits[0] = rateLimitPeriod != 0 ? rateLimitPeriod : 1 minutes;
+        // The default threshold for rate limiting, set to 10 calls
+        limits[1] = rateLimitNumber != 0 ? rateLimitNumber : 10;
+        // The default period for gas limiting, set to 30 days
+        limits[2] = gasLimitPeriod != 0 ? gasLimitPeriod : 30 days;
+        // The default threshold for gas limiting, set to 0.01 ether
+        limits[3] = gasLimitCost != 0 ? gasLimitCost : 0.01 ether;
     }
 
     /// @inheritdoc IKintoAppRegistry

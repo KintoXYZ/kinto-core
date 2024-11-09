@@ -304,18 +304,6 @@ interface IKintoAppRegistry {
     function isSponsored(address app, address target) external view returns (bool);
 
     /**
-     * @notice Returns the wallet factory contract
-     * @return The address of the wallet factory contract
-     */
-    function walletFactory() external view returns (IKintoWalletFactory);
-
-    /**
-     * @notice Returns the KintoID contract
-     * @return The address of the KintoID contract
-     */
-    function kintoID() external view returns (IKintoID);
-
-    /**
      * @notice Returns the app address for a given token ID
      * @param _tokenId The token ID
      * @return The address of the app
@@ -415,30 +403,4 @@ interface IKintoAppRegistry {
         external
         view
         returns (bool);
-
-    /* ============ Constants and Attributes ============ */
-
-    /**
-     * @notice Returns the rate limit period
-     * @return The rate limit period in seconds
-     */
-    function RATE_LIMIT_PERIOD() external view returns (uint256);
-
-    /**
-     * @notice Returns the rate limit threshold
-     * @return The rate limit threshold
-     */
-    function RATE_LIMIT_THRESHOLD() external view returns (uint256);
-
-    /**
-     * @notice Returns the gas limit period
-     * @return The gas limit period in seconds
-     */
-    function GAS_LIMIT_PERIOD() external view returns (uint256);
-
-    /**
-     * @notice Returns the gas limit threshold
-     * @return The gas limit threshold in wei
-     */
-    function GAS_LIMIT_THRESHOLD() external view returns (uint256);
 }

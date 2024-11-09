@@ -44,12 +44,7 @@ contract KintoMigration97DeployScript is MigrationHelper {
         appContracts[26] = address(0x8cd4725D32CcFB201A25F1E1a18260E53F37C927); // cbETH controller
         appContracts[27] = address(0xB0FC8B7fb66958fe813475bBDC91c1Ac75725442); // cbBTC controller
 
-        uint256[4] memory appLimits = [
-            kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
 
         _handleOps(
             abi.encodeWithSelector(

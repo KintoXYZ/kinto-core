@@ -30,12 +30,7 @@ contract KintoMigration78DeployScript is MigrationHelper {
         appContracts[12] = address(0x24f287b474a05E48627846148cCdA3D05de03953); // ETHFI controller
         appContracts[13] = address(0xA2a13094baB725D6D9dd8b9B5c01F1a1bF67F986); // SolvBTC controller
 
-        uint256[4] memory appLimits = [
-            kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
 
         vm.broadcast(deployerPrivateKey);
         kintoAppRegistry.updateMetadata("Socket", parentContract, appContracts, appLimits, new address[](0));
