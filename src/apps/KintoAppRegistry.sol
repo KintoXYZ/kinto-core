@@ -143,9 +143,7 @@ contract KintoAppRegistry is
      * @notice Authorizes the upgrade of the contract
      * @param newImplementation The address of the new implementation
      */
-    function _authorizeUpgrade(address newImplementation) internal override {
-        _checkOwner();
-    }
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /* ============ Token name, symbol & URI ============ */
 
@@ -289,22 +287,19 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function enableDSA(address app) external override {
-        _checkOwner();
+    function enableDSA(address app) external override onlyOwner {
         if (_appMetadata[app].dsaEnabled) revert DSAAlreadyEnabled(app);
         _appMetadata[app].dsaEnabled = true;
         emit AppDSAEnabled(app, block.timestamp);
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function overrideChildToParentContract(address child, address parent) external override {
-        _checkOwner();
+    function overrideChildToParentContract(address child, address parent) external override onlyOwner {
         childToParentContract[child] = parent;
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateSystemApps(address[] calldata newSystemApps) external {
-        _checkOwner();
+    function updateSystemApps(address[] calldata newSystemApps) external onlyOwner {
         emit SystemAppsUpdated(systemApps, newSystemApps);
         for (uint256 index = 0; index < systemApps.length; index++) {
             isSystemApp[systemApps[index]] = false;
@@ -316,8 +311,7 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateSystemContracts(address[] calldata newSystemContracts) external {
-        _checkOwner();
+    function updateSystemContracts(address[] calldata newSystemContracts) external onlyOwner {
         emit SystemContractsUpdated(systemContracts, newSystemContracts);
         for (uint256 index = 0; index < systemContracts.length; index++) {
             _isSystemContract[systemContracts[index]] = false;
@@ -329,8 +323,7 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
-    function updateReservedContracts(address[] calldata newReservedContracts) external {
-        _checkOwner();
+    function updateReservedContracts(address[] calldata newReservedContracts) external onlyOwner {
         emit ReservedContractsUpdated(reservedContracts, newReservedContracts);
         for (uint256 index = 0; index < reservedContracts.length; index++) {
             isReservedContract[reservedContracts[index]] = false;
