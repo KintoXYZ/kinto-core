@@ -71,32 +71,12 @@ contract ContractCallTest is SharedSetup {
             abi.encodeWithSelector(bytes4(keccak256("withdrawTo(address,uint256)")), _user, 100);
 
         // Test withdrawStake
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V6(), withdrawStakeCallData, 0
-            ),
-            true
-        );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user2, _kintoAppRegistry.ENTRYPOINT_V6(), withdrawStakeCallData, 0
-            ),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, withdrawStakeCallData, 0), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, ENTRYPOINT_V6, withdrawStakeCallData, 0), false);
 
         // Test withdrawTo
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V7(), withdrawToCallData, 0
-            ),
-            true
-        );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user2, _kintoAppRegistry.ENTRYPOINT_V7(), withdrawToCallData, 0
-            ),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, withdrawToCallData, 0), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user2, ENTRYPOINT_V7, withdrawToCallData, 0), false);
     }
 
     function testIsContractCallAllowedFromEOA_WhenHandleOps() public view {
@@ -105,32 +85,14 @@ contract ContractCallTest is SharedSetup {
         bytes memory handleOpsV7CallData = abi.encodeWithSelector(bytes4(0x765e827f), new bytes(0), beneficiary);
 
         // Test handleOps
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                beneficiary, _kintoAppRegistry.ENTRYPOINT_V6(), handleOpsCallData, 0
-            ),
-            true
-        );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V6(), handleOpsCallData, 0
-            ),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(beneficiary, ENTRYPOINT_V6, handleOpsCallData, 0), true);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, handleOpsCallData, 0), false);
 
         // Test handleOps V7
         assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                beneficiary, _kintoAppRegistry.ENTRYPOINT_V7(), handleOpsV7CallData, 0
-            ),
-            true
+            _kintoAppRegistry.isContractCallAllowedFromEOA(beneficiary, ENTRYPOINT_V7, handleOpsV7CallData, 0), true
         );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V7(), handleOpsV7CallData, 0
-            ),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, handleOpsV7CallData, 0), false);
 
         bytes memory handleAggregatedOpsCallData = abi.encodeWithSelector(bytes4(0x4b1d7cf5), new bytes(0), beneficiary);
         bytes memory handleAggregatedOpsV7CallData =
@@ -138,29 +100,20 @@ contract ContractCallTest is SharedSetup {
 
         // Test handleAggregatedOps
         assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                beneficiary, _kintoAppRegistry.ENTRYPOINT_V6(), handleAggregatedOpsCallData, 0
-            ),
+            _kintoAppRegistry.isContractCallAllowedFromEOA(beneficiary, ENTRYPOINT_V6, handleAggregatedOpsCallData, 0),
             true
         );
         assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V6(), handleAggregatedOpsCallData, 0
-            ),
-            false
+            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, handleAggregatedOpsCallData, 0), false
         );
 
         // Test handleAggregatedOps V7
         assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                beneficiary, _kintoAppRegistry.ENTRYPOINT_V7(), handleAggregatedOpsV7CallData, 0
-            ),
+            _kintoAppRegistry.isContractCallAllowedFromEOA(beneficiary, ENTRYPOINT_V7, handleAggregatedOpsV7CallData, 0),
             true
         );
         assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(
-                _user, _kintoAppRegistry.ENTRYPOINT_V7(), handleAggregatedOpsV7CallData, 0
-            ),
+            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, handleAggregatedOpsV7CallData, 0),
             false
         );
     }
@@ -169,23 +122,11 @@ contract ContractCallTest is SharedSetup {
         bytes memory depositCallData = abi.encodeWithSelector(bytes4(0xb760faf9), address(0x789));
         bytes memory emptyCallData = new bytes(0);
 
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, _kintoAppRegistry.ENTRYPOINT_V6(), depositCallData, 0),
-            false
-        );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, _kintoAppRegistry.ENTRYPOINT_V6(), emptyCallData, 0),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, depositCallData, 0), false);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V6, emptyCallData, 0), false);
 
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, _kintoAppRegistry.ENTRYPOINT_V7(), depositCallData, 0),
-            false
-        );
-        assertEq(
-            _kintoAppRegistry.isContractCallAllowedFromEOA(_user, _kintoAppRegistry.ENTRYPOINT_V7(), emptyCallData, 0),
-            false
-        );
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, depositCallData, 0), false);
+        assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, emptyCallData, 0), false);
     }
 
     function testIsContractCallAllowedFromEOA_WhenSystemContracts() public {
