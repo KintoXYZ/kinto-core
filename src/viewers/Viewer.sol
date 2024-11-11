@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {IAavePool, IPoolAddressesProvider} from "@kinto-core/interfaces/external/IAavePool.sol";
+import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
 
 /**
  * @title Viewer Smart Contract
@@ -28,12 +29,14 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     IPoolAddressesProvider public immutable poolAddressProvider;
+    IAccessRegistry public immutable accessRegistry;
 
     /// @dev Initializes the contract in a disabled state to prevent its use without proxy.
-    constructor(address poolAddressProvider_) {
+    constructor(address poolAddressProvider_, address accessRegistry_) {
         _disableInitializers();
 
         poolAddressProvider = IPoolAddressesProvider(poolAddressProvider_);
+        accessRegistry = IAccessRegistry(accessRegistry_);
     }
 
     /**
@@ -75,14 +78,15 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @notice Retrieves user and market data for multiple assets from Aave V3
      * @dev All rates are normalized to WAD (1e18 = 100%)
      * @param assets Array of token addresses to fetch data for
-     * @param kintoWallet Address of the user wallet to check balances for
+     * @param kintoSigner Address of the user wallet to check balances for
      * @return metrics Array of AaveUserData structs containing user and market data for each asset
      */
-    function getAaveUserData(address[] calldata assets, address kintoWallet)
+    function getAaveUserData(address[] calldata assets, address kintoSigner)
         external
         view
         returns (AaveUserData[] memory metrics)
     {
+        address accessPoint = address(accessRegistry.getAccessPoint(kintoSigner));
         IAavePool pool = IAavePool(poolAddressProvider.getPool());
         metrics = new AaveUserData[](assets.length);
 
@@ -90,8 +94,8 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             IAavePool.ReserveDataLegacy memory reserveData = pool.getReserveData(assets[i]);
             IAavePool.ReserveConfigurationMap memory config = pool.getConfiguration(assets[i]);
 
-            uint256 supplyBalance = IERC20(reserveData.aTokenAddress).balanceOf(kintoWallet);
-            uint256 borrowBalance = IERC20(reserveData.variableDebtTokenAddress).balanceOf(kintoWallet);
+            uint256 supplyBalance = IERC20(reserveData.aTokenAddress).balanceOf(accessPoint);
+            uint256 borrowBalance = IERC20(reserveData.variableDebtTokenAddress).balanceOf(accessPoint);
 
             metrics[i] = AaveUserData({
                 supplyAPY: _rayToAPY(reserveData.currentLiquidityRate),
