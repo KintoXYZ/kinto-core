@@ -11,6 +11,8 @@ import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeabl
 import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
+
 import "forge-std/console2.sol";
 
 /**
@@ -121,6 +123,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice New user rewards in K tokens upon wallet creation.
     uint256 public constant NEW_USER_REWARD = 1 * 1e18;
 
+    /// @notice New user rewards timestmap
+    uint256 public constant NEW_USER_REWARD_TIMESTAMP = 1729785402;
+
     /* ============ State Variables ============ */
 
     /// @notice The root of the merkle tree for Kinto token distribition.
@@ -130,7 +135,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     uint256 public totalClaimed;
 
     /// @notice Returns the amount of tokens claimed by a user.
-    mapping(address => uint256) public claimedByUser;
+    mapping(address => uint256) private _claimedByUser;
 
     /// @notice Amount of funds preloaded at the start.
     uint256 public bonusAmount;
@@ -230,7 +235,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         }
 
         // Check if user has any tokens to claim.
-        if (totalUserTokens <= claimedByUser[user]) {
+        if (totalUserTokens <= claimedByUser(user)) {
             revert AlreadyClaimed(user);
         }
 
@@ -242,7 +247,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
             revert InvalidProof(proof, leaf);
         }
 
-        uint256 amount = totalUserTokens - claimedByUser[user];
+        uint256 amount = totalUserTokens - claimedByUser(user);
 
         // Check if the total claimed amount exceeds the allowable limit
         if (amount > getUnclaimedLimit()) {
@@ -251,7 +256,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
         // Update the total claimed amount and the amount claimed by the user
         totalClaimed += amount;
-        claimedByUser[user] += amount;
+        _claimedByUser[user] += amount;
 
         // Mark current root as claimed for the user
         claimedRoot[user] = root;
@@ -271,10 +276,10 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         if (msg.sender != walletFactory) {
             revert OnlyWalletFactory(msg.sender);
         }
-        if (claimedByUser[wallet] > 0) {
+        if (_claimedByUser[wallet] > 0) {
             revert AlreadyClaimed(wallet);
         }
-        claimedByUser[wallet] += NEW_USER_REWARD;
+        _claimedByUser[wallet] += NEW_USER_REWARD;
         totalClaimed += NEW_USER_REWARD;
         KINTO.safeTransfer(wallet, NEW_USER_REWARD);
         emit NewUserReward(wallet, NEW_USER_REWARD);
@@ -373,5 +378,18 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     function getUnclaimedLimit() public view returns (uint256) {
         return getTotalLimit() - totalClaimed;
+    }
+
+    /**
+     * @notice Returns the amount claimed by the user.
+     * @return The amount claimed by the user.
+     */
+    function claimedByUser(address wallet) public view returns (uint256) {
+        uint256 claimed = _claimedByUser[wallet];
+        if (IKintoWalletFactory(walletFactory).getWalletTimestamp(wallet) >= NEW_USER_REWARD_TIMESTAMP) {
+            // Offset K bonus for new users after the launch of the rewards program
+            return claimed >= NEW_USER_REWARD ? claimed - NEW_USER_REWARD : claimed;
+        }
+        return claimed;
     }
 }

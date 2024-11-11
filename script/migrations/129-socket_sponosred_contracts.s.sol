@@ -22,12 +22,12 @@ contract Script is MigrationHelper {
             abi.encodeWithSelector(
                 KintoAppRegistry.setSponsoredContracts.selector,
                 socketApp,
-                [_getChainDeployment("SOL")].toMemoryArray(),
+                [_getChainDeployment("SPX")].toMemoryArray(),
                 [true].toMemoryArray()
             ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
-        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("SOL")), true);
+        assertEq(kintoAppRegistry.isSponsored(socketApp, _getChainDeployment("SPX")), true);
     }
 }

@@ -45,12 +45,7 @@ contract KintoMigration85DeployScript is MigrationHelper {
         appContracts[9] = address(0xeDA274898ED364Bd346fA74cf6eCAB4BF8f1665f); // UsdPlusMinte
         appContracts[10] = address(0x931C5dC9eA13b0F6B4768a98AFfEA773b888e978); // USDPlus Redeeemer
 
-        uint256[4] memory appLimits = [
-            kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
 
         eoas[0] = address(0x400880b800410B2951Afd0503dC457aea8A4bAb5); // Treasury
         eoas[1] = address(0xF96b974FE330C29e80121E33ed4071C283257979); // dshares

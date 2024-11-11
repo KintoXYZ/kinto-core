@@ -440,7 +440,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
     {
         // deploy token
         bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
-        address implementation = _deployImplementation(name, "V1", bytecode, keccak256(abi.encodePacked(symbol)));
+        address implementation = _deployImplementation(name, "V1", bytecode, keccak256(abi.encodePacked(name, symbol)));
 
         bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
         (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, startsWith);

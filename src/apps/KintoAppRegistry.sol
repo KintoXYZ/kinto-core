@@ -40,48 +40,38 @@ contract KintoAppRegistry is
 {
     /* ============ Constants ============ */
 
-    /// @notice The default period for rate limiting, set to 1 minute
-    uint256 public constant override RATE_LIMIT_PERIOD = 1 minutes;
-
-    /// @notice The default threshold for rate limiting, set to 10 calls
-    uint256 public constant override RATE_LIMIT_THRESHOLD = 10;
-
-    /// @notice The default period for gas limiting, set to 30 days
-    uint256 public constant override GAS_LIMIT_PERIOD = 30 days;
-
-    /// @notice The default threshold for gas limiting, set to 0.01 ether
-    uint256 public constant override GAS_LIMIT_THRESHOLD = 0.01 ether;
-
     /// @notice The address of the CREATE2 contract
-    address public constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    address private constant CREATE2 = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     /// @notice The SponsorPaymaster contract
-    SponsorPaymaster public immutable paymaster;
+    SponsorPaymaster private immutable paymaster;
 
     /// @notice The KintoWalletFactory contract
-    IKintoWalletFactory public immutable override walletFactory;
+    IKintoWalletFactory private immutable walletFactory;
 
     /// @notice The KintoID contract
-    IKintoID public immutable kintoID;
+    IKintoID private immutable kintoID;
 
     /// @notice The address of the admin deployer
-    address public constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
+    address private constant ADMIN_DEPLOYER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
 
     /// @notice
-    address public constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
+    address private constant ENTRYPOINT_V6 = 0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb;
 
     /// @notice
-    address public constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+    address private constant ENTRYPOINT_V7 = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
     /// @notice
-    address public constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
+    address private constant ARB_RETRAYABLE_TX = 0x000000000000000000000000000000000000006E;
 
-    bytes4 public constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
-    bytes4 public constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
-    bytes4 public constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
-    bytes4 public constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
-    bytes4 public constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
-    bytes4 public constant SELECTOR_EMPTY = 0x00000000;
+    bytes4 private constant SELECTOR_EP_WITHDRAW_STAKE = 0xc23a5cea;
+    bytes4 private constant SELECTOR_EP_WITHDRAW_TO = 0x205c2878;
+    bytes4 private constant SELECTOR_EP_HANDLEO_AGGREGATED_OPS = 0x4b1d7cf5;
+    bytes4 private constant SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7 = 0xdbed18e0;
+    bytes4 private constant SELECTOR_EP_HANDLEOPS = 0x1fad948c;
+    bytes4 private constant SELECTOR_EP_HANDLE_OPS_V7 = 0x765e827f;
+    bytes4 private constant SELECTOR_EP_DEPOSIT = 0xb760faf9;
+    bytes4 private constant SELECTOR_EMPTY = 0x00000000;
 
     /* ============ State Variables ============ */
 
@@ -214,6 +204,74 @@ contract KintoAppRegistry is
     }
 
     /// @inheritdoc IKintoAppRegistry
+    function addAppContracts(address app, address[] calldata newContracts) external {
+        // Check if caller is the app owner
+        uint256 tokenId = _appMetadata[app].tokenId;
+        if (msg.sender != ownerOf(tokenId)) {
+            revert InvalidAppOwner(msg.sender, ownerOf(tokenId));
+        }
+
+        // Validate and add each new contract
+        for (uint256 i = 0; i < newContracts.length; i++) {
+            address newContract = newContracts[i];
+
+            // Perform all the same validations as in updateMetadata
+            _checkAddAppContract(app, newContract);
+
+            // Add to childToParentContract mapping
+            childToParentContract[newContract] = app;
+            // Push to appContracts array in storage
+            _appMetadata[app].appContracts.push(newContract);
+        }
+
+        emit AppContractsAdded(app, newContracts);
+    }
+
+    /// @inheritdoc IKintoAppRegistry
+    function removeAppContracts(address app, address[] calldata contractsToRemove) external {
+        // Check if caller is the app owner
+        uint256 tokenId = _appMetadata[app].tokenId;
+        if (msg.sender != ownerOf(tokenId)) {
+            revert InvalidAppOwner(msg.sender, ownerOf(tokenId));
+        }
+
+        // Get reference to storage array
+        address[] storage currentContracts = _appMetadata[app].appContracts;
+
+        // For each contract to remove
+        for (uint256 i = 0; i < contractsToRemove.length; i++) {
+            address contractToRemove = contractsToRemove[i];
+
+            // Verify the contract is registered to this app
+            if (childToParentContract[contractToRemove] != app) {
+                revert ContractNotRegistered(contractToRemove);
+            }
+
+            // Find and remove the contract from the array
+            bool found = false;
+            for (uint256 j = 0; j < currentContracts.length; j++) {
+                if (currentContracts[j] == contractToRemove) {
+                    // Remove from childToParentContract mapping
+                    delete childToParentContract[contractToRemove];
+
+                    // Move the last element to the position being deleted
+                    currentContracts[j] = currentContracts[currentContracts.length - 1];
+                    // Remove the last element
+                    currentContracts.pop();
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                revert ContractNotRegistered(contractToRemove);
+            }
+        }
+
+        emit AppContractsRemoved(app, contractsToRemove);
+    }
+
+    /// @inheritdoc IKintoAppRegistry
     function setSponsoredContracts(address app, address[] calldata targets, bool[] calldata flags) external override {
         if (targets.length != flags.length) revert LengthMismatch(targets.length, flags.length);
         if (
@@ -319,10 +377,14 @@ contract KintoAppRegistry is
         uint256 gasLimitCost = _appMetadata[app].gasLimitCost;
 
         // Assign values to the return array
-        limits[0] = rateLimitPeriod != 0 ? rateLimitPeriod : RATE_LIMIT_PERIOD;
-        limits[1] = rateLimitNumber != 0 ? rateLimitNumber : RATE_LIMIT_THRESHOLD;
-        limits[2] = gasLimitPeriod != 0 ? gasLimitPeriod : GAS_LIMIT_PERIOD;
-        limits[3] = gasLimitCost != 0 ? gasLimitCost : GAS_LIMIT_THRESHOLD;
+        // The default period for rate limiting, set to 1 minute
+        limits[0] = rateLimitPeriod != 0 ? rateLimitPeriod : 1 minutes;
+        // The default threshold for rate limiting, set to 10 calls
+        limits[1] = rateLimitNumber != 0 ? rateLimitNumber : 10;
+        // The default period for gas limiting, set to 30 days
+        limits[2] = gasLimitPeriod != 0 ? gasLimitPeriod : 30 days;
+        // The default threshold for gas limiting, set to 0.01 ether
+        limits[3] = gasLimitCost != 0 ? gasLimitCost : 0.01 ether;
     }
 
     /// @inheritdoc IKintoAppRegistry
@@ -344,7 +406,11 @@ contract KintoAppRegistry is
     }
 
     function isHandleOps(address addr, bytes4 selector) public pure returns (bool) {
-        return isEntryPoint(addr) && (selector == SELECTOR_EP_HANDLEOPS || selector == SELECTOR_EP_HANDLE_OPS_V7);
+        return isEntryPoint(addr)
+            && (
+                selector == SELECTOR_EP_HANDLEOPS || selector == SELECTOR_EP_HANDLE_OPS_V7
+                    || selector == SELECTOR_EP_HANDLEO_AGGREGATED_OPS || selector == SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7
+            );
     }
 
     function forbiddenEPFunctions(bytes4 selector) public pure returns (bool) {
@@ -511,6 +577,14 @@ contract KintoAppRegistry is
 
     /* =========== Internal methods =========== */
 
+    function _checkAddAppContract(address app, address newContract) internal view {
+        if (walletFactory.walletTs(newContract) > 0) revert CannotRegisterWallet(newContract);
+        if (childToParentContract[newContract] != address(0)) revert ContractAlreadyRegistered(newContract);
+        if (newContract == app) revert ContractAlreadyRegistered(newContract);
+        if (isReservedContract[newContract]) revert ReservedContract(newContract);
+        if (newContract.code.length == 0) revert ContractHasNoBytecode(newContract);
+    }
+
     /**
      * @notice Updates the metadata of an app
      * @param tokenId The token ID of the app
@@ -558,13 +632,8 @@ contract KintoAppRegistry is
         // Sets Child to parent contract
         for (uint256 i = 0; i < appContracts.length; i++) {
             address appContract = appContracts[i];
-            if (walletFactory.walletTs(appContract) > 0) revert CannotRegisterWallet(appContract);
-            if (
-                childToParentContract[appContract] != address(0) && childToParentContract[appContract] != parentContract
-            ) revert ChildAlreadyRegistered(appContract);
-            if (appContract == parentContract) revert ChildAlreadyRegistered(appContract);
-            if (isReservedContract[appContract]) revert ReservedContract(appContract);
-            if (appContract.code.length == 0) revert ContractHasNoBytecode(appContract);
+
+            _checkAddAppContract(parentContract, appContract);
 
             childToParentContract[appContract] = parentContract;
         }
@@ -593,7 +662,7 @@ contract KintoAppRegistry is
     }
 }
 
-contract KintoAppRegistryV20 is KintoAppRegistry {
+contract KintoAppRegistryV22 is KintoAppRegistry {
     constructor(IKintoWalletFactory _walletFactory, SponsorPaymaster _paymaster)
         KintoAppRegistry(_walletFactory, _paymaster)
     {}

@@ -22,10 +22,6 @@ interface IKintoAppRegistry {
     /// @param parent The address of the parent contract
     error ParentAlreadyChild(address parent);
 
-    /// @notice Thrown when a child contract is already registered
-    /// @param child The address of the child contract
-    error ChildAlreadyRegistered(address child);
-
     /// @notice Thrown when attempting to register a reserved contract as an app contract
     /// @param target The address of the reserved contract
     error ReservedContract(address target);
@@ -68,6 +64,21 @@ interface IKintoAppRegistry {
     /// @param target The address of the contract without bytecode
     error ContractHasNoBytecode(address target);
 
+    /// @notice Thrown when attempting to add a contract that is already registered to an app
+    /// @param addr The address of the contract that is already registered
+    error ContractAlreadyRegistered(address addr);
+
+    /// @notice Thrown when attempting to remove a contract that is not registered to the app
+    /// @param addr The address of the contract that is not registered
+    error ContractNotRegistered(address addr);
+
+    /**
+     * @notice Thrown when a caller tries to modify app contracts without being the app owner
+     * @param sender The address of the caller
+     * @param owner The address of the actual app owner
+     */
+    error InvalidAppOwner(address sender, address owner);
+
     /* ============ Events ============ */
 
     /// @notice Emitted when a new app is registered
@@ -81,6 +92,16 @@ interface IKintoAppRegistry {
     /// @param owner The address of the app owner
     /// @param timestamp The timestamp of the update
     event AppUpdated(address indexed app, address owner, uint256 timestamp);
+
+    /// @notice Emitted when new contracts are added to an existing app
+    /// @param app The address of the parent app contract
+    /// @param contracts Array of newly added contract addresses
+    event AppContractsAdded(address indexed app, address[] contracts);
+
+    /// @notice Emitted when contracts are removed from an existing app
+    /// @param app The address of the parent app contract
+    /// @param contracts Array of removed contract addresses
+    event AppContractsRemoved(address indexed app, address[] contracts);
 
     /// @notice Emitted when DSA is enabled for an app
     /// @param app The address of the app
@@ -181,6 +202,20 @@ interface IKintoAppRegistry {
     ) external;
 
     /**
+     * @notice Adds new app contracts to an existing app
+     * @param app The parent app contract address
+     * @param newContracts Array of new contract addresses to add
+     */
+    function addAppContracts(address app, address[] calldata newContracts) external;
+
+    /**
+     * @notice Removes app contracts from an existing app
+     * @param app The parent app contract address
+     * @param contractsToRemove Array of contract addresses to remove
+     */
+    function removeAppContracts(address app, address[] calldata contractsToRemove) external;
+
+    /**
      * @notice Overrides the parent contract of a child contract
      * @param child The address of the child contract
      * @param parent The address of the new parent contract
@@ -267,18 +302,6 @@ interface IKintoAppRegistry {
      * @return A boolean indicating whether the contract is sponsored
      */
     function isSponsored(address app, address target) external view returns (bool);
-
-    /**
-     * @notice Returns the wallet factory contract
-     * @return The address of the wallet factory contract
-     */
-    function walletFactory() external view returns (IKintoWalletFactory);
-
-    /**
-     * @notice Returns the KintoID contract
-     * @return The address of the KintoID contract
-     */
-    function kintoID() external view returns (IKintoID);
 
     /**
      * @notice Returns the app address for a given token ID
@@ -380,30 +403,4 @@ interface IKintoAppRegistry {
         external
         view
         returns (bool);
-
-    /* ============ Constants and Attributes ============ */
-
-    /**
-     * @notice Returns the rate limit period
-     * @return The rate limit period in seconds
-     */
-    function RATE_LIMIT_PERIOD() external view returns (uint256);
-
-    /**
-     * @notice Returns the rate limit threshold
-     * @return The rate limit threshold
-     */
-    function RATE_LIMIT_THRESHOLD() external view returns (uint256);
-
-    /**
-     * @notice Returns the gas limit period
-     * @return The gas limit period in seconds
-     */
-    function GAS_LIMIT_PERIOD() external view returns (uint256);
-
-    /**
-     * @notice Returns the gas limit threshold
-     * @return The gas limit threshold in wei
-     */
-    function GAS_LIMIT_THRESHOLD() external view returns (uint256);
 }

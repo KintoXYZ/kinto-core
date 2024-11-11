@@ -32,6 +32,11 @@ import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 
 abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats {
+    uint256 internal constant RATE_LIMIT_PERIOD = 1 minutes;
+    uint256 internal constant RATE_LIMIT_THRESHOLD = 10;
+    uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
+    uint256 internal constant GAS_LIMIT_THRESHOLD = 0.01 ether;
+
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry
@@ -102,12 +107,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     // fixme: these should go through entrypoint
     function registerApp(address _owner, string memory name, address parentContract, address[] memory devEOAs) public {
         address[] memory appContracts = new address[](0);
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
         registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
@@ -129,12 +129,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         address[] memory appContracts,
         address[] memory devEOAs
     ) public {
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
         registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
@@ -160,12 +155,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         address[] memory appContracts,
         address[] memory devEOAs
     ) public {
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
         vm.prank(_owner);
         _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
     }

@@ -16,14 +16,7 @@ contract KintoCoreAppScript is MigrationHelper {
         appContracts[1] = address(0x8a4720488CA32f1223ccFE5A087e250fE3BC5D75); //Wallet Factory
         appContracts[2] = address(0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b); //App Registry
 
-        KintoAppRegistry kintoAppRegistry = KintoAppRegistry(payable(_getChainDeployment("KintoAppRegistry")));
-
-        uint256[4] memory appLimits = [
-            kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
 
         // Socket-batcher app
         address[] memory devEOAs = new address[](2);

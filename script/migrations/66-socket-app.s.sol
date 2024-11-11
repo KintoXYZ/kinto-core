@@ -44,12 +44,7 @@ contract KintoMigration66DeployScript is MigrationHelper {
         appContracts[23] = _getChainDeployment("weETH");
         appContracts[25] = _getChainDeployment("ETHFI");
 
-        uint256[4] memory appLimits = [
-            kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
 
         vm.broadcast(deployerPrivateKey);
         kintoAppRegistry.registerApp("Socket", parentContract, appContracts, appLimits, new address[](0));

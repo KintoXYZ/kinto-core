@@ -53,6 +53,7 @@ optimism = "${OPTIMISM_RPC_URL}"
 base = "${BASE_RPC_URL}"
 arbitrum = "${ARBITRUM_RPC_URL}"
 kinto_devnet = "${TEST_KINTO_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_MAINNET_KEY}" }
