@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {IAavePool, ILendingPoolAddressesProvider} from "@kinto-core/interfaces/external/IAavePool.sol";
+import {IAavePool, IPoolAddressesProvider} from "@kinto-core/interfaces/external/IAavePool.sol";
 
 /**
  * @title Viewer Smart Contract
@@ -27,13 +27,13 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 userBorrowAmount; // Amount currently borrowed by the user
     }
 
-    ILendingPoolAddressesProvider public immutable poolAddressProvider;
+    IPoolAddressesProvider public immutable poolAddressProvider;
 
     /// @dev Initializes the contract in a disabled state to prevent its use without proxy.
     constructor(address poolAddressProvider_) {
         _disableInitializers();
 
-        poolAddressProvider = ILendingPoolAddressesProvider(poolAddressProvider_);
+        poolAddressProvider = IPoolAddressesProvider(poolAddressProvider_);
     }
 
     /**
@@ -83,7 +83,7 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (AaveUserData[] memory metrics)
     {
-        IAavePool pool = IAavePool(poolAddressProvider.getLendingPool());
+        IAavePool pool = IAavePool(poolAddressProvider.getPool());
         metrics = new AaveUserData[](assets.length);
 
         for (uint256 i = 0; i < assets.length; i++) {
