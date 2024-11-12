@@ -86,6 +86,35 @@ interface IAavePool {
     function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
 
     /**
+     * @notice Withdraws an `amount` of underlying asset from the reserve, burning the equivalent aTokens owned
+     * E.g. User has 100 aUSDC, calls withdraw() and receives 100 USDC, burning the 100 aUSDC
+     * @param asset The address of the underlying asset to withdraw
+     * @param amount The underlying amount to be withdrawn
+     *   - Send the value type(uint256).max in order to withdraw the whole aToken balance
+     * @param to The address that will receive the underlying, same as msg.sender if the user
+     *   wants to receive it on his own wallet, or a different address if the beneficiary is a
+     *   different wallet
+     * @return The final amount withdrawn
+     */
+    function withdraw(address asset, uint256 amount, address to) external returns (uint256);
+
+    /**
+     * @notice Repays a borrowed `amount` on a specific reserve, burning the equivalent debt tokens owned
+     * - E.g. User repays 100 USDC, burning 100 variable debt tokens of the `onBehalfOf` address
+     * @param asset The address of the borrowed underlying asset previously borrowed
+     * @param amount The amount to repay
+     * - Send the value type(uint256).max in order to repay the whole debt for `asset` on the specific `debtMode`
+     * @param interestRateMode 2 for Variable, 1 is deprecated on v3.2.0
+     * @param onBehalfOf The address of the user who will get his debt reduced/removed. Should be the address of the
+     * user calling the function if he wants to reduce/remove his own debt, or the address of any other
+     * other borrower whose debt should be removed
+     * @return The final amount repaid
+     */
+    function repay(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf)
+        external
+        returns (uint256);
+
+    /**
      * @notice Returns the state and configuration of the reserve
      * @param asset The address of the underlying asset of the reserve
      * @return The state and configuration data of the reserve
