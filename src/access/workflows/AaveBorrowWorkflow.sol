@@ -37,22 +37,14 @@ contract AaveBorrowWorkflow {
      * @notice Borrows an asset from Aave
      * @param asset The address of the asset to borrow
      * @param amount The amount to borrow
-     * @param receiver The address that will receive the borrowed assets
      */
-    function borrow(address asset, uint256 amount, address receiver) external {
-        address pool = poolAddressProvider.getPool();
-
-        IAavePool(pool).borrow(
+    function borrow(address asset, uint256 amount) external {
+        IAavePool(poolAddressProvider.getPool()).borrow(
             asset,
             amount,
             2, // RATE_MODE: 2 for variable rate
             0, // referral code (0 for none)
             address(this)
         );
-
-        // Transfer borrowed assets to receiver if it's not this contract
-        if (receiver != address(this)) {
-            IERC20(asset).safeTransfer(receiver, amount);
-        }
     }
 }

@@ -77,7 +77,7 @@ contract AaveBorrowWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, C
 
         // Prepare workflow data
         bytes memory workflowData =
-            abi.encodeWithSelector(AaveBorrowWorkflow.borrow.selector, borrowAsset, borrowAmount, address(accessPoint));
+            abi.encodeWithSelector(AaveBorrowWorkflow.borrow.selector, borrowAsset, borrowAmount);
 
         // Execute the borrow workflow
         vm.prank(alice0);
