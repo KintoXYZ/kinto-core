@@ -30,7 +30,7 @@ contract ViewerTest is BaseTest {
     }
 
     function testInitialize() public {
-        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(viewer), "")));
+        viewer = Viewer(address(new UUPSProxy{salt: 0}(address(new Viewer(address(0), address(0))), "")));
         viewer.initialize();
 
         assertEq(viewer.owner(), address(this));
