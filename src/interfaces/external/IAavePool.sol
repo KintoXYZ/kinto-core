@@ -99,6 +99,23 @@ interface IAavePool {
     function withdraw(address asset, uint256 amount, address to) external returns (uint256);
 
     /**
+     * @notice Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
+     * already supplied enough collateral, or he was given enough allowance by a credit delegator on the VariableDebtToken
+     * - E.g. User borrows 100 USDC passing as `onBehalfOf` his own address, receiving the 100 USDC in his wallet
+     *   and 100 variable debt tokens
+     * @param asset The address of the underlying asset to borrow
+     * @param amount The amount to be borrowed
+     * @param interestRateMode 2 for Variable, 1 is deprecated on v3.2.0
+     * @param referralCode The code used to register the integrator originating the operation, for potential rewards.
+     *   0 if the action is executed directly by the user, without any middle-man
+     * @param onBehalfOf The address of the user who will receive the debt. Should be the address of the borrower itself
+     * calling the function if he wants to borrow against his own collateral, or the address of the credit delegator
+     * if he has been given credit delegation allowance
+     */
+    function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf)
+        external;
+
+    /**
      * @notice Repays a borrowed `amount` on a specific reserve, burning the equivalent debt tokens owned
      * - E.g. User repays 100 USDC, burning 100 variable debt tokens of the `onBehalfOf` address
      * @param asset The address of the borrowed underlying asset previously borrowed
