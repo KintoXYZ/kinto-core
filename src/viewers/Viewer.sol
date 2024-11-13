@@ -16,16 +16,34 @@ import {IAccessRegistry} from "@kinto-core/interfaces/IAccessRegistry.sol";
  */
 contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /**
-     * @notice Structure containing user and market data for a specific asset
+     * @notice Structure containing market and user data for a specific asset
      * @dev All rates are in WAD (1e18 = 100%) and amounts in underlying token decimals
      */
-    struct AaveUserData {
-        uint256 supplyAPY; // Current supply APY for the asset (1e18 = 100%)
-        uint256 supplyCapacity; // Maximum amount that can be supplied to the market
-        uint256 userSupplyAmount; // Amount currently supplied by the user
-        uint256 borrowAPY; // Current variable borrow APY for the asset (1e18 = 100%)
-        uint256 borrowCapacity; // Maximum amount that can be borrowed from the market
-        uint256 userBorrowAmount; // Amount currently borrowed by the user
+    struct AssetData {
+        // Aave protocol data
+        uint256 aaveSupplyAPY; // Current Aave supply APY for the asset (1e18 = 100%)
+        uint256 aaveSupplyCapacity; // Maximum amount that can be supplied to the Aave market
+        uint256 aaveSupplyAmount; // Amount currently supplied to Aave by the user
+        uint256 aaveBorrowAPY; // Current Aave variable borrow APY for the asset (1e18 = 100%)
+        uint256 aaveBorrowCapacity; // Maximum amount that can be borrowed from the Aave market
+        uint256 aaveBorrowAmount; // Amount currently borrowed from Aave by the user
+        // Wallet balances
+        uint256 tokenBalance; // Balance of the underlying token in the access point
+        uint256 aTokenBalance; // Balance of the Aave interest bearing token in the access point
+    }
+
+    /**
+     * @notice Structure containing account-level data and per-asset data
+     * @dev Account metrics are in base currency units
+     */
+    struct AccountData {
+        uint256 aaveTotalCollateralBase; // Total collateral of the user in Aave
+        uint256 aaveTotalDebtBase; // Total debt of the user in Aave
+        uint256 aaveAvailableBorrowsBase; // Borrowing power left in Aave
+        uint256 aaveCurrentLiquidationThreshold; // Aave liquidation threshold (1e4 = 100%)
+        uint256 aaveLtv; // Aave loan to value (1e4 = 100%)
+        uint256 aaveHealthFactor; // Aave health factor (1e18 = 1)
+        AssetData[] assets; // Array of per-asset data
     }
 
     IPoolAddressesProvider public immutable poolAddressProvider;
@@ -75,35 +93,62 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Retrieves user and market data for multiple assets from Aave V3
+     * @notice Retrieves comprehensive user and market data for multiple assets from Aave V3
      * @dev All rates are normalized to WAD (1e18 = 100%)
      * @param assets Array of token addresses to fetch data for
      * @param kintoSigner Address of the user wallet to check balances for
-     * @return metrics Array of AaveUserData structs containing user and market data for each asset
+     * @return data AccountData struct containing both account-level metrics and per-asset data
      */
-    function getAaveUserData(address[] calldata assets, address kintoSigner)
+    function getAccountData(address[] calldata assets, address kintoSigner)
         external
         view
-        returns (AaveUserData[] memory metrics)
+        returns (AccountData memory data)
     {
         address accessPoint = address(accessRegistry.getAccessPoint(kintoSigner));
         IAavePool pool = IAavePool(poolAddressProvider.getPool());
-        metrics = new AaveUserData[](assets.length);
 
+        // Initialize assets array in memory
+        data.assets = new AssetData[](assets.length);
+
+        {
+            // Get user account data
+            (
+                uint256 totalCollateralBase,
+                uint256 totalDebtBase,
+                uint256 availableBorrowsBase,
+                uint256 currentLiquidationThreshold,
+                uint256 ltv,
+                uint256 healthFactor
+            ) = pool.getUserAccountData(accessPoint);
+
+            // Set account data
+            data.aaveTotalCollateralBase = totalCollateralBase;
+            data.aaveTotalDebtBase = totalDebtBase;
+            data.aaveAvailableBorrowsBase = availableBorrowsBase;
+            data.aaveCurrentLiquidationThreshold = currentLiquidationThreshold;
+            data.aaveLtv = ltv;
+            data.aaveHealthFactor = healthFactor;
+        }
+
+        // Get per-asset data
         for (uint256 i = 0; i < assets.length; i++) {
             IAavePool.ReserveDataLegacy memory reserveData = pool.getReserveData(assets[i]);
             IAavePool.ReserveConfigurationMap memory config = pool.getConfiguration(assets[i]);
 
             uint256 supplyBalance = IERC20(reserveData.aTokenAddress).balanceOf(accessPoint);
             uint256 borrowBalance = IERC20(reserveData.variableDebtTokenAddress).balanceOf(accessPoint);
+            uint256 tokenBalance = IERC20(assets[i]).balanceOf(accessPoint);
+            uint256 aTokenBalance = IERC20(reserveData.aTokenAddress).balanceOf(accessPoint);
 
-            metrics[i] = AaveUserData({
-                supplyAPY: _rayToAPY(reserveData.currentLiquidityRate),
-                supplyCapacity: _getSupplyCap(config),
-                userSupplyAmount: supplyBalance,
-                borrowAPY: _rayToAPY(reserveData.currentVariableBorrowRate),
-                borrowCapacity: _getBorrowCap(config),
-                userBorrowAmount: borrowBalance
+            data.assets[i] = AssetData({
+                aaveSupplyAPY: _rayToAPY(reserveData.currentLiquidityRate),
+                aaveSupplyCapacity: _getSupplyCap(config),
+                aaveSupplyAmount: supplyBalance,
+                aaveBorrowAPY: _rayToAPY(reserveData.currentVariableBorrowRate),
+                aaveBorrowCapacity: _getBorrowCap(config),
+                aaveBorrowAmount: borrowBalance,
+                tokenBalance: tokenBalance,
+                aTokenBalance: aTokenBalance
             });
         }
     }
