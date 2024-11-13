@@ -1491,7 +1491,7 @@
           ]
         }
       ],
-      "address": "0x26ce50540b23573176d6C9e37B7109C94342E30D"
+      "address": "0xb12e92be0FB2689a966998569958dF560b55EB8D"
     },
     "WethWorkflow": {
       "abi": [
@@ -5667,8 +5667,135 @@
       "abi": [
         {
           "type": "constructor",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "accessRegistry_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "accessRegistry",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IAccessRegistry"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getAccountData",
+          "inputs": [
+            {
+              "name": "assets",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "kintoSigner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "data",
+              "type": "tuple",
+              "internalType": "struct Viewer.AccountData",
+              "components": [
+                {
+                  "name": "aaveTotalCollateralBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveTotalDebtBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveAvailableBorrowsBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveCurrentLiquidationThreshold",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveLtv",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveHealthFactor",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "assets",
+                  "type": "tuple[]",
+                  "internalType": "struct Viewer.AssetData[]",
+                  "components": [
+                    {
+                      "name": "aaveSupplyAPY",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveSupplyCapacity",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveSupplyAmount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowAPY",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowCapacity",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowAmount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "tokenBalance",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aTokenBalance",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -5710,6 +5837,19 @@
               "name": "",
               "type": "address",
               "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
             }
           ],
           "stateMutability": "view"
