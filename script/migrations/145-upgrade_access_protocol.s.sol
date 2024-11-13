@@ -44,21 +44,21 @@ contract DeployScript is Script, MigrationHelper {
 
         vm.broadcast(deployerPrivateKey);
         AaveRepayWorkflow aaveRepayWorkflow = new AaveRepayWorkflow(getAavePoolProvider());
-        saveContractAddress("aaveRepayWorkflow", address(aaveRepayWorkflow));
+        saveContractAddress("AaveRepayWorkflow", address(aaveRepayWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveRepayWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         AaveWithdrawWorkflow aaveWithdrawWorkflow = new AaveWithdrawWorkflow(getAavePoolProvider());
-        saveContractAddress("aaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
+        saveContractAddress("AaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveWithdrawWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         AaveBorrowWorkflow aaveBorrowWorkflow = new AaveBorrowWorkflow(getAavePoolProvider());
-        saveContractAddress("aaveBorrowWorkflow", address(aaveBorrowWorkflow));
+        saveContractAddress("AaveBorrowWorkflow", address(aaveBorrowWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveBorrowWorkflow));
