@@ -29,4 +29,3 @@ contract DeployViewerScript is Script, MigrationHelper {
         require(viewer.getBalances(new address[](0), address(this)).length == 0, "getBalances not working");
     }
 }
-
