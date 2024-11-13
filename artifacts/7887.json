@@ -2361,224 +2361,21 @@
         },
         {
           "type": "function",
-          "name": "ADMIN_DEPLOYER",
-          "inputs": [],
-          "outputs": [
+          "name": "addAppContracts",
+          "inputs": [
             {
-              "name": "",
+              "name": "app",
               "type": "address",
               "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "ARB_RETRAYABLE_TX",
-          "inputs": [],
-          "outputs": [
+            },
             {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
+              "name": "newContracts",
+              "type": "address[]",
+              "internalType": "address[]"
             }
           ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "CREATE2",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "ENTRYPOINT_V6",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "ENTRYPOINT_V7",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "GAS_LIMIT_PERIOD",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "GAS_LIMIT_THRESHOLD",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "RATE_LIMIT_PERIOD",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "RATE_LIMIT_THRESHOLD",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EMPTY",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_DEPOSIT",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_HANDLEOPS",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_HANDLEO_AGGREGATED_OPS",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_HANDLE_AGGREGATED_OPS_V7",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_HANDLE_OPS_V7",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_WITHDRAW_STAKE",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "SELECTOR_EP_WITHDRAW_TO",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bytes4",
-              "internalType": "bytes4"
-            }
-          ],
-          "stateMutability": "view"
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -3115,19 +2912,6 @@
         },
         {
           "type": "function",
-          "name": "kintoID",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "contract IKintoID"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "name",
           "inputs": [],
           "outputs": [
@@ -3191,19 +2975,6 @@
         },
         {
           "type": "function",
-          "name": "paymaster",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "contract SponsorPaymaster"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "proxiableUUID",
           "inputs": [],
           "outputs": [
@@ -3241,6 +3012,24 @@
             },
             {
               "name": "devEOAs",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "removeAppContracts",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "contractsToRemove",
               "type": "address[]",
               "internalType": "address[]"
             }
@@ -3689,19 +3478,6 @@
         },
         {
           "type": "function",
-          "name": "walletFactory",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "address",
-              "internalType": "contract IKintoWalletFactory"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "walletToDeployer",
           "inputs": [
             {
@@ -3734,6 +3510,44 @@
               "type": "address",
               "indexed": false,
               "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "AppContractsAdded",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "contracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "AppContractsRemoved",
+          "inputs": [
+            {
+              "name": "app",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "contracts",
+              "type": "address[]",
+              "indexed": false,
+              "internalType": "address[]"
             }
           ],
           "anonymous": false
@@ -4034,10 +3848,10 @@
         },
         {
           "type": "error",
-          "name": "ChildAlreadyRegistered",
+          "name": "ContractAlreadyRegistered",
           "inputs": [
             {
-              "name": "child",
+              "name": "addr",
               "type": "address",
               "internalType": "address"
             }
@@ -4049,6 +3863,17 @@
           "inputs": [
             {
               "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ContractNotRegistered",
+          "inputs": [
+            {
+              "name": "addr",
               "type": "address",
               "internalType": "address"
             }
@@ -4071,6 +3896,22 @@
           "inputs": [
             {
               "name": "eoa",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidAppOwner",
+          "inputs": [
+            {
+              "name": "sender",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "owner",
               "type": "address",
               "internalType": "address"
             }

@@ -1034,6 +1034,286 @@
       ],
       "address": "0xA000000eaA652c7023530b603844471294B811c4"
     },
+    "AaveBorrowWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "borrow",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        }
+      ],
+      "address": "0xAa6a97b31D38892E4Edb183588df6b9b633a71b7"
+    },
+    "AaveLendWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "lend",
+          "inputs": [
+            {
+              "name": "assetIn",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0xB47Ed636c8296729E81463109FEbf833CeEa71fb"
+    },
+    "AaveRepayWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "repay",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "onBehalfOf",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x5cC25cc25bE29d18472E76b2a19975aA1a37Bd5C"
+    },
+    "AaveWithdrawWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "withdraw",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "receiver",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        }
+      ],
+      "address": "0x10ed00FDb26Ec6BE0183e6f14D8275d5898B0721"
+    },
     "BridgeWorkflow": {
       "abi": [
         {
@@ -3878,8 +4158,135 @@
       "abi": [
         {
           "type": "constructor",
-          "inputs": [],
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "accessRegistry_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "accessRegistry",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IAccessRegistry"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "getAccountData",
+          "inputs": [
+            {
+              "name": "assets",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "kintoSigner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "data",
+              "type": "tuple",
+              "internalType": "struct Viewer.AccountData",
+              "components": [
+                {
+                  "name": "aaveTotalCollateralBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveTotalDebtBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveAvailableBorrowsBase",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveCurrentLiquidationThreshold",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveLtv",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "aaveHealthFactor",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "assets",
+                  "type": "tuple[]",
+                  "internalType": "struct Viewer.AssetData[]",
+                  "components": [
+                    {
+                      "name": "aaveSupplyAPY",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveSupplyCapacity",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveSupplyAmount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowAPY",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowCapacity",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aaveBorrowAmount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "tokenBalance",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "aTokenBalance",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -3921,6 +4328,19 @@
               "name": "",
               "type": "address",
               "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
             }
           ],
           "stateMutability": "view"
