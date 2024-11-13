@@ -126,7 +126,6 @@ contract AaveRepayWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Co
         // Get initial balances
         uint256 initialRepayBalance = IERC20(repayAsset).balanceOf(address(accessPoint));
         address variableDebtToken = aavePool.getReserveData(repayAsset).variableDebtTokenAddress;
-        uint256 initialDebtBalance = IERC20(variableDebtToken).balanceOf(address(accessPoint));
 
         // Prepare workflow data with max amount
         bytes memory workflowData = abi.encodeWithSelector(

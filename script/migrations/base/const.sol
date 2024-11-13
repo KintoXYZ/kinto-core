@@ -6,5 +6,4 @@ contract Constants {
     address internal constant EXCHANGE_PROXY = 0x0000000000001fF3684f28c67538d4D072C22734;
     address internal constant WETH = 0x4200000000000000000000000000000000000006;
     address internal constant SENDER_ACCOUNT = 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e;
-    uint256 internal constant BASE_CHAINID = 8453;
 }

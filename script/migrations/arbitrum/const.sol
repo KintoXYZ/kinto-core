@@ -11,5 +11,4 @@ contract Constants {
     address internal constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     address internal constant wstETH = 0x0fBcbaEA96Ce0cF7Ee00A8c19c3ab6f5Dc8E1921;
     address internal constant SENDER_ACCOUNT = 0x6E09F8A68fB5278e0C33D239dC12B2Cec33F4aC7;
-    uint256 internal constant ARBITRUM_CHAINID = 42161;
 }
