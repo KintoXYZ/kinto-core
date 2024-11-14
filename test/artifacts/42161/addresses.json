@@ -31,6 +31,6 @@
   "WithdrawWorkflow": "0x36e6cA034958B2E0D4dC7Ea9a8151f15Ba0B27D2",
   "AaveLendWorkflow": "0xB47Ed636c8296729E81463109FEbf833CeEa71fb",
   "AaveRepayWorkflow": "0x5cC25cc25bE29d18472E76b2a19975aA1a37Bd5C",
-  "AaveWithdrawWorkflow": "0x10ed00FDb26Ec6BE0183e6f14D8275d5898B0721",
+  "AaveWithdrawWorkflow": "0x0fe5f529029198ab35e1014e6C8c2E058cFEa4F5",
   "AaveBorrowWorkflow": "0xAa6a97b31D38892E4Edb183588df6b9b633a71b7"
 }
