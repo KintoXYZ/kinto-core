@@ -120,6 +120,15 @@ abstract contract BridgeDataHelper is Constants {
             options: bytes("")
         });
 
+        bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM] = IBridger.BridgeData({
+            vault: 0xC88A469B96A62d4DA14Dc5e23BDBC495D2b15C6B,
+            gasFee: 1e16,
+            msgGasLimit: 500_000,
+            connector: 0xD97E3cD27fb8af306b2CD42A61B7cbaAF044D08D,
+            execPayload: bytes(""),
+            options: bytes("")
+        });
+
         bridgeData[ARBITRUM_CHAINID][DAI_ARBITRUM] = IBridger.BridgeData({
             vault: 0x36E2DBe085eE4d028fD60f70670f662365d0E978,
             gasFee: 1e16,
