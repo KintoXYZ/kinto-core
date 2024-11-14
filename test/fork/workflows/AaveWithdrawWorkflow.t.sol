@@ -74,9 +74,8 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
         uint256 initialATokenBalance = IERC20(aToken).balanceOf(address(accessPoint));
 
         // Prepare workflow data
-        bytes memory workflowData = abi.encodeWithSelector(
-            AaveWithdrawWorkflow.withdraw.selector, assetToWithdraw, amountToWithdraw, address(accessPoint)
-        );
+        bytes memory workflowData =
+            abi.encodeWithSelector(AaveWithdrawWorkflow.withdraw.selector, assetToWithdraw, amountToWithdraw);
 
         // Execute the withdraw workflow
         vm.prank(alice0);

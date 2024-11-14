@@ -37,9 +37,8 @@ contract AaveWithdrawWorkflow {
      * @notice Withdraws assets from Aave
      * @param asset The address of the asset to withdraw
      * @param amount The amount to withdraw (use type(uint256).max for max available)
-     * @param receiver The address that will receive the withdrawn assets
      */
-    function withdraw(address asset, uint256 amount, address receiver) external {
+    function withdraw(address asset, uint256 amount) external {
         address pool = poolAddressProvider.getPool();
 
         // If amount is max uint256, withdraw all available
@@ -48,6 +47,6 @@ contract AaveWithdrawWorkflow {
         }
 
         // Withdraw from Aave
-        IAavePool(pool).withdraw(asset, amount, receiver);
+        IAavePool(pool).withdraw(asset, amount, address(this));
     }
 }
