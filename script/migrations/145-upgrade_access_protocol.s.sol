@@ -51,7 +51,7 @@ contract DeployScript is Script, MigrationHelper {
 
         vm.broadcast(deployerPrivateKey);
         AaveWithdrawWorkflow aaveWithdrawWorkflow =
-            new AaveWithdrawWorkflow(getAavePoolProvider(), _getChainDeployment("AccessRegistry"));
+            new AaveWithdrawWorkflow(getAavePoolProvider(), _getChainDeployment("Bridger"));
         saveContractAddress("AaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
 
         vm.broadcast(deployerPrivateKey);
