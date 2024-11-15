@@ -1034,6 +1034,403 @@
       ],
       "address": "0xA000000eaA652c7023530b603844471294B811c4"
     },
+    "AaveBorrowWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "borrow",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        }
+      ],
+      "address": "0x5bcA84441bfA911b1637A1b2344198dFaCbdCaA1"
+    },
+    "AaveLendWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "lend",
+          "inputs": [
+            {
+              "name": "assetIn",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x30592A2E419Db1338A6759279c547A9fdf2cd1DF"
+    },
+    "AaveRepayWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "repay",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "onBehalfOf",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x5e4cB8F8E70FBe315EA76323f16410B40151fe3b"
+    },
+    "AaveWithdrawWorkflow": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "poolAddressProvider_",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridger_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "bridger",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "poolAddressProvider",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IPoolAddressesProvider"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "withdraw",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "withdrawAndBridge",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0xb4D3004b5E56d236977e9153F4689cF10E4Ff723"
+    },
     "BridgeWorkflow": {
       "abi": [
         {
