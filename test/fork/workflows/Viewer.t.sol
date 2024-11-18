@@ -57,7 +57,7 @@ contract ViewerTest is SignatureHelper, ForkTest, ArtifactsReader, Constants {
 
         // Deploy and allow workflows
         aaveLendWorkflow = new AaveLendWorkflow(ARB_AAVE_POOL_PROVIDER);
-        aaveBorrowWorkflow = new AaveBorrowWorkflow(ARB_AAVE_POOL_PROVIDER);
+        aaveBorrowWorkflow = new AaveBorrowWorkflow(ARB_AAVE_POOL_PROVIDER, _getChainDeployment("Bridger"));
         vm.label(address(aaveLendWorkflow), "aaveLendWorkflow");
         vm.label(address(aaveBorrowWorkflow), "aaveBorrowWorkflow");
 
@@ -72,7 +72,7 @@ contract ViewerTest is SignatureHelper, ForkTest, ArtifactsReader, Constants {
         vm.rollFork(273472816);
     }
 
-    function testGetAccountData_BeforeLending() public {
+    function testGetAccountData_BeforeLending() public view {
         address[] memory assets = new address[](1);
         assets[0] = USDC_ARBITRUM;
 

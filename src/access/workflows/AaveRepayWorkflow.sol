@@ -37,15 +37,14 @@ contract AaveRepayWorkflow {
      * @notice Repays a borrowed asset to Aave
      * @param asset The address of the borrowed asset to repay
      * @param amount The amount to repay (use type(uint256).max for max debt)
-     * @param onBehalfOf The address of the user who will get their debt reduced
      * @return amountRepaid The actual amount repaid
      */
-    function repay(address asset, uint256 amount, address onBehalfOf) external returns (uint256) {
+    function repay(address asset, uint256 amount) external returns (uint256) {
         address pool = poolAddressProvider.getPool();
 
         // If amount is max uint256, get the debt for this specific asset
         if (amount == type(uint256).max) {
-            amount = IERC20(IAavePool(pool).getReserveData(asset).variableDebtTokenAddress).balanceOf(onBehalfOf);
+            amount = IERC20(IAavePool(pool).getReserveData(asset).variableDebtTokenAddress).balanceOf(address(this));
         }
 
         // Approve max allowance to save on gas for future transfers
@@ -58,7 +57,7 @@ contract AaveRepayWorkflow {
             asset,
             amount,
             2, // RATE_MODE: 2 for variable rate
-            onBehalfOf
+            address(this)
         );
     }
 }
