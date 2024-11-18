@@ -35,47 +35,31 @@ contract DeployScript is Script, MigrationHelper {
             return;
         }
 
-        vm.broadcast(deployerPrivateKey);
-        registry.disallowWorkflow(_getChainDeployment("AaveLendWorkflow"));
+        vm.startBroadcast(deployerPrivateKey);
 
-        vm.broadcast(deployerPrivateKey);
+        registry.disallowWorkflow(_getChainDeployment("AaveLendWorkflow"));
         AaveLendWorkflow aaveLendWorkflow = new AaveLendWorkflow(getAavePoolProvider());
         saveContractAddress("AaveLendWorkflow", address(aaveLendWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveLendWorkflow));
 
-        vm.broadcast(deployerPrivateKey);
         registry.disallowWorkflow(_getChainDeployment("AaveRepayWorkflow"));
-
-        vm.broadcast(deployerPrivateKey);
         AaveRepayWorkflow aaveRepayWorkflow = new AaveRepayWorkflow(getAavePoolProvider());
         saveContractAddress("AaveRepayWorkflow", address(aaveRepayWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveRepayWorkflow));
 
-        vm.broadcast(deployerPrivateKey);
         registry.disallowWorkflow(_getChainDeployment("AaveWithdrawWorkflow"));
-
-        vm.broadcast(deployerPrivateKey);
         AaveWithdrawWorkflow aaveWithdrawWorkflow =
             new AaveWithdrawWorkflow(getAavePoolProvider(), _getChainDeployment("Bridger"));
         saveContractAddress("AaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveWithdrawWorkflow));
 
-        vm.broadcast(deployerPrivateKey);
         registry.disallowWorkflow(_getChainDeployment("AaveBorrowWorkflow"));
-
-        vm.broadcast(deployerPrivateKey);
         AaveBorrowWorkflow aaveBorrowWorkflow =
             new AaveBorrowWorkflow(getAavePoolProvider(), _getChainDeployment("Bridger"));
         saveContractAddress("AaveBorrowWorkflow", address(aaveBorrowWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveBorrowWorkflow));
+
+        vm.stopBroadcast();
 
         require(registry.isWorkflowAllowed(address(aaveLendWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(aaveRepayWorkflow)), "Workflow is not set properly");
