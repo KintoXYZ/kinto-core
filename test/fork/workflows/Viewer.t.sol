@@ -72,7 +72,7 @@ contract ViewerTest is SignatureHelper, ForkTest, ArtifactsReader, Constants {
         vm.rollFork(273472816);
     }
 
-    function testGetAccountData_BeforeLending() public {
+    function testGetAccountData_BeforeLending() public view {
         address[] memory assets = new address[](1);
         assets[0] = USDC_ARBITRUM;
 

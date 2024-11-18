@@ -80,8 +80,7 @@ contract AaveRepayWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Co
         uint256 initialDebtBalance = IERC20(variableDebtToken).balanceOf(address(accessPoint));
 
         // Prepare workflow data
-        bytes memory workflowData =
-            abi.encodeWithSelector(AaveRepayWorkflow.repay.selector, repayAsset, borrowAmount, address(accessPoint));
+        bytes memory workflowData = abi.encodeWithSelector(AaveRepayWorkflow.repay.selector, repayAsset, borrowAmount);
 
         // Approve repay asset
         vm.prank(address(accessPoint));
@@ -128,9 +127,8 @@ contract AaveRepayWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Co
         address variableDebtToken = aavePool.getReserveData(repayAsset).variableDebtTokenAddress;
 
         // Prepare workflow data with max amount
-        bytes memory workflowData = abi.encodeWithSelector(
-            AaveRepayWorkflow.repay.selector, repayAsset, type(uint256).max, address(accessPoint)
-        );
+        bytes memory workflowData =
+            abi.encodeWithSelector(AaveRepayWorkflow.repay.selector, repayAsset, type(uint256).max);
 
         // Approve repay asset
         vm.prank(address(accessPoint));
