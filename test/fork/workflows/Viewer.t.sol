@@ -57,7 +57,7 @@ contract ViewerTest is SignatureHelper, ForkTest, ArtifactsReader, Constants {
 
         // Deploy and allow workflows
         aaveLendWorkflow = new AaveLendWorkflow(ARB_AAVE_POOL_PROVIDER);
-        aaveBorrowWorkflow = new AaveBorrowWorkflow(ARB_AAVE_POOL_PROVIDER);
+        aaveBorrowWorkflow = new AaveBorrowWorkflow(ARB_AAVE_POOL_PROVIDER, _getChainDeployment("Bridger"));
         vm.label(address(aaveLendWorkflow), "aaveLendWorkflow");
         vm.label(address(aaveBorrowWorkflow), "aaveBorrowWorkflow");
 
