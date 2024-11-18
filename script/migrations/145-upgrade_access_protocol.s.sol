@@ -35,27 +35,11 @@ contract DeployScript is Script, MigrationHelper {
             return;
         }
 
-        vm.broadcast(deployerPrivateKey);
-        AaveLendWorkflow aaveLendWorkflow = new AaveLendWorkflow(getAavePoolProvider());
-        saveContractAddress("AaveLendWorkflow", address(aaveLendWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
-        registry.allowWorkflow(address(aaveLendWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
         AaveRepayWorkflow aaveRepayWorkflow = new AaveRepayWorkflow(getAavePoolProvider());
         saveContractAddress("AaveRepayWorkflow", address(aaveRepayWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveRepayWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
-        AaveWithdrawWorkflow aaveWithdrawWorkflow =
-            new AaveWithdrawWorkflow(getAavePoolProvider(), _getChainDeployment("Bridger"));
-        saveContractAddress("AaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
-
-        vm.broadcast(deployerPrivateKey);
-        registry.allowWorkflow(address(aaveWithdrawWorkflow));
 
         vm.broadcast(deployerPrivateKey);
         AaveBorrowWorkflow aaveBorrowWorkflow =
@@ -65,9 +49,7 @@ contract DeployScript is Script, MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         registry.allowWorkflow(address(aaveBorrowWorkflow));
 
-        require(registry.isWorkflowAllowed(address(aaveLendWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(aaveRepayWorkflow)), "Workflow is not set properly");
-        require(registry.isWorkflowAllowed(address(aaveWithdrawWorkflow)), "Workflow is not set properly");
         require(registry.isWorkflowAllowed(address(aaveBorrowWorkflow)), "Workflow is not set properly");
     }
 }
