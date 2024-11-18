@@ -1043,6 +1043,11 @@
               "name": "poolAddressProvider_",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "bridger_",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "nonpayable"
@@ -1067,6 +1072,85 @@
         },
         {
           "type": "function",
+          "name": "borrowAndBridge",
+          "inputs": [
+            {
+              "name": "asset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "bridger",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IBridger"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "poolAddressProvider",
           "inputs": [],
           "outputs": [
@@ -1077,9 +1161,47 @@
             }
           ],
           "stateMutability": "view"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         }
       ],
-      "address": "0x5bcA84441bfA911b1637A1b2344198dFaCbdCaA1"
+      "address": "0x8c13D7aDD034A9E1bD8280225Efab7584c5E85A6"
     },
     "AaveLendWorkflow": {
       "abi": [
@@ -1205,11 +1327,6 @@
               "name": "amount",
               "type": "uint256",
               "internalType": "uint256"
-            },
-            {
-              "name": "onBehalfOf",
-              "type": "address",
-              "internalType": "address"
             }
           ],
           "outputs": [
@@ -1260,7 +1377,7 @@
           ]
         }
       ],
-      "address": "0x5e4cB8F8E70FBe315EA76323f16410B40151fe3b"
+      "address": "0x5aAdFB43eF8dAF45DD80F4676345b7676f1D70e3"
     },
     "AaveWithdrawWorkflow": {
       "abi": [
