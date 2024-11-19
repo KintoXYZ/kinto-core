@@ -134,7 +134,7 @@ Enables token swaps through the 0x Protocol API with verifiable output amounts.
 ### Events
 - `SwapExecuted(address tokenIn, uint256 amountIn, address tokenOut, uint256 amountOut)`: Emitted after successful swaps
 
-### Security Considerations
+## Security Considerations
 1. All workflows require approval from the AccessRegistry
 2. Operations can only be executed through validated AccessPoints
 3. Most workflows implement automatic approval management
@@ -144,14 +144,14 @@ Enables token swaps through the 0x Protocol API with verifiable output amounts.
 7. Critical functions are protected by AccessManager and multisig controls
 8. Users have time to exit positions during timelock period
 
-### Governance Process
+## Governance Process
 1. **Proposal**: Multisig proposes changes to workflows or implementations
 2. **Timelock**: Changes enter mandatory waiting period
 3. **User Choice**: Users can choose to exit during timelock if they disagree
 4. **Execution**: Changes can be executed only after timelock expires
 5. **Emergency**: Certain emergency functions may have shorter delays for security purposes
 
-### Integration Guidelines
+## Integration Guidelines
 1. All interactions should occur through an AccessPoint
 2. Workflow addresses must be whitelisted in AccessRegistry
 3. Bridge operations require valid BridgeData structures
