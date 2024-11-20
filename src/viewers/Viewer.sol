@@ -104,7 +104,7 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (AccountData memory data)
     {
-        address accessPoint = address(accessRegistry.getAccessPoint(kintoSigner));
+        address accessPoint = address(accessRegistry.getAddress(kintoSigner));
         IAavePool pool = IAavePool(poolAddressProvider.getPool());
 
         // Initialize assets array in memory

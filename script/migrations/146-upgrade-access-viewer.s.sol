@@ -26,6 +26,8 @@ contract DeployViewerScript is Script, MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         viewer.upgradeTo(newImpl);
 
+        saveContractAddress("Viewer-impl", newImpl);
+
         require(viewer.getBalances(new address[](0), address(this)).length == 0, "getBalances not working");
     }
 }
