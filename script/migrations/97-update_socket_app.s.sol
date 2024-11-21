@@ -20,10 +20,9 @@ contract KintoMigration97DeployScript is MigrationHelper {
             abi.encodeWithSelector(
                 KintoAppRegistry.addAppContracts.selector,
                 socketApp,
-                [
-                    0xd0d4cDB49DDa0F9B4785B3823eEdaA84B84afAd9, // USDT Vault
-                    0x04481a364aCfD0776a30a6731D9Ee5425b9300EA // WBTC Vault
-                ].toMemoryArray()
+                [0xd0d4cDB49DDa0F9B4785B3823eEdaA84B84afAd9, 0x04481a364aCfD0776a30a6731D9Ee5425b9300EA] // USDT Vault
+                        // WBTC Vault
+                    .toMemoryArray()
             ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
