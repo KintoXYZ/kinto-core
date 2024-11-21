@@ -13,7 +13,7 @@ contract Script is MigrationHelper {
         KintoAppRegistry kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
 
         // setup socket sponsored tokens
-        address[] memory tokens = new address[](19);
+        address[] memory tokens = new address[](28);
         tokens[0] = _getChainDeployment("DAI");
         tokens[1] = _getChainDeployment("wstETH");
         tokens[2] = _getChainDeployment("WETH");
@@ -33,9 +33,18 @@ contract Script is MigrationHelper {
         tokens[16] = _getChainDeployment("XAUt");
         tokens[17] = _getChainDeployment("stEUR");
         tokens[18] = _getChainDeployment("stUSD");
+        tokens[19] = _getChainDeployment("WBTC");
+        tokens[20] = _getChainDeployment("USDT");
+        tokens[21] = _getChainDeployment("ARB");
+        tokens[22] = _getChainDeployment("LINK");
+        tokens[23] = _getChainDeployment("GHO");
+        tokens[24] = _getChainDeployment("rETH");
+        tokens[25] = _getChainDeployment("cbETH");
+        tokens[26] = _getChainDeployment("cbBTC");
+        tokens[27] = _getChainDeployment("AAVE");
 
         // create bool flag array
-        bool[] memory flags = new bool[](19);
+        bool[] memory flags = new bool[](28);
         for (uint256 i = 0; i < flags.length; i++) {
             flags[i] = true;
         }
@@ -108,6 +117,33 @@ contract Script is MigrationHelper {
         );
         assertEq(
             kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("stUSD")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("WBTC")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("USDT")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("ARB")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("LINK")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("GHO")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("rETH")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("cbETH")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("cbBTC")), true
+        );
+        assertEq(
+            kintoAppRegistry.isSponsored(0x3e9727470C66B1e77034590926CDe0242B5A3dCc, _getChainDeployment("AAVE")), true
         );
     }
 }

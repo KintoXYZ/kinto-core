@@ -21,19 +21,14 @@ contract KintoMigration97DeployScript is MigrationHelper {
                 KintoAppRegistry.addAppContracts.selector,
                 socketApp,
                 [
-                    0x6332e56A423480A211E301Cb85be12814e9238Bb,
-                    0x2B98775aBE9cDEb041e3c2E56C76ce2560AF57FB,
-                    0x12FF8947a2524303C13ca7dA9bE4914381f6557a,
-                    0x72846179EF1467B2b71F2bb7525fcD4450E46B2A,
-                    0x897DA4D039f64090bfdb33cd2Ed2Da81adD6FB02,
-                    0xa7527C270f30cF3dAFa6e82603b4978e1A849359,
-                    0x6dbB5ee7c63775013FaF810527DBeDe2810d7Aee
+                    0xd0d4cDB49DDa0F9B4785B3823eEdaA84B84afAd9, // USDT Vault
+                    0x04481a364aCfD0776a30a6731D9Ee5425b9300EA // WBTC Vault
                 ].toMemoryArray()
             ),
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
-        assertEq(kintoAppRegistry.getApp(0x6332e56A423480A211E301Cb85be12814e9238Bb), socketApp);
-        assertEq(kintoAppRegistry.getApp(0x6dbB5ee7c63775013FaF810527DBeDe2810d7Aee), socketApp);
+        assertEq(kintoAppRegistry.getApp(0xd0d4cDB49DDa0F9B4785B3823eEdaA84B84afAd9), socketApp);
+        assertEq(kintoAppRegistry.getApp(0x04481a364aCfD0776a30a6731D9Ee5425b9300EA), socketApp);
     }
 }
