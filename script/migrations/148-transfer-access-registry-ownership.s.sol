@@ -2,11 +2,13 @@
 pragma solidity ^0.8.18;
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
+import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {AccessManager} from "@openzeppelin-5.0.1/contracts/access/manager/AccessManager.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
+import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
@@ -49,8 +51,10 @@ contract DeployScript is MigrationHelper {
         assertTrue(isMember);
         assertEq(currentDelay, ACCESS_REGISTRY_DELAY);
 
-        // accessRegistry.upgradeAll(IAccessPoint(_getChainDeployment("AccessPoint-impl")));
-        bytes memory upgradeAllCalldata = abi.encodeWithSelector(AccessRegistry.upgradeAll.selector, IAccessPoint(_getChainDeployment("AccessPoint-impl")));
+        // test that we can upgrade to a new access point version
+        AccessPoint newImpl = new AccessPoint(IEntryPoint(ENTRY_POINT), accessRegistry);
+
+        bytes memory upgradeAllCalldata = abi.encodeWithSelector(AccessRegistry.upgradeAll.selector, newImpl);
 
         vm.prank(safe);
         accessManager.schedule(address(accessRegistry), upgradeAllCalldata, uint48(block.timestamp + ACCESS_REGISTRY_DELAY));
@@ -59,5 +63,7 @@ contract DeployScript is MigrationHelper {
 
         vm.prank(safe);
         accessManager.execute(address(accessRegistry), upgradeAllCalldata);
+
+        assertEq(address(newImpl), accessRegistry.beacon().implementation());
     }
 }
