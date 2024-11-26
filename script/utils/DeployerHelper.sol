@@ -10,7 +10,6 @@ import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
     using stdJson for string;
 
-
     function create2(bytes memory creationCodeWithArgs) internal returns (address addr) {
         return create2(creationCodeWithArgs, 0);
     }

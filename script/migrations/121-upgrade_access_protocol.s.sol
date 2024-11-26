@@ -24,8 +24,6 @@ import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 
 contract DeployScript is Script, MigrationHelper {
-    // Entry Point address is the same on all chains.
-    address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
     // Exchange Proxy address is the same on all chains.
     address internal constant EXCHANGE_PROXY = 0x0000000000001fF3684f28c67538d4D072C22734;
 

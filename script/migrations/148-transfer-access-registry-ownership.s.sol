@@ -21,7 +21,7 @@ contract DeployScript is MigrationHelper {
         AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager"));
         AccessRegistry accessRegistry = AccessRegistry(_getChainDeployment("AccessRegistry"));
         address safe = getMamoriSafeByChainId(block.chainid);
-        console2.log('safe:', safe);
+        console2.log("safe:", safe);
 
         bytes4[] memory selectors = new bytes4[](4);
         selectors[0] = AccessRegistry.upgradeAll.selector;
@@ -43,7 +43,8 @@ contract DeployScript is MigrationHelper {
 
         assertEq(accessRegistry.owner(), address(accessManager));
 
-        (bool immediate, uint32 delay) = accessManager.canCall(safe, address(accessRegistry), AccessRegistry.upgradeAll.selector);
+        (bool immediate, uint32 delay) =
+            accessManager.canCall(safe, address(accessRegistry), AccessRegistry.upgradeAll.selector);
         assertFalse(immediate);
         assertEq(delay, ACCESS_REGISTRY_DELAY);
 
@@ -57,7 +58,9 @@ contract DeployScript is MigrationHelper {
         bytes memory upgradeAllCalldata = abi.encodeWithSelector(AccessRegistry.upgradeAll.selector, newImpl);
 
         vm.prank(safe);
-        accessManager.schedule(address(accessRegistry), upgradeAllCalldata, uint48(block.timestamp + ACCESS_REGISTRY_DELAY));
+        accessManager.schedule(
+            address(accessRegistry), upgradeAllCalldata, uint48(block.timestamp + ACCESS_REGISTRY_DELAY)
+        );
 
         vm.warp(block.timestamp + ACCESS_REGISTRY_DELAY);
 

@@ -20,9 +20,8 @@ contract DeployScript is Script, MigrationHelper {
             return;
         }
 
-        (bytes32 salt, address expectedAddress) = mineSalt(
-            keccak256(abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer))), "ACC000"
-        );
+        (bytes32 salt, address expectedAddress) =
+            mineSalt(keccak256(abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer))), "ACC000");
 
         vm.broadcast(deployerPrivateKey);
         AccessManager accessManager = new AccessManager{salt: salt}(deployer);
