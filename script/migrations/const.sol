@@ -12,7 +12,9 @@ contract Constants {
     address internal constant WUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812; // wUSDM
 
     uint64 internal constant NIO_GOVERNOR_ROLE = uint64(uint256(keccak256("NIO_GOVERNOR_ROLE")));
-    uint256 internal constant NIO_EXECUTION_DELAY = 3 days;
+    uint64 internal constant UPGRADER_ROLE = uint64(uint256(keccak256("UPGRADER_ROLE")));
+    uint32 internal constant NIO_EXECUTION_DELAY = 3 days;
+    uint32 internal constant ACCESS_REGISTRY_UPGRADE_DELAY = 16 hours;
     uint256 internal constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 internal constant RATE_LIMIT_THRESHOLD = 10;
     uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
