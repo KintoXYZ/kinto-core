@@ -31,24 +31,42 @@ contract DeployScript is MigrationHelper {
 
         vm.startBroadcast(deployerPrivateKey);
 
+        // make Safe an admin
+        accessManager.grantRole(accessManager.ADMIN_ROLE(), safe, 0);
+
+        // set UPGRADER role for target functions
         accessManager.setTargetFunctionRole(address(accessRegistry), selectors, UPGRADER_ROLE);
 
+        // label the role
         accessManager.labelRole(UPGRADER_ROLE, "UPGRADER_ROLE");
 
+        // grant role to a Safe with a delay
         accessManager.grantRole(UPGRADER_ROLE, safe, ACCESS_REGISTRY_DELAY);
 
+        // set grantDelay, so admin can't grant the same role to another account with no delay
+        accessManager.setGrantDelay(UPGRADER_ROLE, ACCESS_REGISTRY_DELAY);
+
+        // set delay on admin actions so admin can't move selectors to another role with no delay
+        accessManager.setTargetAdminDelay(address(accessRegistry), ACCESS_REGISTRY_DELAY);
+
+        // transfer ownership to access manager
         accessRegistry.transferOwnership(address(accessManager));
 
         vm.stopBroadcast();
 
         assertEq(accessRegistry.owner(), address(accessManager));
 
+        // check that Safe is an admin
+        (bool isMember, uint32 currentDelay) = accessManager.hasRole(accessManager.ADMIN_ROLE(), safe);
+        assertTrue(isMember);
+        assertEq(currentDelay, 0);
+
         (bool immediate, uint32 delay) =
             accessManager.canCall(safe, address(accessRegistry), AccessRegistry.upgradeAll.selector);
         assertFalse(immediate);
         assertEq(delay, ACCESS_REGISTRY_DELAY);
 
-        (bool isMember, uint32 currentDelay) = accessManager.hasRole(UPGRADER_ROLE, safe);
+        (isMember, currentDelay) = accessManager.hasRole(UPGRADER_ROLE, safe);
         assertTrue(isMember);
         assertEq(currentDelay, ACCESS_REGISTRY_DELAY);
 
