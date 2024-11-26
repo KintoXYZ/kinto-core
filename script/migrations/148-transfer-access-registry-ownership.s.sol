@@ -6,6 +6,7 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {AccessManager} from "@openzeppelin-5.0.1/contracts/access/manager/AccessManager.sol";
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
@@ -32,7 +33,7 @@ contract DeployScript is MigrationHelper {
 
         accessManager.labelRole(UPGRADER_ROLE, "UPGRADER_ROLE");
 
-        accessManager.grantRole(UPGRADER_ROLE, safe, ACCESS_REGISTRY_UPGRADE_DELAY);
+        accessManager.grantRole(UPGRADER_ROLE, safe, ACCESS_REGISTRY_DELAY);
 
         accessRegistry.transferOwnership(address(accessManager));
 
@@ -42,10 +43,21 @@ contract DeployScript is MigrationHelper {
 
         (bool immediate, uint32 delay) = accessManager.canCall(safe, address(accessRegistry), AccessRegistry.upgradeAll.selector);
         assertFalse(immediate);
-        assertEq(delay, ACCESS_REGISTRY_UPGRADE_DELAY);
+        assertEq(delay, ACCESS_REGISTRY_DELAY);
 
         (bool isMember, uint32 currentDelay) = accessManager.hasRole(UPGRADER_ROLE, safe);
         assertTrue(isMember);
-        assertEq(currentDelay, ACCESS_REGISTRY_UPGRADE_DELAY);
+        assertEq(currentDelay, ACCESS_REGISTRY_DELAY);
+
+        // accessRegistry.upgradeAll(IAccessPoint(_getChainDeployment("AccessPoint-impl")));
+        bytes memory upgradeAllCalldata = abi.encodeWithSelector(AccessRegistry.upgradeAll.selector, IAccessPoint(_getChainDeployment("AccessPoint-impl")));
+
+        vm.prank(safe);
+        accessManager.schedule(address(accessRegistry), upgradeAllCalldata, uint48(block.timestamp + ACCESS_REGISTRY_DELAY));
+
+        vm.warp(block.timestamp + ACCESS_REGISTRY_DELAY);
+
+        vm.prank(safe);
+        accessManager.execute(address(accessRegistry), upgradeAllCalldata);
     }
 }
