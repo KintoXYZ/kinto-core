@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
@@ -13,6 +14,7 @@ import {AccessManager} from "@openzeppelin-5.0.1/contracts/access/manager/Access
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
@@ -27,19 +29,26 @@ contract DeployScript is MigrationHelper {
 
         _whitelistApp(address(accessManager));
 
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = KintoWalletFactory.upgradeAllWalletImplementations.selector;
+        bytes4[] memory factorySelectors = new bytes4[](2);
+        factorySelectors[0] = KintoWalletFactory.upgradeAllWalletImplementations.selector;
+        factorySelectors[1] = UUPSUpgradeable.upgradeTo.selector;
 
         // set UPGRADER role for target functions for KintoWalletFactory
         _handleOps(
-            abi.encodeWithSelector(AccessManager.setTargetFunctionRole.selector, factory, selectors, UPGRADER_ROLE),
+            abi.encodeWithSelector(
+                AccessManager.setTargetFunctionRole.selector, factory, factorySelectors, UPGRADER_ROLE
+            ),
             address(accessManager)
         );
 
-        selectors[0] = UUPSUpgradeable.upgradeTo.selector;
+        bytes4[] memory registrySelectors = new bytes4[](1);
+        registrySelectors[0] = UUPSUpgradeable.upgradeTo.selector;
+
         // set UPGRADER role for target functions AppRegistry
         _handleOps(
-            abi.encodeWithSelector(AccessManager.setTargetFunctionRole.selector, registry, selectors, UPGRADER_ROLE),
+            abi.encodeWithSelector(
+                AccessManager.setTargetFunctionRole.selector, registry, registrySelectors, UPGRADER_ROLE
+            ),
             address(accessManager)
         );
 
@@ -108,10 +117,39 @@ contract DeployScript is MigrationHelper {
 
         assertEq(address(newImpl), KintoWalletFactory(factory).beacon().implementation());
 
-        // test that we can upgrade to a app registry
+        // test that we can upgrade to a new wallet factory
+        KintoWalletFactory newWalletFactory = new KintoWalletFactory(
+            IKintoWallet(address(0)),
+            KintoAppRegistry(registry),
+            IKintoID(_getChainDeployment("KintoID")),
+            RewardsDistributor(_getChainDeployment("RewardsDistributor"))
+        );
+        bytes memory upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, newWalletFactory);
+
+        vm.prank(kintoAdminWallet);
+        accessManager.schedule(factory, upgradeCalldata, uint48(block.timestamp + UPGRADE_DELAY));
+
+        vm.warp(block.timestamp + UPGRADE_DELAY);
+
+        vm.prank(kintoAdminWallet);
+        accessManager.execute(factory, upgradeCalldata);
+
+        // Read implementation address from proxy storage and compare it to a new address
+        assertEq(
+            address(
+                uint160(
+                    uint256(
+                        vm.load(factory, bytes32(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc))
+                    )
+                )
+            ),
+            address(newWalletFactory)
+        );
+
+        // test that we can upgrade to a new app registry
         KintoAppRegistry newAppRegistry =
             new KintoAppRegistry(KintoWalletFactory(factory), SponsorPaymaster(_getChainDeployment("SponsorPaymaster")));
-        bytes memory upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, newAppRegistry);
+        upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, newAppRegistry);
 
         vm.prank(kintoAdminWallet);
         accessManager.schedule(registry, upgradeCalldata, uint48(block.timestamp + UPGRADE_DELAY));
