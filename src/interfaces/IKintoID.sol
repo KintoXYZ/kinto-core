@@ -92,6 +92,8 @@ interface IKintoID {
 
     function UPGRADER_ROLE() external view returns (bytes32);
 
+    function GOVERNANCE_ROLE() external view returns (bytes32);
+
     function lastMonitoredAt() external view returns (uint256);
 
     function nonces(address _account) external view returns (uint256);

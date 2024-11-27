@@ -43,6 +43,10 @@ contract KintoID is
 
     bytes32 public constant override KYC_PROVIDER_ROLE = keccak256("KYC_PROVIDER_ROLE");
     bytes32 public constant override UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    bytes32 public constant override GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+
+    address public immutable override walletFactory;
+    address public immutable override faucet;
 
     /* ============ State Variables ============ */
 
@@ -63,8 +67,12 @@ contract KintoID is
     // Indicates which accounts are allowed to transfer their Kinto ID to another account
     mapping(address => address) public override recoveryTargets;
 
-    address public immutable override walletFactory;
-    address public immutable override faucet;
+    /// @notice DEPRECATED: Address of an wallet factory.
+    address private __walletFactory;
+
+    /// @notice Mapping of an user to a timestamp of when sanction was applied last time.
+    mapping(address => uint256) public sanctionedAt;
+
     /* ============ Constructor & Initializers ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -219,6 +227,9 @@ contract KintoID is
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
         meta.updatedAt = 0;
+
+        // Set sanctionedAt to the current block timestamp
+        sanctionedAt[_signatureData.signer] = block.timestamp;
     }
 
     /* ============ Sanctions & traits ============ */
@@ -315,6 +326,9 @@ contract KintoID is
             meta.updatedAt = block.timestamp;
             lastMonitoredAt = block.timestamp;
             emit SanctionAdded(_account, _countryId, block.timestamp);
+
+            // Set the timestamp when the sanction was added
+            sanctionedAt[_account] = block.timestamp;
         }
     }
 
@@ -343,7 +357,24 @@ contract KintoID is
      * @return true if the account has KYC token.
      */
     function isKYC(address _account) external view override returns (bool) {
-        return balanceOf(_account) > 0 && isSanctionsSafe(_account);
+        if (balanceOf(_account) == 0) {
+            // If the account doesn't have a KYC token
+            if (block.timestamp - sanctionedAt[_account] < 3 days) {
+                // If sanction is not confirmed within 3 days, return true
+                return true;
+            } else {
+                // If sanction is confirmed or the user never had a KYC token, return false
+                return false;
+            }
+        }
+
+        // Check if the account is sanctions safe
+        if (!isSanctionsSafe(_account)) {
+            return false;
+        }
+
+        // Account has a valid KYC token and is sanctions safe
+        return true;
     }
 
     /**
@@ -361,7 +392,25 @@ contract KintoID is
      * @return true if the account is sanctions safe.
      */
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
-        return isSanctionsMonitored(7) && _kycmetas[_account].sanctionsCount == 0;
+        Metadata storage meta = _kycmetas[_account];
+        if (meta.sanctionsCount > 0 || !isSanctionsMonitored(7)) {
+            // If the account has sanctions
+            if (block.timestamp - sanctionedAt[_account] < 3 days) {
+                // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+                return true;
+            } else {
+                // If the sanction is confirmed, consider the account not sanctions safe
+                return false;
+            }
+        }
+
+        // If the account has no sanctions, consider it sanctions safe
+        return true;
+    }
+
+    function confirmSanction(address _account) external onlyRole(GOVERNANCE_ROLE) {
+        // reset sanction timestamp to make the sanction indefinte
+        sanctionedAt[_account] = 0;
     }
 
     /**
@@ -386,7 +435,7 @@ contract KintoID is
     /**
      * @dev Returns whether the KYC account is an individual
      * @param _account account to be checked.
-     * @return true if the account is an indivdual.
+     * @return true if the account is an individual.
      */
     function isIndividual(address _account) external view override returns (bool) {
         return _kycmetas[_account].individual;
