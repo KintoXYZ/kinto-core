@@ -227,9 +227,6 @@ contract KintoID is
         Metadata storage meta = _kycmetas[_signatureData.signer];
         meta.mintedAt = 0;
         meta.updatedAt = 0;
-
-        // Set sanctionedAt to the current block timestamp
-        sanctionedAt[_signatureData.signer] = block.timestamp;
     }
 
     /* ============ Sanctions & traits ============ */
@@ -357,24 +354,7 @@ contract KintoID is
      * @return true if the account has KYC token.
      */
     function isKYC(address _account) external view override returns (bool) {
-        if (balanceOf(_account) == 0) {
-            // If the account doesn't have a KYC token
-            if (block.timestamp - sanctionedAt[_account] < 3 days) {
-                // If sanction is not confirmed within 3 days, return true
-                return true;
-            } else {
-                // If sanction is confirmed or the user never had a KYC token, return false
-                return false;
-            }
-        }
-
-        // Check if the account is sanctions safe
-        if (!isSanctionsSafe(_account)) {
-            return false;
-        }
-
-        // Account has a valid KYC token and is sanctions safe
-        return true;
+        return balanceOf(_account) > 0 && isSanctionsSafe(_account);
     }
 
     /**
@@ -394,14 +374,8 @@ contract KintoID is
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctionsCount > 0 || !isSanctionsMonitored(7)) {
-            // If the account has sanctions
-            if (block.timestamp - sanctionedAt[_account] < 3 days) {
-                // If the sanction is not confirmed within 3 days, consider the account sanctions safe
-                return true;
-            } else {
-                // If the sanction is confirmed, consider the account not sanctions safe
-                return false;
-            }
+            // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+            return block.timestamp - sanctionedAt[_account] < 3 days;
         }
 
         // If the account has no sanctions, consider it sanctions safe
