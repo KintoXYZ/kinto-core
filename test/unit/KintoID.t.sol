@@ -387,6 +387,29 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
+    function testAddSanction_WhenNotConfirmed() public {
+        vm.startPrank(_kycProvider);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
+        traits[0] = 1;
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        _kintoID.addSanction(_user, 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+        assertEq(_kintoID.sanctionedAt(_user), block.timestamp);
+
+        uint256 sanctionTime = block.timestamp;
+
+        vm.warp(block.timestamp + 3 days + 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+        assertEq(_kintoID.lastMonitoredAt(), sanctionTime);
+        assertEq(_kintoID.sanctionedAt(_user), sanctionTime);
+    }
+
     function testRemoveSancion() public {
         vm.startPrank(_kycProvider);
         IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
