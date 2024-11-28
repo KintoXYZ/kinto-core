@@ -375,7 +375,7 @@ contract KintoID is
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctionsCount > 0 || !isSanctionsMonitored(7)) {
             // If the sanction is not confirmed within 3 days, consider the account sanctions safe
-            return block.timestamp - sanctionedAt[_account] < 3 days;
+            return (block.timestamp - sanctionedAt[_account]) > 3 days;
         }
 
         // If the account has no sanctions, consider it sanctions safe

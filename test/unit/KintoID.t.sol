@@ -381,6 +381,7 @@ contract KintoIDTest is SharedSetup {
         traits[0] = 1;
         _kintoID.mintIndividualKyc(sigdata, traits);
         _kintoID.addSanction(_user, 1);
+
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
         assertEq(_kintoID.isSanctionsSafe(_user), false);
         assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
