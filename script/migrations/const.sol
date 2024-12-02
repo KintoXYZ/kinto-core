@@ -17,6 +17,7 @@ contract Constants is CommonBase {
     uint64 internal constant UPGRADER_ROLE = uint64(uint256(keccak256("UPGRADER_ROLE")));
     uint32 internal constant NIO_EXECUTION_DELAY = 3 days;
     uint32 internal constant ACCESS_REGISTRY_DELAY = 16 hours;
+    uint32 internal constant UPGRADE_DELAY = 7 days;
     uint256 internal constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 internal constant RATE_LIMIT_THRESHOLD = 10;
     uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
