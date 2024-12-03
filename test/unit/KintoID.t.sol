@@ -468,6 +468,60 @@ contract KintoIDTest is SharedSetup {
         _kintoID.removeSanction(_user, 1);
     }
 
+    function testConfirmSanction() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.startPrank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+        vm.stopPrank();
+
+        // Confirm the sanction
+        vm.expectEmit(true, false, false, true);
+        emit KintoID.SanctionConfirmed(_user, block.timestamp);
+
+        vm.prank(_owner);
+        _kintoID.confirmSanction(_user);
+
+        // Verify sanction remains active even after 3 days
+        vm.warp(block.timestamp + 4 days);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.sanctionedAt(_user), 0); // Timestamp should be reset to 0
+    }
+
+    function testConfirmSanction_RevertWhen_CallerNotGovernance() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+
+        // Try to confirm sanction from non-governance address
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.GOVERNANCE_ROLE()), 32)
+        );
+
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.confirmSanction(_user);
+    }
+
+    function testConfirmSanction_RevertWhen_NoSanctionExists() public {
+        // Try to confirm non-existent sanction
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(KintoID.NoActiveSanction.selector, _user));
+        _kintoID.confirmSanction(_user);
+
+        // Verify no changes occurred
+        assertEq(_kintoID.sanctionedAt(_user), 0);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+    }
+
     /* ============ Transfer tests ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {

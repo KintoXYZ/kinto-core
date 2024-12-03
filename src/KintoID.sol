@@ -33,11 +33,16 @@ contract KintoID is
     using SignatureChecker for address;
 
     /* ============ Events ============ */
+
     event TraitAdded(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event TraitRemoved(address indexed _to, uint16 _traitIndex, uint256 _timestamp);
     event SanctionAdded(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
     event SanctionRemoved(address indexed _to, uint16 _sanctionIndex, uint256 _timestamp);
     event AccountsMonitoredAt(address indexed _signer, uint256 _accountsCount, uint256 _timestamp);
+    event SanctionConfirmed(address indexed account, uint256 timestamp);
+
+    /* ============ Errors ============ */
+    error NoActiveSanction(address account);
 
     /* ============ Constants & Immutables ============ */
 
@@ -92,6 +97,7 @@ contract KintoID is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(KYC_PROVIDER_ROLE, msg.sender);
         _grantRole(UPGRADER_ROLE, msg.sender);
+        _grantRole(GOVERNANCE_ROLE, msg.sender);
 
         lastMonitoredAt = block.timestamp;
         domainSeparator = _domainSeparator();
@@ -374,7 +380,10 @@ contract KintoID is
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
         // If the sanction is not confirmed within 3 days, consider the account sanctions safe
         return isSanctionsMonitored(7)
-            && (_kycmetas[_account].sanctionsCount == 0 || (block.timestamp - sanctionedAt[_account]) > 3 days);
+            && (
+                _kycmetas[_account].sanctionsCount == 0
+                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > 3 days)
+            );
     }
 
     /**
@@ -386,12 +395,22 @@ contract KintoID is
     function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
         // If the sanction is not confirmed within 3 days, consider the account sanctions safe
         return isSanctionsMonitored(7)
-            && (!_kycmetas[_account].sanctions.get(_countryId) || (block.timestamp - sanctionedAt[_account]) > 3 days);
+            && (
+                !_kycmetas[_account].sanctions.get(_countryId)
+                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > 3 days)
+            );
     }
 
+    // Update the confirmSanction function:
     function confirmSanction(address _account) external onlyRole(GOVERNANCE_ROLE) {
-        // reset sanction timestamp to make the sanction indefinte
+        // Check that there's an active sanction
+        if (_kycmetas[_account].sanctionsCount == 0) {
+            revert NoActiveSanction(_account);
+        }
+
+        // Reset sanction timestamp to make the sanction indefinite
         sanctionedAt[_account] = 0;
+        emit SanctionConfirmed(_account, block.timestamp);
     }
 
     /**
