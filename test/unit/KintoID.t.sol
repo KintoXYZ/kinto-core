@@ -514,7 +514,7 @@ contract KintoIDTest is SharedSetup {
     function testConfirmSanction_RevertWhen_NoSanctionExists() public {
         // Try to confirm non-existent sanction
         vm.prank(_owner);
-        vm.expectRevert(abi.encodeWithSelector(KintoID.NoActiveSanction.selector, _user));
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.NoActiveSanction.selector, _user));
         _kintoID.confirmSanction(_user);
 
         // Verify no changes occurred
