@@ -372,14 +372,9 @@ contract KintoID is
      * @return true if the account is sanctions safe.
      */
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
-        Metadata storage meta = _kycmetas[_account];
-        if (meta.sanctionsCount > 0 || !isSanctionsMonitored(7)) {
-            // If the sanction is not confirmed within 3 days, consider the account sanctions safe
-            return (block.timestamp - sanctionedAt[_account]) > 3 days;
-        }
-
-        // If the account has no sanctions, consider it sanctions safe
-        return true;
+        // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+        return isSanctionsMonitored(7)
+            && (_kycmetas[_account].sanctionsCount == 0 || (block.timestamp - sanctionedAt[_account]) > 3 days);
     }
 
     /**
@@ -389,13 +384,9 @@ contract KintoID is
      * @return true if the account is sanctions safe in a given country.
      */
     function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
-        if (_kycmetas[_account].sanctions.get(_countryId) || !isSanctionsMonitored(7)) {
-            // If the sanction is not confirmed within 3 days, consider the account sanctions safe
-            return (block.timestamp - sanctionedAt[_account]) > 3 days;
-        }
-
-        // If the account has no sanctions, consider it sanctions safe
-        return true;
+        // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+        return isSanctionsMonitored(7)
+            && (!_kycmetas[_account].sanctions.get(_countryId) || (block.timestamp - sanctionedAt[_account]) > 3 days);
     }
 
     function confirmSanction(address _account) external onlyRole(GOVERNANCE_ROLE) {
