@@ -344,15 +344,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         if (ethMaxCost > userOpMaxCost) revert GasTooHighForUserOp();
 
-        address targetContract = _decodeCallData(userOp.callData);
-        address sponsor = appRegistry.getApp(targetContract);
+        address sponsor = appRegistry.getApp(_decodeCallData(userOp.callData));
         if (unlockBlock[sponsor] != 0) revert DepositNotLocked();
         if (balances[sponsor] < ethMaxCost) {
             // Apps need to pay
-            if (sponsor != targetContract) {
+            if (sponsor != userOp.sender) {
                 revert DepositTooLow();
             }
-            // Wallets get automatically funded by kinto core app
+            // Wallets get automfunded by kinto core app
             sponsor = appRegistry.getApp(address(walletFactory));
         }
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
