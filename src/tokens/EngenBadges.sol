@@ -24,6 +24,7 @@ contract EngenBadges is
     error MismatchedInputLengths();
     error MintToManyAddresses();
     error BurnTooManyAddresses();
+    error TransferNotAllowed();
 
     string public constant name = "Engen Badges";
     string public constant symbol = "ENGB";
@@ -131,6 +132,25 @@ contract EngenBadges is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Hook that is called before any token transfer. Allow only minting and burning operations.
+     */
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+
+        // Allow minting (from = 0) and burning (to = 0)
+        if (from != address(0) && to != address(0)) {
+            revert TransferNotAllowed();
+        }
     }
 }
 
