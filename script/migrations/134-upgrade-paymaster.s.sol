@@ -14,8 +14,8 @@ contract Script is MigrationHelper {
             type(SponsorPaymaster).creationCode,
             abi.encode(_getChainDeployment("EntryPoint"), _getChainDeployment("KintoWalletFactory"))
         );
-        address impl = _deployImplementationAndUpgrade("SponsorPaymaster", "V14", bytecode);
-        saveContractAddress("SponsorPaymasterV14-impl", impl);
+        address impl = _deployImplementationAndUpgrade("SponsorPaymaster", "V15", bytecode);
+        saveContractAddress("SponsorPaymasterV15-impl", impl);
 
         ISponsorPaymaster paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
 

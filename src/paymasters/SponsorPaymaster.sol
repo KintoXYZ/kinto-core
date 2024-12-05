@@ -346,7 +346,14 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
         address sponsor = appRegistry.getApp(_decodeCallData(userOp.callData));
         if (unlockBlock[sponsor] != 0) revert DepositNotLocked();
-        if (balances[sponsor] < ethMaxCost) revert DepositTooLow();
+        if (balances[sponsor] < ethMaxCost) {
+            // Apps need to pay
+            if (sponsor != userOp.sender) {
+                revert DepositTooLow();
+            }
+            // Wallets get auto funded by kinto core app
+            sponsor = appRegistry.getApp(address(walletFactory));
+        }
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
     }
 
@@ -454,6 +461,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV14 is SponsorPaymaster {
+contract SponsorPaymasterV15 is SponsorPaymaster {
     constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }
