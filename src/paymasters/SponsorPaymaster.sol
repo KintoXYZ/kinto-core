@@ -351,7 +351,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             if (sponsor != userOp.sender) {
                 revert DepositTooLow();
             }
-            // Wallets get automfunded by kinto core app
+            // Wallets get auto funded by kinto core app
             sponsor = appRegistry.getApp(address(walletFactory));
         }
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
