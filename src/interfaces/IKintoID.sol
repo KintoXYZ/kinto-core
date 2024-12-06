@@ -5,18 +5,45 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/BitMapsUpgradeable.sol
 
 interface IKintoID {
     /* ============ Errors ============ */
+
+    /// @notice Thrown when trying to interact with an account that has a positive balance
     error BalanceNotZero();
-    error MethodNotAllowed(string reason);
+
+    /// @notice Thrown when trying to burn a non-existent token
     error NothingToBurn();
+
+    /// @notice Thrown when arrays have mismatched lengths
     error LengthMismatch();
+
+    /// @notice Thrown when monitoring update exceeds maximum allowed accounts
     error AccountsAmountExceeded();
+
+    /// @notice Thrown when trying to confirm a sanction for an account with no active sanctions
+    error NoActiveSanction(address account);
+
+    /// @notice Thrown when an account lacks required KYC verification
     error KYCRequired();
-    error SignatureExpired();
-    error InvalidNonce();
-    error InvalidProvider();
-    error SignerNotEOA();
-    error OnlyMintBurnOrTransfer();
+
+    /// @notice Thrown when signature verification fails
     error InvalidSigner();
+
+    /// @notice Thrown when the signature has expired
+    error SignatureExpired();
+
+    /// @notice Thrown when the nonce is invalid
+    error InvalidNonce();
+
+    /// @notice Thrown when the sender is not an authorized KYC provider
+    error InvalidProvider();
+
+    /// @notice Thrown when the signer is a contract instead of an EOA
+    error SignerNotEOA();
+
+    /// @notice Thrown when a disallowed method is called
+    error MethodNotAllowed(string message);
+
+    /// @notice Thrown when attempting unauthorized token transfers
+    error OnlyMintBurnOrTransfer();
 
     /* ============ Structs ============ */
 
@@ -91,6 +118,8 @@ interface IKintoID {
     function KYC_PROVIDER_ROLE() external view returns (bytes32);
 
     function UPGRADER_ROLE() external view returns (bytes32);
+
+    function GOVERNANCE_ROLE() external view returns (bytes32);
 
     function lastMonitoredAt() external view returns (uint256);
 

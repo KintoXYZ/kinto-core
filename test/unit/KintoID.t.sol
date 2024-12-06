@@ -381,9 +381,33 @@ contract KintoIDTest is SharedSetup {
         traits[0] = 1;
         _kintoID.mintIndividualKyc(sigdata, traits);
         _kintoID.addSanction(_user, 1);
+
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
         assertEq(_kintoID.isSanctionsSafe(_user), false);
         assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+    }
+
+    function testAddSanction_WhenNotConfirmed() public {
+        vm.startPrank(_kycProvider);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
+        traits[0] = 1;
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        _kintoID.addSanction(_user, 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+        assertEq(_kintoID.sanctionedAt(_user), block.timestamp);
+
+        uint256 sanctionTime = block.timestamp;
+
+        vm.warp(block.timestamp + 3 days + 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+        assertEq(_kintoID.lastMonitoredAt(), sanctionTime);
+        assertEq(_kintoID.sanctionedAt(_user), sanctionTime);
     }
 
     function testRemoveSancion() public {
@@ -442,6 +466,60 @@ contract KintoIDTest is SharedSetup {
         vm.expectRevert(IKintoID.KYCRequired.selector);
         vm.prank(_kycProvider);
         _kintoID.removeSanction(_user, 1);
+    }
+
+    function testConfirmSanction() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.startPrank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+        vm.stopPrank();
+
+        // Confirm the sanction
+        vm.expectEmit(true, false, false, true);
+        emit KintoID.SanctionConfirmed(_user, block.timestamp);
+
+        vm.prank(_owner);
+        _kintoID.confirmSanction(_user);
+
+        // Verify sanction remains active even after 3 days
+        vm.warp(block.timestamp + 4 days);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.sanctionedAt(_user), 0); // Timestamp should be reset to 0
+    }
+
+    function testConfirmSanction_RevertWhen_CallerNotGovernance() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+
+        // Try to confirm sanction from non-governance address
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.GOVERNANCE_ROLE()), 32)
+        );
+
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.confirmSanction(_user);
+    }
+
+    function testConfirmSanction_RevertWhen_NoSanctionExists() public {
+        // Try to confirm non-existent sanction
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.NoActiveSanction.selector, _user));
+        _kintoID.confirmSanction(_user);
+
+        // Verify no changes occurred
+        assertEq(_kintoID.sanctionedAt(_user), 0);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
     }
 
     /* ============ Transfer tests ============ */
