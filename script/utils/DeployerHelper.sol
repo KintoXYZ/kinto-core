@@ -10,30 +10,6 @@ import {ArtifactsReader} from "../../test/helpers/ArtifactsReader.sol";
 abstract contract DeployerHelper is Create2Helper, ArtifactsReader {
     using stdJson for string;
 
-    function getWethByChainId(uint256 chainid) public view returns (address) {
-        // local
-        if (chainid == 31337) {
-            return 0x4200000000000000000000000000000000000006;
-        }
-        // mainnet
-        if (chainid == 1) {
-            return 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-        }
-        // base
-        if (chainid == 8453) {
-            return 0x4200000000000000000000000000000000000006;
-        }
-        // arbitrum one
-        if (chainid == 42161) {
-            return 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-        }
-        // optimism
-        if (chainid == 10) {
-            return 0x4200000000000000000000000000000000000006;
-        }
-        revert(string.concat("No WETH address for chainid:", vm.toString(block.chainid)));
-    }
-
     function create2(bytes memory creationCodeWithArgs) internal returns (address addr) {
         return create2(creationCodeWithArgs, 0);
     }

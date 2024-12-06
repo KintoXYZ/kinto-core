@@ -15,6 +15,8 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
+import "forge-std/console2.sol";
+
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
     constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner)
         SponsorPaymaster(__entryPoint, factory)
@@ -251,6 +253,23 @@ contract SponsorPaymasterTest is SharedSetup {
 
         vm.prank(address(_entryPoint));
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
+    }
+
+    function testValidatePaymasterUserOp_WhenWalletIsApp() public {
+        address wallet = address(alice);
+        UserOperation memory userOp = _createUserOperation(
+            wallet, wallet, 0, privateKeys, abi.encodeWithSignature("increment()"), address(_paymaster)
+        );
+
+        address kintoCoreApp = _paymaster.appRegistry().getApp(address(_walletFactory));
+
+        vm.prank(address(_entryPoint));
+        (bytes memory context, uint256 validationData) = _paymaster.validatePaymasterUserOp(userOp, "", 0.01 ether);
+
+        assertEq(validationData, 0);
+        (address sponsor, address sender,,) = abi.decode(context, (address, address, uint256, uint256));
+        assertEq(sponsor, kintoCoreApp, "Sponsor for the wallet has to be a Kinto App");
+        assertEq(sender, wallet, "Sender has to be a wallet");
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() public {
