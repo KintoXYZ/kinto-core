@@ -344,4 +344,61 @@ contract EngenBadgesTest is SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(EngenBadges.BurnTooManyAddresses.selector));
         _engenBadges.burnBadgesBatch(accounts, ids, amounts);
     }
+
+    function testTransfer_RevertWhen_SingleTransfer() public {
+        // First mint a badge to alice
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenBadges),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("mintBadges(address,uint256[])", alice, ids),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenBadges.balanceOf(alice, 1), 1);
+
+        // Try to transfer from alice to bob
+        vm.prank(alice);
+        vm.expectRevert(EngenBadges.TransferNotAllowed.selector);
+        _engenBadges.safeTransferFrom(alice, bob, 1, 1, "");
+    }
+
+    function testTransfer_RevertWhen_BatchTransfer() public {
+        // First mint multiple badges to alice
+        uint256[] memory ids = new uint256[](2);
+        ids[0] = 1;
+        ids[1] = 2;
+
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            address(_kintoWallet),
+            address(_engenBadges),
+            _kintoWallet.getNonce(),
+            privateKeys,
+            abi.encodeWithSignature("mintBadges(address,uint256[])", alice, ids),
+            address(_paymaster)
+        );
+
+        _entryPoint.handleOps(userOps, payable(_owner));
+        assertEq(_engenBadges.balanceOf(alice, 1), 1);
+        assertEq(_engenBadges.balanceOf(alice, 2), 1);
+
+        // Try to batch transfer from alice to bob
+        uint256[] memory transferIds = new uint256[](2);
+        transferIds[0] = 1;
+        transferIds[1] = 2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1;
+        amounts[1] = 1;
+
+        vm.prank(alice);
+        vm.expectRevert(EngenBadges.TransferNotAllowed.selector);
+        _engenBadges.safeBatchTransferFrom(alice, bob, transferIds, amounts, "");
+    }
 }
