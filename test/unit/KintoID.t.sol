@@ -288,6 +288,26 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.hasTrait(_user, 1), false);
         assertEq(_kintoID.hasTrait(_user, 6), true);
         assertEq(_kintoID.hasTrait(_user, 2), false);
+
+        updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(false, true, 3); // add sanction 3
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(accounts, updates);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 3), false);
+
+        vm.warp(block.timestamp + 10 days);
+
+        updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(false, false, 3); // remove sanction 3
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(accounts, updates);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 3), true);
     }
 
     /* ============ Trait tests ============ */
