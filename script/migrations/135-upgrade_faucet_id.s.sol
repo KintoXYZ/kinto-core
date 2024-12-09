@@ -11,10 +11,7 @@ contract UpgradeKintoIDScript is MigrationHelper {
 
         bytes memory bytecode = abi.encodePacked(
             type(KintoID).creationCode,
-            abi.encode(
-                _getChainDeployment("KintoWalletFactory"),
-                _getChainDeployment("Faucet")
-            )
+            abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
         );
 
         address impl = _deployImplementationAndUpgrade("KintoID", "V9", bytecode);
@@ -22,13 +19,14 @@ contract UpgradeKintoIDScript is MigrationHelper {
 
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
         address nioGovernor = _getChainDeployment("NioGovernor");
-        bytes32 governanceRole = kintoID.GOVERNANCE_ROLE(); 
+        bytes32 governanceRole = kintoID.GOVERNANCE_ROLE();
 
         assertFalse(kintoID.hasRole(governanceRole, kintoAdminWallet));
         assertFalse(kintoID.hasRole(governanceRole, nioGovernor));
 
         _handleOps(
-            abi.encodeWithSelector(IAccessControl.grantRole.selector, governanceRole, kintoAdminWallet), address(kintoID)
+            abi.encodeWithSelector(IAccessControl.grantRole.selector, governanceRole, kintoAdminWallet),
+            address(kintoID)
         );
 
         _handleOps(

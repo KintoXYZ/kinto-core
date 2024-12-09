@@ -92,6 +92,10 @@ contract KintoID is
     /// @notice Role identifier for governance actions
     bytes32 public constant override GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
 
+    uint256 public constant SANCTION_EXPIRY_PERIOD = 3 days;
+
+    uint256 public constant EXIT_WINDOW_PERIOD = 10 days;
+
     /// @notice Address of the wallet factory contract
     address public immutable override walletFactory;
 
@@ -384,6 +388,13 @@ contract KintoID is
      */
     function addSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         if (balanceOf(_account) == 0) revert KYCRequired();
+
+        // Check if account is in protection period (10 days from last sanction)
+        uint256 lastSanctionTime = sanctionedAt[_account];
+        if (lastSanctionTime != 0 && block.timestamp - lastSanctionTime < EXIT_WINDOW_PERIOD) {
+            revert ExitWindowPeriod(_account, lastSanctionTime);
+        }
+
         Metadata storage meta = _kycmetas[_account];
         if (!meta.sanctions.get(_countryId)) {
             meta.sanctions.set(_countryId);
@@ -405,6 +416,13 @@ contract KintoID is
      */
     function removeSanction(address _account, uint16 _countryId) public override onlyRole(KYC_PROVIDER_ROLE) {
         if (balanceOf(_account) == 0) revert KYCRequired();
+
+        // Check if account is in protection period (10 days from last sanction)
+        uint256 lastSanctionTime = sanctionedAt[_account];
+        if (lastSanctionTime != 0 && block.timestamp - lastSanctionTime < EXIT_WINDOW_PERIOD) {
+            revert ExitWindowPeriod(_account, lastSanctionTime);
+        }
+
         Metadata storage meta = _kycmetas[_account];
         if (meta.sanctions.get(_countryId)) {
             meta.sanctions.unset(_countryId);
@@ -412,6 +430,9 @@ contract KintoID is
             meta.updatedAt = block.timestamp;
             lastMonitoredAt = block.timestamp;
             emit SanctionRemoved(_account, _countryId, block.timestamp);
+
+            // Reset sanction timestamp
+            sanctionedAt[_account] = 0;
         }
     }
 
@@ -438,32 +459,32 @@ contract KintoID is
 
     /**
      * @notice Checks if an account has active sanctions
-     * @dev Account is considered safe if sanctions are not confirmed within 3 days
+     * @dev Account is considered safe if sanctions are not confirmed within SANCTION_EXPIRY_PERIOD
      * @param _account Address to check
      * @return bool True if the account has no active sanctions
      */
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
-        // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+        // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
         return isSanctionsMonitored(7)
             && (
                 _kycmetas[_account].sanctionsCount == 0
-                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > 3 days)
+                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
             );
     }
 
     /**
      * @notice Checks if an account is sanctioned in a specific country
-     * @dev Account is considered safe if sanction is not confirmed within 3 days
+     * @dev Account is considered safe if sanction is not confirmed within SANCTION_EXPIRY_PERIOD
      * @param _account Address to check
      * @param _countryId ID of the country to check sanctions for
      * @return bool True if the account is not sanctioned in the specified country
      */
     function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
-        // If the sanction is not confirmed within 3 days, consider the account sanctions safe
+        // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
         return isSanctionsMonitored(7)
             && (
                 !_kycmetas[_account].sanctions.get(_countryId)
-                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > 3 days)
+                    || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
             );
     }
 
