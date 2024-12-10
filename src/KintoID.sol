@@ -92,8 +92,10 @@ contract KintoID is
     /// @notice Role identifier for governance actions
     bytes32 public constant override GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
 
+    /// @notice The period of time after which sanction is expired unless approved by governance
     uint256 public constant SANCTION_EXPIRY_PERIOD = 3 days;
 
+    /// @notice The period of time during which additional sanctions can't be applied and user can exit, unless sanctions approved by governance
     uint256 public constant EXIT_WINDOW_PERIOD = 10 days;
 
     /// @notice Address of the wallet factory contract
@@ -650,6 +652,6 @@ contract KintoID is
     }
 }
 
-contract KintoIDV9 is KintoID {
+contract KintoIDV10 is KintoID {
     constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 }
