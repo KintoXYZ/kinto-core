@@ -100,7 +100,7 @@ interface IKintoID {
 
     function isKYC(address _account) external view returns (bool);
 
-    function isSanctionsMonitored(uint32 _days) external view returns (bool);
+    function isSanctionsMonitored(uint256 _days) external view returns (bool);
 
     function isSanctionsSafe(address _account) external view returns (bool);
 
