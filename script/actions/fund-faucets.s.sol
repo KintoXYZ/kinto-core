@@ -17,9 +17,9 @@ contract FundFaucetsScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        console2.log('Hot Wallet Balance: %e', deployer.balance);
-        if(deployer.balance < 0.25 ether) {
-            console2.log('Hot Wallet Balance too low. Refill.');
+        console2.log("Hot Wallet Balance: %e", deployer.balance);
+        if (deployer.balance < 0.25 ether) {
+            console2.log("Hot Wallet Balance too low. Refill.");
             return;
         }
 
@@ -31,12 +31,12 @@ contract FundFaucetsScript is MigrationHelper {
         for (uint256 index = 0; index < faucets.length; index++) {
             address faucet = faucets[index];
             uint256 balance = faucet.balance;
-            console2.log('Faucet:', names[index]);
-            console2.log('Address:', faucets[index]);
-            console2.log('Balance: %e', balance);
+            console2.log("Faucet:", names[index]);
+            console2.log("Address:", faucets[index]);
+            console2.log("Balance: %e", balance);
 
             if (balance < limits[index]) {
-                console2.log('Needs funding. Adding:', amounts[index]);
+                console2.log("Needs funding. Adding:", amounts[index]);
 
                 KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
                 vm.broadcast(deployerPrivateKey);
