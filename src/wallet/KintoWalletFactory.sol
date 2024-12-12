@@ -133,8 +133,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-        // Claim new user rewards
-        rewardsDistributor.newUserClaim(address(ret));
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 

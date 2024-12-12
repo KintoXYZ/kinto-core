@@ -121,7 +121,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     uint256 public constant quarters = 10 * 4;
 
     /// @notice New user rewards in K tokens upon wallet creation.
-    uint256 public constant NEW_USER_REWARD = 1 * 1e18;
+    uint256 public constant NEW_USER_REWARD = 0 * 1e18;
 
     /// @notice New user rewards timestmap
     uint256 public constant NEW_USER_REWARD_TIMESTAMP = 1729785402;
@@ -276,7 +276,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         if (msg.sender != walletFactory) {
             revert OnlyWalletFactory(msg.sender);
         }
-        if (_claimedByUser[wallet] > 0) {
+        if (_claimedByUser[wallet] > 0 || NEW_USER_REWARD == 0) {
             revert AlreadyClaimed(wallet);
         }
         _claimedByUser[wallet] += NEW_USER_REWARD;
