@@ -45,6 +45,9 @@ interface IKintoID {
     /// @notice Thrown when attempting unauthorized token transfers
     error OnlyMintBurnOrTransfer();
 
+    /// @notice Thrown when attempting to add or removing sanctions during exit widnow period
+    error ExitWindowPeriod(address user, uint256 sanctionedAt);
+
     /* ============ Structs ============ */
 
     struct Metadata {
