@@ -127,7 +127,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     uint256 public constant NEW_USER_REWARD_TIMESTAMP = 1729785402;
 
     /// @notice New user rewards end timestmap
-    uint256 public constant NEW_USER_REWARD_END_TIMESTAMP = 1734242400;
+    uint256 public constant NEW_USER_REWARD_END_TIMESTAMP = 1734133547;
 
     /* ============ State Variables ============ */
 
@@ -270,6 +270,11 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         // Emit an event indicating that the user has claimed tokens
         emit UserClaimed(user, amount);
     }
+
+    /**
+     * @notice Does nothing. Remove upon the upgrade of KintoWalletFactory
+     */
+    function newUserClaim(address) external {}
 
     /**
      * @notice Updates the root of the Merkle tree.

@@ -57,8 +57,8 @@ contract FundFaucetsScript is MigrationHelper {
 
         address[3] memory apps = [KINTO_CORE, DINARI, SOCKET_DL];
         string[3] memory appNames = ["KINTO_CORE", "DINARI", "SOCKET_DL"];
-        uint56[3] memory appLimits = [0.02 ether, 0.02 ether, 0.02 ether];
-        uint56[3] memory appAmounts = [0.01 ether, 0.01 ether, 0.01 ether];
+        uint56[3] memory appLimits = [0.05 ether, 0.05 ether, 0.05 ether];
+        uint64[3] memory appAmounts = [0.2 ether, 0.2 ether, 0.2 ether];
 
         SponsorPaymaster paymaster = SponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         for (uint256 index = 0; index < apps.length; index++) {
