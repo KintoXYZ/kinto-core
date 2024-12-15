@@ -217,6 +217,12 @@ interface IBridger {
     ) external payable returns (uint256);
 
     /**
+     * @notice Rescue tokens from the contract back to safe.
+     * @param token Address of the token to rescue.
+     */
+    function rescueToken(address token) external;
+
+    /**
      * @notice Pause the contract.
      */
     function pause() external;

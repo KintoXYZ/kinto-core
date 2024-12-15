@@ -326,6 +326,11 @@ contract Bridger is
         return amountOut;
     }
 
+    /// @inheritdoc IBridger
+    function rescueToken(address token) external override onlyOwner {
+        IERC20(token).safeTransfer(owner(), IERC20(token).balanceOf(address(this)));
+    }
+
     /* ============ Private Functions ============ */
 
     /**
