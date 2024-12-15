@@ -29,15 +29,15 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         address newImpl = address(new Bridger(EXCHANGE_PROXY, USDC, WETH, DAI, USDe, sUSDe, wstETH));
 
-        // vm.prank(bridger.owner());
-        // bridger.upgradeTo(newImpl);
+        vm.prank(bridger.owner());
+        bridger.upgradeTo(newImpl);
 
-        // // Checks
-        // assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
-        // assertEq(bridger.owner(), MAMORI_SAFE, "Invalid Owner");
-        // assertEq(bridger.SOLV_BTC(), 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0, "Invalid SolvBtc address");
+        // Checks
+        assertEq(bridger.senderAccount(), 0x89A01e3B2C3A16c3960EADc2ceFcCf2D3AA3F82e, "Invalid Sender Account");
+        assertEq(bridger.owner(), MAMORI_SAFE, "Invalid Owner");
+        assertEq(bridger.SOLV_BTC(), 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0, "Invalid SolvBtc address");
 
         // Save address
-        saveContractAddress("BridgerV12-impl", newImpl);
+        saveContractAddress("BridgerV13-impl", newImpl);
     }
 }

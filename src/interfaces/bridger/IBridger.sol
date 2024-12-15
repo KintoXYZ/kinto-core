@@ -79,6 +79,10 @@ interface IBridger {
     /// @param amountOut The amount to deposit.
     error DepositBySigResult(uint256 amountOut);
 
+    /// @notice Thrown then 0x router allowance is great than zero after the swap.
+    /// @param allowance The allowance value.
+    error RouterAllowanceNotZero(uint256 allowance);
+
     /* ============ Structs ============ */
 
     /**

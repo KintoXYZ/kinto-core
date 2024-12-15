@@ -561,14 +561,21 @@ contract Bridger is
         if (sellToken == buyToken) {
             return amountIn;
         }
-        // Increase the allowance for the swapRouter to handle `amountIn` of `sellToken`
-        sellToken.safeIncreaseAllowance(swapRouter, amountIn);
+
+        // Set the allowance for the swapRouter to handle `amountIn` of `sellToken`
+        sellToken.forceApprove(swapRouter, amountIn);
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Perform the swap call to the exchange proxy.
         swapRouter.functionCall(swapCallData);
+
+        // Allowance for the 0x router always has to be set to exactly the amountIn, and there should never be any hanging allowance as it can be exploited using malicious calldata and pools
+        if (sellToken.allowance(address(this), swapRouter) > 0) {
+            revert RouterAllowanceNotZero(sellToken.allowance(address(this), swapRouter));
+        }
+
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;
