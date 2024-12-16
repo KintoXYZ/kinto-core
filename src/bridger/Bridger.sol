@@ -572,7 +572,8 @@ contract Bridger is
         swapRouter.functionCall(swapCallData);
 
         // Allowance for the 0x router always has to be set to exactly the amountIn, and there should never be any hanging allowance as it can be exploited using malicious calldata and pools
-        if (sellToken.allowance(address(this), swapRouter) > 0) {
+        // Allows some dust, as 0x router and pools sometimes do not consume entire allowance
+        if (sellToken.allowance(address(this), swapRouter) > 100) {
             revert RouterAllowanceNotZero(sellToken.allowance(address(this), swapRouter));
         }
 
