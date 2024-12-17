@@ -1,22 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/wallet/KintoWalletFactory.sol";
-import "../../src/wallet/KintoWallet.sol";
-import "../../src/sample/Counter.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
+import "@kinto-core-test/helpers/ArrayHelpers.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ERC20Multisender} from "@kinto-core-script/utils/ERC20MultiSender.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 
-contract Script is MigrationHelper {
-    using stdJson for string;
+import {stdJson} from "forge-std/StdJson.sol";
+import "forge-std/Script.sol";
+import "forge-std/console.sol";
+
+contract MintBatchKintoScript is MigrationHelper {
+    using Strings for *;
+    using ArrayHelpers for *;
 
     address[] users;
+    uint256[] amounts;
 
     function run() public override {
         super.run();
 
         string memory userFile = vm.envString("USERS_FILE");
+        uint256 amount = 1e18;
 
         while (true) {
             string memory addrStr = vm.readLine(userFile);
@@ -27,6 +34,7 @@ contract Script is MigrationHelper {
             address addr = vm.parseAddress(addrStr);
             console2.log("addr:", addr);
             users.push(addr);
+            amounts.push(amount);
         }
 
         uint256[] memory privKeys = new uint256[](2);
@@ -44,17 +52,17 @@ contract Script is MigrationHelper {
             }
 
             address[] memory batchUsers = new address[](end - start);
-            uint256[][] memory batchMintIds = new uint256[][](end - start);
+            uint256[] memory batchAmounts = new uint256[](end - start);
 
             for (uint256 i = start; i < end; i++) {
                 batchUsers[i - start] = users[i];
-                batchMintIds[i - start] = mintIds[i];
+                batchAmounts[i - start] = amounts[i];
             }
 
             _handleOps(
-                abi.encodeWithSelector(EngenBadges.mintBadgesBatch.selector, batchUsers, batchMintIds),
+                abi.encodeWithSelector(BridgedToken.batchMint.selector, batchUsers, batchAmounts),
                 kintoAdminWallet,
-                _getChainDeployment("EngenBadges"),
+                _getChainDeployment("KINTO"),
                 0,
                 address(0),
                 privKeys
