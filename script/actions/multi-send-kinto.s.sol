@@ -24,6 +24,7 @@ contract MintBatchKintoScript is MigrationHelper {
 
         string memory userFile = vm.envString("USERS_FILE");
         uint256 amount = 1e18;
+        uint256 totalAmount;
 
         while (true) {
             string memory addrStr = vm.readLine(userFile);
@@ -35,7 +36,16 @@ contract MintBatchKintoScript is MigrationHelper {
             console2.log("addr:", addr);
             users.push(addr);
             amounts.push(amount);
+            totalAmount += amount;
         }
+
+        address kintoToken = _getChainDeployment("KINTO");
+
+        // Burn tokens from RD
+        _handleOps(
+            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), totalAmount),
+            kintoToken
+        );
 
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
@@ -59,14 +69,7 @@ contract MintBatchKintoScript is MigrationHelper {
                 batchAmounts[i - start] = amounts[i];
             }
 
-            _handleOps(
-                abi.encodeWithSelector(BridgedToken.batchMint.selector, batchUsers, batchAmounts),
-                kintoAdminWallet,
-                _getChainDeployment("KINTO"),
-                0,
-                address(0),
-                privKeys
-            );
+            _handleOps(abi.encodeWithSelector(BridgedToken.batchMint.selector, batchUsers, batchAmounts), kintoToken);
         }
     }
 }
