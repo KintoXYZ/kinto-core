@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import "@kinto-core-test/helpers/ArrayHelpers.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {ERC20Multisender} from "@kinto-core-script/utils/ERC20MultiSender.sol";
@@ -39,13 +40,17 @@ contract MintBatchKintoScript is MigrationHelper {
             totalAmount += amount;
         }
 
-        address kintoToken = _getChainDeployment("KINTO");
+        BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
 
+        uint256 totalSupplyBefore = kintoToken.totalSupply();
         // Burn tokens from RD
         _handleOps(
             abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), totalAmount),
-            kintoToken
+            address(kintoToken)
         );
+
+        // Check that tokens are burnt
+        assertEq(totalSupplyBefore - totalAmount, kintoToken.totalSupply());
 
         uint256[] memory privKeys = new uint256[](2);
         privKeys[0] = deployerPrivateKey;
@@ -69,7 +74,12 @@ contract MintBatchKintoScript is MigrationHelper {
                 batchAmounts[i - start] = amounts[i];
             }
 
-            _handleOps(abi.encodeWithSelector(BridgedToken.batchMint.selector, batchUsers, batchAmounts), kintoToken);
+            _handleOps(
+                abi.encodeWithSelector(BridgedToken.batchMint.selector, batchUsers, batchAmounts), address(kintoToken)
+            );
         }
+
+        // Check that tokens are minted
+        assertEq(totalSupplyBefore, kintoToken.totalSupply());
     }
 }
