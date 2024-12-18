@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@pimlico/alto": "^0.0.4",
-    "account-abstraction": "https://github.com/KintoXYZ/account-abstraction.git#61f677923ad7ed0ed5b87d2c20100a7079dba63a",
     "account-abstraction-0.7.0": "https://github.com/eth-infinitism/account-abstraction.git#7af70c8993a6f42973f520ae0752386a5032abe7",
     "forge-std": "https://github.com/foundry-rs/forge-std.git#bb4ceea94d6f10eeb5b41dc2391c6c8bf8e734ef",
     "nitro-contracts": "npm:@arbitrum/nitro-contracts@1.2.1",
