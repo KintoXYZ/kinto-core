@@ -13,8 +13,6 @@ import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract UpgradeAccessPointScript is Script, MigrationHelper {
-    address payable internal constant ENTRY_POINT = payable(0x0000000071727De22E5E9d8BAf0edAc6f37da032);
-
     AccessRegistry registry;
     AccessPoint newImpl;
 
@@ -28,12 +26,7 @@ contract UpgradeAccessPointScript is Script, MigrationHelper {
         }
 
         newImpl = AccessPoint(
-            payable(
-                create2(
-                    "AccessPointV3-impl",
-                    abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))
-                )
-            )
+            payable(create2(abi.encodePacked(type(AccessPoint).creationCode, abi.encode(ENTRY_POINT, registry))))
         );
         registry.upgradeAll(newImpl);
 

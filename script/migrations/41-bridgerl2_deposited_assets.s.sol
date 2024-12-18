@@ -17,7 +17,7 @@ contract KintoMigration41DeployScript is MigrationHelper {
         bridgerL2Assets[2] = 0x6e316425A25D2Cf15fb04BCD3eE7c6325B240200; // wstETH
         bridgerL2Assets[3] = 0xC60F14d95B87417BfD17a376276DE15bE7171d31; // weETH
         _fundPaymaster(address(bridgerL2), deployerPrivateKey);
-        _whitelistApp(address(bridgerL2), deployerPrivateKey);
+        _whitelistApp(address(bridgerL2));
         _handleOps(
             abi.encodeWithSelector(BridgerL2.setDepositedAssets.selector, bridgerL2Assets),
             address(bridgerL2),

@@ -4,24 +4,21 @@ pragma solidity ^0.8.18;
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "../../src/KintoID.sol";
-import "../../test/helpers/AASetup.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script calls the monitor function of the KintoID
 /// @dev Needs to be called by an address with KYC_PROVIDER_ROLE
-contract KintoMonitorScript is AASetup {
+contract KintoMonitorScript is MigrationHelper {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory,) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         console.log("Deployer is", vm.addr(deployerPrivateKey));
 

@@ -6,6 +6,9 @@ import "./IAccessRegistry.sol";
 interface IAccessPoint {
     /* ============ Errors ============ */
 
+    /// @notice Thrown when calldata for then execute is mallformed.
+    error ExecuteInvalidInput();
+
     /// @notice Thrown when a target contract reverts without a specified reason.
     error ExecutionReverted();
 
@@ -13,7 +16,7 @@ interface IAccessPoint {
     error WorkflowUnauthorized(address target);
 
     /// @notice Thrown when an unauthorized account tries to execute a delegate call.
-    error ExecutionUnauthorized(address owner, address caller, address target);
+    error ExecutionUnauthorized(address owner, address caller);
 
     /// @notice Thrown when a fallback called.
     error FallbackIsNotAllowed(bytes data);
@@ -42,17 +45,28 @@ interface IAccessPoint {
     /// @notice
     function initialize(address owner_) external;
 
-    /// @notice Delegate calls to the provided target contract by forwarding the data. It returns the data it
-    /// gets back, and bubbles up any potential revert.
-    ///
-    /// @dev Emits an {Execute} event.
-    ///
-    /// Requirements:
-    /// - The caller must be either the owner or an envoy with permission.
-    /// - `target` must be a contract.
-    ///
-    /// @param target The address of the target contract.
-    /// @param data Function selector plus ABI encoded data.
-    /// @return response The response received from the target contract, if any.
+    /**
+     * @notice Delegate calls to the provided target contract by forwarding the data. It returns the data it
+     * gets back, and bubbles up any potential revert.
+     *
+     * @dev Emits an {Execute} event.
+     *
+     * Requirements:
+     * - The caller must be either the owner or an envoy with permission.
+     * - `target` must be a contract.
+     *
+     * @param target The address of the target contract.
+     * @param data Function selector plus ABI encoded data.
+     * @return response The response received from the target contract, if any.
+     */
     function execute(address target, bytes calldata data) external payable returns (bytes memory response);
+
+    /**
+     * @notice Delegate calls to the provided target contract by forwarding the data. It returns the data it
+     * gets back, and bubbles up any potential revert.
+     */
+    function executeBatch(address[] calldata target, bytes[] calldata data)
+        external
+        payable
+        returns (bytes[] memory response);
 }

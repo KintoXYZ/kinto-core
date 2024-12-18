@@ -19,6 +19,7 @@ methods {
     function MINUS_ONE_SIGNER() external returns (uint8) envfree;
     function ALL_SIGNERS() external returns (uint8) envfree;
     function MAX_SIGNERS() external returns (uint8) envfree;
+    function TWO_SIGNERS() external returns (uint8) envfree;
     function KintoWallet._decodeCallData(bytes calldata) internal returns (address,bool) => randomAppContract();
 
     /// BytesSignature
@@ -35,7 +36,7 @@ methods {
     function _.isKYC(address account) external with (env e) => isKYC_CVL(e.block.timestamp, account) expect bool;
 
     /// appRegistry
-    function appRegistry.getSponsor(address) external returns (address) envfree;
+    function appRegistry.getApp(address) external returns (address) envfree;
     function appRegistry.tokenURI(uint256) external returns (string) => NONDET DELETE;
 }
 
@@ -75,6 +76,7 @@ function isOwner(address account) returns bool {
     if(count == 1) {return account == owners(0);}
     else if(count == 2) {return account == owners(0) || account == owners(1);}
     else if(count == 3) {return account == owners(0) || account == owners(1) || account == owners(2);}
+    else if(count == 4) {return account == owners(0) || account == owners(1) || account == owners(2) || account == owners(3);}
     return false;
 }
 

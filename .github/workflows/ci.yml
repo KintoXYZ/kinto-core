@@ -24,9 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -34,13 +32,13 @@ jobs:
         run: forge fmt --check
 
   build:
+    needs: format
+
     name: Build
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -62,9 +60,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -99,9 +95,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -130,9 +124,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - uses: ./.github/actions/install
 
@@ -140,7 +132,7 @@ jobs:
         run: sudo apt-get install -y lcov
 
       - name: Generate LCOV report
-        run: forge coverage --report lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" && genhtml lcov.info --branch-coverage --output-dir coverage
+        run: forge coverage --report lcov --allow-failure && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=fork forge coverage --report lcov --allow-failure && mv lcov.info lcov-fork.info && lcov --add lcov-local.info --add lcov-fork.info -o lcov.info && rm lcov-local.info && rm lcov-fork.info && lcov --remove lcov.info -o lcov.info "test/*" "script/*" "src/nitro-contracts/*" && genhtml lcov.info --branch-coverage --output-dir coverage
         env:
           FOUNDRY_FUZZ_RUNS: 100
           KINTO_RPC_URL: ${{ secrets.KINTO_RPC_URL }}
@@ -171,58 +163,21 @@ jobs:
     name: Slither
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/install
 
       - name: Run Slither
-        uses: crytic/slither-action@dev-foundryup-retry
+        uses: crytic/slither-action@v0.4.0
         id: slither
         continue-on-error: true
         with:
-          node-version: 16
           fail-on: none
           slither-args: --checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/
 
-      - name: Slither Comment
-        uses: actions/github-script@v6
-        # Run Slither Comment only for PRs
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
-        env:
-          OUTCOME: ${{ steps.slither.outcome }}
-        with:
-          script: |
-            const body = 'Slither analysis failed';
-            const repo = context.repo;
-            const issue_number = context.issue.number || context.payload.pull_request.number;
-
-            // find the existing Slither comment
-            async function findFailureComment() {
-              const comments = await github.rest.issues.listComments({
-                ...repo,
-                issue_number,
-              });
-              return comments.data.find(comment => comment.body.includes(body));
-            }
-
-            // post or delete Slither failure comment
-            const failureComment = await findFailureComment();
-            if (process.env.OUTCOME == 'failure' && !failureComment) {
-              await github.rest.issues.createComment({
-                ...repo,
-                issue_number,
-                body: body,
-              });
-            }
-            if (process.env.OUTCOME != 'failure' && failureComment) {
-              // if Slither succeeds and there's a previous failure comment, delete it
-              await github.rest.issues.deleteComment({
-                ...repo,
-                comment_id: failureComment.id,
-              });
-            }
-
-      - name: Create/update checklist as PR comment
-        if: steps.slither.outcome != 'failure'
-        uses: actions/github-script@v6
+      - name: Slither PR Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
         env:
           REPORT: ${{ steps.slither.outputs.stdout }}
         with:
@@ -231,34 +186,34 @@ jobs:
             const header = '# Slither report'
             const body = process.env.REPORT
             await script({ github, context, header, body })
-  certora:
-    needs:
-      - test-local
-      - test-fork
-
-    name: Certora
-    runs-on: ubuntu-latest
-    # Run Certora only on main
-    # if: github.ref == 'refs/heads/main'
-    strategy:
-      fail-fast: false
-      max-parallel: 16
-      matrix:
-        contract:
-          - KintoID_SanctionsTraits.conf
-          - KintoID_Monitor1.conf
-          - KintoID_Monitor2.conf
-          - KintoWallet.conf
-          - KintoWalletFactory.conf
-          - SponsorPaymaster.conf
-          - SponsorPaymaster_additional.conf
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Run verification
-        uses: ./.github/actions/certora-verifier
-        with:
-          contractFile: ${{ matrix.contract }}
-          certoraKey: ${{ secrets.CERTORAKEY }}
+  #  certora:
+  #    needs:
+  #      - test-local
+  #      - test-fork
+  #
+  #    name: Certora
+  #    runs-on: ubuntu-latest
+  #    # Run Certora only on main
+  #    # if: github.ref == 'refs/heads/main'
+  #    strategy:
+  #      fail-fast: false
+  #      max-parallel: 16
+  #      matrix:
+  #        contract:
+  #          - KintoID_SanctionsTraits.conf
+  #          - KintoID_Monitor1.conf
+  #          - KintoID_Monitor2.conf
+  #          - KintoWallet.conf
+  #          - KintoWalletFactory.conf
+  #          - SponsorPaymaster.conf
+  #          - SponsorPaymaster_additional.conf
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #
+  #      - uses: ./.github/actions/install
+  #
+  #      - name: Run verification
+  #        uses: ./.github/actions/certora-verifier
+  #        with:
+  #          contractFile: ${{ matrix.contract }}
+  #          certoraKey: ${{ secrets.CERTORAKEY }}

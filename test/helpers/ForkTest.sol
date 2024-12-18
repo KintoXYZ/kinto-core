@@ -6,6 +6,8 @@ import {BaseTest} from "@kinto-core-test/helpers/BaseTest.sol";
 
 abstract contract ForkTest is BaseTest {
     function setUp() public virtual override {
+        super.setUp();
+
         // deploy chain contracts and pick a chain to use
         setUpChain();
 

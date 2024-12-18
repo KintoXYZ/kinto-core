@@ -5,8 +5,8 @@ import "../../src/viewers/KYCViewer.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KYCViewerV3 is KYCViewer {
-    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits)
-        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits)
+    constructor(address _kintoWalletFactory, address _faucet, address _engenCredits, address _kintoAppRegistry)
+        KYCViewer(_kintoWalletFactory, _faucet, _engenCredits, _kintoAppRegistry)
     {}
 }
 

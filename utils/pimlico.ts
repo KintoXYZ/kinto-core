@@ -18,6 +18,7 @@ import {
   createPimlicoPaymasterClient,
 } from "permissionless/clients/pimlico";
 import {
+  getContract,
   encodeFunctionData,
   http,
   createPublicClient,
@@ -77,18 +78,30 @@ async function callWorkflow(
   });
   console.log("Calculated sender address:", senderAddress);
 
-  const bytecode = await publicClient.getBytecode({ address: senderAddress });
+  const bytecode = await publicClient.getCode({ address: senderAddress });
   let isAccountDeployed = false;
-  if (bytecode.length > 0) {
+  if (!!bytecode && bytecode.length > 0) {
     isAccountDeployed = true;
   }
   console.log("isAccountDeployed:", isAccountDeployed);
 
   // WethWorkflow
-  const target = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
+  const weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+  const wethWorkflow = "0x7F7c594eE170a62d7e7615972831038Cf7d4Fc1A";
   // cast abi-encode "deposit(uint256)" 0.01ether
-  const data =
-    "0xb6b55f25000000000000000000000000000000000000000000000000002386f26fc10000";
+
+  const depositCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [{ name: "amount", type: "uint256" }],
+        name: "deposit",
+        outputs: [],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ],
+    args: [1n],
+  });
 
   const callData = encodeFunctionData({
     abi: [
@@ -99,23 +112,136 @@ async function callWorkflow(
         ],
         name: "execute",
         outputs: [{ name: "response", type: "bytes" }],
-        stateMutability: "nonpayable",
+        stateMutability: "payable",
         type: "function",
       },
     ],
-    args: [target, data],
+    args: [wethWorkflow, depositCalldata],
   });
 
   console.log("Generated callData:", callData);
 
+  // BridgeWorkflow
+  const bridgeWorkflow = "0xDd53a659E428A7d5bc472112CD7B4e06cd548D4B";
+
+  // cast abi-encode "bridge((address,uint256,address,(address,uint256,uint256,address,bytes,bytes)))" "(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,1,0x2e2B1c42E38f5af81771e65D87729E57ABD1337a,(0x...,1))"
+
+  const kintoAdmin = "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a";
+  const wethVault = "0x4D585D346DFB27b297C37F480a82d4cAB39491Bb";
+  const vaultAbi = [
+    {
+      inputs: [
+        { name: "connector", type: "address" },
+        { name: "msgGasLimit", type: "uint256" },
+        { name: "payloadSize", type: "uint256" },
+      ],
+      name: "getMinFees",
+      outputs: [{ name: "totalFees", type: "uint256" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ];
+
+  const wethConnector = "0x47469683AEAD0B5EF2c599ff34d55C3D998393Bf";
+
+  const fees = await publicClient.readContract({
+    address: wethVault,
+    abi: vaultAbi,
+    functionName: "getMinFees",
+    args: [wethConnector, 500_000, 322],
+  });
+  console.log("fees:", fees);
+
+  const bridgeCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [
+          { name: "asset", type: "address" },
+          { name: "amount", type: "uint256" },
+          { name: "wallet", type: "address" },
+          {
+            name: "bridgeData",
+            type: "tuple",
+            components: [
+              { name: "vault", type: "address" },
+              { name: "gasFee", type: "uint256" },
+              { name: "msgGasLimit", type: "uint256" },
+              { name: "connector", type: "address" },
+              { name: "execPayload", type: "bytes" },
+              { name: "options", type: "bytes" },
+            ],
+          },
+        ],
+        name: "bridge",
+        outputs: [],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ],
+    args: [
+      weth,
+      1n, // Use BigInt for uint256
+      kintoAdmin,
+      {
+        vault: wethVault,
+        gasFee: fees,
+        msgGasLimit: 500000n, // Use BigInt for uint256
+        connector: wethConnector,
+        execPayload: "0x", // empty bytes
+        options: "0x", // empty bytes
+      },
+    ],
+  });
+
+  console.log("Generated brideCalldata:", bridgeCalldata);
+
+  const executeBatchCalldata = encodeFunctionData({
+    abi: [
+      {
+        inputs: [
+          { name: "target", type: "address[]" },
+          { name: "data", type: "bytes[]" },
+        ],
+        name: "executeBatch",
+        outputs: [{ name: "response", type: "bytes[]" }],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ],
+    args: [
+      [wethWorkflow, bridgeWorkflow],
+      [depositCalldata, bridgeCalldata],
+    ],
+  });
+
+  console.log("Generated executeBatchCalldata:", executeBatchCalldata);
+
   const gasPrice = await bundlerClient.getUserOperationGasPrice();
+
+  const accountAbi = [
+    {
+      inputs: [],
+      name: "getNonce",
+      outputs: [{ name: "nonce", type: "uint256" }],
+      stateMutability: "view",
+      type: "function",
+    },
+  ];
+
+  // Assuming you already have `senderAddress` as the address of the deployed account contract
+  const accountNonce = await publicClient.readContract({
+    address: senderAddress, // the smart account address
+    abi: accountAbi, // ABI of the account to fetch the nonce
+    functionName: "getNonce", // assuming getNonce is the function name
+  });
+  console.log("Account abstraction nonce:", accountNonce);
 
   const userOperation = {
     sender: senderAddress,
-    nonce: 0n,
+    nonce: accountNonce,
     factory: isAccountDeployed ? undefined : ACCESS_REGISTRY,
     factoryData: isAccountDeployed ? undefined : factoryData,
-    callData: callData,
+    callData: executeBatchCalldata,
     maxFeePerGas: gasPrice.fast.maxFeePerGas,
     maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas,
     // dummy signature, needs to be there so the SimpleAccount doesn't immediately revert because of invalid signature length

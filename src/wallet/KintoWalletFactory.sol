@@ -7,14 +7,17 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-import {SafeBeaconProxy} from "../proxy/SafeBeaconProxy.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
+import {SafeBeaconProxy} from "@kinto-core/proxy/SafeBeaconProxy.sol";
 
-import "../interfaces/IKintoID.sol";
-import "../interfaces/bridger/IBridgerL2.sol";
-import "../interfaces/IFaucet.sol";
-import "../interfaces/IKintoWalletFactory.sol";
-import "../interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IKintoID.sol";
+import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import "@kinto-core/interfaces/IFaucet.sol";
+import "@kinto-core/interfaces/IKintoWalletFactory.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import "@kinto-core/interfaces/IKintoAppRegistry.sol";
 
 /**
  * @title KintoWalletFactory
@@ -27,15 +30,25 @@ import "../interfaces/IKintoWallet.sol";
  *   before or after the account is created.
  */
 contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeable, IKintoWalletFactory {
+    /* ============ Constants & Immutables ============ */
+
+    /// @notice DEPRECATED: Address of an initial wallet implementation.
+    IKintoWallet private immutable _implAddress;
+    IKintoID public immutable override kintoID;
+    IKintoAppRegistry public immutable override appRegistry;
+    RewardsDistributor public immutable override rewardsDistributor;
+
     /* ============ State Variables ============ */
 
     UpgradeableBeacon public beacon;
-    IKintoWallet private immutable _implAddress;
-    IKintoID public override kintoID;
+    /// @notice DEPRECATED: Address of an KintoId.
+    IKintoID private __kintoID;
     mapping(address => uint256) public override walletTs; // wallet address => timestamp
     uint256 public override factoryWalletVersion;
     uint256 public override totalWallets;
     mapping(address => bool) public override adminApproved;
+    /// @notice DEPRECATED: Address of an AppRegistry.
+    IKintoAppRegistry private __appRegistry;
 
     /* ============ Events ============ */
 
@@ -44,9 +57,18 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
     /* ============ Constructor & Upgrades ============ */
 
-    constructor(IKintoWallet _implAddressP) {
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        RewardsDistributor _rewardsDistributor
+    ) {
         _disableInitializers();
+
         _implAddress = _implAddressP;
+        appRegistry = _appRegistry;
+        kintoID = _kintoID;
+        rewardsDistributor = _rewardsDistributor;
     }
 
     /* ============ External/Public methods ============ */
@@ -54,12 +76,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     /**
      * @dev Upgrade calling `upgradeTo()`
      */
-    function initialize(IKintoID _kintoID) external virtual initializer {
+    function initialize() external virtual initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         beacon = new UpgradeableBeacon(address(_implAddress));
         factoryWalletVersion = 1;
-        kintoID = _kintoID;
     }
 
     /**
@@ -97,9 +118,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (owner == address(0) || recoverer == address(0)) revert InvalidInput();
         if (!kintoID.isKYC(owner) || owner != msg.sender) revert KYCRequired();
         address addr = getAddress(owner, recoverer, salt);
-        uint256 codeSize = addr.code.length;
 
-        if (codeSize > 0) {
+        if (addr.code.length > 0) {
             return IKintoWallet(payable(addr));
         }
 
@@ -113,7 +133,8 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         walletTs[address(ret)] = block.timestamp;
         totalWallets++;
-
+        // TODO: Remove upon next upgrade. This call does nothing.
+        rewardsDistributor.newUserClaim(address(ret));
         emit KintoWalletFactoryCreation(address(ret), owner, factoryWalletVersion);
     }
 
@@ -122,8 +143,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param wallet The wallet address
      */
     function startWalletRecovery(address payable wallet) external override {
-        if (walletTs[wallet] == 0) revert InvalidWallet();
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         IKintoWallet(wallet).startRecovery();
     }
 
@@ -133,8 +156,10 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param newSigners new signers array
      */
     function completeWalletRecovery(address payable wallet, address[] calldata newSigners) external override {
-        if (walletTs[wallet] == 0) revert InvalidWallet();
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         if (!adminApproved[wallet]) revert NotAdminApproved();
         // Transfer kinto id from old to new signer
         if (!kintoID.isKYC(newSigners[0]) && kintoID.isKYC(IKintoWallet(wallet).owners(0))) {
@@ -160,38 +185,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param _newRecoverer The new recoverer address
      */
     function changeWalletRecoverer(address payable wallet, address _newRecoverer) external override {
-        if (walletTs[wallet] == 0) revert InvalidWallet();
-        if (msg.sender != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
+        if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
+        if (msg.sender != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(msg.sender, IKintoWallet(wallet).recoverer());
+        }
         IKintoWallet(wallet).changeRecoverer(_newRecoverer);
-    }
-
-    /**
-     * @dev Deploys a contract using `CREATE2`. The address where the contract
-     * will be deployed can be known in advance via {computeAddress}.
-     *
-     * This can be called directly by a developer for ease of use.
-     * The bytecode for a contract can be obtained from Solidity with
-     * `type(contractName).creationCode`.
-     *
-     * Requirements:
-     * -  sender myst be KYC'd
-     * - `bytecode` must not be empty.
-     * - `salt` must have not been used for `bytecode` already.
-     * - the factory must have a balance of at least `amount`.
-     * - if `amount` is non-zero, `bytecode` must have a `payable` constructor.
-     * @param contractOwner The address to be set as owner
-     * @param amount The amount of wei to send with the contract creation
-     * @param bytecode The bytecode of the contract to deploy
-     * @param salt The salt to use for the calculation
-     */
-    function deployContract(address contractOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
-        external
-        payable
-        override
-        returns (address)
-    {
-        if (!kintoID.isKYC(msg.sender)) revert KYCRequired();
-        return _deployAndAssignOwnership(contractOwner, amount, bytecode, salt);
     }
 
     /**
@@ -202,7 +200,7 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         if (
             msg.value == 0 || walletTs[wallet] == 0 || !kintoID.isKYC(IKintoWallet(wallet).owners(0))
                 || !IKintoWallet(payable(wallet)).isFunderWhitelisted(msg.sender)
-        ) revert InvalidWalletOrFunder();
+        ) revert InvalidWalletOrFunder(wallet);
         (bool sent,) = wallet.call{value: msg.value}("");
         if (!sent) revert SendFailed();
     }
@@ -213,23 +211,11 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param _signatureData The signature data
      */
     function claimFromFaucet(address _faucet, IFaucet.SignatureData calldata _signatureData) external override {
-        if (!IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender)) revert InvalidSender();
-        if (address(_faucet) == address(0)) revert InvalidFaucet();
-        IFaucet(_faucet).claimKintoETH(_signatureData);
-    }
-
-    /**
-     * @dev Sets the deposit on the L2 to be claimed by the wallet at the end of phase IV
-     * Note: Only owner can call this function
-     * @param walletAddress address of the wallet
-     * @param assetL2 address of the asset on the L2
-     * @param amount amount of the asset to receive
-     */
-    function writeL2Deposit(address walletAddress, address assetL2, uint256 amount) external override {
-        if (msg.sender != 0xb539019776eF803E89EC062Ad54cA24D1Fdb008a) {
-            revert InvalidSender();
+        if (!IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender)) {
+            revert InvalidSender(msg.sender);
         }
-        IBridgerL2(0x26181Dfc530d96523350e895180b09BAf3d816a0).writeL2Deposit(walletAddress, assetL2, amount);
+        if (address(_faucet) == address(0)) revert InvalidTarget(_faucet);
+        IFaucet(_faucet).claimKintoETH(_signatureData);
     }
 
     /**
@@ -237,13 +223,13 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param target The target address
      */
     function sendMoneyToAccount(address target) external payable override {
-        if (target == address(0)) revert InvalidTarget();
+        if (target == address(0)) revert InvalidTarget(target);
         bool isPrivileged =
             owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
-        if (!isPrivileged && !kintoID.isKYC(msg.sender)) revert OnlyPrivileged();
+        if (!isPrivileged && !kintoID.isKYC(msg.sender)) revert OnlyPrivileged(msg.sender);
         bool isValidTarget = kintoID.isKYC(target) || target.code.length > 0
             || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), target);
-        if (!isValidTarget && !isPrivileged) revert InvalidTarget();
+        if (!isValidTarget && !isPrivileged) revert InvalidTarget(target);
         (bool sent,) = target.call{value: msg.value}("");
         if (!sent) revert SendFailed();
     }
@@ -254,13 +240,39 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
      * @param recoverer The recoverer address
      */
     function sendMoneyToRecoverer(address wallet, address recoverer) external payable override {
-        if (recoverer.balance > 0) revert InvalidRecoverer();
-        if (walletTs[wallet] == 0) revert InvalidWallet();
-        if (recoverer != IKintoWallet(wallet).recoverer()) revert OnlyRecoverer();
-        bool isPrivileged =
-            owner() == msg.sender || IAccessControl(address(kintoID)).hasRole(kintoID.KYC_PROVIDER_ROLE(), msg.sender);
-        if (!isPrivileged) revert OnlyRecoverer();
+        if (walletTs[wallet] == 0) revert InvalidWallet(wallet);
+        if (recoverer != IKintoWallet(wallet).recoverer()) {
+            revert OnlyRecoverer(recoverer, IKintoWallet(wallet).recoverer());
+        }
         (bool sent,) = recoverer.call{value: msg.value}("");
+        if (!sent) revert SendFailed();
+    }
+
+    /**
+     * @dev Send eth to the deployer of a wallet
+     * @param deployer The deployer address
+     */
+    function sendETHToDeployer(address deployer) external payable override {
+        if (walletTs[msg.sender] == 0) revert InvalidWallet(msg.sender);
+        if (deployer == address(0)) revert InvalidTarget(deployer);
+        if (appRegistry.deployerToWallet(deployer) != msg.sender) revert InvalidWallet(deployer);
+        (bool sent,) = deployer.call{value: msg.value}("");
+        if (!sent) revert SendFailed();
+    }
+
+    /**
+     * @dev Send eth to the EOA of an app
+     * @param eoa The EOA address
+     * @param app The app address
+     */
+    function sendETHToEOA(address eoa, address app) external payable override {
+        if (walletTs[msg.sender] == 0) revert InvalidWallet(msg.sender);
+        if (eoa == address(0) || app == address(0)) revert InvalidTarget(address(0));
+        if (appRegistry.devEoaToApp(eoa) != app) revert InvalidTarget(app);
+        if (IERC721Enumerable(address(appRegistry)).ownerOf(appRegistry.getAppMetadata(app).tokenId) != msg.sender) {
+            revert InvalidWallet(msg.sender);
+        }
+        (bool sent,) = eoa.call{value: msg.value}("");
         if (!sent) revert SendFailed();
     }
 
@@ -295,17 +307,6 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
         );
     }
 
-    /**
-     * @dev Calculates the counterfactual address of this contract as it
-     * would be returned by deployContract()
-     * @param salt Salt used by CREATE2
-     * @param byteCodeHash The bytecode hash (keccack256) of the contract to deploy
-     * @return address of the contract to deploy
-     */
-    function getContractAddress(bytes32 salt, bytes32 byteCodeHash) external view override returns (address) {
-        return Create2.computeAddress(salt, byteCodeHash, address(this));
-    }
-
     /* ============ Internal methods ============ */
 
     /**
@@ -316,46 +317,13 @@ contract KintoWalletFactory is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
     }
-
-    function _preventWalletDeployment(bytes calldata _bytecode) internal view {
-        bytes memory walletInitCode = type(SafeBeaconProxy).creationCode;
-        if (_bytecode.length > walletInitCode.length + 32) {
-            uint256 offset = 12 + walletInitCode.length;
-
-            // extract beacon address directly from calldata
-            address beaconAddress;
-            bytes memory slice = _bytecode[offset:offset + 20];
-            assembly {
-                beaconAddress := mload(add(slice, 20))
-            }
-
-            if (beaconAddress == address(beacon)) {
-                revert DeploymentNotAllowed("Direct KintoWallet deployment not allowed");
-            }
-        }
-    }
-
-    function _deployAndAssignOwnership(address newOwner, uint256 amount, bytes calldata bytecode, bytes32 salt)
-        internal
-        returns (address)
-    {
-        if (amount != msg.value) revert AmountMismatch();
-        if (bytecode.length == 0) revert EmptyBytecode();
-        _preventWalletDeployment(bytecode);
-
-        // deploy the contract using `CREATE2`
-        address created = Create2.deploy(amount, salt, bytecode);
-
-        // assign ownership to newOwner if the contract is Ownable
-        try OwnableUpgradeable(created).owner() returns (address owner) {
-            if (owner == address(this)) {
-                OwnableUpgradeable(created).transferOwnership(newOwner);
-            }
-        } catch {}
-        return created;
-    }
 }
 
-contract KintoWalletFactoryV16 is KintoWalletFactory {
-    constructor(IKintoWallet _implAddressP) KintoWalletFactory(_implAddressP) {}
+contract KintoWalletFactoryV23 is KintoWalletFactory {
+    constructor(
+        IKintoWallet _implAddressP,
+        IKintoAppRegistry _appRegistry,
+        IKintoID _kintoID,
+        RewardsDistributor _rewardsDistributor
+    ) KintoWalletFactory(_implAddressP, _appRegistry, _kintoID, _rewardsDistributor) {}
 }

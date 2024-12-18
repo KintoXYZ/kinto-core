@@ -66,9 +66,9 @@ interface IAccessRegistry {
     /// @return The beacon contract used for upgrades.
     function beacon() external view returns (UpgradeableBeacon);
 
-    /// @notice Retrieves the version number of the factory.
+    /// @notice Retrieves the version number of the Acesss Point.
     /// @return The factory version as a uint256.
-    function factoryVersion() external view returns (uint256);
+    function accessPointVersion() external view returns (uint256);
 
     /* ============ State Change Functions ============ */
 

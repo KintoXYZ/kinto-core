@@ -5,14 +5,6 @@ pragma solidity ^0.8.18;
 import "@kinto-core-test/SharedSetup.t.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
 
-contract InflatorNewUpgrade is KintoInflator {
-    function newFunction() external pure returns (uint256) {
-        return 1;
-    }
-
-    constructor(address _kintoWalletFactory) KintoInflator() {}
-}
-
 contract InflatorTest is SharedSetup {
     function setUp() public override {
         super.setUp();
@@ -20,24 +12,7 @@ contract InflatorTest is SharedSetup {
         _inflator.setKintoContract("SP", address(_paymaster));
     }
 
-    /* ============ Upgrade tests ============ */
-
-    function testUpgradeTo() public {
-        InflatorNewUpgrade _newImpl = new InflatorNewUpgrade(address(_walletFactory));
-        vm.prank(_owner);
-        _inflator.upgradeTo(address(_newImpl));
-
-        assertEq(InflatorNewUpgrade(payable(address(_inflator))).newFunction(), 1);
-    }
-
-    function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        InflatorNewUpgrade _newImpl = new InflatorNewUpgrade(address(_walletFactory));
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        _inflator.upgradeTo(address(_newImpl));
-    }
-
-    /* ============ Compress/Inflate tests ============ */
+    /* ============ Compress/Inflate ============ */
 
     function testInflate() public {
         // 1. create user op
@@ -289,13 +264,17 @@ contract InflatorTest is SharedSetup {
     function testInflate_WhenSimpleInflate() public {
         // 1. create user op
         UserOperation memory op = _createUserOperation(
+            block.chainid,
             address(_kintoWallet),
             address(counter),
+            1 ether,
             _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("increment()"),
             address(_paymaster)
         );
+
+        op.initCode = "0x1234567890";
 
         // 2. compress user op
         bytes memory compressedSimple = _inflator.compressSimple(op);

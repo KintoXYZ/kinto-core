@@ -22,7 +22,7 @@ contract KintoMigration54DeployScript is MigrationHelper {
         address proxy = _deployProxy("EngenBadges", implementation);
 
         _fundPaymaster(proxy, deployerPrivateKey);
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
 
         //UserOp initialize with parameters
         _handleOps(

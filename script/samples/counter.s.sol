@@ -8,25 +8,21 @@ import "../../src/interfaces/IKintoWallet.sol";
 import "../../src/interfaces/IKintoWalletFactory.sol";
 import {SponsorPaymaster} from "../../src/paymasters/SponsorPaymaster.sol";
 
-import "../../test/helpers/AASetup.sol";
-import "../../test/helpers/UserOp.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script deploys a `Counter` contract (skips deployment if already exists) and executes a user operation that calls the `increment()` function using your smart account.
-contract KintoCounterScript is AASetup, UserOp {
+contract KintoCounterScript is MigrationHelper {
     EntryPoint _entryPoint;
     IKintoWalletFactory _walletFactory;
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
 
-    function setUp() public {
-        (, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -41,14 +37,11 @@ contract KintoCounterScript is AASetup, UserOp {
         _newWallet = IKintoWallet(newWallet);
 
         // Counter contract
-        address computed =
-            _walletFactory.getContractAddress(bytes32(0), keccak256(abi.encodePacked(type(Counter).creationCode)));
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(Counter).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created = _walletFactory.deployContract(
-                deployerPublicKey, 0, abi.encodePacked(type(Counter).creationCode), bytes32(0)
-            );
-            console.log("Counter contract deployed at", created);
+            Counter created = new Counter{salt: bytes32(0)}();
+            console.log("Counter contract deployed at", address(created));
         } else {
             console.log("Counter already deployed at", computed);
         }

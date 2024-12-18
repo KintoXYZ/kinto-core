@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {IKintoWallet} from "./IKintoWallet.sol";
-import {IKintoID} from "./IKintoID.sol";
-import {IFaucet} from "./IFaucet.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IFaucet} from "@kinto-core/interfaces/IFaucet.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 
 interface IKintoWalletFactory {
     /* ============ Errors ============ */
@@ -12,16 +15,14 @@ interface IKintoWalletFactory {
     error InvalidInput();
     error KYCRequired();
     error KYCMustNotExist();
-    error InvalidWallet();
-    error InvalidRecoverer();
-    error OnlyRecoverer();
-    error InvalidWalletOrFunder();
-    error InvalidSender();
+    error InvalidWallet(address);
+    error OnlyRecoverer(address, address);
+    error InvalidWalletOrFunder(address);
+    error InvalidSender(address);
     error SendFailed();
-    error InvalidFaucet();
-    error InvalidTarget();
+    error InvalidTarget(address);
     error NotAdminApproved();
-    error OnlyPrivileged();
+    error OnlyPrivileged(address);
     error DeploymentNotAllowed(string reason);
     error AmountMismatch();
     error EmptyBytecode();
@@ -31,11 +32,6 @@ interface IKintoWalletFactory {
     function upgradeAllWalletImplementations(IKintoWallet newImplementationWallet) external;
 
     function createAccount(address owner, address recoverer, bytes32 salt) external returns (IKintoWallet ret);
-
-    function deployContract(address contractOwner, uint256 amount, bytes memory bytecode, bytes32 salt)
-        external
-        payable
-        returns (address);
 
     function startWalletRecovery(address payable wallet) external;
 
@@ -51,15 +47,15 @@ interface IKintoWalletFactory {
 
     function sendMoneyToRecoverer(address wallet, address recoverer) external payable;
 
-    function writeL2Deposit(address depositor, address assetL2, uint256 amount) external;
+    function sendETHToDeployer(address deployer) external payable;
+
+    function sendETHToEOA(address eoa, address app) external payable;
 
     function approveWalletRecovery(address wallet) external;
 
     /* ============ Basic Viewers ============ */
 
     function getAddress(address owner, address recoverer, bytes32 salt) external view returns (address);
-
-    function getContractAddress(bytes32 salt, bytes32 bytecodeHash) external view returns (address);
 
     function walletTs(address _account) external view returns (uint256);
 
@@ -70,6 +66,10 @@ interface IKintoWalletFactory {
     /* ============ Constants and attrs ============ */
 
     function kintoID() external view returns (IKintoID);
+
+    function appRegistry() external view returns (IKintoAppRegistry);
+
+    function rewardsDistributor() external view returns (RewardsDistributor);
 
     function beacon() external view returns (UpgradeableBeacon);
 

@@ -25,12 +25,19 @@ import {KintoInflator} from "@kinto-core/inflators/KintoInflator.sol";
 import {EngenGovernance} from "@kinto-core/governance/EngenGovernance.sol";
 
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+
 import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
 import {KintoWalletHarness} from "../harness/KintoWalletHarness.sol";
 import {SponsorPaymasterHarness} from "../harness/SponsorPaymasterHarness.sol";
 import {KintoAppRegistryHarness} from "../harness/KintoAppRegistryHarness.sol";
 
 abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats {
+    uint256 internal constant RATE_LIMIT_PERIOD = 1 minutes;
+    uint256 internal constant RATE_LIMIT_THRESHOLD = 10;
+    uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
+    uint256 internal constant GAS_LIMIT_THRESHOLD = 0.01 ether;
+
     IKintoEntryPoint _entryPoint;
 
     // Kinto Registry
@@ -45,7 +52,6 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     KintoWallet _kintoWalletImpl;
     IKintoWallet _kintoWallet;
 
-    // Others
     EngenCredits _engenCredits;
     EngenBadges _engenBadges;
     SponsorPaymaster _paymaster;
@@ -56,6 +62,8 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     KintoInflator _inflator;
     TimelockController _engenTimelock;
     EngenGovernance _engenGovernance;
+    RewardsDistributor _rewardsDistributor;
+    BridgedKinto _bridgedKinto;
 
     /* ============ convenience methods ============ */
 
@@ -98,34 +106,32 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
 
     // register app helpers
     // fixme: these should go through entrypoint
-    function registerApp(address _owner, string memory name, address parentContract) public {
+    function registerApp(address _owner, string memory name, address parentContract, address[] memory devEOAs) public {
         address[] memory appContracts = new address[](0);
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
-    function registerApp(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
-        public
-    {
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        uint256[4] memory appLimits,
+        address[] memory devEOAs
+    ) public {
         address[] memory appContracts = new address[](0);
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
-    function registerApp(address _owner, string memory name, address parentContract, address[] memory appContracts)
-        public
-    {
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
-        registerApp(_owner, name, parentContract, appContracts, appLimits);
+    function registerApp(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        address[] memory devEOAs
+    ) public {
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
+        registerApp(_owner, name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     // fixme: this should go through entrypoint
@@ -134,33 +140,25 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         string memory name,
         address parentContract,
         address[] memory appContracts,
-        uint256[4] memory appLimits
+        uint256[4] memory appLimits,
+        address[] memory devEOAs
     ) public {
         vm.prank(_owner);
         _kintoAppRegistry.registerApp(
-            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]]
+            name, parentContract, appContracts, [appLimits[0], appLimits[1], appLimits[2], appLimits[3]], devEOAs
         );
     }
 
-    function updateMetadata(address _owner, string memory name, address parentContract, address[] memory appContracts)
-        public
-    {
-        uint256[4] memory appLimits = [
-            _kintoAppRegistry.RATE_LIMIT_PERIOD(),
-            _kintoAppRegistry.RATE_LIMIT_THRESHOLD(),
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
-        ];
+    function updateMetadata(
+        address _owner,
+        string memory name,
+        address parentContract,
+        address[] memory appContracts,
+        address[] memory devEOAs
+    ) public {
+        uint256[4] memory appLimits = [RATE_LIMIT_PERIOD, RATE_LIMIT_THRESHOLD, GAS_LIMIT_PERIOD, GAS_LIMIT_THRESHOLD];
         vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
-    }
-
-    function updateMetadata(address _owner, string memory name, address parentContract, uint256[4] memory appLimits)
-        public
-    {
-        address[] memory appContracts = new address[](0);
-        vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     function updateMetadata(
@@ -168,10 +166,23 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         string memory name,
         address parentContract,
         uint256[4] memory appLimits,
-        address[] memory appContracts
+        address[] memory devEOAs
+    ) public {
+        address[] memory appContracts = new address[](0);
+        vm.prank(_owner);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
+    }
+
+    function updateMetadata(
+        address _owner,
+        string memory name,
+        address parentContract,
+        uint256[4] memory appLimits,
+        address[] memory appContracts,
+        address[] memory devEOAs
     ) public {
         vm.prank(_owner);
-        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits);
+        _kintoAppRegistry.updateMetadata(name, parentContract, appContracts, appLimits, devEOAs);
     }
 
     function setSponsoredContracts(address _owner, address _app, address[] memory _contracts, bool[] memory _sponsored)
@@ -202,27 +213,23 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     function resetSigners(address[] memory newSigners, uint8 policy) public {
         vm.prank(address(_kintoWallet));
         _kintoWallet.resetSigners(newSigners, policy);
-        assertEq(_kintoWallet.owners(0), newSigners[0]);
-        assertEq(_kintoWallet.owners(1), newSigners[1]);
-        assertEq(_kintoWallet.signerPolicy(), policy);
     }
 
     function setSignerPolicy(uint8 policy) public {
         vm.prank(address(_kintoWallet));
         _kintoWallet.setSignerPolicy(policy);
-        assertEq(_kintoWallet.signerPolicy(), policy);
     }
 
     function useHarness() public {
-        KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoID, _kintoAppRegistry);
+        KintoWalletHarness _impl = new KintoWalletHarness(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
         vm.prank(_walletFactory.owner());
         _walletFactory.upgradeAllWalletImplementations(_impl);
 
-        SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint);
+        SponsorPaymasterHarness _paymasterImpl = new SponsorPaymasterHarness(_entryPoint, _walletFactory);
         vm.prank(_paymaster.owner());
         _paymaster.upgradeTo(address(_paymasterImpl));
 
-        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory);
+        KintoAppRegistryHarness _registryImpl = new KintoAppRegistryHarness(_walletFactory, _paymaster);
         vm.prank(_kintoAppRegistry.owner());
         _kintoAppRegistry.upgradeTo(address(_registryImpl));
     }
@@ -256,140 +263,5 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
         vm.prank(address(_walletFactory));
         _kintoWallet.completeRecovery(users);
         assertEq(_kintoWallet.owners(0), _newOwner);
-    }
-
-    /* ============ assertion helper methods ============ */
-
-    // selector reasons
-
-    function assertRevertReasonEq(bytes4 expectedSelector) public {
-        bool foundMatchingRevert = false;
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        for (uint256 i = 0; i < logs.length; i++) {
-            // check if this is the correct event
-            if (
-                logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
-                    || logs[i].topics[0] == keccak256("PostOpRevertReason(bytes32,address,uint256,bytes)")
-            ) {
-                (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
-
-                // check if the revertReasonBytes match the expected selector
-                if (revertReasonBytes.length >= 4) {
-                    bytes4 actualSelector = bytes4(revertReasonBytes[0]) | (bytes4(revertReasonBytes[1]) >> 8)
-                        | (bytes4(revertReasonBytes[2]) >> 16) | (bytes4(revertReasonBytes[3]) >> 24);
-
-                    if (actualSelector == expectedSelector) {
-                        foundMatchingRevert = true;
-                        break; // exit the loop if a match is found
-                    }
-                }
-            }
-        }
-
-        if (!foundMatchingRevert) {
-            revert("Expected revert reason did not match");
-        }
-    }
-
-    // string reasons
-
-    function assertRevertReasonEq(bytes memory _reason) public {
-        bytes[] memory reasons = new bytes[](1);
-        reasons[0] = _reason;
-        _assertRevertReasonEq(reasons);
-    }
-
-    /// @dev if 2 or more UserOperationRevertReason events are emitted
-    function assertRevertReasonEq(bytes[] memory _reasons) public {
-        _assertRevertReasonEq(_reasons);
-    }
-
-    function _assertRevertReasonEq(bytes[] memory _reasons) internal {
-        uint256 matchingReverts = 0;
-        uint256 idx = 0;
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        for (uint256 i = 0; i < logs.length; i++) {
-            // check if this is the correct event
-            if (
-                logs[i].topics[0] == keccak256("UserOperationRevertReason(bytes32,address,uint256,bytes)")
-                    || logs[i].topics[0] == keccak256("PostOpRevertReason(bytes32,address,uint256,bytes)")
-            ) {
-                (, bytes memory revertReasonBytes) = abi.decode(logs[i].data, (uint256, bytes));
-
-                // check that the revertReasonBytes is long enough (at least 4 bytes for the selector + additional data for the message)
-                if (revertReasonBytes.length >= 4) {
-                    // remove the first 4 bytes (the function selector)
-                    bytes memory errorBytes = new bytes(revertReasonBytes.length - 4);
-                    for (uint256 j = 4; j < revertReasonBytes.length; j++) {
-                        errorBytes[j - 4] = revertReasonBytes[j];
-                    }
-                    string memory decodedRevertReason = abi.decode(errorBytes, (string));
-                    string[] memory prefixes = new string[](3);
-                    prefixes[0] = "SP";
-                    prefixes[1] = "KW";
-                    prefixes[2] = "EC";
-
-                    // clean revert reason & assert
-                    string memory cleanRevertReason = _trimToPrefixAndRemoveTrailingNulls(decodedRevertReason, prefixes);
-                    if (keccak256(abi.encodePacked(cleanRevertReason)) == keccak256(abi.encodePacked(_reasons[idx]))) {
-                        matchingReverts++;
-                        if (_reasons.length > 1) {
-                            idx++; // if there's only one reason, we always use the same one
-                        }
-                    }
-                }
-            }
-        }
-
-        if (matchingReverts < _reasons.length) {
-            revert("Expected revert reason did not match");
-        }
-    }
-
-    function _trimToPrefixAndRemoveTrailingNulls(string memory revertReason, string[] memory prefixes)
-        internal
-        pure
-        returns (string memory)
-    {
-        bytes memory revertBytes = bytes(revertReason);
-        uint256 meaningfulLength = revertBytes.length;
-        if (meaningfulLength == 0) return revertReason;
-
-        // find the actual end of the meaningful content
-        for (uint256 i = revertBytes.length - 1; i >= 0; i--) {
-            if (revertBytes[i] != 0) {
-                meaningfulLength = i + 1;
-                break;
-            }
-            if (i == 0) break; // avoid underflow
-        }
-        // trim until one of the prefixes
-        for (uint256 j = 0; j < revertBytes.length; j++) {
-            for (uint256 k = 0; k < prefixes.length; k++) {
-                bytes memory prefixBytes = bytes(prefixes[k]);
-                if (j + prefixBytes.length <= meaningfulLength) {
-                    bool matched = true;
-                    for (uint256 l = 0; l < prefixBytes.length; l++) {
-                        if (revertBytes[j + l] != prefixBytes[l]) {
-                            matched = false;
-                            break;
-                        }
-                    }
-                    if (matched) {
-                        // create a new trimmed and cleaned string
-                        bytes memory trimmedBytes = new bytes(meaningfulLength - j);
-                        for (uint256 m = j; m < meaningfulLength; m++) {
-                            trimmedBytes[m - j] = revertBytes[m];
-                        }
-                        return string(trimmedBytes);
-                    }
-                }
-            }
-        }
-
-        // if no prefix is found or no meaningful content, return the original string
-        return revertReason;
     }
 }

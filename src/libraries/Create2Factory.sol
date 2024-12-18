@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 contract Create2Factory {
     /// @notice Error indicating that KYC is required for the sender.
@@ -13,13 +14,18 @@ contract Create2Factory {
     /// @param amount The amount sent with the transaction.
     error Reject(address sender, uint256 amount);
 
+    /// @notice The WalletFactory contract instance.
+    IKintoWalletFactory public immutable walletFactory;
+
     /// @notice The KintoID contract instance.
     IKintoID public immutable kintoID;
 
     /// @notice Constructor to initialize the KintoID contract.
     /// @param _kintoID The address of the KintoID contract.
-    constructor(IKintoID _kintoID) {
+    /// @param _walletFactory The address of the WalletFactory contract.
+    constructor(IKintoID _kintoID, IKintoWalletFactory _walletFactory) {
         kintoID = _kintoID;
+        walletFactory = _walletFactory;
     }
 
     /// @notice Fallback function to handle contract creation using CREATE2.
@@ -27,7 +33,8 @@ contract Create2Factory {
     /// @dev Callldata contains salt (32 bytes) + creationCode.
     /// They are encoded with encodePacked.
     fallback(bytes calldata) external payable returns (bytes memory) {
-        if (!kintoID.isKYC(msg.sender)) revert KYCRequired(msg.sender);
+        // Only KYC-verified accounts and Kinto wallets are permitted to use create2.
+        if (!kintoID.isKYC(msg.sender) && walletFactory.walletTs(msg.sender) == 0) revert KYCRequired(msg.sender);
 
         assembly {
             // Load creationCode to position 0 in memory.

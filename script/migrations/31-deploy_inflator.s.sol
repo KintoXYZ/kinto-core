@@ -14,7 +14,7 @@ contract KintoMigration31DeployScript is MigrationHelper {
         address proxy = _deployProxy("KintoInflator", implementation);
 
         // whitelist the new KintoInflator & initialize
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
 
         // set Kinto contracts to inflator
@@ -35,7 +35,7 @@ contract KintoMigration31DeployScript is MigrationHelper {
         selectorsAndParams[5] =
             abi.encodeWithSelector(KintoInflator.setKintoContract.selector, "EC", _getChainDeployment("EngenCredits"));
 
-        _handleOps(selectorsAndParams, proxy, deployerPrivateKey);
+        _handleOpsBatch(selectorsAndParams, proxy, deployerPrivateKey);
 
         // sanity check
         KintoInflator inflator = KintoInflator(proxy);

@@ -1,0 +1,11 @@
+{
+  "from": "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a",
+  "vault": "0xDB09c7C2C4071e3Ca1bAD0C357906Efa17c25102",
+  "receiver": "0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c",
+  "amount": "5000000000000000000",
+  "msgGasLimit": "500000",
+  "connector": "0xD1f50b52927763F636dc46E39A121C719d703A9b",
+  "execPayload": "0x",
+  "options": "0x",
+  "gasFee": "50000000000000000"
+}

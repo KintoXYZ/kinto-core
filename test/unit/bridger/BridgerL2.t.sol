@@ -31,7 +31,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         vm.etch(sDAIL2, address(token).code);
 
         fundSponsorForApp(_owner, address(_bridgerL2));
-        registerApp(_owner, "bridger", address(_bridgerL2));
+        registerApp(address(_kintoWallet), "bridger", address(_bridgerL2), new address[](0));
     }
 
     function testUp() public view override {

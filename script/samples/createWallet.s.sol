@@ -4,26 +4,21 @@ pragma solidity ^0.8.18;
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "../../src/KintoID.sol";
-import "../../test/helpers/AASetup.sol";
-import "../../test/helpers/SignatureHelper.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script creates a Kinto Wallet (smart account) through the factory.
 /// @dev It won't create a new wallet if it already exists.
-contract KintoCreateWalletScript is AASetup, SignatureHelper {
+contract KintoCreateWalletScript is MigrationHelper {
     KintoID _kintoID;
     EntryPoint _entryPoint;
     KintoWalletFactory _walletFactory;
 
-    function setUp() public {
-        (_kintoID, _entryPoint, _walletFactory,) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    function run() public override {
         uint256 recipientKey = vm.envUint("TEST_PRIVATE_KEY");
         address recipientWallet = vm.rememberKey(recipientKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));

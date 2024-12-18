@@ -4,6 +4,11 @@ pragma solidity ^0.8.18;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
+interface IWstEth {
+    function unwrap(uint256 amount) external returns (uint256);
+    function stETH() external view returns (address);
+}
+
 /**
  * @title IDAI
  * @notice Interface for DAI token operations.
@@ -33,20 +38,6 @@ interface IDAI {
 }
 
 /**
- * @title IsUSDe
- * @notice Interface for sUSDe token operations.
- */
-interface IsUSDe is IERC20 {
-    /**
-     * @notice Deposit USDe tokens and receive sUSDe tokens.
-     * @param amount Amount of USDe tokens to deposit.
-     * @param recipient Address to receive the sUSDe tokens.
-     * @return Amount of sUSDe tokens received.
-     */
-    function deposit(uint256 amount, address recipient) external returns (uint256);
-}
-
-/**
  * @title IBridger
  * @notice Interface for Bridger contract operations.
  */
@@ -61,9 +52,16 @@ interface IBridger {
     /// @notice The nonce is invalid.
     error InvalidNonce();
 
+    /// @notice The vault is not permitted.
+    error InvalidVault(address vault);
+
     /// @notice The signer is invalid.
     /// @param signer The signer.
     error InvalidSigner(address signer);
+
+    /// @notice Balance is too low for bridge operation.
+    /// @param amount The amount required.
+    error BalanceTooLow(uint256 amount, uint256 balance);
 
     /// @notice The amount is invalid.
     /// @param amount The invalid amount.
@@ -80,6 +78,10 @@ interface IBridger {
     /// @notice Returns the amount of final asset to deposit.
     /// @param amountOut The amount to deposit.
     error DepositBySigResult(uint256 amountOut);
+
+    /// @notice Thrown then 0x router allowance is great than zero after the swap.
+    /// @param allowance The allowance value.
+    error RouterAllowanceNotZero(uint256 allowance);
 
     /* ============ Structs ============ */
 
@@ -159,7 +161,7 @@ interface IBridger {
         IBridger.SignatureData calldata signatureData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of tokens into the Kinto L2.
@@ -176,7 +178,7 @@ interface IBridger {
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of ERC20 tokens into the Kinto L2.
@@ -197,7 +199,7 @@ interface IBridger {
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
     /**
      * @notice Deposits the specified amount of ETH into the Kinto L2 as the final asset.
@@ -219,6 +221,12 @@ interface IBridger {
     ) external payable returns (uint256);
 
     /**
+     * @notice Rescue tokens from the contract back to safe.
+     * @param token Address of the token to rescue.
+     */
+    function rescueToken(address token) external;
+
+    /**
      * @notice Pause the contract.
      */
     function pause() external;
@@ -233,6 +241,13 @@ interface IBridger {
      * @param senderAccount Address of the sender account.
      */
     function setSenderAccount(address senderAccount) external;
+
+    /**
+     * @notice Enables the vault contract for bridge operations.
+     * @param vault Address of the sender account.
+     * @param flag True to enable, false to disable.
+     */
+    function setBridgeVault(address vault, bool flag) external;
 
     /* ============ View ============ */
 
@@ -260,4 +275,10 @@ interface IBridger {
      * @return Swap router address.
      */
     function swapRouter() external view returns (address);
+
+    /**
+     * @notice Check if the vault is registered.
+     * @return True if registered.
+     */
+    function bridgeVaults(address vault) external view returns (bool);
 }

@@ -27,7 +27,7 @@ contract KintoMigration55DeployScript is MigrationHelper {
         address governance = _deployImplementation("EngenGovernance", "V1", bytecode);
 
         _fundPaymaster(governance, deployerPrivateKey);
-        _whitelistApp(governance, deployerPrivateKey);
+        _whitelistApp(governance);
 
         require(EngenGovernance(payable(governance)).votingDelay() == 1 days, "governance failed to deploy");
         require(
@@ -37,7 +37,11 @@ contract KintoMigration55DeployScript is MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         KintoAppRegistry registry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         registry.registerApp(
-            "EngenGovernance", address(governance), new address[](0), [uint256(0), uint256(0), uint256(0), uint256(0)]
+            "EngenGovernance",
+            address(governance),
+            new address[](0),
+            [uint256(0), uint256(0), uint256(0), uint256(0)],
+            new address[](0)
         );
     }
 }

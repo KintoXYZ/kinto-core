@@ -31,6 +31,11 @@ contract BridgedToken is
     /// @notice Role that can upgrade the implementation of the proxy.
     bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
+    /// @notice Thrown when input array lengths don't match in batch operations
+    error ArrayLengthMismatch();
+    /// @notice Thrown when empty arrays are provided to batch operations
+    error EmptyArrays();
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(uint8 decimals_) {
         _disableInitializers();
@@ -60,7 +65,7 @@ contract BridgedToken is
         _grantRole(UPGRADER_ROLE, upgrader);
     }
 
-    function decimals() public view override returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
 
@@ -90,5 +95,37 @@ contract BridgedToken is
      */
     function burn(address from, uint256 amount) public onlyRole(MINTER_ROLE) {
         _burn(from, amount);
+    }
+
+    /**
+     * @notice Mints tokens to multiple addresses in a single transaction.
+     * @param recipients Array of addresses to receive the minted tokens.
+     * @param amounts Array of token amounts to mint to each recipient.
+     * @dev Requires MINTER_ROLE. Reverts if array lengths don't match or if arrays are empty.
+     * Can be used for batch bridging operations to optimize gas costs.
+     */
+    function batchMint(address[] calldata recipients, uint256[] calldata amounts) public onlyRole(MINTER_ROLE) {
+        if (recipients.length != amounts.length) revert ArrayLengthMismatch();
+        if (recipients.length == 0) revert EmptyArrays();
+
+        for (uint256 i = 0; i < recipients.length; i++) {
+            _mint(recipients[i], amounts[i]);
+        }
+    }
+
+    /**
+     * @notice Burns tokens from multiple addresses in a single transaction.
+     * @param from Array of addresses to burn tokens from.
+     * @param amounts Array of token amounts to burn from each address.
+     * @dev Requires MINTER_ROLE. Reverts if array lengths don't match or if arrays are empty.
+     * Can be used for batch bridging operations to optimize gas costs.
+     */
+    function batchBurn(address[] calldata from, uint256[] calldata amounts) public onlyRole(MINTER_ROLE) {
+        if (from.length != amounts.length) revert ArrayLengthMismatch();
+        if (from.length == 0) revert EmptyArrays();
+
+        for (uint256 i = 0; i < from.length; i++) {
+            _burn(from[i], amounts[i]);
+        }
     }
 }

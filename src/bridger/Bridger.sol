@@ -18,10 +18,14 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {IBridger, IDAI, IsUSDe} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridger, IDAI, IWstEth} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
-import {ICurveStableSwapNG} from "@kinto-core/interfaces/ICurveStableSwapNG.sol";
+import {ICurveStableSwapNG} from "@kinto-core/interfaces/external/ICurveStableSwapNG.sol";
+import {IAngleSwapper} from "@kinto-core/interfaces/external/IAngleSwapper.sol";
+import {ISftWrapRouter} from "@kinto-core/interfaces/external/ISftWrapRouter.sol";
+
+import "forge-std/console2.sol";
 
 /**
  * @title Bridger
@@ -76,6 +80,18 @@ contract Bridger is
     address public constant wUSDM = 0x57F5E098CaD7A3D1Eed53991D4d66C45C9AF7812;
     /// @notice The address representing ETH.
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    /// @notice WBTC address on Arbitrum.
+    address public constant WBTC = 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f;
+    /// @notice SolvBTC address on Arbitrum.
+    address public constant SOLV_BTC = 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0;
+    /// @notice Solv Router address on Arbitrum.
+    address public constant SOLV_SFT_WRAP_ROUTER = 0xe9eD7530427Cb41A56C9e004e00e074cCc168C44;
+    /// @notice SolvBTC pool id on Arbitrum.
+    bytes32 public constant SOLV_BTC_POOL_ID = 0x488def4a346b409d5d57985a160cd216d29d4f555e1b716df4e04e2374d2d9f6;
+    /// @notice stUSD pool id on Arbitrum.
+    address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
+    /// @notice USDA pool id on Arbitrum.
+    address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -93,8 +109,8 @@ contract Bridger is
     bytes32 public immutable override domainSeparator;
     /// @notice The address of the 0x exchange proxy through which swaps are executed.
     address public immutable swapRouter;
-    /// @notice The address of the Curve pool for USDM.
-    address public immutable usdmCurvePool;
+    /// @notice The address of Angel Swapper on Arbitrum.
+    address public constant angleSwapper = 0xD253b62108d1831aEd298Fc2434A5A8e4E418053;
 
     /* ============ State Variables ============ */
 
@@ -107,10 +123,12 @@ contract Bridger is
     mapping(address => mapping(address => uint256)) private __deposits;
     /// @notice Nonces for replay protection.
     mapping(address => uint256) public override nonces;
-    /// @notice DEPRECATED: Count of deposits..
+    /// @notice DEPRECATED: Count of deposits.
     uint256 public __depositCount;
     /// @notice DEPRECATED: Flag indicating if swaps are enabled.
     bool private __swapsEnabled;
+    /// @notice List of allowed vaults for the Bridge.
+    mapping(address => bool) public bridgeVaults;
 
     /* ============ Modifiers ============ */
 
@@ -130,7 +148,6 @@ contract Bridger is
      */
     constructor(
         address exchange,
-        address usdmCurveAmm,
         address usdc,
         address weth,
         address dai,
@@ -149,7 +166,6 @@ contract Bridger is
         USDe = usde;
         sUSDe = sUsde;
         wstETH = wstEth;
-        usdmCurvePool = usdmCurveAmm;
     }
 
     /**
@@ -172,29 +188,26 @@ contract Bridger is
         (newImplementation);
     }
 
-    /* ============ Pause and Unpause ============ */
+    /* ============ Admin ============ */
 
-    /**
-     * @notice Pauses the contract, preventing certain functions from being executed.
-     * @dev This function can only be called by the contract owner.
-     */
+    /// @inheritdoc IBridger
     function pause() external override onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Unpauses the contract. Only the owner can call this function.
-     */
+    /// @inheritdoc IBridger
     function unpause() external override onlyOwner {
         _unpause();
     }
 
-    /**
-     * @notice Sets the sender account. Only the owner can call this function.
-     * @param sender Address of the sender account.
-     */
+    /// @inheritdoc IBridger
     function setSenderAccount(address sender) external override onlyOwner {
         senderAccount = sender;
+    }
+
+    /// @inheritdoc IBridger
+    function setBridgeVault(address vault, bool flag) external override onlyOwner {
+        bridgeVaults[vault] = flag;
     }
 
     /* ============ Public ============ */
@@ -205,16 +218,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer
         _permit(
             depositData.signer,
@@ -248,16 +253,8 @@ contract Bridger is
         IBridger.SignatureData calldata depositData,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    )
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-        onlyPrivileged
-        onlySignerVerified(depositData)
-        returns (uint256)
-    {
+    ) external override whenNotPaused nonReentrant onlyPrivileged onlySignerVerified(depositData) returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // Permit the contract to spend the tokens on behalf of the signer.
         PERMIT2.permit(depositData.signer, permitSingle, permit2Signature);
 
@@ -286,7 +283,8 @@ contract Bridger is
         uint256 minReceive,
         bytes calldata swapCallData,
         BridgeData calldata bridgeData
-    ) external payable override whenNotPaused nonReentrant returns (uint256) {
+    ) external override whenNotPaused nonReentrant returns (uint256) {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
 
@@ -303,6 +301,8 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) external payable override whenNotPaused nonReentrant returns (uint256) {
         if (amount == 0) revert InvalidAmount(amount);
+        if (msg.value != (amount + bridgeData.gasFee)) revert InvalidAmount(amount);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         uint256 amountOut = _swap(ETH, finalAsset, amount, minReceive, swapCallData);
 
@@ -311,6 +311,7 @@ contract Bridger is
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
         // Bridge the final amount to Kinto
+        // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountOut,
@@ -323,6 +324,11 @@ contract Bridger is
         emit Deposit(msg.sender, kintoWallet, ETH, amount, finalAsset, amountOut);
 
         return amountOut;
+    }
+
+    /// @inheritdoc IBridger
+    function rescueToken(address token) external override onlyOwner {
+        IERC20(token).safeTransfer(owner(), IERC20(token).balanceOf(address(this)));
     }
 
     /* ============ Private Functions ============ */
@@ -349,6 +355,7 @@ contract Bridger is
         BridgeData calldata bridgeData
     ) internal returns (uint256 amountBought) {
         if (amount == 0) revert InvalidAmount(0);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
 
         amountBought = _swap(inputAsset, finalAsset, amount, minReceive, swapCallData);
 
@@ -356,7 +363,9 @@ contract Bridger is
         if (IERC20(finalAsset).allowance(address(this), bridgeData.vault) < amountBought) {
             IERC20(finalAsset).safeApprove(bridgeData.vault, type(uint256).max);
         }
+
         // Bridge the final amount to Kinto
+        // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
             kintoWallet,
             amountBought,
@@ -400,8 +409,14 @@ contract Bridger is
                 return _stakeEthToWstEth(amount);
             }
             // Otherwise, wrap ETH to WETH
+            // slither-disable-next-line arbitrary-send-eth
             WETH.deposit{value: amount}();
             inputAsset = address(WETH);
+        }
+
+        if (inputAsset == wUSDM) {
+            amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
+            inputAsset = USDM;
         }
 
         // If the final asset is different from the input asset, perform the swap
@@ -420,23 +435,38 @@ contract Bridger is
         if (finalAsset == sUSDe) {
             uint256 balance = IERC20(USDe).balanceOf(address(this));
             IERC20(USDe).safeApprove(address(sUSDe), balance);
-            amountBought = IsUSDe(sUSDe).deposit(balance, address(this));
+            amountBought = IERC4626(sUSDe).deposit(balance, address(this));
         }
 
         // If the final asset is wUSDM, then swap USDC to USDM and wrap it.
         if (finalAsset == wUSDM) {
-            // 0 coin == USDC
-            // 1 coin == USDM
-            uint256 balance = IERC20(USDC).balanceOf(address(this));
-            IERC20(USDC).safeApprove(usdmCurvePool, balance);
-            // `exchange` function enforce `minReceive` check so we don't have to repeat it.
-            amountBought =
-                ICurveStableSwapNG(usdmCurvePool).exchange(0, 1, IERC20(USDC).balanceOf(address(this)), minReceive);
             // wrap USDM to wUSDM
-            balance = IERC20(USDM).balanceOf(address(this));
+            uint256 balance = IERC20(USDM).balanceOf(address(this));
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
+
+        // If the final asset is stUSD, then swap USDC to USDA and wrap it.
+        if (finalAsset == stUSD) {
+            uint256 balance = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeApprove(angleSwapper, balance);
+            // We can ignore minReceive here because we enforce the minimal amount for final asset (stUSD).
+            amountBought = IAngleSwapper(angleSwapper).swapExactInput(
+                IERC20(USDC).balanceOf(address(this)), 0, USDC, USDA, address(this), 0
+            );
+            // wrap USDA to stUSD
+            balance = IERC20(USDA).balanceOf(address(this));
+            IERC20(USDA).safeApprove(stUSD, balance);
+            amountBought = IERC4626(stUSD).deposit(balance, address(this));
+        }
+
+        // If the final asset is SolvBTC, then wrap WBTC to SolvBTC.
+        if (finalAsset == SOLV_BTC) {
+            uint256 balance = IERC20(WBTC).balanceOf(address(this));
+            IERC20(WBTC).safeApprove(SOLV_SFT_WRAP_ROUTER, balance);
+            amountBought = ISftWrapRouter(SOLV_SFT_WRAP_ROUTER).createSubscription(SOLV_BTC_POOL_ID, balance);
+        }
+
         if (amountBought < minReceive) revert SlippageError(amountBought, minReceive);
     }
 
@@ -446,6 +476,12 @@ contract Bridger is
         }
         if (finalAsset == wUSDM) {
             return USDC;
+        }
+        if (finalAsset == stUSD) {
+            return USDC;
+        }
+        if (finalAsset == SOLV_BTC) {
+            return WBTC;
         }
         return finalAsset;
     }
@@ -458,6 +494,7 @@ contract Bridger is
     function _stakeEthToWstEth(uint256 amount) private returns (uint256 amountBought) {
         // Shortcut to stake ETH and auto-wrap returned stETH
         uint256 balanceBefore = ERC20(wstETH).balanceOf(address(this));
+        // slither-disable-next-line arbitrary-send-eth
         (bool sent,) = wstETH.call{value: amount}("");
         if (!sent) revert FailedToStakeEth();
         amountBought = ERC20(wstETH).balanceOf(address(this)) - balanceBefore;
@@ -505,7 +542,7 @@ contract Bridger is
 
     /**
      * @notice Swaps ERC20->ERC20 tokens held by this contract using a 0x-API quote.
-     * See [get-swap-v1-quote](https://0x.org/docs/0x-swap-api/api-references/get-swap-v1-quote).
+     * See [get-swap-v2-quote](https://0x.org/docs/next/upgrading/upgrading_to_swap_v2).
      * @param amountIn Amount of input asset.
      * @param sellToken Address of the sell token.
      * @param buyToken Address of the buy token.
@@ -524,14 +561,22 @@ contract Bridger is
         if (sellToken == buyToken) {
             return amountIn;
         }
-        // Increase the allowance for the swapRouter to handle `amountIn` of `sellToken`
-        sellToken.safeIncreaseAllowance(swapRouter, amountIn);
+
+        // Set the allowance for the swapRouter to handle `amountIn` of `sellToken`
+        sellToken.forceApprove(swapRouter, amountIn);
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Perform the swap call to the exchange proxy.
         swapRouter.functionCall(swapCallData);
+
+        // Allowance for the 0x router always has to be set to exactly the amountIn, and there should never be any hanging allowance as it can be exploited using malicious calldata and pools
+        // Allows some dust, as 0x router and pools sometimes do not consume entire allowance
+        if (sellToken.allowance(address(this), swapRouter) > 100) {
+            revert RouterAllowanceNotZero(sellToken.allowance(address(this), swapRouter));
+        }
+
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;

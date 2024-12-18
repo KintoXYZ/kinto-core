@@ -6,7 +6,8 @@ import {UUPSUpgradeable as UUPSUpgradeable5} from
     "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
-
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {KintoID} from "@kinto-core/KintoID.sol";
 import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
 import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
@@ -20,14 +21,19 @@ import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
 
+import "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import "@kinto-core/interfaces/IKintoWallet.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
+
 import {Create2Helper} from "@kinto-core-test/helpers/Create2Helper.sol";
 import {ArtifactsReader} from "@kinto-core-test/helpers/ArtifactsReader.sol";
 import {UserOp} from "@kinto-core-test/helpers/UserOp.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
-import {DeployerHelper} from "@kinto-core/libraries/DeployerHelper.sol";
+import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
+import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
 
 import {Constants} from "@kinto-core-script/migrations/const.sol";
-
 import {SaltHelper} from "@kinto-core-script/utils/SaltHelper.sol";
 
 import "forge-std/console2.sol";
@@ -38,49 +44,48 @@ interface IInitialize {
     function initialize() external;
 }
 
-contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constants {
+contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, SaltHelper, Constants {
     using ECDSAUpgradeable for bytes32;
     using stdJson for string;
 
-    bool testMode;
-    uint256 deployerPrivateKey;
-    address deployer;
-    KintoWalletFactory factory;
+    uint256 internal deployerPrivateKey;
+    address internal deployer;
+    address internal kintoAdminWallet;
+    uint256 internal hardwareWalletType;
+    KintoWalletFactory internal factory;
+    EntryPoint internal entryPoint;
+    SponsorPaymaster internal paymaster;
+    KintoID internal kintoID;
 
     function run() public virtual {
-        try vm.envBool("TEST_MODE") returns (bool _testMode) {
-            testMode = _testMode;
-        } catch {}
-
         console2.log("Running on chain with id:", vm.toString(block.chainid));
         deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        try vm.envUint("HARDWARE_WALLET_TYPE") returns (uint256 hwType) {
+            hardwareWalletType = hwType;
+        } catch {}
         deployer = vm.addr(deployerPrivateKey);
         console2.log("Deployer:", deployer);
 
-        // vm.startBroadcast(deployerPrivateKey);
-
+        kintoAdminWallet = _getChainDeployment("KintoWallet-admin");
         factory = KintoWalletFactory(payable(_getChainDeployment("KintoWalletFactory")));
-        vm.stopBroadcast();
+        entryPoint = EntryPoint(payable(_getChainDeployment("EntryPoint")));
+        paymaster = SponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster")));
+        kintoID = KintoID(payable(_getChainDeployment("KintoID")));
     }
 
     /// @dev deploys proxy contract via factory from deployer address
     function _deployProxy(string memory contractName, address implementation, bytes32 salt)
         internal
-        returns (address _proxy)
+        returns (address proxy)
     {
-        bool isEntryPoint = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("EntryPoint"));
-        bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
-
-        if (isWallet || isEntryPoint) revert("EntryPoint and KintoWallet do not use UUPPS Proxy");
-
         // deploy Proxy contract
         vm.broadcast(deployerPrivateKey);
-        _proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
+        proxy = address(new UUPSProxy{salt: salt}(address(implementation), ""));
 
-        console2.log(string.concat(contractName, ": ", vm.toString(address(_proxy))));
+        console2.log(string.concat(contractName, ": ", vm.toString(address(proxy))));
     }
 
-    function _deployProxy(string memory contractName, address implementation) internal returns (address _proxy) {
+    function _deployProxy(string memory contractName, address implementation) internal returns (address proxy) {
         return _deployProxy(contractName, implementation, bytes32(0));
     }
 
@@ -91,85 +96,85 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         string memory version,
         bytes memory bytecode,
         bytes32 salt
-    ) internal returns (address _impl) {
+    ) internal returns (address impl) {
         // deploy new implementation via factory
-        // vm.stopBroadcast();
         vm.broadcast(deployerPrivateKey);
-        _impl = factory.deployContract(msg.sender, 0, bytecode, salt);
+        impl = create2(bytecode, salt);
 
-        console2.log(string.concat(contractName, version, "-impl: ", vm.toString(address(_impl))));
+        console2.log(string.concat(contractName, version, "-impl: ", vm.toString(address(impl))));
     }
 
     function _deployImplementation(string memory contractName, string memory version, bytes memory bytecode)
         internal
-        returns (address _impl)
+        returns (address impl)
     {
         return _deployImplementation(contractName, version, bytecode, bytes32(0));
+    }
+
+    function _deployImplementationAndUpgrade(string memory contractName, string memory version, bytes memory bytecode)
+        internal
+        returns (address impl)
+    {
+        return _deployImplementationAndUpgrade(contractName, version, bytecode, bytes32(0));
     }
 
     /// @notice deploys implementation contracts via factory from deployer address and upgrades them
     /// @dev if contract is KintoWallet we call upgradeAllWalletImplementations
     /// @dev if contract is allowed to receive EOA calls, we call upgradeTo directly. Otherwise, we use EntryPoint to upgrade
-    function _deployImplementationAndUpgrade(string memory contractName, string memory version, bytes memory bytecode)
-        internal
-        returns (address _impl)
-    {
+    function _deployImplementationAndUpgrade(
+        string memory contractName,
+        string memory version,
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal returns (address impl) {
         bool isWallet = keccak256(abi.encodePacked(contractName)) == keccak256(abi.encodePacked("KintoWallet"));
         address proxy = _getChainDeployment(contractName);
 
         if (!isWallet) require(proxy != address(0), "Need to execute main deploy script first");
 
         // (1). deploy new implementation via wallet factory
-        _impl = _deployImplementation(contractName, version, bytecode);
+        impl = _deployImplementation(contractName, version, bytecode, salt);
         // (2). call upgradeTo to set new implementation
-        if (!testMode) {
-            if (isWallet) {
-                _upgradeWallet(_impl, deployerPrivateKey);
-            } else {
-                try Ownable(proxy).owner() returns (address owner) {
-                    if (owner != _getChainDeployment("KintoWallet-admin")) {
-                        console2.log(
-                            "%s contract is not owned by the KintoWallet-admin, its owner is %s",
-                            contractName,
-                            vm.toString(owner)
-                        );
-                        revert("Contract is not owned by KintoWallet-admin");
-                    }
-                    _upgradeTo(proxy, _impl, deployerPrivateKey);
-                } catch {
-                    _upgradeTo(proxy, _impl, deployerPrivateKey);
-                }
-            }
+        if (isWallet) {
+            _upgradeWallet(impl);
         } else {
-            if (isWallet) {
-                vm.prank(factory.owner());
-                factory.upgradeAllWalletImplementations(IKintoWallet(_impl));
-            } else {
-                // todo: ideally, on testMode, we should use the KintoWallet-admin and adjust tests so they use the handleOps
-                try Ownable(proxy).owner() returns (address owner) {
-                    vm.prank(owner);
-                    UUPSUpgradeable(proxy).upgradeTo(_impl);
-                } catch {}
+            try Ownable(proxy).owner() returns (address owner) {
+                if (owner != kintoAdminWallet && owner != address(0)) {
+                    console2.log(
+                        "%s contract is not owned by the KintoWallet-admin, its owner is %s",
+                        contractName,
+                        vm.toString(owner)
+                    );
+                    revert("Contract is not owned by KintoWallet-admin");
+                }
+                _upgradeTo(proxy, impl, deployerPrivateKey);
+            } catch {
+                _upgradeTo(proxy, impl, deployerPrivateKey);
             }
         }
     }
 
-    function _upgradeWallet(address _impl, uint256 _signerPk) internal {
-        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+    function _upgradeWallet(address impl) internal {
+        address payable from = payable(kintoAdminWallet);
         uint256[] memory privKeys = new uint256[](2);
-        privKeys[0] = _signerPk;
-        privKeys[1] = 0; // Ledger
+        privKeys[0] = deployerPrivateKey;
+        privKeys[1] = hardwareWalletType;
 
-        bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, _impl);
+        // address oldImpl = factory.beacon().implementation();
+
+        bytes memory data = abi.encodeWithSelector(KintoWalletFactory.upgradeAllWalletImplementations.selector, impl);
 
         _handleOps(data, from, address(factory), 0, address(0), privKeys);
+
+        // verify that new implementation didn't bricked the wallet
+        // verifyWalletUpgrade(oldImpl);
     }
 
-    function _upgradeTo(address proxy, address _newImpl, uint256 _signerPk) internal {
-        address payable from = payable(_getChainDeployment("KintoWallet-admin"));
+    function _upgradeTo(address proxy, address _newImpl, uint256 signerPk) internal {
+        address payable from = payable(kintoAdminWallet);
         uint256[] memory privKeys = new uint256[](2);
-        privKeys[0] = _signerPk;
-        privKeys[1] = 0; // Ledger
+        privKeys[0] = signerPk;
+        privKeys[1] = hardwareWalletType;
 
         // if UUPS contract has UPGRADE_INTERFACE_VERSION set to 5.0.0, we use upgradeToAndCall
         bytes memory data = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, address(_newImpl));
@@ -183,160 +188,208 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
     }
 
     // TODO: should be extended to work with other initialize() that receive params
-    function _initialize(address _proxy, uint256 _signerPk) internal {
-        // fund _proxy in the paymaster if necessary
-        if (_isGethAllowed(_proxy)) {
-            IInitialize(_proxy).initialize();
+    function _initialize(address proxy, uint256 signerPk) internal {
+        // fund proxy in the paymaster if necessary
+        if (_isGethAllowed(proxy)) {
+            IInitialize(proxy).initialize();
         } else {
-            if (ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(_proxy) == 0) {
-                _fundPaymaster(_proxy, _signerPk);
+            if (ISponsorPaymaster(payable(_getChainDeployment("SponsorPaymaster"))).balances(proxy) == 0) {
+                _fundPaymaster(proxy, signerPk);
             }
             bytes memory selectorAndParams = abi.encodeWithSelector(IInitialize.initialize.selector);
-            _handleOps(selectorAndParams, _proxy, _signerPk);
+            _handleOps(selectorAndParams, proxy, signerPk);
         }
     }
 
     /// @notice transfers ownership of a contract to a new owner
     /// @dev from is the KintoWallet-admin
     /// @dev _newOwner cannot be an EOA if contract is not allowed to receive EOA calls
-    function _transferOwnership(address _proxy, uint256 _signerPk, address _newOwner) internal {
+    function _transferOwnership(address proxy, uint256 signerPk, address _newOwner) internal {
         require(_newOwner != address(0), "New owner cannot be 0");
 
-        if (_isGethAllowed(_proxy)) {
-            Ownable(_proxy).transferOwnership(_newOwner);
+        if (_isGethAllowed(proxy)) {
+            Ownable(proxy).transferOwnership(_newOwner);
         } else {
             // we don't want to allow transferring ownership to an EOA (e.g LEDGER_ADMIN) when contract is not allowed to receive EOA calls
             if (_newOwner.code.length == 0) revert("Cannot transfer ownership to EOA");
-            _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, _newOwner), _proxy, _signerPk);
+            _handleOps(abi.encodeWithSelector(Ownable.transferOwnership.selector, _newOwner), proxy, signerPk);
         }
     }
 
-    /// @notice whitelists an app in the KintoWallet
-    function _whitelistApp(address _app, uint256 _signerPk, bool _whitelist) internal {
-        address payable _wallet = payable(_getChainDeployment("KintoWallet-admin"));
-        _whitelistApp(_app, _wallet, _signerPk, _whitelist);
-    }
+    /// _whitelistApp
 
-    function _whitelistApp(address _app, address _wallet, uint256 _signerPk, bool _whitelist) internal {
+    /// @notice whitelists an app in the KintoWallet
+    function _whitelistApp(address app, bool whitelist) internal {
+        address wallet = kintoAdminWallet;
         address[] memory apps = new address[](1);
-        apps[0] = _app;
+        apps[0] = app;
 
         bool[] memory flags = new bool[](1);
-        flags[0] = _whitelist;
+        flags[0] = whitelist;
 
-        _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), _wallet, _wallet, _signerPk);
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = deployerPrivateKey;
+        privKeys[1] = hardwareWalletType;
+
+        _handleOps(
+            abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags),
+            wallet,
+            wallet,
+            0,
+            address(0),
+            privKeys
+        );
     }
 
-    function _whitelistApp(address _app, uint256 _signerPk) internal {
-        _whitelistApp(_app, _signerPk, true);
+    function _whitelistApp(address app, address wallet, uint256 signerPk, bool whitelist) internal {
+        address[] memory apps = new address[](1);
+        apps[0] = app;
+
+        bool[] memory flags = new bool[](1);
+        flags[0] = whitelist;
+
+        _handleOps(abi.encodeWithSelector(IKintoWallet.whitelistApp.selector, apps, flags), wallet, wallet, signerPk);
     }
 
-    // @notice handles ops with KintoWallet-admin as the from address
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, payable(_getChainDeployment("KintoWallet-admin")), _to, address(0), _signerPk);
+    function _whitelistApp(address app) internal {
+        _whitelistApp(app, true);
     }
 
-    // @notice handles ops with custom from address
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes memory _selectorAndParams, address _from, address _to, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, _from, _to, address(0), _signerPk);
+    /// _handleOps
+
+    function _handleOps(bytes memory selectorAndParams, address to) internal {
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = deployerPrivateKey;
+        privateKeys[1] = hardwareWalletType;
+        _handleOps(selectorAndParams, payable(kintoAdminWallet), to, 0, address(0), privateKeys);
     }
 
-    // @notice handles ops with KintoWallet-admin as the from address
-    // @dev does not use a hardware wallet
+    function _handleOps(bytes memory selectorAndParams, address to, uint256 signerPk) internal {
+        _handleOps(selectorAndParams, payable(kintoAdminWallet), to, address(0), signerPk);
+    }
+
+    function _handleOps(bytes memory selectorAndParams, address from, address to, uint256 signerPk) internal {
+        _handleOps(selectorAndParams, from, to, address(0), signerPk);
+    }
+
     function _handleOps(
-        bytes memory _selectorAndParams,
-        address _from,
-        address _to,
-        address _sponsorPaymaster,
-        uint256 _signerPk
+        bytes memory selectorAndParams,
+        address from,
+        address to,
+        address sponsorPaymaster,
+        uint256 signerPk
     ) internal {
         uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = _signerPk;
-        _handleOps(_selectorAndParams, _from, _to, 0, _sponsorPaymaster, privateKeys);
+        privateKeys[0] = signerPk;
+        _handleOps(selectorAndParams, from, to, 0, sponsorPaymaster, privateKeys);
     }
 
     // @notice handles ops with custom params
     // @dev receives a hardware wallet type (e.g "trezor", "ledger", "none")
     // if _hwType is "trezor" or "ledger", it will sign the user op with the hardware wallet
     function _handleOps(
-        bytes memory _selectorAndParams,
-        address _from,
-        address _to,
+        bytes memory selectorAndParams,
+        address from,
+        address to,
         uint256 value,
-        address _sponsorPaymaster,
-        uint256[] memory _privateKeys
+        address sponsorPaymaster,
+        uint256[] memory privateKeys
     ) internal {
         PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             block.chainid,
-            _from,
-            _to,
+            from,
+            to,
             value,
-            IKintoWallet(_from).getNonce(),
-            _privateKeys,
-            _selectorAndParams,
-            _sponsorPaymaster
+            IKintoWallet(from).getNonce(),
+            privateKeys,
+            selectorAndParams,
+            sponsorPaymaster
         );
         vm.broadcast(deployerPrivateKey);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_privateKeys[0])));
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
     }
 
-    // @notice handles ops with multiple ops and destinations
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes[] memory _selectorAndParams, address[] memory _tos, uint256 _signerPk) internal {
-        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
+    /// _handleOpsBatch
+
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address[] memory tos, uint256 signerPk) internal {
+        _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
     }
 
-    // @notice handles ops with multiple ops but same destinations
-    // @dev does not use a sponsorPaymaster
-    // @dev does not use a hardware wallet
-    function _handleOps(bytes[] memory _selectorAndParams, address _to, uint256 _signerPk) internal {
-        address[] memory _tos;
-        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
-            _tos[i] = _to;
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address to, uint256 signerPk) internal {
+        address[] memory tos;
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            tos[i] = to;
         }
-        _handleOps(_selectorAndParams, _tos, address(0), _signerPk);
+        _handleOpsBatch(selectorAndParams, tos, address(0), signerPk);
+    }
+
+    function _handleOpsBatch(bytes[] memory selectorAndParams, address to) internal {
+        address[] memory tos = new address[](selectorAndParams.length);
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = deployerPrivateKey;
+        privateKeys[1] = hardwareWalletType;
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            tos[i] = to;
+        }
+        _handleOpsBatch(selectorAndParams, tos, address(0), privateKeys);
     }
 
     // @notice handles ops with multiple ops and destinations
     // @dev uses a sponsorPaymaster
     // @dev does not use a hardware wallet
-    function _handleOps(
-        bytes[] memory _selectorAndParams,
-        address[] memory _tos,
-        address _sponsorPaymaster,
-        uint256 _signerPk
+    function _handleOpsBatch(
+        bytes[] memory selectorAndParams,
+        address[] memory tos,
+        address sponsorPaymaster,
+        uint256 signerPk
     ) internal {
-        require(_selectorAndParams.length == _tos.length, "_selectorAndParams and _tos mismatch");
-        address payable _from = payable(_getChainDeployment("KintoWallet-admin"));
+        require(selectorAndParams.length == tos.length, "selectorAndParams and tos mismatch");
+        address payable from = payable(kintoAdminWallet);
         uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = _signerPk;
+        privateKeys[0] = signerPk;
 
         PackedUserOperation[] memory userOps = new PackedUserOperation[](_selectorAndParams.length);
         uint256 nonce = IKintoWallet(_from).getNonce();
         for (uint256 i = 0; i < _selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
-                block.chainid, _from, _tos[i], 0, nonce, privateKeys, _selectorAndParams[i], _sponsorPaymaster
+                block.chainid, from, tos[i], 0, nonce, privateKeys, selectorAndParams[i], sponsorPaymaster
             );
             nonce++;
         }
         vm.broadcast(deployerPrivateKey);
-        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(_signerPk)));
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(signerPk)));
     }
 
-    function _fundPaymaster(address _proxy, uint256 _signerPk) internal {
+    function _handleOpsBatch(
+        bytes[] memory selectorAndParams,
+        address[] memory tos,
+        address sponsorPaymaster,
+        uint256[] memory privateKeys
+    ) internal {
+        require(selectorAndParams.length == tos.length, "selectorAndParams and tos mismatch");
+        address payable from = payable(kintoAdminWallet);
+
+        UserOperation[] memory userOps = new UserOperation[](selectorAndParams.length);
+        uint256 nonce = IKintoWallet(from).getNonce();
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
+            userOps[i] = _createUserOperation(
+                block.chainid, from, tos[i], 0, nonce, privateKeys, selectorAndParams[i], sponsorPaymaster
+            );
+            nonce++;
+        }
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
+    }
+
+    function _fundPaymaster(address proxy, uint256 signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
-        vm.broadcast(_signerPk);
-        _paymaster.addDepositFor{value: 0.00000001 ether}(_proxy);
-        assertEq(_paymaster.balances(_proxy), 0.00000001 ether);
+        vm.broadcast(signerPk);
+        _paymaster.addDepositFor{value: 0.00000001 ether}(proxy);
+        assertEq(_paymaster.balances(proxy), 0.00000001 ether);
     }
 
-    function _isGethAllowed(address _contract) internal returns (bool _isAllowed) {
+    function _isGethAllowed(address target) internal returns (bool) {
         // contracts allowed to receive EOAs calls
         address[6] memory GETH_ALLOWED_CONTRACTS = [
             _getChainDeployment("EntryPoint"),
@@ -347,21 +400,23 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
             _getChainDeployment("BundleBulker")
         ];
 
-        // check if contract is a geth allowed contract
+        // check if contract is a Geth allowed contract
         for (uint256 i = 0; i < GETH_ALLOWED_CONTRACTS.length; i++) {
-            if (_contract == GETH_ALLOWED_CONTRACTS[i]) {
-                _isAllowed = true;
-                break;
+            if (target == GETH_ALLOWED_CONTRACTS[i]) {
+                return true;
             }
         }
+
+        return false;
     }
 
-    // @dev this is a workaround to get the address of the KintoWallet-admin in test mode
-    function _getChainDeployment(string memory _contractName) internal override returns (address _contract) {
-        if (testMode && keccak256(abi.encode(_contractName)) == keccak256(abi.encode("KintoWallet-admin"))) {
-            return vm.envAddress("KINTO_ADMIN_WALLET");
-        }
-        return super._getChainDeployment(_contractName);
+    /// @dev By calling upgrade again with the old implementation, we ensure
+    /// that the new implementation is at least capable of upgrading itself to
+    /// an old version, which is sufficient to fix any issues.
+    function verifyWalletUpgrade(address oldImpl) internal {
+        vm.startPrank(kintoAdminWallet);
+        factory.upgradeAllWalletImplementations(IKintoWallet(oldImpl));
+        vm.stopPrank();
     }
 
     function etchWallet(address wallet) internal {
@@ -369,7 +424,8 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         KintoWallet impl = new KintoWallet(
             IEntryPoint(_getChainDeployment("EntryPoint")),
             IKintoID(_getChainDeployment("KintoID")),
-            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry"))
+            IKintoAppRegistry(_getChainDeployment("KintoAppRegistry")),
+            IKintoWalletFactory(_getChainDeployment("KintoWalletFactory"))
         );
         vm.etch(wallet, address(impl).code);
     }
@@ -385,5 +441,48 @@ contract MigrationHelper is Script, DeployerHelper, UserOp, SaltHelper, Constant
         wallet.resetSigners(owners, policy);
 
         require(wallet.owners(1) == newOwner, "Failed to replace signer");
+    }
+
+    function deployBridgedToken(string memory symbol, string memory name, uint256 decimals, string memory startsWith)
+        internal
+    {
+        // deploy token
+        bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
+        address implementation = _deployImplementation(name, "V1", bytecode, keccak256(abi.encodePacked(name, symbol)));
+
+        bytes32 initCodeHash = keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(implementation, "")));
+        (bytes32 salt, address expectedAddress) = mineSalt(initCodeHash, startsWith);
+
+        address proxy = _deployProxy(name, implementation, salt);
+
+        console2.log("Proxy deployed @%s", proxy);
+        console2.log("Expected address: %s", expectedAddress);
+        assertEq(proxy, expectedAddress);
+
+        _whitelistApp(proxy);
+
+        _handleOps(
+            abi.encodeWithSelector(
+                BridgedToken.initialize.selector, name, symbol, kintoAdminWallet, kintoAdminWallet, kintoAdminWallet
+            ),
+            proxy
+        );
+
+        BridgedToken bridgedToken = BridgedToken(proxy);
+
+        assertEq(bridgedToken.name(), name);
+        assertEq(bridgedToken.symbol(), symbol);
+        assertEq(bridgedToken.decimals(), decimals);
+        assertTrue(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), kintoAdminWallet), "Admin role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), kintoAdminWallet), "Minter role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), kintoAdminWallet), "Upgrader role not set");
+
+        console2.log("All checks passed!");
+
+        console2.log("%s implementation deployed @%s", symbol, implementation);
+        console2.log("%s deployed @%s", symbol, address(bridgedToken));
+
+        saveContractAddress(string.concat(symbol, "-impl"), implementation);
+        saveContractAddress(symbol, address(bridgedToken));
     }
 }

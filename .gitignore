@@ -8,6 +8,7 @@ bin
 
 # Dotenv file
 .env
+hf.env
 
 # node
 node_modules/
@@ -23,3 +24,5 @@ certora/munged/*
 # Ignore local chain
 **/31337/**
 
+
+jupyter/.ipynb_checkpoints/

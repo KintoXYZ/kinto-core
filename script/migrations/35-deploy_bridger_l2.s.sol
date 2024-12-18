@@ -14,7 +14,7 @@ contract KintoMigration35DeployScript is MigrationHelper {
         address implementation = _deployImplementation("BridgerL2", "V1", bytecode);
         address proxy = _deployProxy("BridgerL2", implementation);
 
-        _whitelistApp(proxy, deployerPrivateKey);
+        _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);
         // _transferOwnership(proxy, deployerPrivateKey, vm.envAddress("LEDGER_ADMIN"));
         assertEq(address(BridgerL2(proxy).walletFactory()), vm.envAddress("KINTO_WALLET_FACTORY"));

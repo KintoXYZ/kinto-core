@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IPaymaster} from "@aa/interfaces/IPaymaster.sol";
 import {BasePaymaster} from "@aa/core/BasePaymaster.sol";
 import {UserOperationLib} from "@aa/core/UserOperationLib.sol";
 
@@ -11,11 +12,112 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {ISponsorPaymaster} from "../interfaces/ISponsorPaymaster.sol";
-import {IKintoAppRegistry} from "../interfaces/IKintoAppRegistry.sol";
-import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
-import {IKintoID} from "../interfaces/IKintoID.sol";
+import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
+
+/**
+ * Helper class for creating a paymaster.
+ * provides helper methods for staking.
+ * Validates that the postOp is called only by the entryPoint.
+ */
+abstract contract BasePaymaster is IPaymaster, Ownable {
+    IEntryPoint public immutable entryPoint;
+
+    constructor(IEntryPoint _entryPoint) {
+        entryPoint = _entryPoint;
+    }
+
+    /// @inheritdoc IPaymaster
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        external
+        override
+        returns (bytes memory context, uint256 validationData)
+    {
+        _requireFromEntryPoint();
+        return _validatePaymasterUserOp(userOp, userOpHash, maxCost);
+    }
+
+    /**
+     * Validate a user operation.
+     * @param userOp     - The user operation.
+     * @param userOpHash - The hash of the user operation.
+     * @param maxCost    - The maximum cost of the user operation.
+     */
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+        internal
+        virtual
+        returns (bytes memory context, uint256 validationData);
+
+    /// @inheritdoc IPaymaster
+    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) external override {
+        _requireFromEntryPoint();
+        _postOp(mode, context, actualGasCost);
+    }
+
+    /**
+     * Post-operation handler.
+     * (verified to be called only through the entryPoint)
+     * @dev If subclass returns a non-empty context from validatePaymasterUserOp,
+     *      it must also implement this method.
+     * @param mode          - Enum with the following options:
+     *                        opSucceeded - User operation succeeded.
+     *                        opReverted  - User op reverted. still has to pay for gas.
+     *                        postOpReverted - User op succeeded, but caused postOp (in mode=opSucceeded) to revert.
+     *                                         Now this is the 2nd call, after user's op was deliberately reverted.
+     * @param context       - The context value returned by validatePaymasterUserOp
+     * @param actualGasCost - Actual gas used so far (without this postOp call).
+     */
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual {
+        (mode, context, actualGasCost); // unused params
+        // subclass must override this method if validatePaymasterUserOp returns a context
+        revert("must override");
+    }
+
+    /**
+     * Add stake for this paymaster.
+     * This method can also carry eth value to add to the current stake.
+     * @param unstakeDelaySec - The unstake delay for this paymaster. Can only be increased.
+     */
+    function addStake(uint32 unstakeDelaySec) external payable onlyOwner {
+        entryPoint.addStake{value: msg.value}(unstakeDelaySec);
+    }
+
+    /**
+     * Return current paymaster's deposit on the entryPoint.
+     */
+    function getDeposit() public view returns (uint256) {
+        return entryPoint.balanceOf(address(this));
+    }
+
+    /**
+     * Unlock the stake, in order to withdraw it.
+     * The paymaster can't serve requests once unlocked, until it calls addStake again
+     */
+    function unlockStake() external onlyOwner {
+        entryPoint.unlockStake();
+    }
+
+    /**
+     * Withdraw the entire paymaster's stake.
+     * stake must be unlocked first (and then wait for the unstakeDelay to be over)
+     * @param withdrawAddress - The address to send withdrawn value.
+     */
+    function withdrawStake(address payable withdrawAddress) external onlyOwner {
+        entryPoint.withdrawStake(withdrawAddress);
+    }
+
+    /**
+     * Validate the call is made from a valid entrypoint
+     */
+    function _requireFromEntryPoint() internal virtual {
+        require(msg.sender == address(entryPoint), "Sender not EntryPoint");
+    }
+}
 
 /**
  * @notice An ETH-based paymaster that accepts ETH deposits
@@ -34,23 +136,33 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     using SafeERC20 for IERC20;
     using UserOperationLib for PackedUserOperation;
 
+    /* ============ Constants & Immutables ============ */
+
     // calculated cost of the postOp
     uint256 public constant COST_OF_POST = 200_000;
     uint256 public constant MAX_COST_OF_VERIFICATION = 530_000;
-    uint256 public constant MAX_COST_OF_PREVERIFICATION = 2_500_000;
+    uint256 public constant MAX_COST_OF_PREVERIFICATION = 4_000_000;
 
     uint256 public constant RATE_LIMIT_PERIOD = 1 minutes;
     uint256 public constant RATE_LIMIT_THRESHOLD_TOTAL = 50;
+
+    /// @notice The KintoWalletFactory contract
+    IKintoWalletFactory public immutable override walletFactory;
+
+    /* ============ State Variables ============ */
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public contractSpent; // keeps track of total gas consumption by contract
     mapping(address => uint256) public unlockBlock;
 
     // rate & cost limits per user per app: user => app => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public rateLimit;
+    // slither-disable-next-line uninitialized-state
     mapping(address => mapping(address => ISponsorPaymaster.RateLimitData)) public costLimit;
 
     // rate limit across apps: user => RateLimitData
+    // slither-disable-next-line uninitialized-state
     mapping(address => ISponsorPaymaster.RateLimitData) public globalRateLimit;
 
     IKintoAppRegistry public override appRegistry;
@@ -65,8 +177,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
 
     // ========== Constructor & Upgrades ============
 
-    constructor(IEntryPoint __entryPoint) BasePaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory _walletFactory) BasePaymaster(__entryPoint) {
         _disableInitializers();
+        walletFactory = _walletFactory;
     }
 
     /**
@@ -110,7 +223,9 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
      */
     function addDepositFor(address account) external payable override {
         if (msg.value == 0) revert InvalidAmount();
-        if (!kintoID.isKYC(msg.sender) && msg.sender != owner()) revert SenderKYCRequired();
+        if (!kintoID.isKYC(msg.sender) && msg.sender != owner() && walletFactory.walletTs(msg.sender) == 0) {
+            revert SenderKYCRequired();
+        }
         if (account.code.length == 0 && !kintoID.isKYC(account)) revert AccountKYCRequired();
 
         // sender must have approval for the paymaster
@@ -118,7 +233,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (msg.sender == account) {
             lockTokenDeposit();
         }
-        deposit();
+        entryPoint.depositTo{value: msg.value}(address(this));
     }
 
     /**
@@ -138,8 +253,7 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 
     /**
-     * Withdraw ETH
-     * can only be called after unlock() is called in a previous block.
+     * Withdraw ETH can only be called after unlock() is called in a previous block.
      * @param target address to send to
      * @param amount amount to withdraw
      */
@@ -234,9 +348,16 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
         if (ethMaxCost > userOpMaxCost) revert GasTooHighForUserOp();
 
-        address sponsor = appRegistry.getSponsor(_decodeCallData(userOp.callData));
+        address sponsor = appRegistry.getApp(_decodeCallData(userOp.callData));
         if (unlockBlock[sponsor] != 0) revert DepositNotLocked();
-        if (balances[sponsor] < ethMaxCost) revert DepositTooLow();
+        if (balances[sponsor] < ethMaxCost) {
+            // Apps need to pay
+            if (sponsor != userOp.sender) {
+                revert DepositTooLow();
+            }
+            // Wallets get auto funded by kinto core app
+            sponsor = appRegistry.getApp(address(walletFactory));
+        }
         return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
     }
 
@@ -344,6 +465,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     }
 }
 
-contract SponsorPaymasterV10 is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint) SponsorPaymaster(__entryPoint) {}
+contract SponsorPaymasterV15 is SponsorPaymaster {
+    constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 }

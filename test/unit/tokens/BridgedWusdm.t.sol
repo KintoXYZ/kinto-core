@@ -7,17 +7,14 @@ import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/SharedSetup.t.sol";
 
 contract BridgedWusdmTest is SharedSetup {
-    address admin;
     address minter;
     address upgrader;
-    address alice;
 
     BridgedWusdm internal token;
 
     function setUp() public override {
         super.setUp();
 
-        admin = createUser("admin");
         minter = createUser("minter");
         upgrader = createUser("upgrader");
 

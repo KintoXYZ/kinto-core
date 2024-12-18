@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import { StakeManager } from "lib/account-abstraction/contracts/core/StakeManager.sol";
+import { StakeManager } from "@aa/core/StakeManager.sol";
 
 interface IEntryPoint {
     function walletFactory() external view returns (address);

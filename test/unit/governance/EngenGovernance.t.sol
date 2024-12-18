@@ -13,8 +13,8 @@ contract EngenGovernanceTest is SharedSetup {
 
     function setUp() public override {
         super.setUp();
-        registerApp(_owner, "engen credits", address(_engenCredits));
-        registerApp(_owner, "engen governance", address(_engenGovernance));
+        registerApp(address(_kintoWallet), "engen credits", address(_engenCredits), new address[](0));
+        registerApp(address(_kintoWallet), "engen governance", address(_engenGovernance), new address[](0));
         fundSponsorForApp(_owner, address(_engenCredits));
         fundSponsorForApp(_owner, address(_engenGovernance));
         _counter = address(new Counter());

@@ -32,32 +32,44 @@ import "@solady/utils/LibZip.sol";
 /// The rest of the flags are not used.
 /// All other UserOperation fields are encoded as is.
 contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
-    mapping(string => address) public kintoContracts; // mapping of Kinto contract names to addresses
-    mapping(address => string) public kintoNames; // mapping of Kinto contract addresses to names
+    /// @notice Mapping of Kinto contract names to addresses
+    mapping(string => address) public kintoContracts;
+
+    /// @notice Mapping of Kinto contract addresses to names
+    mapping(address => string) public kintoNames;
 
     event KintoContractSet(string name, address target);
 
     /* ============ Constructor & Upgrades ============ */
 
+    /// @dev Prevents initialization of the implementation contract
     constructor() {
         _disableInitializers();
     }
 
-    /// @dev Upgrade calling `upgradeTo()`
+    /**
+     * @notice Initializes the contract
+     * @dev Sets up initial state and transfers ownership to the deployer
+     */
     function initialize() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
         _transferOwnership(msg.sender);
     }
 
-    /// @dev Authorize the upgrade. Only by an owner.
-    /// @param newImplementation address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-        (newImplementation);
-    }
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Can only be called by the contract owner
+     */
+    function _authorizeUpgrade(address) internal view override onlyOwner {}
 
     /* ============ Inflate & Compress ============ */
 
+    /**
+     * @notice Inflates a compressed UserOperation
+     * @param compressed The compressed UserOperation as bytes
+     * @return op The inflated UserOperation
+     */
     function inflate(bytes calldata compressed) external view returns (PackedUserOperation memory op) {
         // decompress the data
         return this._inflate(LibZip.flzDecompress(compressed));
@@ -125,72 +137,81 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         return op;
     }
 
+    /**
+     * @notice Compresses a UserOperation for efficient storage and transmission
+     * @param op The UserOperation to compress
+     * @return compressed The compressed UserOperation as bytes
+     */
     function compress(PackedUserOperation memory op) external view returns (bytes memory compressed) {
         // initialize a dynamic bytes array for the pre-compressed data
         bytes memory buffer = new bytes(1024); // arbitrary size of 1024 bytes (resized later)
         uint256 cursor = 0;
 
         // decode `callData` (selector, target, value, bytesOp)
-
-        // decode selector and prepare callData
         bytes4 selector = bytes4(_slice(op.callData, 0, 4));
         bytes memory callData = _slice(op.callData, 4, op.callData.length - 4);
 
-        // set flags based on conditions into buffer
-        buffer[cursor] = bytes1(_flags(selector, op, callData));
-        cursor += 1;
+        // set flags based on conditions
+        buffer = abi.encodePacked(buffer, bytes1(_flags(selector, op, callData)));
 
         // encode `sender`, `nonce` and `initCode`
-        cursor = _encodeAddress(op.sender, buffer, cursor);
-        cursor = _encodeUint32(op.nonce, buffer, cursor); // we assume `nonce` can't fits in 32 bits
-        cursor = _encodeBytes(op.initCode, buffer, cursor);
+        buffer = abi.encodePacked(buffer, op.sender, uint32(op.nonce), uint32(op.initCode.length), op.initCode);
 
         // encode `callData` depending on the selector
         if (selector == IKintoWallet.execute.selector) {
             // if selector is `execute`, encode the callData as a single operation
             (address target, uint256 value, bytes memory bytesOp) = abi.decode(callData, (address, uint256, bytes));
-            cursor = _encodeExecuteCalldata(op, target, value, bytesOp, buffer, cursor);
+            buffer = _encodeExecuteCalldata(op, target, value, bytesOp, buffer);
         } else {
             // if selector is `executeBatch`, encode the callData as a batch of operations
             (address[] memory targets, uint256[] memory values, bytes[] memory bytesOps) =
                 abi.decode(callData, (address[], uint256[], bytes[]));
-            cursor = _encodeExecuteBatchCalldata(targets, values, bytesOps, buffer, cursor);
+            buffer = _encodeExecuteBatchCalldata(targets, values, bytesOps, buffer);
         }
 
-        // encode gas params: `callGasLimit`, `verificationGasLimit`, `preVerificationGas`, `maxFeePerGas`, `maxPriorityFeePerGas`
-        cursor = _encodeUint256(op.callGasLimit, buffer, cursor);
-        cursor = _encodeUint256(op.verificationGasLimit, buffer, cursor);
-        cursor = _encodeUint32(op.preVerificationGas, buffer, cursor);
-        cursor = _encodeUint48(op.maxFeePerGas, buffer, cursor);
-        cursor = _encodeUint48(op.maxPriorityFeePerGas, buffer, cursor);
-
-        // encode `paymasterAndData` (we assume always the same paymaster so we don't need to encode it)
-        // cursor = _encodeBytes(op.paymasterAndData, buffer, cursor);
+        // encode gas params
+        buffer = abi.encodePacked(
+            buffer,
+            op.callGasLimit,
+            op.verificationGasLimit,
+            uint32(op.preVerificationGas),
+            uint48(op.maxFeePerGas),
+            uint48(op.maxPriorityFeePerGas)
+        );
 
         // encode `signature` content
-        cursor = _encodeBytes(op.signature, buffer, cursor);
+        buffer = abi.encodePacked(buffer, uint32(op.signature.length), op.signature);
 
-        // trim buffer size to the actual data length
-        compressed = new bytes(cursor);
-        for (uint256 i = 0; i < cursor; i++) {
-            compressed[i] = buffer[i];
-        }
-
-        return LibZip.flzCompress(compressed);
+        return LibZip.flzCompress(buffer);
     }
 
     /* ============ Simple compress/inflate ============ */
 
+    /**
+     * @notice Inflates a UserOperation compressed with the simple algorithm
+     * @param compressed The compressed UserOperation as bytes
+     * @return op The inflated UserOperation
+     */
     function inflateSimple(bytes calldata compressed) external pure returns (PackedUserOperation memory op) {
         op = abi.decode(LibZip.flzDecompress(compressed), (PackedUserOperation));
     }
 
-    function compressSimple(PackedUserOperation memory op) external pure returns (bytes memory compressed) {
+    /**
+     * @notice Compresses a UserOperation using a simple compression algorithm
+     * @param op The UserOperation to compress
+     * @return compressed The compressed UserOperation as bytes
+     */
+    function compressSimple(UserOperation memory op) external pure returns (bytes memory compressed) {
         compressed = LibZip.flzCompress(abi.encode(op));
     }
 
     /* ============ Auth methods ============ */
 
+    /**
+     * @notice Sets or updates a Kinto contract
+     * @param name The name of the Kinto contract
+     * @param target The address of the Kinto contract
+     */
     function setKintoContract(string memory name, address target) external onlyOwner {
         kintoContracts[name] = target;
         kintoNames[target] = name;
@@ -283,6 +304,13 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
     /* ============ Compress Helpers ============ */
 
+    /**
+     * @notice Determines the flags for a UserOperation
+     * @param selector The function selector
+     * @param op The UserOperation
+     * @param callData The calldata
+     * @return flags The determined flags
+     */
     function _flags(bytes4 selector, PackedUserOperation memory op, bytes memory callData)
         internal
         view
@@ -305,65 +333,62 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice Encodes the calldata for an execute operation
+     * @param op The UserOperation
+     * @param target The target address
+     * @param value The value to send
+     * @param bytesOp The operation bytes
+     * @param buffer The current buffer
+     * @return The updated buffer
+     */
     function _encodeExecuteCalldata(
         PackedUserOperation memory op,
         address target,
         uint256 value,
         bytes memory bytesOp,
-        bytes memory buffer,
-        uint256 index
-    ) internal view returns (uint256 newIndex) {
-        // 1. encode `target`
-
-        // if sender and target are different, encode the target address
-        // otherwise, we don't need to encode the target at all
+        bytes memory buffer
+    ) internal view returns (bytes memory) {
         if (op.sender != target) {
-            // if target is a Kinto contract, encode the Kinto contract name
             if (_isKintoContract(target)) {
                 string memory name = kintoNames[target];
-                bytes memory nameBytes = bytes(name);
-                buffer[index] = bytes1(uint8(nameBytes.length));
-                index += 1;
-                for (uint256 i = 0; i < nameBytes.length; i++) {
-                    buffer[index + i] = nameBytes[i];
-                }
-                index += nameBytes.length;
+                buffer = abi.encodePacked(buffer, uint8(bytes(name).length), name);
             } else {
-                // if target is not a Kinto contract, encode the target address
-                index = _encodeAddress(target, buffer, index);
+                buffer = abi.encodePacked(buffer, target);
             }
         }
 
-        // 2. encode `value`
-        index = _encodeUint256(value, buffer, index);
-
-        // 3. encode `bytesOp` length and content
-        newIndex = _encodeBytes(bytesOp, buffer, index);
+        return abi.encodePacked(buffer, value, uint32(bytesOp.length), bytesOp);
     }
 
+    /**
+     * @notice Encodes the calldata for an executeBatch operation
+     * @param targets The target addresses
+     * @param values The values to send
+     * @param bytesOps The operation bytes
+     * @param buffer The current buffer
+     * @return The updated buffer
+     */
     function _encodeExecuteBatchCalldata(
         address[] memory targets,
         uint256[] memory values,
         bytes[] memory bytesOps,
-        bytes memory buffer,
-        uint256 index
-    ) internal pure returns (uint256 newIndex) {
-        // encode number of operations in the batch
-        buffer[index] = bytes1(uint8(targets.length));
-        index += 1;
+        bytes memory buffer
+    ) internal view returns (bytes memory) {
+        buffer = abi.encodePacked(buffer, uint8(targets.length));
 
-        // encode targets (as addresses, potentially we can improve this)
         for (uint8 i = 0; i < uint8(targets.length); i++) {
-            index = _encodeAddress(targets[i], buffer, index);
+            if (_isKintoContract(targets[i])) {
+                string memory name = kintoNames[targets[i]];
+                buffer = abi.encodePacked(buffer, uint8(bytes(name).length), name);
+            } else {
+                buffer = abi.encodePacked(buffer, targets[i]);
+            }
 
-            // encode value
-            index = _encodeUint256(values[i], buffer, index);
-
-            // encode bytesOps content
-            index = _encodeBytes(bytesOps[i], buffer, index);
+            buffer = abi.encodePacked(buffer, values[i], uint32(bytesOps[i].length), bytesOps[i]);
         }
 
-        newIndex = index;
+        return buffer;
     }
 
     /* ============ Utils ============ */

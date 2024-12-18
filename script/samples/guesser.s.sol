@@ -9,23 +9,21 @@ import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "../../test/helpers/AASetup.sol";
 import "../../test/helpers/UserOp.sol";
+import "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 
 /// @notice This script deploys an `ETHPriceIsRight` contract (skips deployment if already exists) and executes a user operation that calls the `enterGuess()` function using your smart account.
-contract KintoGuesserScript is AASetup, UserOp {
+contract KintoGuesserScript is MigrationHelper {
     EntryPoint _entryPoint;
     SponsorPaymaster _sponsorPaymaster;
     IKintoWallet _newWallet;
     KintoWalletFactory _walletFactory;
 
-    function setUp() public {
-        (, _entryPoint, _walletFactory, _sponsorPaymaster) = _checkAccountAbstraction();
-        console.log("All AA setup is correct");
-    }
+    function setUp() public {}
 
-    function run() public {
+    function run() public override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerPublicKey = vm.addr(deployerPrivateKey);
         console.log("Deployer is", vm.addr(deployerPrivateKey));
@@ -40,15 +38,12 @@ contract KintoGuesserScript is AASetup, UserOp {
         _newWallet = IKintoWallet(newWallet);
 
         // ETHPriceIsRight contract
-        address computed = _walletFactory.getContractAddress(
-            bytes32(0), keccak256(abi.encodePacked(type(ETHPriceIsRight).creationCode))
-        );
+        address computed = computeAddress(bytes32(0), abi.encodePacked(type(ETHPriceIsRight).creationCode));
         if (!isContract(computed)) {
             vm.broadcast(deployerPrivateKey);
-            address created = _walletFactory.deployContract(
-                deployerPublicKey, 0, abi.encodePacked(type(ETHPriceIsRight).creationCode), bytes32(0)
-            );
-            console.log("ETHPriceIsRight contract deployed at", created);
+            ETHPriceIsRight created = new ETHPriceIsRight{salt: bytes32(0)}();
+            created.transferOwnership(deployerPublicKey);
+            console.log("ETHPriceIsRight contract deployed at", address(created));
         } else {
             console.log("ETHPriceIsRight already deployed at", computed);
         }

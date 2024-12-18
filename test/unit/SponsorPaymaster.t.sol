@@ -11,11 +11,16 @@ import "@kinto-core/apps/KintoAppRegistry.sol";
 import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/sample/Counter.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
 import "@kinto-core-test/SharedSetup.t.sol";
 
+import "forge-std/console2.sol";
+
 contract SponsorPaymasterUpgrade is SponsorPaymaster {
-    constructor(IEntryPoint __entryPoint, address _owner) SponsorPaymaster(__entryPoint) {
+    constructor(IEntryPoint __entryPoint, IKintoWalletFactory factory, address _owner)
+        SponsorPaymaster(__entryPoint, factory)
+    {
         _disableInitializers();
         _transferOwnership(_owner);
     }
@@ -42,10 +47,8 @@ contract SponsorPaymasterTest is SharedSetup {
     event AppRegistrySet(address oldRegistry, address newRegistry);
     event UserOpMaxCostSet(uint256 oldUserOpMaxCost, uint256 newUserOpMaxCost);
 
-    /* ============ Upgrade ============ */
-
     function testUpgradeTo() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
+        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _walletFactory, _owner);
 
         vm.prank(_owner);
         _paymaster.upgradeTo(address(_newImplementation));
@@ -55,12 +58,23 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        SponsorPaymasterUpgrade _newImplementation = new SponsorPaymasterUpgrade(_entryPoint, _owner);
         vm.expectRevert(ISponsorPaymaster.OnlyOwner.selector);
-        _paymaster.upgradeTo(address(_newImplementation));
+        _paymaster.upgradeTo(address(this));
     }
 
-    /* ============ Deposit & Stake ============ */
+    /* ============ addDepositFor ============ */
+
+    function testAddDepositFor_WhenWallet() public {
+        uint256 amount = 1e18;
+        vm.deal(address(_kintoWallet), amount);
+        uint256 balance = address(_kintoWallet).balance;
+
+        vm.prank(address(_kintoWallet));
+        _paymaster.addDepositFor{value: amount}(address(_owner));
+
+        assertEq(address(_kintoWallet).balance, balance - amount);
+        assertEq(_paymaster.balances(_owner), amount);
+    }
 
     function testAddDepositFor_WhenAccountIsEOA_WhenAccountIsKYCd() public {
         uint256 balance = address(_owner).balance;
@@ -97,6 +111,8 @@ contract SponsorPaymasterTest is SharedSetup {
         vm.prank(_owner);
         _paymaster.addDepositFor{value: 5e18}(address(_user));
     }
+
+    /* ============ withdrawTokensTo ============ */
 
     function testWithdrawTokensTo(uint256 someonePk) public {
         // ensure the private key is within the valid range for Ethereum
@@ -160,8 +176,8 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testWithdrawTokensTo_RevertWhen_DepositLocked() public {
-        uint256 balance = _user.balance;
         approveKYC(_kycProvider, _user, _userPk);
+        uint256 balance = _user.balance;
 
         vm.prank(_user);
         _paymaster.addDepositFor{value: 5e18}(_user);
@@ -203,32 +219,7 @@ contract SponsorPaymasterTest is SharedSetup {
         _paymaster.withdrawTokensTo(address(_entryPoint), 5e18);
     }
 
-    function testWithrawTo_WhenCallerIsOwner() public {
-        uint256 deposited = _paymaster.getDeposit();
-        approveKYC(_kycProvider, _user, _userPk);
-
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_user));
-
-        vm.prank(_owner);
-        _paymaster.addDepositFor{value: 5e18}(address(_owner));
-
-        assertEq(_paymaster.getDeposit(), deposited + 10e18);
-
-        deposited = _paymaster.getDeposit();
-
-        uint256 balBefore = address(_owner).balance;
-        vm.prank(_owner);
-        _paymaster.withdrawTo(payable(_owner), deposited);
-
-        assertEq(address(_paymaster).balance, 0);
-        assertEq(address(_owner).balance, balBefore + deposited);
-    }
-
-    function testWithrawTo_RevertWhen_CallerIsNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        _paymaster.withdrawTo(payable(_user), address(_entryPoint).balance);
-    }
+    /* ============ depositInfo ============ */
 
     function testDepositInfo_WhenCallerDepositsToHimself() public {
         vm.prank(_owner);
@@ -262,6 +253,23 @@ contract SponsorPaymasterTest is SharedSetup {
 
         vm.prank(address(_entryPoint));
         _paymaster.validatePaymasterUserOp(userOp, "", 0);
+    }
+
+    function testValidatePaymasterUserOp_WhenWalletIsApp() public {
+        address wallet = address(alice);
+        UserOperation memory userOp = _createUserOperation(
+            wallet, wallet, 0, privateKeys, abi.encodeWithSignature("increment()"), address(_paymaster)
+        );
+
+        address kintoCoreApp = _paymaster.appRegistry().getApp(address(_walletFactory));
+
+        vm.prank(address(_entryPoint));
+        (bytes memory context, uint256 validationData) = _paymaster.validatePaymasterUserOp(userOp, "", 0.01 ether);
+
+        assertEq(validationData, 0);
+        (address sponsor, address sender,,) = abi.decode(context, (address, address, uint256, uint256));
+        assertEq(sponsor, kintoCoreApp, "Sponsor for the wallet has to be a Kinto App");
+        assertEq(sender, wallet, "Sender has to be a wallet");
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() public {
@@ -397,10 +405,10 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = [
             _paymaster.RATE_LIMIT_PERIOD() + 1,
             _paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+            GAS_LIMIT_PERIOD,
+            GAS_LIMIT_THRESHOLD
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
         _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -419,10 +427,10 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = [
             _paymaster.RATE_LIMIT_PERIOD() + 1,
             _paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+            GAS_LIMIT_PERIOD,
+            GAS_LIMIT_THRESHOLD
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // execute transactions (with one user op per tx) one by one until reaching the threshold
         _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -446,10 +454,10 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = [
             _paymaster.RATE_LIMIT_PERIOD() + 1,
             _paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+            GAS_LIMIT_PERIOD,
+            GAS_LIMIT_THRESHOLD
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // generate ops until reaching the threshold
         UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
@@ -463,10 +471,10 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = [
             _paymaster.RATE_LIMIT_PERIOD() + 1,
             _paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            _kintoAppRegistry.GAS_LIMIT_THRESHOLD()
+            GAS_LIMIT_PERIOD,
+            GAS_LIMIT_THRESHOLD
         ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // generate ops until reaching the threshold and assert that it reverts
         UserOperation[] memory userOps =
@@ -541,13 +549,8 @@ contract SponsorPaymasterTest is SharedSetup {
         /// fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
         /// @dev create app with high app limits and low gas limit so we assert that the one used
         // in the test is the gas limit
-        uint256[4] memory appLimits = [
-            100e18,
-            100e18,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            0.000000000001 ether //
-        ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        uint256[4] memory appLimits = [100e18, 100e18, GAS_LIMIT_PERIOD, 1 wei];
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // execute transactions (with one user op per tx) one by one until reaching the gas limit
         _incrementCounterTxsUntilGasLimit(address(counter));
@@ -565,13 +568,8 @@ contract SponsorPaymasterTest is SharedSetup {
         /// fixme: once _setOperationCount works fine, refactor and use _setOperationCount;
         /// @dev create app with high app limits and low gas limit so we assert that the one used
         // in the test is the gas limit
-        uint256[4] memory appLimits = [
-            100e18,
-            100e18,
-            _kintoAppRegistry.GAS_LIMIT_PERIOD(),
-            0.000000000001 ether //
-        ];
-        updateMetadata(_owner, "counter", address(counter), appLimits);
+        uint256[4] memory appLimits = [100e18, 100e18, GAS_LIMIT_PERIOD, 1 wei];
+        updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // execute transactions until reaching gas limit and save the amount of apps that reached the threshold
         uint256 amt = _incrementCounterTxsUntilGasLimit(address(counter));

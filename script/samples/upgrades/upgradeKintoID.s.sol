@@ -9,7 +9,7 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 contract KintoIDV2 is KintoID {
-    constructor(address _walletFactory) KintoID(_walletFactory) {}
+    constructor(address _walletFactory, address _faucet) KintoID(_walletFactory, _faucet) {}
 }
 
 contract KintoIDUpgradeScript is ArtifactsReader {
@@ -18,7 +18,7 @@ contract KintoIDUpgradeScript is ArtifactsReader {
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy new version of KintoID
-        KintoIDV2 implementation = new KintoIDV2(_getChainDeployment("KintoID"));
+        KintoIDV2 implementation = new KintoIDV2(_getChainDeployment("KintoID"), _getChainDeployment("Faucet"));
 
         // upgrade KintoID to new version
         KintoID(payable(_getChainDeployment("KintoID"))).upgradeTo(address(implementation));

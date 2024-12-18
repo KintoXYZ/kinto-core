@@ -10,7 +10,7 @@ contract KintoMigration56DeployScript is MigrationHelper {
 
         // generate bytecode for KYCViewer
         bytes memory bytecode = abi.encodePacked(
-            type(KYCViewerV8).creationCode,
+            type(KYCViewer).creationCode,
             abi.encode(
                 _getChainDeployment("KintoWalletFactory"),
                 _getChainDeployment("Faucet"),
