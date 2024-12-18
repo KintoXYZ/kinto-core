@@ -14,7 +14,7 @@ contract UpgradeTest is SharedSetup {
         KintoWallet _newImplementation = new KintoWallet(_entryPoint, _kintoID, _kintoAppRegistry, _walletFactory);
 
         // try calling upgradeTo from _owner wallet to upgrade _owner wallet
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -22,7 +22,7 @@ contract UpgradeTest is SharedSetup {
             abi.encodeWithSignature("upgradeTo(address)", address(_newImplementation)),
             address(_paymaster)
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         // execute the transaction via the entry point and expect a revert event
@@ -47,7 +47,7 @@ contract UpgradeTest is SharedSetup {
         // try calling upgradeTo from _user wallet to upgrade _owner wallet
         privateKeys[0] = _userPk;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(userWallet),
             address(_kintoWallet),

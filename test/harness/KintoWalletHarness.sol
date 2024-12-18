@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/interfaces/IKintoEntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IKintoAppRegistry.sol";
 
@@ -12,7 +13,7 @@ contract KintoWalletHarness is KintoWallet {
         KintoWallet(__entryPoint, _kintoID, _kintoApp, _factory)
     {}
 
-    function validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         public
         returns (uint256 validationData)
     {

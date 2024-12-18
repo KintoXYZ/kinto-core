@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "../../src/wallet/KintoWallet.sol";
 import {KintoWalletFactory} from "../../src/wallet/KintoWalletFactory.sol";
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 

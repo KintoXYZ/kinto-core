@@ -72,7 +72,7 @@ contract KintoCounterScript is MigrationHelper {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
 
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
 
         // whitelist counter contract in the wallet
         address[] memory targets = new address[](1);

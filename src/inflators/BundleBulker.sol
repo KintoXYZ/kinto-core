@@ -2,6 +2,7 @@
 pragma solidity >=0.8;
 
 import "../interfaces/IInflator.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 
 /**

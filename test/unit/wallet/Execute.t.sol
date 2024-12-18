@@ -30,14 +30,14 @@ contract ExecuteTest is SharedSetup {
         vm.deal(address(_kintoWallet), 0);
 
         // send a transaction to the counter contract through our wallet without a paymaster and without prefunding the wallet
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
             privateKeys,
             abi.encodeWithSignature("increment()")
         );
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA21 didn't pay prefund"));
@@ -49,7 +49,7 @@ contract ExecuteTest is SharedSetup {
         vm.deal(address(_kintoWallet), 1 ether);
 
         // send op without a paymaster but prefunding the wallet
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(counter),
@@ -64,7 +64,7 @@ contract ExecuteTest is SharedSetup {
 
     function testExecute_WhenMultipleOps_WhenPaymaster() public {
         uint256 nonce = _kintoWallet.getNonce();
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(counter),
@@ -93,7 +93,7 @@ contract ExecuteTest is SharedSetup {
 
         Counter other = new Counter();
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(other),

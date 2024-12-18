@@ -349,9 +349,9 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = signerPk;
 
-        PackedUserOperation[] memory userOps = new PackedUserOperation[](_selectorAndParams.length);
-        uint256 nonce = IKintoWallet(_from).getNonce();
-        for (uint256 i = 0; i < _selectorAndParams.length; i++) {
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](selectorAndParams.length);
+        uint256 nonce = IKintoWallet(from).getNonce();
+        for (uint256 i = 0; i < selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
                 block.chainid, from, tos[i], 0, nonce, privateKeys, selectorAndParams[i], sponsorPaymaster
             );
@@ -370,7 +370,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         require(selectorAndParams.length == tos.length, "selectorAndParams and tos mismatch");
         address payable from = payable(kintoAdminWallet);
 
-        UserOperation[] memory userOps = new UserOperation[](selectorAndParams.length);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](selectorAndParams.length);
         uint256 nonce = IKintoWallet(from).getNonce();
         for (uint256 i = 0; i < selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(

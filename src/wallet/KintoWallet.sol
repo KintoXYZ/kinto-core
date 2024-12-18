@@ -5,6 +5,8 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
@@ -12,8 +14,9 @@ import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.so
 import {BaseAccount} from "@aa/core/BaseAccount.sol";
 import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
 
+import {Constants} from "@kinto-core/libraries/const.sol";
+import {IKintoWalletFactory} from "../interfaces/IKintoWalletFactory.sol";
 import {IKintoID} from "../interfaces/IKintoID.sol";
-import {IKintoEntryPoint} from "../interfaces/IKintoEntryPoint.sol";
 import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
 import {IEngenCredits} from "../interfaces/IEngenCredits.sol";
 import {IBridgerL2} from "../interfaces/bridger/IBridgerL2.sol";
@@ -72,9 +75,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /// @inheritdoc IKintoWallet
     uint256 public constant WALLET_TARGET_LIMIT = 5;
-
-    /// @dev Constant indicating successful signature validation
-    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
     /// @dev Address of the Bridger contract on Mainnet
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
@@ -619,7 +619,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function _onlyFactory() internal view {
         //directly through the factory
-        if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
+        if (msg.sender != address(factory)) revert OnlyFactory();
     }
 
     /**

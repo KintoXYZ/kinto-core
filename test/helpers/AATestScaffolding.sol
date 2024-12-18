@@ -5,11 +5,13 @@ import {StdAssertions} from "forge-std/StdAssertions.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-import {IKintoEntryPoint} from "@kinto-core/interfaces/IKintoEntryPoint.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 
+import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {KintoID} from "@kinto-core/KintoID.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 import {EngenCredits} from "@kinto-core/tokens/EngenCredits.sol";
@@ -38,7 +40,7 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
     uint256 internal constant GAS_LIMIT_THRESHOLD = 0.01 ether;
 
-    IKintoEntryPoint _entryPoint;
+    IEntryPoint _entryPoint;
 
     // Kinto Registry
     KintoAppRegistry _kintoAppRegistry;

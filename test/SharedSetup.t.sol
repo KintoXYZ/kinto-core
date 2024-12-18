@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import "@kinto-core/interfaces/IKintoWallet.sol";
 
@@ -105,7 +105,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
         DeployerScript.DeployedContracts memory contracts = deployer.runAndReturnResults(_ownerPk);
         // set contracts
-        _entryPoint = IKintoEntryPoint(address(contracts.entryPoint));
+        _entryPoint = IEntryPoint(address(contracts.entryPoint));
         _kintoAppRegistry = KintoAppRegistry(contracts.registry);
         _kintoID = KintoID(contracts.kintoID);
         _walletFactory = KintoWalletFactory(contracts.factory);
@@ -170,7 +170,6 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         fundSponsorForApp(_owner, address(_kintoWallet));
 
         assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
         assertEq(_kintoWallet.getOwnersCount(), 1);
 
         etchEngenCredits();
@@ -187,7 +186,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         vm.deal(_owner, 1e20);
 
         // read mainnet contracts from addresses.json
-        _entryPoint = IKintoEntryPoint(_getChainDeployment("EntryPoint"));
+        _entryPoint = IEntryPoint(_getChainDeployment("EntryPoint"));
         _kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         _kintoID = KintoID(_getChainDeployment("KintoID"));
         _walletFactory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));

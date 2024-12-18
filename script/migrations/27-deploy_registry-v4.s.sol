@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 

@@ -4,10 +4,10 @@ pragma solidity ^0.8.18;
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import {IEntryPoint} from "@aa/core/BaseAccount.sol";
 import {IPaymaster} from "@aa/interfaces/IPaymaster.sol";
-import {BasePaymaster} from "@aa/core/BasePaymaster.sol";
 import {UserOperationLib} from "@aa/core/UserOperationLib.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -28,12 +28,26 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
 abstract contract BasePaymaster is IPaymaster, Ownable {
     IEntryPoint public immutable entryPoint;
 
-    constructor(IEntryPoint _entryPoint) {
+    uint256 internal constant PAYMASTER_VALIDATION_GAS_OFFSET = UserOperationLib.PAYMASTER_VALIDATION_GAS_OFFSET;
+    uint256 internal constant PAYMASTER_POSTOP_GAS_OFFSET = UserOperationLib.PAYMASTER_POSTOP_GAS_OFFSET;
+    uint256 internal constant PAYMASTER_DATA_OFFSET = UserOperationLib.PAYMASTER_DATA_OFFSET;
+
+    constructor(IEntryPoint _entryPoint) Ownable() {
+        _validateEntryPointInterface(_entryPoint);
         entryPoint = _entryPoint;
     }
 
+    //sanity check: make sure this EntryPoint was compiled against the same
+    // IEntryPoint of this paymaster
+    function _validateEntryPointInterface(IEntryPoint _entryPoint) internal virtual {
+        require(
+            IERC165(address(_entryPoint)).supportsInterface(type(IEntryPoint).interfaceId),
+            "IEntryPoint interface mismatch"
+        );
+    }
+
     /// @inheritdoc IPaymaster
-    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+    function validatePaymasterUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
         external
         override
         returns (bytes memory context, uint256 validationData)
@@ -48,15 +62,18 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      * @param userOpHash - The hash of the user operation.
      * @param maxCost    - The maximum cost of the user operation.
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+    function _validatePaymasterUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
         internal
         virtual
         returns (bytes memory context, uint256 validationData);
 
     /// @inheritdoc IPaymaster
-    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) external override {
+    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost, uint256 actualUserOpFeePerGas)
+        external
+        override
+    {
         _requireFromEntryPoint();
-        _postOp(mode, context, actualGasCost);
+        _postOp(mode, context, actualGasCost, actualUserOpFeePerGas);
     }
 
     /**
@@ -66,14 +83,19 @@ abstract contract BasePaymaster is IPaymaster, Ownable {
      *      it must also implement this method.
      * @param mode          - Enum with the following options:
      *                        opSucceeded - User operation succeeded.
-     *                        opReverted  - User op reverted. still has to pay for gas.
-     *                        postOpReverted - User op succeeded, but caused postOp (in mode=opSucceeded) to revert.
-     *                                         Now this is the 2nd call, after user's op was deliberately reverted.
+     *                        opReverted  - User op reverted. The paymaster still has to pay for gas.
+     *                        postOpReverted - never passed in a call to postOp().
      * @param context       - The context value returned by validatePaymasterUserOp
      * @param actualGasCost - Actual gas used so far (without this postOp call).
+     * @param actualUserOpFeePerGas - the gas price this UserOp pays. This value is based on the UserOp's maxFeePerGas
+     *                        and maxPriorityFee (and basefee)
+     *                        It is not the same as tx.gasprice, which is what the bundler pays.
      */
-    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal virtual {
-        (mode, context, actualGasCost); // unused params
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost, uint256 actualUserOpFeePerGas)
+        internal
+        virtual
+    {
+        (mode, context, actualGasCost, actualUserOpFeePerGas); // unused params
         // subclass must override this method if validatePaymasterUserOp returns a context
         revert("must override");
     }
@@ -336,16 +358,18 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
     {
         (userOpHash);
 
+        uint256 postOpGasLimit = userOp.unpackPostOpGasLimit();
+        uint256 verificationGasLimit = userOp.unpackVerificationGasLimit();
+        uint256 maxFeePerGas = userOp.unpackMaxFeePerGas();
         // verificationGasLimit is dual-purposed, as gas limit for postOp. make sure it is high enough
-        if (userOp.verificationGasLimit < COST_OF_POST || userOp.verificationGasLimit > MAX_COST_OF_VERIFICATION) {
+        if (postOpGasLimit < COST_OF_POST || verificationGasLimit > MAX_COST_OF_VERIFICATION) {
             revert GasOutsideRangeForPostOp();
         }
         if (userOp.preVerificationGas > MAX_COST_OF_PREVERIFICATION) revert GasTooHighForVerification();
         if (userOp.paymasterAndData.length != 20) revert PaymasterAndDataLengthInvalid();
 
         // use maxFeePerGas for conservative estimation of gas cost
-        uint256 gasPriceUserOp = userOp.maxFeePerGas;
-        uint256 ethMaxCost = (maxCost + COST_OF_POST * gasPriceUserOp);
+        uint256 ethMaxCost = (maxCost + COST_OF_POST * maxFeePerGas);
         if (ethMaxCost > userOpMaxCost) revert GasTooHighForUserOp();
 
         address sponsor = appRegistry.getApp(_decodeCallData(userOp.callData));
@@ -358,13 +382,18 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
             // Wallets get auto funded by kinto core app
             sponsor = appRegistry.getApp(address(walletFactory));
         }
-        return (abi.encode(sponsor, userOp.sender, userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), 0);
+        return (abi.encode(sponsor, userOp.sender, maxFeePerGas, userOp.unpackMaxPriorityFeePerGas()), 0);
     }
 
     /**
      * @notice performs the post-operation to charge the sponsor contract for the gas.
      */
-    function _postOp(PostOpMode, /* mode */ bytes calldata context, uint256 actualGasCost) internal override {
+    function _postOp(
+        PostOpMode, /* mode */
+        bytes calldata context,
+        uint256 actualGasCost,
+        uint256 actualUserOpFeePerGas
+    ) internal override {
         (address sponsor, address kintoWallet, uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) =
             abi.decode(context, (address, address, uint256, uint256));
         address user = IKintoWallet(kintoWallet).owners(0); // use owner because a person can have many wallets

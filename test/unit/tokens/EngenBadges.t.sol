@@ -23,7 +23,7 @@ contract EngenBadgesTest is SharedSetup {
 
         whitelistApp(address(_engenBadges));
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -50,7 +50,7 @@ contract EngenBadgesTest is SharedSetup {
         ids[0] = 1;
         ids[1] = 2;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -92,7 +92,7 @@ contract EngenBadgesTest is SharedSetup {
     function testMint_RevertWhen_NoIds() public {
         uint256[] memory ids = new uint256[](0);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -122,7 +122,7 @@ contract EngenBadgesTest is SharedSetup {
             ids[i][1] = 2;
         }
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -155,7 +155,7 @@ contract EngenBadgesTest is SharedSetup {
             ids[i][1] = 2;
         }
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -175,7 +175,7 @@ contract EngenBadgesTest is SharedSetup {
         address[] memory recipients = new address[](elements);
         uint256[][] memory ids = new uint256[][](elements);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -205,7 +205,7 @@ contract EngenBadgesTest is SharedSetup {
             ids[i][1] = 2;
         }
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),

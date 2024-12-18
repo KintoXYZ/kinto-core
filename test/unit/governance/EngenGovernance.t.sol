@@ -34,7 +34,7 @@ contract EngenGovernanceTest is SharedSetup {
 
     function testCreateProposal() public {
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 0);
-        (UserOperation[] memory userOps, uint256 hashProposal) =
+        (PackedUserOperation[] memory userOps, uint256 hashProposal) =
             mintCreditsAndcreateProposal(5e18, "First ENIP Proposal");
         _entryPoint.handleOps(userOps, payable(_owner));
         assertEq(_engenCredits.balanceOf(address(_kintoWallet)), 5e18);
@@ -44,7 +44,7 @@ contract EngenGovernanceTest is SharedSetup {
     }
 
     function testCreateProposal_RevertWhen_WhenNotENoughCredits() public {
-        (UserOperation[] memory userOps,) = mintCreditsAndcreateProposal(2e18, "First ENIP Proposal");
+        (PackedUserOperation[] memory userOps,) = mintCreditsAndcreateProposal(2e18, "First ENIP Proposal");
         vm.expectEmit(true, true, true, false);
         emit UserOperationRevertReason(
             _entryPoint.getUserOpHash(userOps[1]), userOps[1].sender, userOps[1].nonce, bytes("")
@@ -65,7 +65,7 @@ contract EngenGovernanceTest is SharedSetup {
         vm.prank(_owner);
         _engenCredits.setCredits(addresses, points);
         // We Create the proposal
-        (UserOperation[] memory userOps, uint256 hashProposal) =
+        (PackedUserOperation[] memory userOps, uint256 hashProposal) =
             mintCreditsAndcreateProposal(10e18, "First ENIP Proposal");
         _entryPoint.handleOps(userOps, payable(_owner));
         vm.warp(block.timestamp + 1 days + 1 seconds);
@@ -93,7 +93,7 @@ contract EngenGovernanceTest is SharedSetup {
 
     function mintCreditsAndcreateProposal(uint256 credits, string memory proposalDescription)
         internal
-        returns (UserOperation[] memory, uint256)
+        returns (PackedUserOperation[] memory, uint256)
     {
         {
             // set points
@@ -106,7 +106,7 @@ contract EngenGovernanceTest is SharedSetup {
         }
 
         // mint credit
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),

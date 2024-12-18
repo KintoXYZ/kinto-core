@@ -59,7 +59,6 @@ contract KintoWalletFactoryTest is SharedSetup {
     function testUp() public override {
         super.testUp();
         assertEq(_walletFactory.factoryWalletVersion(), 2);
-        assertEq(_entryPoint.walletFactory(), address(_walletFactory));
     }
 
     /* ============ Create Account ============ */
@@ -200,7 +199,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         bool[] memory flags = new bool[](1);
         flags[0] = true;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),

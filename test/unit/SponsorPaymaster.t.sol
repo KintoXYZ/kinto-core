@@ -242,7 +242,7 @@ contract SponsorPaymasterTest is SharedSetup {
     /* ============ Per-Op: Global Rate limits ============ */
 
     function testValidatePaymasterUserOp() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -257,7 +257,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     function testValidatePaymasterUserOp_WhenWalletIsApp() public {
         address wallet = address(alice);
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             wallet, wallet, 0, privateKeys, abi.encodeWithSignature("increment()"), address(_paymaster)
         );
 
@@ -273,7 +273,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsLessThanCostOfPost() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -283,7 +283,9 @@ contract SponsorPaymasterTest is SharedSetup {
         );
 
         // verificationGasLimit is 1 less than COST_OF_POST
-        userOp.verificationGasLimit = _paymaster.COST_OF_POST() - 1;
+        userOp.paymasterAndData = packPaymasterData(
+            address(_paymaster), _paymaster.MAX_COST_OF_VERIFICATION(), _paymaster.COST_OF_POST() - 1, bytes("")
+        );
 
         vm.prank(address(_entryPoint));
         vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
@@ -291,7 +293,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasLimitIsMoreThanCostOfVerification() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -301,7 +303,9 @@ contract SponsorPaymasterTest is SharedSetup {
         );
 
         // verificationGasLimit is 1 more than COST_OF_POST
-        userOp.verificationGasLimit = _paymaster.MAX_COST_OF_VERIFICATION() + 1;
+        userOp.paymasterAndData = packPaymasterData(
+            address(_paymaster), _paymaster.MAX_COST_OF_VERIFICATION(), _paymaster.COST_OF_POST() - 1, bytes("")
+        );
 
         vm.prank(address(_entryPoint));
         vm.expectRevert(ISponsorPaymaster.GasOutsideRangeForPostOp.selector);
@@ -309,7 +313,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_PreGasLimitIsMoreThanMaxPreVerification() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -327,7 +331,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_PaymasterAndDataIsNotLength20() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -345,7 +349,7 @@ contract SponsorPaymasterTest is SharedSetup {
     }
 
     function testValidatePaymasterUserOp_RevertWhen_GasIsTooHigh() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -355,8 +359,7 @@ contract SponsorPaymasterTest is SharedSetup {
         );
 
         // gas price set to 100 ether
-        userOp.maxFeePerGas = 100 ether;
-        userOp.maxPriorityFeePerGas = 100 ether;
+        userOp.gasFees = packAccountGasLimits(100 ether, 100 ether);
 
         vm.prank(address(_entryPoint));
         vm.expectRevert(ISponsorPaymaster.GasTooHighForUserOp.selector);
@@ -436,7 +439,7 @@ contract SponsorPaymasterTest is SharedSetup {
         _incrementCounterTxs(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -460,7 +463,8 @@ contract SponsorPaymasterTest is SharedSetup {
         updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // generate ops until reaching the threshold
-        UserOperation[] memory userOps = _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
+        PackedUserOperation[] memory userOps =
+            _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL(), address(counter));
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
@@ -477,7 +481,7 @@ contract SponsorPaymasterTest is SharedSetup {
         updateMetadata(address(_kintoWallet), "counter", address(counter), appLimits, new address[](0));
 
         // generate ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps =
+        PackedUserOperation[] memory userOps =
             _incrementCounterOps(_paymaster.RATE_LIMIT_THRESHOLD_TOTAL() + 1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
@@ -507,7 +511,7 @@ contract SponsorPaymasterTest is SharedSetup {
         _incrementCounterTxs(appLimits[1], address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -523,7 +527,7 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // generate ops until reaching the threshold
-        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1], address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(appLimits[1], address(counter));
         _entryPoint.handleOps(userOps, payable(_owner));
     }
 
@@ -532,7 +536,7 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256[4] memory appLimits = _kintoAppRegistry.getContractLimits(address(counter));
 
         // generate ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(appLimits[1] + 1, address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(appLimits[1] + 1, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -556,7 +560,7 @@ contract SponsorPaymasterTest is SharedSetup {
         _incrementCounterTxsUntilGasLimit(address(counter));
 
         // execute one more op and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(1, address(counter));
         vm.expectEmit(true, true, true, false);
         emit PostOpRevertReason(_entryPoint.getUserOpHash(userOps[0]), userOps[0].sender, userOps[0].nonce, bytes(""));
         vm.recordLogs();
@@ -578,7 +582,7 @@ contract SponsorPaymasterTest is SharedSetup {
         // fixme: vm.warp(block.timestamp + _kintoAppRegistry.GAS_LIMIT_PERIOD() + 1);
 
         // generate `amt` ops until reaching the threshold and assert that it reverts
-        UserOperation[] memory userOps = _incrementCounterOps(amt, address(counter));
+        PackedUserOperation[] memory userOps = _incrementCounterOps(amt, address(counter));
         vm.expectEmit(true, true, true, false);
         uint256 last = userOps.length - 1;
         emit PostOpRevertReason(
@@ -675,9 +679,9 @@ contract SponsorPaymasterTest is SharedSetup {
 
     /// @dev if batch is true, then we batch the increment ops
     // otherwise we do them one by one
-    function _incrementCounterOps(uint256 amt, address app) internal returns (UserOperation[] memory userOps) {
+    function _incrementCounterOps(uint256 amt, address app) internal returns (PackedUserOperation[] memory userOps) {
         uint256 nonce = _kintoWallet.getNonce();
-        userOps = new UserOperation[](amt);
+        userOps = new PackedUserOperation[](amt);
         // we iterate from 1 because the first op is whitelisting the app
         for (uint256 i = 0; i < amt; i++) {
             userOps[i] = _createUserOperation(
@@ -694,7 +698,7 @@ contract SponsorPaymasterTest is SharedSetup {
 
     /// @dev executes `amt` transactions with only one user op per tx
     function _incrementCounterTxs(uint256 amt, address app) internal {
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         for (uint256 i = 0; i < amt; i++) {
             userOps[0] = _incrementCounterOps(amt, app)[0];
             _entryPoint.handleOps(userOps, payable(_owner));
@@ -707,7 +711,7 @@ contract SponsorPaymasterTest is SharedSetup {
         uint256 estimatedGasPerTx = 0;
         uint256 cumulativeGasUsed = 0;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         while (cumulativeGasUsed < appLimits[3]) {
             if (cumulativeGasUsed + estimatedGasPerTx >= appLimits[3]) return amt;
             userOps[0] = _incrementCounterOps(1, app)[0]; // generate 1 user op

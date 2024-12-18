@@ -54,9 +54,9 @@ contract ExecuteBatchTest is SharedSetup {
         calls[0] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp =
+        PackedUserOperation memory userOp =
             _createUserOperation(address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(0));
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = userOp;
 
         vm.expectRevert(abi.encodeWithSignature("FailedOp(uint256,string)", 0, "AA21 didn't pay prefund"));
@@ -79,7 +79,7 @@ contract ExecuteBatchTest is SharedSetup {
         calls[0] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] =
             _createUserOperation(address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(0));
 
@@ -103,7 +103,7 @@ contract ExecuteBatchTest is SharedSetup {
         calls[1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
@@ -155,7 +155,7 @@ contract ExecuteBatchTest is SharedSetup {
         calls[0] = abi.encodeWithSignature("recoverer()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
@@ -186,7 +186,7 @@ contract ExecuteBatchTest is SharedSetup {
         calls[1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );

@@ -64,7 +64,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         privateKeys[0] = deployerPrivateKey;
         uint256 nonce = _kintoWallet.getNonce();
 
-        UserOperation[] memory userOps = new UserOperation[](3);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](3);
 
         // whitelist Engen Credits & Registry
         address[] memory apps = new address[](2);

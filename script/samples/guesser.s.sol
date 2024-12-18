@@ -74,7 +74,7 @@ contract KintoGuesserScript is MigrationHelper {
         uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
 
         // whitelist ETHPriceIsRight contract in the wallet
         address[] memory targets = new address[](1);

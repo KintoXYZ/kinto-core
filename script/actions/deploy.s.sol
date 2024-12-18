@@ -303,11 +303,6 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _walletFactory.initialize();
-
-        // set wallet factory in EntryPoint
-        if (log) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
-        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        entryPoint.setWalletFactory(address(_walletFactory));
     }
 
     function deployKintoWallet() public returns (KintoWallet _kintoWallet) {

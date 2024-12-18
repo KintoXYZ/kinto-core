@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import "forge-std/Test.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
+import "@aa/core/Helpers.sol";
+import {UserOperationLib} from "@aa/core/UserOperationLib.sol";
 import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
@@ -80,14 +82,13 @@ abstract contract UserOp is Test, SignerHelper {
             nonce: nonce,
             initCode: bytes(""),
             callData: callData,
-            callGasLimit: gasLimits[0], // generate from call simulation
-            verificationGasLimit: 210_000, // verification gas. will add create2 cost (3200+200*length) if initCode exists
             preVerificationGas: 21_000, // should also cover calldata cost.
-            maxFeePerGas: gasLimits[1], // grab from current gas
-            maxPriorityFeePerGas: gasLimits[2], // grab from current gas
+            accountGasLimits: packAccountGasLimits(210_000, gasLimits[0]),
+            gasFees: packAccountGasLimits(gasLimits[2], gasLimits[1]),
             paymasterAndData: abi.encodePacked(paymaster),
             signature: bytes("")
         });
+
         op.signature = _signUserOp(op, KintoWallet(payable(from)).entryPoint(), chainID, privateKeyOwners);
         return op;
     }
@@ -205,35 +206,29 @@ abstract contract UserOp is Test, SignerHelper {
         );
     }
 
-    // signature helpers
+    /**
+     * Pack the user operation data into bytes for hashing.
+     * @param userOp - The user operation data.
+     */
+    function encodePackedUserOperation(PackedUserOperation memory userOp) internal pure returns (bytes memory ret) {
+        address sender = userOp.sender;
+        uint256 nonce = userOp.nonce;
+        bytes32 hashInitCode = keccak256(userOp.initCode);
+        bytes32 hashCallData = keccak256(userOp.callData);
+        bytes32 accountGasLimits = userOp.accountGasLimits;
+        uint256 preVerificationGas = userOp.preVerificationGas;
+        bytes32 gasFees = userOp.gasFees;
+        bytes32 hashPaymasterAndData = keccak256(userOp.paymasterAndData);
 
-    function _packUserOp(PackedUserOperation memory op, bool forSig) internal pure returns (bytes memory) {
-        if (forSig) {
-            return abi.encode(
-                op.sender,
-                op.nonce,
-                keccak256(op.initCode),
-                keccak256(op.callData),
-                op.callGasLimit,
-                op.verificationGasLimit,
-                op.preVerificationGas,
-                op.maxFeePerGas,
-                op.maxPriorityFeePerGas,
-                keccak256(op.paymasterAndData)
-            );
-        }
         return abi.encode(
-            op.sender,
-            op.nonce,
-            op.initCode,
-            op.callData,
-            op.callGasLimit,
-            op.verificationGasLimit,
-            op.preVerificationGas,
-            op.maxFeePerGas,
-            op.maxPriorityFeePerGas,
-            op.paymasterAndData,
-            op.signature
+            sender,
+            nonce,
+            hashInitCode,
+            hashCallData,
+            accountGasLimits,
+            preVerificationGas,
+            gasFees,
+            hashPaymasterAndData
         );
     }
 
@@ -242,7 +237,8 @@ abstract contract UserOp is Test, SignerHelper {
         pure
         returns (bytes32)
     {
-        bytes32 opHash = keccak256(_packUserOp(op, true));
+        bytes32 opHash = keccak256(encodePackedUserOperation(op));
+        // TODO: v7 have a different hashing
         return keccak256(abi.encode(opHash, address(_entryPoint), chainID));
     }
 
@@ -271,5 +267,33 @@ abstract contract UserOp is Test, SignerHelper {
             }
         }
         return signature;
+    }
+
+    function packAccountGasLimits(uint256 limit0, uint256 limit1) public pure returns (bytes32) {
+        // Ensure the inputs fit into 128 bits each
+        require(limit0 <= type(uint128).max, "limit0 too large");
+        require(limit1 <= type(uint128).max, "limit1 too large");
+
+        // Pack the values into bytes32
+        bytes32 packed = bytes32((uint256(limit0) << 128) | uint256(limit1));
+
+        return packed;
+    }
+
+    function packPaymasterData(
+        address paymaster,
+        uint256 paymasterVerificationGasLimit,
+        uint256 postOpGasLimit,
+        bytes memory paymasterData
+    ) public pure returns (bytes memory) {
+        require(paymasterVerificationGasLimit <= type(uint128).max, "VerificationGasLimit too large");
+        require(postOpGasLimit <= type(uint128).max, "PostOpGasLimit too large");
+
+        return bytes.concat(
+            bytes20(paymaster), // Address is padded to 20 bytes
+            bytes16(uint128(paymasterVerificationGasLimit)), // Pack verification gas limit (16 bytes)
+            bytes16(uint128(postOpGasLimit)), // Pack post operation gas limit (16 bytes)
+            paymasterData // Append additional paymaster data
+        );
     }
 }
