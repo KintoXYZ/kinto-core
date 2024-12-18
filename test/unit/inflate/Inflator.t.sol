@@ -16,7 +16,7 @@ contract InflatorTest is SharedSetup {
 
     function testInflate() public {
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
             address(counter),
@@ -33,25 +33,12 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
-
-        // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
     }
 
     function testInflate_WhenDeployContract() public {
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet),
             address(_walletFactory),
             _kintoWallet.getNonce(),
@@ -66,25 +53,15 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenTargetEqualsSender() public {
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -97,25 +74,15 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenNoPaymaster() public {
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -128,20 +95,10 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenTargetIsKintoContract() public {
@@ -149,7 +106,7 @@ contract InflatorTest is SharedSetup {
         _inflator.setKintoContract("KAR", address(_kintoAppRegistry));
 
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet),
             address(_kintoAppRegistry),
             _kintoWallet.getNonce(),
@@ -162,20 +119,10 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenExecuteBatch() public {
@@ -193,7 +140,7 @@ contract InflatorTest is SharedSetup {
         calls[1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -201,20 +148,10 @@ contract InflatorTest is SharedSetup {
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenCustomGasParams() public {
@@ -232,38 +169,27 @@ contract InflatorTest is SharedSetup {
         calls[1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
-        op.callGasLimit = 250_000;
-        op.verificationGasLimit = 230_000;
+
+        op.accountGasLimits = packAccountGasLimits(230_000, 250_000);
+        op.gasFees = packAccountGasLimits(690_000, 138_000_000);
         op.preVerificationGas = 1_500_000;
-        op.maxFeePerGas = 138_000_000;
-        op.maxPriorityFeePerGas = 690_000;
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
 
         // 3. decompress (inflate) user op
-        UserOperation memory decompressed = _inflator.inflate(compressed);
+        PackedUserOperation memory decompressed = _inflator.inflate(compressed);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.callGasLimit, op.callGasLimit);
-        assertEq(decompressed.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressed.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenSimpleInflate() public {
         // 1. create user op
-        UserOperation memory op = _createUserOperation(
+        PackedUserOperation memory op = _createUserOperation(
             block.chainid,
             address(_kintoWallet),
             address(counter),
@@ -279,19 +205,21 @@ contract InflatorTest is SharedSetup {
         // 2. compress user op
         bytes memory compressedSimple = _inflator.compressSimple(op);
 
-        UserOperation memory decompressedSimple = _inflator.inflateSimple(compressedSimple);
+        PackedUserOperation memory decompressed = _inflator.inflateSimple(compressedSimple);
 
         // assert that the decompressed user op is the same as the original
-        assertEq(decompressedSimple.sender, op.sender);
-        assertEq(decompressedSimple.nonce, op.nonce);
-        assertEq(decompressedSimple.initCode, op.initCode);
-        assertEq(decompressedSimple.callData, op.callData);
-        assertEq(decompressedSimple.callGasLimit, op.callGasLimit);
-        assertEq(decompressedSimple.verificationGasLimit, op.verificationGasLimit);
-        assertEq(decompressedSimple.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressedSimple.maxFeePerGas, op.maxFeePerGas);
-        assertEq(decompressedSimple.maxPriorityFeePerGas, op.maxPriorityFeePerGas);
-        assertEq(decompressedSimple.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressedSimple.signature, op.signature);
+        assertUserOperation(op, decompressed);
+    }
+
+    function assertUserOperation(PackedUserOperation memory op, PackedUserOperation memory decompressed) internal {
+        assertEq(decompressed.sender, op.sender);
+        assertEq(decompressed.nonce, op.nonce);
+        assertEq(decompressed.initCode, op.initCode);
+        assertEq(decompressed.callData, op.callData);
+        assertEq(decompressed.accountGasLimits, op.accountGasLimits);
+        assertEq(decompressed.gasFees, op.gasFees);
+        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
+        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
+        assertEq(decompressed.signature, op.signature);
     }
 }

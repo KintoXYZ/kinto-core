@@ -9,7 +9,7 @@ import "../../src/wallet/KintoWallet.sol";
 import "../../src/wallet/KintoWalletFactory.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/apps/KintoAppRegistry.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "../../test/helpers/ArtifactsReader.sol";
 import "../../test/helpers/UUPSProxy.sol";
@@ -64,7 +64,7 @@ contract KintoMigration12DeployScript is ArtifactsReader, UserOp {
         privateKeys[0] = deployerPrivateKey;
         uint256 nonce = _kintoWallet.getNonce();
 
-        UserOperation[] memory userOps = new UserOperation[](3);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](3);
 
         // whitelist Engen Credits & Registry
         address[] memory apps = new address[](2);

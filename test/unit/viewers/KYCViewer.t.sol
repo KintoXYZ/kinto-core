@@ -23,7 +23,6 @@ contract KYCViewerTest is SharedSetup {
     function testUp() public override {
         super.testUp();
         assertEq(_kycViewer.owner(), _owner);
-        assertEq(address(_entryPoint.walletFactory()), address(_kycViewer.walletFactory()));
         assertEq(address(_walletFactory.kintoID()), address(_kycViewer.kintoID()));
         assertEq(address(_engenCredits), address(_kycViewer.engenCredits()));
     }

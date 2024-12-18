@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -13,8 +13,9 @@ import "@kinto-core/viewers/KYCViewer.sol";
 import "@kinto-core/viewers/WalletViewer.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
+import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "@kinto-core/wallet/KintoWallet.sol";
 import "@kinto-core/apps/KintoAppRegistry.sol";
 import "@kinto-core/tokens/EngenCredits.sol";
@@ -23,10 +24,10 @@ import "@kinto-core/Faucet.sol";
 import "@kinto-core/inflators/KintoInflator.sol";
 import "@kinto-core/inflators/BundleBulker.sol";
 import "@kinto-core/governance/EngenGovernance.sol";
+
 import "@kinto-core-test/helpers/Create2Helper.sol";
 import "@kinto-core-test/helpers/ArtifactsReader.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
-import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
 
 import {DeployerHelper} from "@kinto-core-script/utils/DeployerHelper.sol";
 
@@ -302,11 +303,6 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
         privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
         _walletFactory.initialize();
-
-        // set wallet factory in EntryPoint
-        if (log) console.log("Setting wallet factory in entry point to: ", address(_walletFactory));
-        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        entryPoint.setWalletFactory(address(_walletFactory));
     }
 
     function deployKintoWallet() public returns (KintoWallet _kintoWallet) {
