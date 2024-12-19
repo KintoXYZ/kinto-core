@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "../../src/sample/Counter.sol";
 import "../../src/interfaces/IKintoWallet.sol";
 import "../../src/interfaces/IKintoWalletFactory.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "../../src/paymasters/SponsorPaymaster.sol";
 
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
@@ -72,7 +72,7 @@ contract KintoCounterScript is MigrationHelper {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
 
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
 
         // whitelist counter contract in the wallet
         address[] memory targets = new address[](1);

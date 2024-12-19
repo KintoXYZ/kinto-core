@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol";
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
-import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import {IWETH} from "@kinto-core/interfaces/IWETH.sol";
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";

@@ -11,7 +11,7 @@ ffi = true
 solc_version = "0.8.24"
 remappings = [
     'node_modules/account-abstraction-0.7.0:@openzeppelin/contracts/=node_modules/openzeppelin-contracts-5.0.1',
-    '@aa-v7/=node_modules/account-abstraction-0.7.0/contracts/',
+    '@aa/=node_modules/account-abstraction-0.7.0/contracts/',
 
     'ds-test/=node_modules/forge-std/lib/ds-test/src/',
     'forge-std/=node_modules/forge-std/src/',
@@ -28,7 +28,6 @@ remappings = [
     '@openzeppelin/contracts-upgradeable/=node_modules/openzeppelin-contracts-upgradeable/',
 
     'node_modules/account-abstraction:@openzeppelin/contracts/=node_modules/openzeppelin-contracts',
-    '@aa/=node_modules/account-abstraction/contracts/',
 
     '@solady/=node_modules/solady/src/',
     'solady/=node_modules/solady/src/',

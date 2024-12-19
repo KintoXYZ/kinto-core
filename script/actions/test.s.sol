@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-import "@aa/core/EntryPoint.sol";
 
 import "@kinto-core/KintoID.sol";
 import "@kinto-core/interfaces/IKintoID.sol";
@@ -11,7 +11,7 @@ import "@kinto-core/sample/Counter.sol";
 import "@kinto-core/sample/ETHPriceIsRight.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 
 import "@kinto-core-script/utils/MigrationHelper.sol";
 
@@ -137,7 +137,7 @@ contract KintoDeployTestCounter is MigrationHelper {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
 
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
 
         // whitelist counter contract in the wallet
         address[] memory targets = new address[](1);
@@ -235,7 +235,7 @@ contract KintoDeployETHPriceIsRight is MigrationHelper {
         uint256 nonce = _newWallet.getNonce();
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
-        UserOperation[] memory userOps = new UserOperation[](2);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](2);
 
         // whitelist ETHPriceIsRight contract in the wallet
         address[] memory targets = new address[](1);
@@ -307,7 +307,7 @@ contract SendHanldeOps is MigrationHelper {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
 
         userOps[0] = _createUserOperation(
             block.chainid,
