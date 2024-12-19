@@ -357,6 +357,8 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         returns (bytes memory context, uint256 validationData)
     {
         (userOpHash);
+        if (userOp.preVerificationGas > MAX_COST_OF_PREVERIFICATION) revert GasTooHighForVerification();
+        if (userOp.paymasterAndData.length != 52) revert PaymasterAndDataLengthInvalid();
 
         uint256 postOpGasLimit = userOp.unpackPostOpGasLimit();
         uint256 verificationGasLimit = userOp.unpackVerificationGasLimit();
@@ -365,8 +367,6 @@ contract SponsorPaymaster is Initializable, BasePaymaster, UUPSUpgradeable, Reen
         if (postOpGasLimit < COST_OF_POST || verificationGasLimit > MAX_COST_OF_VERIFICATION) {
             revert GasOutsideRangeForPostOp();
         }
-        if (userOp.preVerificationGas > MAX_COST_OF_PREVERIFICATION) revert GasTooHighForVerification();
-        if (userOp.paymasterAndData.length != 20) revert PaymasterAndDataLengthInvalid();
 
         // use maxFeePerGas for conservative estimation of gas cost
         uint256 ethMaxCost = (maxCost + COST_OF_POST * maxFeePerGas);

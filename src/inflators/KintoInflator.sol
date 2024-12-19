@@ -11,6 +11,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@solady/utils/LibZip.sol";
 
+import "forge-std/console2.sol";
+
 /// @notice Inflator contract for Kinto user operations
 /// @dev This contract is responsible for inflating and compressing (off-chain) user operations
 /// For further compression, consider: (1) using assembly for encoding/decoding,
@@ -78,6 +80,7 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
     function _inflate(bytes calldata decompressed) public view returns (PackedUserOperation memory op) {
         uint256 cursor = 0; // keep track of the current position in the decompressed data
 
+        console2.logBytes(decompressed);
         // extract flags
         uint8 flags = uint8(decompressed[cursor]);
         cursor += 1;
@@ -119,14 +122,17 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
         // Extract paymasterAndData if the flag is set
         if (flags & 0x02 == 0x02) {
-            op.paymasterAndData = abi.encodePacked(kintoContracts["SP"]);
+            op.paymasterAndData = abi.encodePacked(kintoContracts["SP"], decompressed[cursor:cursor + 32]);
+            cursor += 32;
         }
 
         // Decode signature length and content
         uint32 signatureLength = uint32(bytes4(decompressed[cursor:cursor + 4]));
+        console2.log("signatureLength:", signatureLength);
         cursor += 4;
         require(cursor + signatureLength <= decompressed.length, "Invalid signature length");
         op.signature = decompressed[cursor:cursor + signatureLength];
+        console2.logBytes(op.signature);
 
         return op;
     }
@@ -136,20 +142,18 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
      * @param op The PackedUserOperation to compress
      * @return compressed The compressed PackedUserOperation as bytes
      */
-    function compress(PackedUserOperation memory op) external view returns (bytes memory compressed) {
-        // initialize a dynamic bytes array for the pre-compressed data
-        bytes memory buffer = new bytes(1024); // arbitrary size of 1024 bytes (resized later)
-        uint256 cursor = 0;
-
+    function compress(PackedUserOperation calldata op) external view returns (bytes memory compressed) {
         // decode `callData` (selector, target, value, bytesOp)
         bytes4 selector = bytes4(_slice(op.callData, 0, 4));
         bytes memory callData = _slice(op.callData, 4, op.callData.length - 4);
 
         // set flags based on conditions
-        buffer = abi.encodePacked(buffer, bytes1(_flags(selector, op, callData)));
+        uint8 flags = _flags(selector, op, callData);
+        bytes memory buffer = abi.encodePacked(flags);
 
         // encode `sender`, `nonce` and `initCode`
         buffer = abi.encodePacked(buffer, op.sender, uint32(op.nonce), uint32(op.initCode.length), op.initCode);
+        console2.logBytes(buffer);
 
         // encode `callData` depending on the selector
         if (selector == IKintoWallet.execute.selector) {
@@ -165,9 +169,19 @@ contract KintoInflator is IOpInflator, OwnableUpgradeable, UUPSUpgradeable {
 
         // encode gas params
         buffer = abi.encodePacked(buffer, op.accountGasLimits, op.gasFees, uint32(op.preVerificationGas));
+        console2.logBytes(buffer);
 
+        // if there is a paymaster, then encode it's gas settings
+        if (flags & 0x02 == 0x02) {
+            buffer = abi.encodePacked(buffer, op.paymasterAndData[20:52]);
+        }
+
+        console2.log("op.signature.length:", op.signature.length);
+        console2.logBytes(op.signature);
         // encode `signature` content
         buffer = abi.encodePacked(buffer, uint32(op.signature.length), op.signature);
+
+        console2.logBytes(buffer);
 
         return LibZip.flzCompress(buffer);
     }

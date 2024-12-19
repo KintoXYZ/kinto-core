@@ -34,6 +34,9 @@ contract InflatorTest is SharedSetup {
 
         // 3. decompress (inflate) user op
         PackedUserOperation memory decompressed = _inflator.inflate(compressed);
+
+        // assert that the decompressed user op is the same as the original
+        assertUserOperation(op, decompressed);
     }
 
     function testInflate_WhenDeployContract() public {
@@ -179,9 +182,11 @@ contract InflatorTest is SharedSetup {
 
         // 2. compress user op
         bytes memory compressed = _inflator.compress(op);
+        console2.logBytes(compressed);
 
         // 3. decompress (inflate) user op
         PackedUserOperation memory decompressed = _inflator.inflate(compressed);
+        console2.log("decompressed.sender:", decompressed.sender);
 
         // assert that the decompressed user op is the same as the original
         assertUserOperation(op, decompressed);
@@ -212,14 +217,14 @@ contract InflatorTest is SharedSetup {
     }
 
     function assertUserOperation(PackedUserOperation memory op, PackedUserOperation memory decompressed) internal {
-        assertEq(decompressed.sender, op.sender);
-        assertEq(decompressed.nonce, op.nonce);
-        assertEq(decompressed.initCode, op.initCode);
-        assertEq(decompressed.callData, op.callData);
-        assertEq(decompressed.accountGasLimits, op.accountGasLimits);
-        assertEq(decompressed.gasFees, op.gasFees);
-        assertEq(decompressed.preVerificationGas, op.preVerificationGas);
-        assertEq(decompressed.paymasterAndData, op.paymasterAndData);
-        assertEq(decompressed.signature, op.signature);
+        assertEq(decompressed.sender, op.sender, "Invalid sender");
+        assertEq(decompressed.nonce, op.nonce, "Invalid nonce");
+        assertEq(decompressed.initCode, op.initCode, "Invalid initCode");
+        assertEq(decompressed.callData, op.callData, "Invalid callData");
+        assertEq(decompressed.accountGasLimits, op.accountGasLimits, "Invalid accountGasLimits");
+        assertEq(decompressed.gasFees, op.gasFees, "Invalid gasFees");
+        assertEq(decompressed.preVerificationGas, op.preVerificationGas, "Invalid preVerificationGas");
+        assertEq(decompressed.paymasterAndData, op.paymasterAndData, "Invalid paymasterAndData");
+        assertEq(decompressed.signature, op.signature, "Invalid signature");
     }
 }

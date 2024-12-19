@@ -13,6 +13,7 @@ import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/crypto
 
 import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
 import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
+
 import {SignerHelper} from "@kinto-core-test/helpers/SignerHelper.sol";
 
 import "forge-std/Vm.sol";
@@ -35,6 +36,9 @@ abstract contract UserOp is Test, SignerHelper {
     // which force EIP4337 to work in legacy mode
     uint256 constant MAX_FEE_PER_GAS = 1;
     uint256 constant MAX_PRIORITY_FEE_PER_GAS = 1e9;
+
+    uint256 public constant MAX_COST_OF_VERIFICATION = 530_000;
+    uint256 public constant COST_OF_POST = 200_000;
 
     struct OperationParamsBatch {
         address[] targets;
@@ -85,7 +89,9 @@ abstract contract UserOp is Test, SignerHelper {
             preVerificationGas: 21_000, // should also cover calldata cost.
             accountGasLimits: packAccountGasLimits(210_000, gasLimits[0]),
             gasFees: packAccountGasLimits(gasLimits[2], gasLimits[1]),
-            paymasterAndData: abi.encodePacked(paymaster),
+            paymasterAndData: paymaster != address(0)
+                ? packPaymasterData(paymaster, MAX_COST_OF_VERIFICATION, COST_OF_POST, bytes(""))
+                : bytes(""),
             signature: bytes("")
         });
 
