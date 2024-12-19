@@ -103,7 +103,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /* ============ Constants & Immutables ============ */
 
     /// @notice Role to update the root.
-    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE ");
+    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     /// @notice Starting time of the mining program.
     uint256 public immutable startTime;
