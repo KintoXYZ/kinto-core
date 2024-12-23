@@ -54,6 +54,8 @@ contract MintBatchKintoScript is MigrationHelper {
             usersBalancesBefore.push(kintoToken.balanceOf(addr));
         }
 
+        console2.log('totalAmount:', totalAmount);
+
         uint256 totalSupplyBefore = kintoToken.totalSupply();
         // Burn tokens from RD
         _handleOps(
