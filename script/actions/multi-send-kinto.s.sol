@@ -46,7 +46,8 @@ contract MintBatchKintoScript is MigrationHelper {
             users.push(addr);
 
             uint256 amount = vm.parseUint(amountStr.toString());
-            console2.log("amount:", amount);
+            // amounts are in 1e18
+            console2.log("amount:", amount * 1e18);
             amounts.push(amount);
             totalAmount += amount;
 
