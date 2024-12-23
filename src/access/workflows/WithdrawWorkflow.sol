@@ -18,6 +18,11 @@ contract WithdrawWorkflow {
     error NativeWithdrawalFailed();
 
     function withdrawERC20(IERC20 asset, uint256 amount) external {
+        // If amount is max uint256, set it to the entire balance
+        if (amount == type(uint256).max) {
+            amount = asset.balanceOf(address(this));
+        }
+
         address owner = _getOwner();
         asset.safeTransfer({to: owner, value: amount});
     }

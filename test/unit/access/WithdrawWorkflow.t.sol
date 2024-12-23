@@ -69,6 +69,18 @@ contract WithdrawWorkflowTest is BaseTest {
         assertEq(token.balanceOf(_user), defaultAmount);
     }
 
+    function testWithdrawERC20__WhenAmountMax() public {
+        token.mint(address(accessPoint), defaultAmount);
+
+        bytes memory data =
+            abi.encodeWithSelector(WithdrawWorkflow.withdrawERC20.selector, IERC20(token), type(uint256).max);
+
+        vm.prank(_user);
+        accessPoint.execute(address(withdrawWorkflow), data);
+
+        assertEq(token.balanceOf(_user), defaultAmount);
+    }
+
     function testWithdrawNative() public {
         vm.deal(address(accessPoint), defaultAmount);
 
