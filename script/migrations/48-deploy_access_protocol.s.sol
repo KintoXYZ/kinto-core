@@ -69,7 +69,9 @@ contract DeployAccessProtocolScript is Script, MigrationHelper {
         );
         console2.log("SafeBeaconProxy at: %s", address(safeBeaconProxy));
 
-        withdrawWorkflow = WithdrawWorkflow(create2(abi.encodePacked(type(WithdrawWorkflow).creationCode)));
+        withdrawWorkflow = WithdrawWorkflow(
+            create2(abi.encodePacked(type(WithdrawWorkflow).creationCode, abi.encode(getWethByChainId(block.chainid))))
+        );
         registry.allowWorkflow(address(withdrawWorkflow));
 
         wethWorkflow = WethWorkflow(

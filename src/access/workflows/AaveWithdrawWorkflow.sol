@@ -23,6 +23,10 @@ contract AaveWithdrawWorkflow {
     IPoolAddressesProvider public immutable poolAddressProvider;
     /// @notice Address of the Bridger contract
     IBridger public immutable bridger;
+    /// @notice Address of the Safe contract
+    address public immutable safe;
+    /// @notice Fee charged upon withdrawal. 10bps.
+    uint256 public constant FEE = 1e15;
 
     /* ============ Constructor ============ */
 
@@ -30,9 +34,10 @@ contract AaveWithdrawWorkflow {
      * @notice Initializes the contract with Aave's pool address provider
      * @param poolAddressProvider_ The address of Aave's pool address provider
      */
-    constructor(address poolAddressProvider_, address bridger_) {
+    constructor(address poolAddressProvider_, address bridger_, address safe_) {
         poolAddressProvider = IPoolAddressesProvider(poolAddressProvider_);
         bridger = IBridger(bridger_);
+        safe = safe_;
     }
 
     /* ============ External Functions ============ */
@@ -42,7 +47,7 @@ contract AaveWithdrawWorkflow {
      * @param asset The address of the asset to withdraw
      * @param amount The amount to withdraw (use type(uint256).max for max available)
      */
-    function withdraw(address asset, uint256 amount) public {
+    function withdraw(address asset, uint256 amount) public returns (uint256) {
         address pool = poolAddressProvider.getPool();
 
         // If amount is max uint256, withdraw all available
@@ -52,6 +57,10 @@ contract AaveWithdrawWorkflow {
 
         // Withdraw from Aave
         IAavePool(pool).withdraw(asset, amount, address(this));
+        // Send the fee to the Safe
+        uint256 fee = amount * FEE / 1e18;
+        IERC20(asset).transfer(safe, fee);
+        return amount - fee;
     }
 
     function withdrawAndBridge(
@@ -60,7 +69,7 @@ contract AaveWithdrawWorkflow {
         address kintoWallet,
         IBridger.BridgeData calldata bridgeData
     ) external payable returns (uint256 amountOut) {
-        withdraw(asset, amount);
+        amount = withdraw(asset, amount);
 
         // Approve max allowance to save on gas for future transfers
         if (IERC20(asset).allowance(address(this), address(bridger)) < amount) {

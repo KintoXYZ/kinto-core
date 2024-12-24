@@ -34,6 +34,8 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
     IAccessPoint internal accessPoint;
     AaveWithdrawWorkflow internal aaveWithdrawWorkflow;
     IAavePool internal aavePool;
+    address internal safe = address(0x5afe);
+    uint256 constant FEE = 1e15;
 
     function setUp() public override {
         super.setUp();
@@ -50,7 +52,7 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
         accessPoint = accessRegistry.deployFor(address(alice0));
         vm.label(address(accessPoint), "accessPoint");
 
-        aaveWithdrawWorkflow = new AaveWithdrawWorkflow(ARB_AAVE_POOL_PROVIDER, address(bridger));
+        aaveWithdrawWorkflow = new AaveWithdrawWorkflow(ARB_AAVE_POOL_PROVIDER, address(bridger), safe);
         vm.label(address(aaveWithdrawWorkflow), "aaveWithdrawWorkflow");
 
         vm.prank(accessRegistry.owner());
@@ -89,7 +91,7 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
         // Assert balances changed correctly
         assertEq(
             IERC20(assetToWithdraw).balanceOf(address(accessPoint)),
-            initialAccessPointBalance + amountToWithdraw,
+            initialAccessPointBalance + amountToWithdraw - amountToWithdraw * FEE / 1e18,
             "Invalid USDC balance"
         );
         assertEq(
@@ -126,7 +128,7 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
         // Assert balances changed correctly
         assertEq(
             IERC20(assetToWithdraw).balanceOf(address(accessPoint)),
-            initialAccessPointBalance + amountToSupply,
+            initialAccessPointBalance + amountToSupply - amountToSupply * FEE / 1e18,
             "Invalid USDC balance"
         );
         assertEq(IERC20(aToken).balanceOf(address(accessPoint)), 0, "Invalid aToken balance");
@@ -175,7 +177,7 @@ contract AaveWithdrawWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader,
         assertEq(IERC20(assetToWithdraw).balanceOf(address(bridger)), initialBridgerBalance, "Invalid bridger balance");
         assertEq(
             IERC20(assetToWithdraw).balanceOf(address(bridgeData.vault)),
-            initialVaultBalance + amountToWithdraw,
+            initialVaultBalance + amountToWithdraw - amountToWithdraw * FEE / 1e18,
             "Invalid vault balance"
         );
     }
