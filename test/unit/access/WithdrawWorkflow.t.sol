@@ -122,4 +122,54 @@ contract WithdrawWorkflowTest is BaseTest {
         vm.expectRevert(WithdrawWorkflow.NativeWithdrawalFailed.selector);
         accessPoint.execute(address(withdrawWorkflow), data);
     }
+
+    function testWithdrawNative_MaxAmount() public {
+        uint256 nativeAmount = 1 ether;
+        uint256 wethAmount = 2 ether;
+
+        // Fund with both native ETH and WETH
+        vm.deal(address(accessPoint), nativeAmount + wethAmount);
+        vm.prank(address(accessPoint));
+        WETH(weth).deposit{value: wethAmount}();
+
+        bytes memory data = abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, type(uint256).max);
+
+        vm.prank(_user);
+        accessPoint.execute(address(withdrawWorkflow), data);
+
+        // Should receive total of native + weth amounts
+        assertEq(_user.balance, nativeAmount + wethAmount);
+        assertEq(IERC20(weth).balanceOf(address(accessPoint)), 0);
+    }
+
+    function testWithdrawNative_MaxAmount_OnlyWETH() public {
+        uint256 wethAmount = 2 ether;
+
+        // Fund with only WETH
+        vm.deal(address(accessPoint), wethAmount);
+        vm.prank(address(accessPoint));
+        WETH(weth).deposit{value: wethAmount}();
+
+        bytes memory data = abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, type(uint256).max);
+
+        vm.prank(_user);
+        accessPoint.execute(address(withdrawWorkflow), data);
+
+        assertEq(_user.balance, wethAmount);
+        assertEq(IERC20(weth).balanceOf(address(accessPoint)), 0);
+    }
+
+    function testWithdrawNative_MaxAmount_OnlyNative() public {
+        uint256 nativeAmount = 1 ether;
+
+        // Fund with only native ETH
+        vm.deal(address(accessPoint), nativeAmount);
+
+        bytes memory data = abi.encodeWithSelector(WithdrawWorkflow.withdrawNative.selector, type(uint256).max);
+
+        vm.prank(_user);
+        accessPoint.execute(address(withdrawWorkflow), data);
+
+        assertEq(_user.balance, nativeAmount);
+    }
 }

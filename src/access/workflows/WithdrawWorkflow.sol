@@ -61,6 +61,12 @@ contract WithdrawWorkflow {
     function withdrawNative(uint256 amount) external {
         address owner = _getOwner();
 
+        // If amount is max uint256, set it to the entire balance
+        if (amount == type(uint256).max) {
+            IWETH(WETH).withdraw(IERC20(WETH).balanceOf(address(this)));
+            amount = address(this).balance;
+        }
+
         if (address(this).balance < amount) {
             if (IERC20(WETH).balanceOf(address(this)) >= amount) {
                 IWETH(WETH).withdraw(amount);
@@ -83,5 +89,4 @@ contract WithdrawWorkflow {
     function _getOwner() internal view returns (address) {
         return IAccessPoint(address(this)).owner();
     }
-
 }
