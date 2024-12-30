@@ -10,7 +10,7 @@ contract Script is MigrationHelper {
         super.run();
 
         bytes memory bytecode = abi.encodePacked(type(EngenBadges).creationCode);
-        address impl = _deployImplementationAndUpgrade("EngenBadges", "V3", bytecode, keccak256("V3"));
+        address impl = _deployImplementationAndUpgrade("EngenBadges", "V4", bytecode, keccak256("V4"));
 
         EngenBadges engenBadges = EngenBadges(_getChainDeployment("EngenBadges"));
         uint256[] memory balances = engenBadges.getAllBadges(_getChainDeployment("KintoWallet-admin"), 10);
@@ -20,6 +20,6 @@ contract Script is MigrationHelper {
         assertEq(engenBadges.uri(1), "https://kinto.xyz/api/v1/get-badge-nft/{id}");
         assertEq(engenBadges.name(), "Engen Badges");
 
-        saveContractAddress("EngenBadgesV3-impl", impl);
+        saveContractAddress("EngenBadgesV4-impl", impl);
     }
 }
