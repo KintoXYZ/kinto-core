@@ -326,6 +326,11 @@ contract Bridger is
         return amountOut;
     }
 
+    /// @inheritdoc IBridger
+    function rescueToken(address token) external override onlyOwner {
+        IERC20(token).safeTransfer(owner(), IERC20(token).balanceOf(address(this)));
+    }
+
     /* ============ Private Functions ============ */
 
     /**
@@ -556,14 +561,22 @@ contract Bridger is
         if (sellToken == buyToken) {
             return amountIn;
         }
-        // Increase the allowance for the swapRouter to handle `amountIn` of `sellToken`
-        sellToken.safeIncreaseAllowance(swapRouter, amountIn);
+
+        // Set the allowance for the swapRouter to handle `amountIn` of `sellToken`
+        sellToken.forceApprove(swapRouter, amountIn);
 
         // Track our balance of the buyToken to determine how much we've bought.
         uint256 boughtAmount = buyToken.balanceOf(address(this));
 
         // Perform the swap call to the exchange proxy.
         swapRouter.functionCall(swapCallData);
+
+        // Allowance for the 0x router always has to be set to exactly the amountIn, and there should never be any hanging allowance as it can be exploited using malicious calldata and pools
+        // Allows some dust, as 0x router and pools sometimes do not consume entire allowance
+        if (sellToken.allowance(address(this), swapRouter) > 100) {
+            revert RouterAllowanceNotZero(sellToken.allowance(address(this), swapRouter));
+        }
+
         // Keep the protocol fee refunds given that we are paying for gas
         // Use our current buyToken balance to determine how much we've bought.
         boughtAmount = buyToken.balanceOf(address(this)) - boughtAmount;

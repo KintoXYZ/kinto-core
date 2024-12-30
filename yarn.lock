@@ -22,6 +22,11 @@
     "@openzeppelin/contracts-upgradeable" "4.5.2"
     patch-package "^6.4.7"
 
+"@dk1a/solidity-stringutils@^0.3.3":
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@dk1a/solidity-stringutils/-/solidity-stringutils-0.3.3.tgz#9d25b272c8015148d794f2f426b104ca2a0d1707"
+  integrity sha512-IQodjgcYtYudV1vXUl3f5B/cau0gSji1Izae6a9UiVP5VdJOk+D4QcmCrjy8Rzdb5i2vlPVtrBHhbYncW1+Kcg==
+
 "@ethereumjs/rlp@^4.0.1":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@ethereumjs/rlp/-/rlp-4.0.1.tgz#626fabfd9081baab3d0a3074b0c7ecaf674aaa41"

@@ -1,36 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Faucet} from "../../src/Faucet.sol";
 import {KintoID} from "../../src/KintoID.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import "@openzeppelin/contracts/access/IAccessControl.sol";
 
-contract UpgradeKintoIDFaucetDeployScript is MigrationHelper {
+contract UpgradeKintoIDScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        // bytes memory bytecode = abi.encodePacked(
-        //     type(KintoID).creationCode,
-        //     abi.encode(
-        //         _getChainDeployment("KintoWalletFactory"),
-        //         _getChainDeployment("Faucet")
-        //     )
-        // );
+        bytes memory bytecode = abi.encodePacked(
+            type(KintoID).creationCode,
+            abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
+        );
 
-        // address impl = _deployImplementationAndUpgrade("KintoID", "V8", bytecode);
-        // saveContractAddress("KintoIDV8-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KintoID", "V10", bytecode);
+        saveContractAddress("KintoIDV10-impl", impl);
 
-        // bytecode = abi.encodePacked(
-        //     type(Faucet).creationCode,
-        //     abi.encode(_getChainDeployment("KintoWalletFactory"))
-        // );
-
-        // impl = _deployImplementationAndUpgrade("Faucet", "V9", bytecode);
-        // saveContractAddress("FaucetV9-impl", impl);
-
-        // vm.broadcast(deployerPrivateKey);
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
-        _whitelistApp(address(kintoID));
-        _upgradeTo(address(kintoID), _getChainDeployment("KintoIDV8-impl"), deployerPrivateKey);
+        address nioGovernor = _getChainDeployment("NioGovernor");
+        bytes32 governanceRole = kintoID.GOVERNANCE_ROLE();
+
+        assertTrue(kintoID.hasRole(governanceRole, kintoAdminWallet));
+        assertTrue(kintoID.hasRole(governanceRole, nioGovernor));
+
+        assertTrue(kintoID.isKYC(deployer));
     }
 }

@@ -278,18 +278,36 @@ contract KintoIDTest is SharedSetup {
         updates[0] = new IKintoID.MonitorUpdateData[](4);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5); // add trait 5
         updates[0][1] = IKintoID.MonitorUpdateData(true, false, 1); // remove trait 1
-        updates[0][2] = IKintoID.MonitorUpdateData(false, true, 6); // add sanction 6
-        updates[0][3] = IKintoID.MonitorUpdateData(false, false, 2); // remove sanction 2
+        updates[0][2] = IKintoID.MonitorUpdateData(true, true, 6); // add trait 6
+        updates[0][3] = IKintoID.MonitorUpdateData(true, false, 2); // remove trait 2
 
         vm.prank(_kycProvider);
         _kintoID.monitor(accounts, updates);
 
         assertEq(_kintoID.hasTrait(_user, 5), true);
         assertEq(_kintoID.hasTrait(_user, 1), false);
-        assertEq(_kintoID.isSanctionsSafeIn(_user, 5), true);
-        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
-        assertEq(_kintoID.isSanctionsSafeIn(_user, 6), false);
-        assertEq(_kintoID.isSanctionsSafeIn(_user, 2), true);
+        assertEq(_kintoID.hasTrait(_user, 6), true);
+        assertEq(_kintoID.hasTrait(_user, 2), false);
+
+        updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(false, true, 3); // add sanction 3
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(accounts, updates);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 3), false);
+
+        vm.warp(block.timestamp + 10 days);
+
+        updates = new IKintoID.MonitorUpdateData[][](1);
+        updates[0] = new IKintoID.MonitorUpdateData[](1);
+        updates[0][0] = IKintoID.MonitorUpdateData(false, false, 3); // remove sanction 3
+
+        vm.prank(_kycProvider);
+        _kintoID.monitor(accounts, updates);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 3), true);
     }
 
     /* ============ Trait tests ============ */
@@ -375,29 +393,140 @@ contract KintoIDTest is SharedSetup {
     /* ============ Sanction tests ============ */
 
     function testAddSanction() public {
+        addKYC();
+
         vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](1);
-        traits[0] = 1;
-        _kintoID.mintIndividualKyc(sigdata, traits);
+
         _kintoID.addSanction(_user, 1);
+
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
         assertEq(_kintoID.isSanctionsSafe(_user), false);
         assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
     }
 
-    function testRemoveSancion() public {
+    function testAddSanction_WhenNotConfirmed() public {
+        addKYC();
+
         vm.startPrank(_kycProvider);
-        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
-        uint16[] memory traits = new uint16[](1);
-        traits[0] = 1;
-        _kintoID.mintIndividualKyc(sigdata, traits);
+
+        _kintoID.addSanction(_user, 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+        assertEq(_kintoID.sanctionedAt(_user), block.timestamp);
+
+        uint256 sanctionTime = block.timestamp;
+
+        vm.warp(block.timestamp + 3 days + 1);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+        assertEq(_kintoID.lastMonitoredAt(), sanctionTime);
+        assertEq(_kintoID.sanctionedAt(_user), sanctionTime);
+    }
+
+    function testRemoveSancion_RevertWhenInExitWindowPeriod() public {
+        addKYC();
+
+        vm.startPrank(_kycProvider);
         _kintoID.addSanction(_user, 1);
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, _kintoID.sanctionedAt(_user)));
         _kintoID.removeSanction(_user, 1);
+        vm.stopPrank();
+    }
+
+    function testRemoveSancion() public {
+        addKYC();
+
+        vm.startPrank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+
+        // has to wait for the exit window to be over
+        vm.warp(block.timestamp + 10 days);
+
+        _kintoID.removeSanction(_user, 1);
+        vm.stopPrank();
+
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), true);
         assertEq(_kintoID.isSanctionsSafe(_user), true);
         assertEq(_kintoID.lastMonitoredAt(), block.timestamp);
+    }
+
+    function testAddSanction_BlockedDuringExitWindow() public {
+        addKYC();
+
+        vm.startPrank(_kycProvider);
+
+        // Add initial sanction
+        _kintoID.addSanction(_user, 1);
+        uint256 sanctionTime = block.timestamp;
+
+        // Try adding another sanction during exit window
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, sanctionTime));
+        _kintoID.addSanction(_user, 2);
+
+        // Try at different times during window
+        vm.warp(block.timestamp + 5 days);
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, sanctionTime));
+        _kintoID.addSanction(_user, 2);
+
+        // Should succeed after window
+        vm.warp(sanctionTime + 10 days + 1);
+        _kintoID.addSanction(_user, 2);
+
+        vm.stopPrank();
+    }
+
+    function testRemoveSanction_BlockedDuringExitWindow() public {
+        addKYC();
+
+        vm.startPrank(_kycProvider);
+
+        // Add sanction
+        _kintoID.addSanction(_user, 1);
+        uint256 sanctionTime = block.timestamp;
+
+        // Try removing during exit window
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, sanctionTime));
+        _kintoID.removeSanction(_user, 1);
+
+        // Try halfway through window
+        vm.warp(block.timestamp + 5 days);
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, sanctionTime));
+        _kintoID.removeSanction(_user, 1);
+
+        // Should succeed after window
+        vm.warp(sanctionTime + 10 days + 1);
+        _kintoID.removeSanction(_user, 1);
+
+        vm.stopPrank();
+    }
+
+    function testExitWindow_MultipleSanctions() public {
+        addKYC();
+
+        vm.startPrank(_kycProvider);
+
+        // Add first sanction
+        _kintoID.addSanction(_user, 1);
+        uint256 firstSanctionTime = block.timestamp;
+
+        // Advance past window
+        vm.warp(firstSanctionTime + 10 days + 1);
+
+        // Add second sanction
+        _kintoID.addSanction(_user, 2);
+        uint256 secondSanctionTime = block.timestamp;
+
+        // Try removing first sanction during second's window
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.ExitWindowPeriod.selector, _user, secondSanctionTime));
+        _kintoID.removeSanction(_user, 1);
+
+        vm.stopPrank();
     }
 
     function testAddSanction_RevertWhen_CallerIsNotKYCProvider() public {
@@ -444,6 +573,60 @@ contract KintoIDTest is SharedSetup {
         _kintoID.removeSanction(_user, 1);
     }
 
+    function testConfirmSanction() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.startPrank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+        vm.stopPrank();
+
+        // Confirm the sanction
+        vm.expectEmit(true, false, false, true);
+        emit KintoID.SanctionConfirmed(_user, block.timestamp);
+
+        vm.prank(_owner);
+        _kintoID.confirmSanction(_user);
+
+        // Verify sanction remains active even after 3 days
+        vm.warp(block.timestamp + 4 days);
+
+        assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
+        assertEq(_kintoID.isSanctionsSafe(_user), false);
+        assertEq(_kintoID.sanctionedAt(_user), 0); // Timestamp should be reset to 0
+    }
+
+    function testConfirmSanction_RevertWhen_CallerNotGovernance() public {
+        // First approve KYC and add a sanction
+        approveKYC(_kycProvider, _user, _userPk);
+
+        vm.prank(_kycProvider);
+        _kintoID.addSanction(_user, 1);
+
+        // Try to confirm sanction from non-governance address
+        bytes memory err = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(_user),
+            " is missing role ",
+            Strings.toHexString(uint256(_kintoID.GOVERNANCE_ROLE()), 32)
+        );
+
+        vm.expectRevert(err);
+        vm.prank(_user);
+        _kintoID.confirmSanction(_user);
+    }
+
+    function testConfirmSanction_RevertWhen_NoSanctionExists() public {
+        // Try to confirm non-existent sanction
+        vm.prank(_owner);
+        vm.expectRevert(abi.encodeWithSelector(IKintoID.NoActiveSanction.selector, _user));
+        _kintoID.confirmSanction(_user);
+
+        // Verify no changes occurred
+        assertEq(_kintoID.sanctionedAt(_user), 0);
+        assertEq(_kintoID.isSanctionsSafe(_user), true);
+    }
+
     /* ============ Transfer tests ============ */
 
     function test_RevertWhen_TransfersAreDisabled() public {
@@ -480,5 +663,14 @@ contract KintoIDTest is SharedSetup {
             ^ bytes4(keccak256("isApprovedForAll(address,address)"));
 
         assertTrue(_kintoID.supportsInterface(InterfaceERC721Upgradeable));
+    }
+
+    function addKYC() public {
+        vm.startPrank(_kycProvider);
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](1);
+        traits[0] = 1;
+        _kintoID.mintIndividualKyc(sigdata, traits);
+        vm.stopPrank();
     }
 }

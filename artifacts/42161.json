@@ -2916,6 +2916,19 @@
         },
         {
           "type": "function",
+          "name": "rescueToken",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "sUSDe",
           "inputs": [],
           "outputs": [

@@ -13,11 +13,11 @@ contract BridgeWorkflow {
 
     /**
      * @notice Emitted when a bridge operation is made.
-     * @param wallet The address of the Kinto wallet on L2.
-     * @param asset The address of the input asset.
-     * @param amount The amount of the input asset.
+     * @param kintoWallet The address of the Kinto kintoWallet on L2.
+     * @param inputAsset The address of the input inputAsset.
+     * @param amount The amount of the input inputAsset.
      */
-    event Bridged(address indexed wallet, address indexed asset, uint256 amount);
+    event Bridged(address indexed kintoWallet, address indexed inputAsset, uint256 amount);
 
     IBridger public immutable bridger;
 
@@ -25,26 +25,23 @@ contract BridgeWorkflow {
         bridger = bridger_;
     }
 
-    function bridge(address asset, uint256 amount, address wallet, IBridger.BridgeData calldata bridgeData)
+    function bridge(address inputAsset, uint256 amount, address kintoWallet, IBridger.BridgeData calldata bridgeData)
         external
         payable
+        returns (uint256 amountOut)
     {
         if (bridger.bridgeVaults(bridgeData.vault) == false) revert IBridger.InvalidVault(bridgeData.vault);
         if (amount == 0) {
-            amount = IERC20(asset).balanceOf(address(this));
+            amount = IERC20(inputAsset).balanceOf(address(this));
         }
 
         // Approve max allowance to save on gas for future transfers
-        if (IERC20(asset).allowance(address(this), bridgeData.vault) < amount) {
-            IERC20(asset).forceApprove(bridgeData.vault, type(uint256).max);
+        if (IERC20(inputAsset).allowance(address(this), address(bridger)) < amount) {
+            IERC20(inputAsset).forceApprove(address(bridger), type(uint256).max);
         }
 
         // Bridge the amount to Kinto
-        // slither-disable-next-line arbitrary-send-eth
-        IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
-            wallet, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
-        );
-
-        emit Bridged(wallet, asset, amount);
+        emit Bridged(kintoWallet, inputAsset, amount);
+        return bridger.depositERC20(inputAsset, amount, kintoWallet, inputAsset, amount, bytes(""), bridgeData);
     }
 }

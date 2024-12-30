@@ -126,6 +126,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice New user rewards timestmap
     uint256 public constant NEW_USER_REWARD_TIMESTAMP = 1729785402;
 
+    /// @notice New user rewards end timestmap
+    uint256 public constant NEW_USER_REWARD_END_TIMESTAMP = 1734133547;
+
     /* ============ State Variables ============ */
 
     /// @notice The root of the merkle tree for Kinto token distribition.
@@ -269,21 +272,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     }
 
     /**
-     * @notice Allows a new user to claim the new user reward.
-     * @param wallet The address of the wallet to claim the reward for.
+     * @notice Does nothing. Remove upon the upgrade of KintoWalletFactory
      */
-    function newUserClaim(address wallet) external nonReentrant {
-        if (msg.sender != walletFactory) {
-            revert OnlyWalletFactory(msg.sender);
-        }
-        if (_claimedByUser[wallet] > 0) {
-            revert AlreadyClaimed(wallet);
-        }
-        _claimedByUser[wallet] += NEW_USER_REWARD;
-        totalClaimed += NEW_USER_REWARD;
-        KINTO.safeTransfer(wallet, NEW_USER_REWARD);
-        emit NewUserReward(wallet, NEW_USER_REWARD);
-    }
+    function newUserClaim(address) external {}
 
     /**
      * @notice Updates the root of the Merkle tree.
@@ -386,7 +377,8 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     function claimedByUser(address wallet) public view returns (uint256) {
         uint256 claimed = _claimedByUser[wallet];
-        if (IKintoWalletFactory(walletFactory).getWalletTimestamp(wallet) >= NEW_USER_REWARD_TIMESTAMP) {
+        uint256 walletTs = IKintoWalletFactory(walletFactory).getWalletTimestamp(wallet);
+        if (walletTs >= NEW_USER_REWARD_TIMESTAMP && walletTs < NEW_USER_REWARD_END_TIMESTAMP) {
             // Offset K bonus for new users after the launch of the rewards program
             return claimed >= NEW_USER_REWARD ? claimed - NEW_USER_REWARD : claimed;
         }

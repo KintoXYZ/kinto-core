@@ -28,10 +28,6 @@ contract CrossChainSwapWorkflow {
         bytes calldata swapCallData,
         IBridger.BridgeData calldata bridgeData
     ) external payable returns (uint256 amountOut) {
-        if (amount == 0) {
-            amount = IERC20(inputAsset).balanceOf(address(this));
-        }
-
         // Approve max allowance to save on gas for future transfers
         if (IERC20(inputAsset).allowance(address(this), address(bridger)) < amount) {
             IERC20(inputAsset).forceApprove(address(bridger), type(uint256).max);
