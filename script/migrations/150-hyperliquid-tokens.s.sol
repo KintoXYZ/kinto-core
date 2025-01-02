@@ -20,7 +20,6 @@ contract Script is MigrationHelper {
     function run() public override {
         super.run();
 
-        // ETH
         deployBridgedToken("USUAL", "USUAL", 18, "050A10");
         deployBridgedToken("LDO", "Lido DAO Token", 18, "1D0000");
         deployBridgedToken("VIRTUAL", "Virtual Protocol", 18, "01900A");
