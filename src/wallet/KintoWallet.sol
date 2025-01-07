@@ -14,7 +14,7 @@ import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.so
 import {BaseAccount} from "@aa/core/BaseAccount.sol";
 import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
 
-import {Constants} from "@kinto-core/libraries/const.sol";
+import {Constants} from "@kinto-core/libraries/Const.sol";
 import {IKintoWalletFactory} from "../interfaces/IKintoWalletFactory.sol";
 import {IKintoID} from "../interfaces/IKintoID.sol";
 import {IKintoWallet} from "../interfaces/IKintoWallet.sol";

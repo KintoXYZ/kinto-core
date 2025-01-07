@@ -350,7 +350,7 @@ contract EngenBadgesTest is SharedSetup {
         uint256[] memory ids = new uint256[](1);
         ids[0] = 1;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
@@ -375,7 +375,7 @@ contract EngenBadgesTest is SharedSetup {
         ids[0] = 1;
         ids[1] = 2;
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenBadges),
