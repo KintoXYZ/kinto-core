@@ -112,6 +112,7 @@ contract BridgeWorkflowTest is BaseTest {
 
     function testBridge() public {
         vm.deal(_user, 100 ether);
+        vm.deal(address(bridger), GAS_FEE);
 
         token.mint(address(accessPoint), defaultAmount);
 
@@ -137,6 +138,7 @@ contract BridgeWorkflowTest is BaseTest {
 
     function testBridgeWhenAmountIsZero() public {
         vm.deal(_user, 100 ether);
+        vm.deal(address(bridger), GAS_FEE);
 
         token.mint(address(accessPoint), defaultAmount);
 

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.18;
 
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {StrSlice, toSlice} from "@dk1a/solidity-stringutils/src/StrSlice.sol";
+
+using {toSlice} for string;
 
 import "@kinto-core-test/helpers/ArrayHelpers.sol";
 import {BridgedKinto} from "@kinto-core/tokens/bridged/BridgedKinto.sol";
@@ -19,28 +22,39 @@ contract MintBatchKintoScript is MigrationHelper {
 
     address[] users;
     uint256[] amounts;
+    uint256[] usersBalancesBefore;
 
     function run() public override {
         super.run();
 
+        BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
+
         string memory userFile = vm.envString("USERS_FILE");
-        uint256 amount = 1e18;
         uint256 totalAmount;
 
         while (true) {
-            string memory addrStr = vm.readLine(userFile);
+            string memory addrAndAmountStr = vm.readLine(userFile);
             // if empty string then end of the file
-            if (addrStr.equal("")) {
+            if (addrAndAmountStr.equal("")) {
                 break;
             }
-            address addr = vm.parseAddress(addrStr);
+            (bool found, StrSlice addrStr, StrSlice amountStr) = addrAndAmountStr.toSlice().splitOnce(toSlice(","));
+            if (!found) revert("Data file is broken.");
+
+            address addr = vm.parseAddress(addrStr.toString());
             console2.log("addr:", addr);
             users.push(addr);
+
+            uint256 amount = vm.parseUint(amountStr.toString()) * 1e18;
+            // amounts are in 1e18
+            console2.log("amount:", amount);
             amounts.push(amount);
             totalAmount += amount;
+
+            usersBalancesBefore.push(kintoToken.balanceOf(addr));
         }
 
-        BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
+        console2.log("totalAmount:", totalAmount);
 
         uint256 totalSupplyBefore = kintoToken.totalSupply();
         // Burn tokens from RD
@@ -81,5 +95,9 @@ contract MintBatchKintoScript is MigrationHelper {
 
         // Check that tokens are minted
         assertEq(totalSupplyBefore, kintoToken.totalSupply());
+
+        for (uint256 index = 0; index < usersBalancesBefore.length; index++) {
+            assertEq(usersBalancesBefore[index] + amounts[index], kintoToken.balanceOf(users[index]));
+        }
     }
 }

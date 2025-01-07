@@ -37,7 +37,8 @@ remappings = [
 
     '@alto/=node_modules/alto/contracts/',
 
-    'permit2/=node_modules/permit2/'
+    'permit2/=node_modules/permit2/',
+    '@dk1a/solidity-stringutils/=node_modules/@dk1a/solidity-stringutils/'
 ]
 
 

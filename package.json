@@ -5,6 +5,7 @@
   "homepage": "https://github.com/KintoXYZ/kinto-core.git#readme",
   "version": "0.1.0",
   "devDependencies": {
+    "@dk1a/solidity-stringutils": "^0.3.3",
     "@openzeppelin/merkle-tree": "^1.0.6",
     "csv-parse": "^5.5.6",
     "dotenv": "^16.4.5",
