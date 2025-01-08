@@ -81,8 +81,14 @@ contract ContractCallTest is SharedSetup {
 
     function testIsContractCallAllowedFromEOA_WhenHandleOps() public view {
         address payable beneficiary = payable(address(0x456));
-        bytes memory handleOpsCallData = abi.encodeWithSelector(bytes4(0x1fad948c), new bytes(0), beneficiary);
-        bytes memory handleOpsV7CallData = abi.encodeWithSelector(bytes4(0x765e827f), new bytes(0), beneficiary);
+
+        // Create array of UserOperations with valid KintoWallet
+        PackedUserOperation[] memory validOps = new PackedUserOperation[](2);
+        validOps[0].sender = address(_kintoWallet);
+        validOps[1].sender = address(_kintoWallet);
+
+        bytes memory handleOpsCallData = abi.encodeWithSelector(bytes4(0x1fad948c), validOps, beneficiary);
+        bytes memory handleOpsV7CallData = abi.encodeWithSelector(bytes4(0x765e827f), validOps, beneficiary);
 
         // Test handleOps
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(beneficiary, ENTRYPOINT_V6, handleOpsCallData, 0), true);
@@ -94,9 +100,8 @@ contract ContractCallTest is SharedSetup {
         );
         assertEq(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ENTRYPOINT_V7, handleOpsV7CallData, 0), false);
 
-        bytes memory handleAggregatedOpsCallData = abi.encodeWithSelector(bytes4(0x4b1d7cf5), new bytes(0), beneficiary);
-        bytes memory handleAggregatedOpsV7CallData =
-            abi.encodeWithSelector(bytes4(0xdbed18e0), new bytes(0), beneficiary);
+        bytes memory handleAggregatedOpsCallData = abi.encodeWithSelector(bytes4(0x4b1d7cf5), validOps, beneficiary);
+        bytes memory handleAggregatedOpsV7CallData = abi.encodeWithSelector(bytes4(0xdbed18e0), validOps, beneficiary);
 
         // Test handleAggregatedOps
         assertEq(
@@ -187,6 +192,63 @@ contract ContractCallTest is SharedSetup {
         assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, ARB_RETRAYABLE_TX, new bytes(0), 0));
         assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(_paymaster), new bytes(0), 0));
         assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(_user, address(_kintoAppRegistry), new bytes(0), 0));
+    }
+
+    function testIsContractCallAllowedFromEOA_WhenHandleOpsWithKintoWallet() public {
+        // Prepare test wallets
+        address wallet1 = address(_kintoWallet); // Already KYC'd wallet
+        address wallet2 = address(0xbad); // Non-KYC'd wallet
+
+        // Create array of UserOperations with valid KintoWallet
+        PackedUserOperation[] memory validOps = new PackedUserOperation[](2);
+        validOps[0].sender = wallet1;
+        validOps[1].sender = wallet1;
+
+        // Create array of UserOperations with invalid wallet
+        PackedUserOperation[] memory invalidOps = new PackedUserOperation[](2);
+        invalidOps[0].sender = wallet1;
+        invalidOps[1].sender = wallet2;
+
+        // Test valid case - all operations from KintoWallets, beneficiary matches last sender
+        bytes memory validCallData = abi.encodeWithSelector(
+            bytes4(0x1fad948c), // handleOps selector
+            validOps,
+            alice0 // beneficiary matches sender
+        );
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V6, validCallData, 0));
+
+        // Test invalid case - not all operations from KintoWallets
+        bytes memory invalidOpsCallData = abi.encodeWithSelector(bytes4(0x1fad948c), invalidOps, alice0);
+        assertFalse(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V6, invalidOpsCallData, 0));
+
+        // Test empty ops array
+        PackedUserOperation[] memory emptyOps = new PackedUserOperation[](0);
+        bytes memory emptyOpsCallData = abi.encodeWithSelector(bytes4(0x1fad948c), emptyOps, wallet1);
+        assertFalse(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V6, emptyOpsCallData, 0));
+
+        // Test handleOps v7
+        bytes memory validV7CallData = abi.encodeWithSelector(
+            bytes4(0x765e827f), // handleOps v7 selector
+            validOps,
+            alice0
+        );
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V7, validV7CallData, 0));
+
+        // Test handleAggregatedOps
+        bytes memory validAggregatedCallData = abi.encodeWithSelector(
+            bytes4(0x4b1d7cf5), // handleAggregatedOps selector
+            validOps,
+            alice0
+        );
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V6, validAggregatedCallData, 0));
+
+        // Test handleAggregatedOps v7
+        bytes memory validAggregatedV7CallData = abi.encodeWithSelector(
+            bytes4(0xdbed18e0), // handleAggregatedOps v7 selector
+            validOps,
+            alice0
+        );
+        assertTrue(_kintoAppRegistry.isContractCallAllowedFromEOA(alice0, ENTRYPOINT_V7, validAggregatedV7CallData, 0));
     }
 
     /* ============ Helpers ============ */
