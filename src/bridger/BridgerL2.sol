@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
+
 import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
 import "@kinto-core/interfaces/IKintoWalletFactory.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -13,6 +16,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 /**
@@ -25,27 +29,49 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridgerL2 {
     using SignatureChecker for address;
     using ECDSA for bytes32;
+    using SafeERC20 for IERC20;
+
+    /* ============ Errors ============ */
+
+    /// @notice The amount is invalid.
+    /// @param amount The invalid amount.
+    error InvalidAmount(uint256 amount);
+
+    /// @notice The vault is not permitted.
+    error InvalidVault(address vault);
+
+    /// @notice Balance is too low for bridge operation.
+    /// @param amount The amount required.
+    error BalanceTooLow(uint256 amount, uint256 balance);
 
     /* ============ Events ============ */
+
     event Claim(address indexed wallet, address indexed asset, uint256 amount);
 
+    event Withdraw(address indexed user, address indexed l1Address, address indexed inputAsset, uint256 amount);
+
     /* ============ Constants ============ */
+
+    /// @notice Treasure contract address.
+    address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     /* ============ State Variables ============ */
     IKintoWalletFactory public immutable walletFactory;
 
-    /// @dev Mapping of all depositors by user address and asset address
+    /// @notice Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
-    /// @dev Deposit totals per asset
+    /// @notice Deposit totals per asset
     mapping(address => uint256) public override depositTotals;
-    /// @dev Count of deposits
+    /// @notice Count of deposits
     uint256 public override depositCount;
-    /// @dev Enable or disable the locks
+    /// @notice Enable or disable the locks
     bool public override unlocked;
-    /// @dev Phase IV assets
+    /// @notice Phase IV assets
     address[] public depositedAssets;
-    /// @dev admin wallet
+    /// @notice admin wallet
     address public immutable adminWallet;
+    /// @notice List of allowed vaults for the Bridge.
+    mapping(address => bool) public bridgeVaults;
 
     /* ============ Constructor & Upgrades ============ */
     constructor(address _walletFactory) {
@@ -71,6 +97,47 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
+    }
+
+    /* ============ Withdraw  ============ */
+
+    /**
+     * @notice Internal function to handle withdrawals.
+     * @param user Address of the user.
+     * @param inputAsset Address of the input asset.
+     * @param amount Amount of the input asset.
+     * @param l1Address Kinto Wallet Address on L2 where tokens will be deposited.
+     * @param fee Amount paid as a fee.
+     * @param bridgeData Data required for the bridge.
+     */
+    function withdrawERC20(
+        address user,
+        address inputAsset,
+        uint256 amount,
+        address l1Address,
+        uint256 fee,
+        IBridger.BridgeData calldata bridgeData
+    ) external nonReentrant {
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(inputAsset).safeTransferFrom(msg.sender, TREASURY, fee);
+
+        if (amount == 0) revert InvalidAmount(0);
+        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
+
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(inputAsset).allowance(address(this), bridgeData.vault) < amount) {
+            IERC20(inputAsset).safeApprove(bridgeData.vault, type(uint256).max);
+        }
+
+        // slither-disable-next-line arbitrary-send-eth
+        IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
+            l1Address, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
+        );
+
+        emit Withdraw(user, l1Address, inputAsset, amount);
     }
 
     /* ============ Privileged Functions ============ */

@@ -38,6 +38,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         setUpKintoFork();
     }
 
+    /* ============ Withdraw  ============ */
+
     /* ============ Claim Commitment (with real asset) ============ */
 
     function testClaimCommitment_WhenRealAsset() public {
