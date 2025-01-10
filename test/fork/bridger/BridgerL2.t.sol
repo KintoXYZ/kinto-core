@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {stdJson} from "forge-std/StdJson.sol";
-import "@kinto-core/interfaces/bridger/IBridger.sol";
-import "@kinto-core/bridger/BridgerL2.sol";
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {BridgerL2} from "@kinto-core/bridger/BridgerL2.sol";
 
-import "@kinto-core-test/helpers/UUPSProxy.sol";
-import "@kinto-core-test/helpers/SignatureHelper.sol";
-import "@kinto-core-test/helpers/SignatureHelper.sol";
-import "@kinto-core-test/SharedSetup.t.sol";
+import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
+import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
+import {BridgeDataHelper} from "@kinto-core-test/helpers/BridgeDataHelper.sol";
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract BridgerL2Test is SignatureHelper, SharedSetup {
+import "forge-std/console2.sol";
+
+contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
     using stdJson for string;
 
     mapping(address => uint256) internal balancesBefore;
@@ -39,6 +42,29 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     }
 
     /* ============ Withdraw  ============ */
+
+    function testWithdrawERC20() public {
+        address inputAsset = DAI_KINTO;
+        uint256 amountIn = 1e18;
+        uint256 fee = 1;
+
+        IBridger.BridgeData memory bridgeData = bridgeData[block.chainid][DAI_KINTO];
+        deal(address(_bridgerL2), bridgeData.gasFee);
+
+        deal(inputAsset, address(_kintoWallet), amountIn + fee);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.setBridgeVault(bridgeData.vault, true);
+
+        vm.prank(address(_kintoWallet));
+        IERC20(inputAsset).approve(address(_bridgerL2), amountIn + fee);
+
+        vm.startPrank(address(_kintoWallet));
+        console2.log("address(_kintoWallet):", address(_kintoWallet));
+        console2.log("_kintoWallet.owners(0):", _kintoWallet.owners(0));
+        _bridgerL2.withdrawERC20(inputAsset, amountIn, _kintoWallet.owners(0), fee, bridgeData);
+        vm.stopPrank();
+    }
 
     /* ============ Claim Commitment (with real asset) ============ */
 
@@ -156,8 +182,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log("address", user);
-            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
             balancesBefore[user] = _bridgerL2.deposits(user, wstEthFake);
@@ -170,7 +194,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             address user = users[index];
             uint256 amount = amounts[index];
-            console2.log("amount:", amount);
             assertEq(_bridgerL2.deposits(user, wstEthFake), balancesBefore[user] + amount, "Balance is wrong");
         }
     }
@@ -186,8 +209,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             uint256 amount = json.readUint(string.concat(".", keys[index]));
             address user = vm.parseAddress(keys[index]);
-            console2.log("address", user);
-            console2.log("amount:", amount);
             users[index] = user;
             amounts[index] = amount;
         }
@@ -198,8 +219,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         for (uint256 index = 0; index < keys.length; index++) {
             address user = users[index];
             uint256 amount = amounts[index];
-            console2.log("address", user);
-            console2.log("amount:", amount);
             assertEq(_bridgerL2.deposits(user, ENA), amount, "Balance is wrong");
         }
     }

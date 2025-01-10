@@ -3,9 +3,28 @@ pragma solidity ^0.8.18;
 
 interface IBridgerL2 {
     /* ============ Errors ============ */
-    error InvalidWallet();
+
+    error InvalidReceiver(address wallet);
+    error InvalidWallet(address wallet);
     error NotUnlockedYet();
     error Unauthorized();
+
+    /// @notice The amount is invalid.
+    /// @param amount The invalid amount.
+    error InvalidAmount(uint256 amount);
+
+    /// @notice The vault is not permitted.
+    error InvalidVault(address vault);
+
+    /// @notice Balance is too low for bridge operation.
+    /// @param amount The amount required.
+    error BalanceTooLow(uint256 amount, uint256 balance);
+
+    /* ============ Events ============ */
+
+    event Claim(address indexed wallet, address indexed asset, uint256 amount);
+
+    event Withdraw(address indexed user, address indexed l1Address, address indexed inputAsset, uint256 amount);
 
     /* ============ Structs ============ */
 

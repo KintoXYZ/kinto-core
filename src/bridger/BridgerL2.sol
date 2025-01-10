@@ -31,25 +31,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
 
-    /* ============ Errors ============ */
-
-    /// @notice The amount is invalid.
-    /// @param amount The invalid amount.
-    error InvalidAmount(uint256 amount);
-
-    /// @notice The vault is not permitted.
-    error InvalidVault(address vault);
-
-    /// @notice Balance is too low for bridge operation.
-    /// @param amount The amount required.
-    error BalanceTooLow(uint256 amount, uint256 balance);
-
-    /* ============ Events ============ */
-
-    event Claim(address indexed wallet, address indexed asset, uint256 amount);
-
-    event Withdraw(address indexed user, address indexed l1Address, address indexed inputAsset, uint256 amount);
-
     /* ============ Constants ============ */
 
     /// @notice Treasure contract address.
@@ -99,30 +80,40 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         (newImplementation);
     }
 
+    function setBridgeVault(address vault, bool flag) external onlyOwner {
+        bridgeVaults[vault] = flag;
+    }
+
     /* ============ Withdraw  ============ */
 
     /**
      * @notice Internal function to handle withdrawals.
-     * @param user Address of the user.
      * @param inputAsset Address of the input asset.
      * @param amount Amount of the input asset.
-     * @param l1Address Kinto Wallet Address on L2 where tokens will be deposited.
+     * @param receiver Kinto Wallet Address on L2 where tokens will be deposited.
      * @param fee Amount paid as a fee.
      * @param bridgeData Data required for the bridge.
      */
     function withdrawERC20(
-        address user,
         address inputAsset,
         uint256 amount,
-        address l1Address,
+        address receiver,
         uint256 fee,
         IBridger.BridgeData calldata bridgeData
     ) external nonReentrant {
+        if (walletFactory.walletTs(msg.sender) == 0) {
+            revert InvalidWallet(msg.sender);
+        }
+        if (!IKintoWallet(msg.sender).isFunderWhitelisted(receiver)) {
+            revert InvalidReceiver(receiver);
+        }
         if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
         // slither-disable-next-line arbitrary-send-erc20
         IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
-        // slither-disable-next-line arbitrary-send-erc20
-        IERC20(inputAsset).safeTransferFrom(msg.sender, TREASURY, fee);
+        if (fee > 0) {
+            // slither-disable-next-line arbitrary-send-erc20
+            IERC20(inputAsset).safeTransferFrom(msg.sender, TREASURY, fee);
+        }
 
         if (amount == 0) revert InvalidAmount(0);
         if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
@@ -134,10 +125,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
         // slither-disable-next-line arbitrary-send-eth
         IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
-            l1Address, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
+            receiver, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
         );
 
-        emit Withdraw(user, l1Address, inputAsset, amount);
+        emit Withdraw(msg.sender, receiver, inputAsset, amount);
     }
 
     /* ============ Privileged Functions ============ */
@@ -207,7 +198,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      */
     function claimCommitment() external nonReentrant {
         if (walletFactory.walletTs(msg.sender) == 0) {
-            revert InvalidWallet();
+            revert InvalidWallet(msg.sender);
         }
         if (!unlocked) {
             revert NotUnlockedYet();
