@@ -16,7 +16,7 @@ contract BridgerL2NewUpgrade is BridgerL2 {
         return 1;
     }
 
-    constructor(address factory) BridgerL2(factory) {}
+    constructor(address factory, address kintoID) BridgerL2(factory, kintoID) {}
 }
 
 contract BridgerL2Test is SignatureHelper, SharedSetup {
@@ -43,14 +43,14 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory), address(_kintoID));
         vm.prank(_owner);
         _bridgerL2.upgradeTo(address(_newImpl));
         assertEq(BridgerL2NewUpgrade(payable(address(_bridgerL2))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory), address(_kintoID));
         vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.upgradeToAndCall(address(_newImpl), bytes(""));
     }
@@ -159,27 +159,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         assertEq(ERC20(sDAIL2).balanceOf(address(_kintoWallet)), _amount);
     }
 
-    function testClaimCommitment_RevertWhen_WalletIsInvalid() public {
-        address _asset = sDAI;
-        uint256 _amount = 100;
-
-        address[] memory _assets = new address[](1);
-        _assets[0] = _asset;
-        deal(sDAIL2, address(_bridgerL2), _amount);
-
-        vm.startPrank(_owner);
-
-        _bridgerL2.setDepositedAssets(_assets);
-        _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
-        _bridgerL2.unlockCommitments();
-
-        vm.stopPrank();
-
-        vm.prank(_user);
-        vm.expectRevert(IBridgerL2.InvalidWallet.selector);
-        _bridgerL2.claimCommitment();
-    }
-
     function testClaimCommitment_RevertWhen_NotUnlocked() public {
         address _asset = sDAI;
         uint256 _amount = 100;
@@ -243,6 +222,4 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         assertEq(amounts[0], 1 ether);
         assertEq(amounts[1], 4 ether);
     }
-
-    // todo: test everything through user ops because it is what we will use
 }

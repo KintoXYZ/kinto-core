@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 interface IBridgerL2 {
     /* ============ Errors ============ */
 
+    error KYCRequired(address user);
     error InvalidReceiver(address wallet);
     error InvalidWallet(address wallet);
     error NotUnlockedYet();

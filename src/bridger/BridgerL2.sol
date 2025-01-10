@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 
 import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
 import "@kinto-core/interfaces/IKintoWalletFactory.sol";
@@ -37,8 +38,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
     /* ============ State Variables ============ */
+    /// @notice
+    IKintoID public immutable kintoID;
+    /// @notice
     IKintoWalletFactory public immutable walletFactory;
-
     /// @notice Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
     /// @notice Deposit totals per asset
@@ -49,16 +52,15 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     bool public override unlocked;
     /// @notice Phase IV assets
     address[] public depositedAssets;
-    /// @notice admin wallet
-    address public immutable adminWallet;
     /// @notice List of allowed vaults for the Bridge.
     mapping(address => bool) public bridgeVaults;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _walletFactory) {
+    constructor(address _walletFactory, address _kintoID) {
         _disableInitializers();
+
         walletFactory = IKintoWalletFactory(_walletFactory);
-        adminWallet = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
+        kintoID = IKintoID(_kintoID);
     }
 
     /**
@@ -103,6 +105,9 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     ) external nonReentrant {
         if (walletFactory.walletTs(msg.sender) == 0) {
             revert InvalidWallet(msg.sender);
+        }
+        if (!kintoID.isKYC(IKintoWallet(msg.sender).owners(0))) {
+            revert KYCRequired(receiver);
         }
         if (!IKintoWallet(msg.sender).isFunderWhitelisted(receiver)) {
             revert InvalidReceiver(receiver);
@@ -255,5 +260,5 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 }
 
 contract BridgerL2V9 is BridgerL2 {
-    constructor(address _walletFactory) BridgerL2(_walletFactory) {}
+    constructor(address walletFactory, address kintoID) BridgerL2(walletFactory, kintoID) {}
 }

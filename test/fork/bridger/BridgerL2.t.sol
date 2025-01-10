@@ -29,7 +29,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
 
         // upgrade Bridger L2 to latest version
         // TODO: remove upgrade after having actually upgraded the contract on mainnet
-        BridgerL2 _newImpl = new BridgerL2(address(_walletFactory));
+        BridgerL2 _newImpl = new BridgerL2(address(_walletFactory), address(_kintoID));
         vm.prank(_owner);
         _bridgerL2.upgradeTo(address(_newImpl));
 
