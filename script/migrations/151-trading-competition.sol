@@ -52,17 +52,15 @@ contract TransferDclmScript is MigrationHelper {
             totalAmount += kadai_amounts[i];
         }
         _handleOps(
-            abi.encodeWithSelector(
-                BridgedToken.burn.selector,
-                _getChainDeployment("RewardsDistributor"),
-                totalAmount
-            ),
+            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), totalAmount),
             kintoToken
         );
 
         // Mint tokens to winner address
         for (uint256 i = 0; i < kadai_winners.length; i++) {
-            _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winners[i], kadai_amounts[i]), kintoToken);
+            _handleOps(
+                abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winners[i], kadai_amounts[i]), kintoToken
+            );
         }
     }
 }
