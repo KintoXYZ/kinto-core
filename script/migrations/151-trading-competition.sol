@@ -33,7 +33,7 @@ contract TransferDclmScript is MigrationHelper {
         address kadai_winner_1 = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
         address kadai_winner_2 = 0x04bF0Fe175E23e3E4474712040f8EEBbf0484100;
         address kadai_winner_3 = 0x956642E471D5DA741b34aBB14d1B74b46583cD80;
-        
+
         address kadai_winner_4 = 0x2025b0E5A1666c690E35f4638Fcfc319f03c8075;
         address kadai_winner_5 = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
         address kadai_winner_6 = 0xCa42442258b9E9994Ec9EDe50b70bf1b3bAA491E;
@@ -54,7 +54,8 @@ contract TransferDclmScript is MigrationHelper {
             abi.encodeWithSelector(
                 BridgedToken.burn.selector,
                 _getChainDeployment("RewardsDistributor"),
-                kadai_amount_1 + kadai_amount_2 + kadai_amount_3 + kadai_amount_4 + kadai_amount_5 + kadai_amount_6 + kadai_amount_7
+                kadai_amount_1 + kadai_amount_2 + kadai_amount_3 + kadai_amount_4 + kadai_amount_5 + kadai_amount_6
+                    + kadai_amount_7
             ),
             kintoToken
         );

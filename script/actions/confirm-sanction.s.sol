@@ -59,4 +59,3 @@ contract ConfirmSanctionScript is MigrationHelper {
         }
     }
 }
-
