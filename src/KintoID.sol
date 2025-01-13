@@ -455,7 +455,7 @@ contract KintoID is
      * @param _days Number of days to consider for monitoring freshness
      * @return bool True if sanctions were monitored within the specified period
      */
-    function isSanctionsMonitored(uint32 _days) public view virtual override returns (bool) {
+    function isSanctionsMonitored(uint256 _days) public view virtual override returns (bool) {
         return block.timestamp - lastMonitoredAt < _days * (1 days);
     }
 
@@ -467,7 +467,7 @@ contract KintoID is
      */
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
         // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
-        return isSanctionsMonitored(7)
+        return isSanctionsMonitored(EXIT_WINDOW_PERIOD)
             && (
                 _kycmetas[_account].sanctionsCount == 0
                     || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
@@ -483,7 +483,7 @@ contract KintoID is
      */
     function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
         // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
-        return isSanctionsMonitored(7)
+        return isSanctionsMonitored(EXIT_WINDOW_PERIOD)
             && (
                 !_kycmetas[_account].sanctions.get(_countryId)
                     || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
