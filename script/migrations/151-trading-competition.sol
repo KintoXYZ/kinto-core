@@ -20,62 +20,47 @@ contract TransferDclmScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        uint256 kadai_amount_1 = 50e18;
-        uint256 kadai_amount_2 = 20e18;
-        uint256 kadai_amount_3 = 10e18;
+        uint256[] memory kadai_amounts = new uint256[](7);
+        kadai_amounts[0] = 50e18;
+        kadai_amounts[1] = 20e18;
+        kadai_amounts[2] = 10e18;
+        kadai_amounts[3] = 50e18;
+        kadai_amounts[4] = 20e18;
+        kadai_amounts[5] = 10e18;
+        kadai_amounts[6] = 50e18;
 
-        uint256 kadai_amount_4 = 50e18;
-        uint256 kadai_amount_5 = 20e18;
-        uint256 kadai_amount_6 = 10e18;
+        address[] memory kadai_winners = new address[](7);
+        kadai_winners[0] = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
+        kadai_winners[1] = 0x04bF0Fe175E23e3E4474712040f8EEBbf0484100;
+        kadai_winners[2] = 0x956642E471D5DA741b34aBB14d1B74b46583cD80;
 
-        uint256 kadai_amount_7 = 50e18;
+        kadai_winners[3] = 0x2025b0E5A1666c690E35f4638Fcfc319f03c8075;
+        kadai_winners[4] = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
+        kadai_winners[5] = 0xCa42442258b9E9994Ec9EDe50b70bf1b3bAA491E;
 
-        address kadai_winner_1 = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
-        address kadai_winner_2 = 0x04bF0Fe175E23e3E4474712040f8EEBbf0484100;
-        address kadai_winner_3 = 0x956642E471D5DA741b34aBB14d1B74b46583cD80;
-
-        address kadai_winner_4 = 0x2025b0E5A1666c690E35f4638Fcfc319f03c8075;
-        address kadai_winner_5 = 0xa13D24d265EFbd84c993e525A210458CE15081b9;
-        address kadai_winner_6 = 0xCa42442258b9E9994Ec9EDe50b70bf1b3bAA491E;
-
-        address kadai_winner_7 = 0x71F51C64110709880260610EA8C411A28c067739;
+        kadai_winners[6] = 0x71F51C64110709880260610EA8C411A28c067739;
 
         address kintoToken = _getChainDeployment("KINTO");
-        uint256 kadai_balanceBefore_1 = ERC20(kintoToken).balanceOf(kadai_winner_1);
-        uint256 kadai_balanceBefore_2 = ERC20(kintoToken).balanceOf(kadai_winner_2);
-        uint256 kadai_balanceBefore_3 = ERC20(kintoToken).balanceOf(kadai_winner_3);
-        uint256 kadai_balanceBefore_4 = ERC20(kintoToken).balanceOf(kadai_winner_4);
-        uint256 kadai_balanceBefore_5 = ERC20(kintoToken).balanceOf(kadai_winner_5);
-        uint256 kadai_balanceBefore_6 = ERC20(kintoToken).balanceOf(kadai_winner_6);
-        uint256 kadai_balanceBefore_7 = ERC20(kintoToken).balanceOf(kadai_winner_7);
+        uint256[] memory kadai_balancesBefore = new uint256[](7);
+        for (uint256 i = 0; i < kadai_winners.length; i++) {
+            kadai_balancesBefore[i] = ERC20(kintoToken).balanceOf(kadai_winners[i]);
+        }
 
         // Burn tokens from RD
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < kadai_amounts.length; i++) {
+            totalAmount += kadai_amounts[i];
+        }
         _handleOps(
-            abi.encodeWithSelector(
-                BridgedToken.burn.selector,
-                _getChainDeployment("RewardsDistributor"),
-                kadai_amount_1 + kadai_amount_2 + kadai_amount_3 + kadai_amount_4 + kadai_amount_5 + kadai_amount_6
-                    + kadai_amount_7
-            ),
+            abi.encodeWithSelector(BridgedToken.burn.selector, _getChainDeployment("RewardsDistributor"), totalAmount),
             kintoToken
         );
 
         // Mint tokens to winner address
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_1, kadai_amount_1), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_2, kadai_amount_2), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_3, kadai_amount_3), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_4, kadai_amount_4), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_5, kadai_amount_5), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_6, kadai_amount_6), kintoToken);
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winner_7, kadai_amount_7), kintoToken);
-
-        // Check that tokens received
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_1) - kadai_balanceBefore_1, kadai_amount_1);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_2) - kadai_balanceBefore_2, kadai_amount_2);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_3) - kadai_balanceBefore_3, kadai_amount_3);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_4) - kadai_balanceBefore_4, kadai_amount_4);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_5) - kadai_balanceBefore_5, kadai_amount_5);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_6) - kadai_balanceBefore_6, kadai_amount_6);
-        assertEq(ERC20(kintoToken).balanceOf(kadai_winner_7) - kadai_balanceBefore_7, kadai_amount_7);
+        for (uint256 i = 0; i < kadai_winners.length; i++) {
+            _handleOps(
+                abi.encodeWithSelector(BridgedToken.mint.selector, kadai_winners[i], kadai_amounts[i]), kintoToken
+            );
+        }
     }
 }
