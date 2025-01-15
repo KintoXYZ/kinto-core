@@ -12,10 +12,12 @@ import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 import {BridgeDataHelper} from "@kinto-core-test/helpers/BridgeDataHelper.sol";
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@kinto-core-test/helpers/ArrayHelpers.sol";
 
 import "forge-std/console2.sol";
 
 contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
+    using ArrayHelpers for *;
     using stdJson for string;
 
     mapping(address => uint256) internal balancesBefore;
@@ -54,7 +56,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
         deal(inputAsset, address(_kintoWallet), amountIn + fee);
 
         vm.prank(_bridgerL2.owner());
-        _bridgerL2.setBridgeVault(bridgeData.vault, true);
+        _bridgerL2.setBridgeVault([bridgeData.vault].toMemoryArray(), [true].toMemoryArray());
 
         vm.prank(address(_kintoWallet));
         IERC20(inputAsset).approve(address(_bridgerL2), amountIn + fee);

@@ -51,6 +51,8 @@ interface IBridgerL2 {
 
     event SenderSet(address[] indexed sender, bool[] allowed);
 
+    event BridgeVaultSet(address[] indexed vault, bool[] flag);
+
     /* ============ Structs ============ */
 
     /* ============ State Change ============ */

@@ -59,11 +59,11 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     bool public override unlocked;
     /// @notice Phase IV assets
     address[] public depositedAssets;
-    /// @notice List of allowed vaults for the Bridge.
-    mapping(address => bool) public bridgeVaults;
-    // addresses that can receive assets while being not wallets on dstPreHookCall
+    /// @notice Set of allowed vaults for the Bridge.
+    EnumerableSet.AddressSet private _bridgeVaults;
+    // @notice Addresses that can receive assets while being not wallets on dstPreHookCall.
     EnumerableSet.AddressSet private _receiveAllowlist;
-    // addresses that can bypass funder whitelisted check on dstPreHookCall
+    // @notice Addresses that can bypass funder whitelisted check on dstPreHookCall.
     EnumerableSet.AddressSet private _senderAllowlist;
 
     /* ============ Constructor & Upgrades ============ */
@@ -91,10 +91,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
-    }
-
-    function setBridgeVault(address vault, bool flag) external onlyOwner {
-        bridgeVaults[vault] = flag;
     }
 
     /* ============ Withdraw  ============ */
@@ -132,7 +128,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         }
 
         if (amount == 0) revert InvalidAmount(0);
-        if (bridgeVaults[bridgeData.vault] == false) revert InvalidVault(bridgeData.vault);
+        if (_bridgeVaults.contains(bridgeData.vault) == false) revert InvalidVault(bridgeData.vault);
 
         // Approve max allowance to save on gas for future transfers
         if (IERC20(inputAsset).allowance(address(this), bridgeData.vault) < amount) {
@@ -145,6 +141,21 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         );
 
         emit Withdraw(msg.sender, receiver, inputAsset, amount);
+    }
+
+    function setBridgeVault(address[] memory vault, bool[] memory flag) external onlyOwner {
+        for (uint256 index = 0; index < vault.length; index++) {
+            if (flag[index]) {
+                _bridgeVaults.add(vault[index]);
+            } else {
+                _bridgeVaults.remove(vault[index]);
+            }
+        }
+        emit BridgeVaultSet(vault, flag);
+    }
+
+    function bridgeVaults() external view returns (address[] memory) {
+        return _bridgeVaults.values();
     }
 
     /* ============ Privileged Functions ============ */
