@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+
 import {stdJson} from "forge-std/StdJson.sol";
+
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
@@ -17,7 +20,7 @@ contract AccessPointTest is SignatureHelper, SharedSetup {
         // create Kinto fork
         vm.createSelectFork(vm.rpcUrl("kinto"));
 
-        _entryPoint = IKintoEntryPoint(_getChainDeployment("EntryPoint"));
+        _entryPoint = IEntryPoint(_getChainDeployment("EntryPoint"));
         _kintoAppRegistry = KintoAppRegistry(_getChainDeployment("KintoAppRegistry"));
         _kintoID = KintoID(_getChainDeployment("KintoID"));
         _walletFactory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));

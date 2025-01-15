@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
 import "@aa/interfaces/IEntryPoint.sol";
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 
 import "@kinto-core/wallet/KintoWallet.sol";
