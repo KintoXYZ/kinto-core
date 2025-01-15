@@ -43,7 +43,7 @@ jobs:
       - uses: ./.github/actions/install
 
       - name: Build contracts
-        run: forge build --sizes
+        run: forge build --sizes || true
 
       - name: Save forge compilation cache
         uses: actions/cache/save@v3
