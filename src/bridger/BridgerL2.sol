@@ -271,9 +271,12 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     function srcPreHookCall(SrcPreHookCallParams memory params_) external view {
         address sender = params_.msgSender;
-        if (walletFactory.walletTs(sender) == 0) revert InvalidSender(sender);
-        if (!kintoID.isKYC(IKintoWallet(sender).owners(0))) {
-            revert KYCRequired(sender);
+        // allow BridgerL2 to withdraw
+        if (sender != address(this)) {
+            if (walletFactory.walletTs(sender) == 0) revert InvalidSender(sender);
+            if (!kintoID.isKYC(IKintoWallet(sender).owners(0))) {
+                revert KYCRequired(sender);
+            }
         }
     }
 

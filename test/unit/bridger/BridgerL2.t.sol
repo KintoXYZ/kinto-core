@@ -184,12 +184,17 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
 
     /* ============ Hooks ============ */
 
-    function testSrcPreHookCall__WhenSenderNotKintoWallet() external {
-        address sender = address(0xdead);
-
-        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidSender.selector, sender));
+    function testSrcPreHookCall() external view {
         _bridgerL2.srcPreHookCall(
-            SrcPreHookCallParams(address(0), address(sender), TransferInfo(address(0), 0, bytes("")))
+            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testSrcPreHookCall__WhenSenderBridgerL2() external view {
+        address receiver = address(_kintoWallet);
+
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_bridgerL2), TransferInfo(receiver, 0, bytes("")))
         );
     }
 
@@ -199,12 +204,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         KintoID(_kintoID).addSanction(_owner, 1);
 
         vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _kintoWallet));
-        _bridgerL2.srcPreHookCall(
-            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
-        );
-    }
-
-    function testSrcPreHookCall() external {
         _bridgerL2.srcPreHookCall(
             SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
         );

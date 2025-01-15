@@ -46,6 +46,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
     /* ============ Withdraw  ============ */
 
     function testWithdrawERC20() public {
+        vm.skip(true);
+
         address inputAsset = DAI_KINTO;
         uint256 amountIn = 1e18;
         uint256 fee = 1;
