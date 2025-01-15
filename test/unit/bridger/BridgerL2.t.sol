@@ -182,6 +182,100 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         _bridgerL2.claimCommitment();
     }
 
+    /* ============ WithdrawERC20 ============ */
+
+    function testWithdrawERC20_RevertWhen_NotWallet() public {
+        address token = address(new ERC20("Test", "TST"));
+        IBridger.BridgeData memory bridgeData;
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidWallet.selector, address(this)));
+        _bridgerL2.withdrawERC20(token, 1 ether, _owner, 0, bridgeData);
+    }
+
+    function testWithdrawERC20_RevertWhen_NotKYCd() public {
+        address token = address(new ERC20("Test", "TST"));
+        IBridger.BridgeData memory bridgeData;
+
+        // Revoke KYC
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _owner));
+        _bridgerL2.withdrawERC20(token, 1 ether, _owner, 0, bridgeData);
+    }
+
+    function testWithdrawERC20_RevertWhen_InvalidReceiver() public {
+        address token = address(new ERC20("Test", "TST"));
+        address invalidReceiver = address(0xbad);
+        IBridger.BridgeData memory bridgeData;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidReceiver.selector, invalidReceiver));
+        _bridgerL2.withdrawERC20(token, 1 ether, invalidReceiver, 0, bridgeData);
+    }
+
+    /* ============ Allowlists ============ */
+
+    function testSetReceiverAllowlist() public {
+        address receiver1 = address(0x1);
+        address receiver2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.ReceiverSet([receiver1, receiver2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setReceiver([receiver1, receiver2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory allowedReceivers = _bridgerL2.receiveAllowlist();
+        assertEq(allowedReceivers.length, 1);
+        assertEq(allowedReceivers[0], receiver1);
+    }
+
+    function testSetSenderAllowlist() public {
+        address sender1 = address(0x1);
+        address sender2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.SenderSet([sender1, sender2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setSender([sender1, sender2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory allowedSenders = _bridgerL2.senderAllowlist();
+        assertEq(allowedSenders.length, 1);
+        assertEq(allowedSenders[0], sender1);
+    }
+
+    function testSetReceiver_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setReceiver([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
+    function testSetSender_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setSender([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
+    /* ============ SetBridgeVault ============ */
+
+    function testSetBridgeVault() public {
+        address vault1 = address(0x1);
+        address vault2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.BridgeVaultSet([vault1, vault2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setBridgeVault([vault1, vault2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory registeredVaults = _bridgerL2.bridgeVaults();
+        assertEq(registeredVaults.length, 1);
+        assertEq(registeredVaults[0], vault1);
+    }
+
+    function testSetBridgeVault_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setBridgeVault([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
     /* ============ Hooks ============ */
 
     function testSrcPreHookCall() external view {
