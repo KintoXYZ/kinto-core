@@ -4,7 +4,12 @@ pragma solidity ^0.8.18;
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
 
-import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import {
+    IBridgerL2,
+    SrcPreHookCallParams,
+    DstPreHookCallParams,
+    TransferInfo
+} from "@kinto-core/interfaces/bridger/IBridgerL2.sol";
 import "@kinto-core/interfaces/IKintoWalletFactory.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
 import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
@@ -19,6 +24,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title BridgerL2 - The vault that holds the bridged assets during Phase IV
@@ -31,6 +37,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     using SignatureChecker for address;
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /* ============ Constants ============ */
 
@@ -54,6 +61,10 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     address[] public depositedAssets;
     /// @notice List of allowed vaults for the Bridge.
     mapping(address => bool) public bridgeVaults;
+    // addresses that can receive assets while being not wallets on dstPreHookCall
+    EnumerableSet.AddressSet private _receiveAllowlist;
+    // addresses that can bypass funder whitelisted check on dstPreHookCall
+    EnumerableSet.AddressSet private _senderAllowlist;
 
     /* ============ Constructor & Upgrades ============ */
     constructor(address _walletFactory, address _kintoID) {
@@ -243,6 +254,67 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
             address currentAsset = depositedAssets[i];
             amounts[i] = depositTotals[currentAsset];
         }
+    }
+
+    /* ============ Hook ============ */
+
+    function srcPreHookCall(SrcPreHookCallParams memory params_) external view {
+        address sender = params_.msgSender;
+        if (walletFactory.walletTs(sender) == 0) revert InvalidSender(sender);
+        if (!kintoID.isKYC(IKintoWallet(sender).owners(0))) {
+            revert KYCRequired(sender);
+        }
+    }
+
+    function dstPreHookCall(DstPreHookCallParams memory params_) external view {
+        address receiver = params_.transferInfo.receiver;
+        address msgSender = abi.decode(params_.transferInfo.data, (address));
+
+        if (!_receiveAllowlist.contains(receiver)) {
+            if (walletFactory.walletTs(receiver) == 0) {
+                revert InvalidReceiver(receiver);
+            }
+
+            if (!kintoID.isKYC(IKintoWallet(receiver).owners(0))) {
+                revert KYCRequired(receiver);
+            }
+        }
+
+        if (!_senderAllowlist.contains(msgSender)) {
+            if (!IKintoWallet(receiver).isFunderWhitelisted(msgSender)) {
+                revert SenderNotAllowed(msgSender);
+            }
+        }
+    }
+
+    function setReceiver(address[] memory receiver, bool[] memory allowed) external onlyOwner {
+        for (uint256 index = 0; index < receiver.length; index++) {
+            if (allowed[index]) {
+                _receiveAllowlist.add(receiver[index]);
+            } else {
+                _receiveAllowlist.remove(receiver[index]);
+            }
+        }
+        emit ReceiverSet(receiver, allowed);
+    }
+
+    function setSender(address[] memory sender, bool[] memory allowed) external onlyOwner {
+        for (uint256 index = 0; index < sender.length; index++) {
+            if (allowed[index]) {
+                _senderAllowlist.add(sender[index]);
+            } else {
+                _senderAllowlist.remove(sender[index]);
+            }
+        }
+        emit SenderSet(sender, allowed);
+    }
+
+    function receiveAllowlist() external view returns (address[] memory) {
+        return _receiveAllowlist.values();
+    }
+
+    function senderAllowlist() external view returns (address[] memory) {
+        return _senderAllowlist.values();
     }
 
     /* ============ Internals ============ */

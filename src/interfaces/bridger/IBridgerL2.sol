@@ -1,10 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+struct SrcPreHookCallParams {
+    address connector;
+    address msgSender;
+    TransferInfo transferInfo;
+}
+
+struct DstPreHookCallParams {
+    address connector;
+    bytes connectorCache;
+    TransferInfo transferInfo;
+}
+
+struct TransferInfo {
+    address receiver;
+    uint256 amount;
+    bytes data;
+}
+
 interface IBridgerL2 {
     /* ============ Errors ============ */
 
     error KYCRequired(address user);
+    error SenderNotAllowed(address wallet);
+    error InvalidSender(address wallet);
     error InvalidReceiver(address wallet);
     error InvalidWallet(address wallet);
     error NotUnlockedYet();
@@ -26,6 +46,10 @@ interface IBridgerL2 {
     event Claim(address indexed wallet, address indexed asset, uint256 amount);
 
     event Withdraw(address indexed user, address indexed l1Address, address indexed inputAsset, uint256 amount);
+
+    event ReceiverSet(address[] indexed receiver, bool[] allowed);
+
+    event SenderSet(address[] indexed sender, bool[] allowed);
 
     /* ============ Structs ============ */
 

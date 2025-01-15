@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
+import "@kinto-core-test/helpers/ArrayHelpers.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -20,6 +21,8 @@ contract BridgerL2NewUpgrade is BridgerL2 {
 }
 
 contract BridgerL2Test is SignatureHelper, SharedSetup {
+    using ArrayHelpers for *;
+
     address sDAI = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // virtual sDAI
     address sDAIL2 = 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI L2 representation
 
@@ -177,6 +180,98 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         vm.prank(address(_kintoWallet));
         vm.expectRevert(IBridgerL2.NotUnlockedYet.selector);
         _bridgerL2.claimCommitment();
+    }
+
+    /* ============ Hooks ============ */
+
+    function testSrcPreHookCall__WhenSenderNotKintoWallet() external {
+        address sender = address(0xdead);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidSender.selector, sender));
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(sender), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testSrcPreHookCall__SenderNotKYCd() external {
+        // revoke KYC to sender
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _kintoWallet));
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testSrcPreHookCall() external {
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testDstPreHookCall__ReceiverNotKintoWallet() external {
+        address sender = _owner;
+        address receiver = address(0xdead);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidReceiver.selector, receiver));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(receiver, 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCall__ReceiverNotKYCd() external {
+        // revoke KYC to receiver
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _kintoWallet));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(_owner)))
+        );
+    }
+
+    function testDstPreHookCall__SenderNotAllowed() external {
+        address sender = address(0xdead);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.SenderNotAllowed.selector, sender));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenReceiverIsInAllowlist() external {
+        address sender = _owner;
+        address receiver = address(_kintoWallet);
+
+        // revoke KYC to receiver
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.setReceiver([receiver].toMemoryArray(), [true].toMemoryArray());
+
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(receiver, 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenSenderIsInAllowlist() external {
+        address sender = address(0xdead);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.setSender([sender].toMemoryArray(), [true].toMemoryArray());
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenSenderIsKintoWalletSigner() external {
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(_owner)))
+        );
     }
 
     /* ============ Viewers ============ */
