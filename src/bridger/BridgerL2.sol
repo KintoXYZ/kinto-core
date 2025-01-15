@@ -43,12 +43,12 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
 
     /// @notice Treasure contract address.
     address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
-
-    /* ============ State Variables ============ */
     /// @notice
     IKintoID public immutable kintoID;
     /// @notice
     IKintoWalletFactory public immutable walletFactory;
+
+    /* ============ State Variables ============ */
     /// @notice Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
     /// @notice Deposit totals per asset
@@ -331,6 +331,6 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     }
 }
 
-contract BridgerL2V9 is BridgerL2 {
+contract BridgerL2V12 is BridgerL2 {
     constructor(address walletFactory, address kintoID) BridgerL2(walletFactory, kintoID) {}
 }
