@@ -46,10 +46,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
     /* ============ Withdraw  ============ */
 
     function testWithdrawERC20() public {
-        vm.skip(true);
-
         address inputAsset = DAI_KINTO;
-        uint256 amountIn = 1e18;
+        uint256 amountIn = 1e17;
         uint256 fee = 1;
 
         IBridger.BridgeData memory bridgeData = bridgeData[block.chainid][DAI_KINTO];
@@ -64,8 +62,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
         IERC20(inputAsset).approve(address(_bridgerL2), amountIn + fee);
 
         vm.startPrank(address(_kintoWallet));
-        console2.log("address(_kintoWallet):", address(_kintoWallet));
-        console2.log("_kintoWallet.owners(0):", _kintoWallet.owners(0));
         _bridgerL2.withdrawERC20(inputAsset, amountIn, _kintoWallet.owners(0), fee, bridgeData);
         vm.stopPrank();
     }
