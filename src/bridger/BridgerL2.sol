@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+
+import {
+    IBridgerL2,
+    SrcPreHookCallParams,
+    DstPreHookCallParams,
+    TransferInfo
+} from "@kinto-core/interfaces/bridger/IBridgerL2.sol";
 import "@kinto-core/interfaces/IKintoWalletFactory.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -13,7 +22,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title BridgerL2 - The vault that holds the bridged assets during Phase IV
@@ -25,33 +36,42 @@ import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/Signa
 contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard, IBridgerL2 {
     using SignatureChecker for address;
     using ECDSA for bytes32;
-
-    /* ============ Events ============ */
-    event Claim(address indexed wallet, address indexed asset, uint256 amount);
+    using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /* ============ Constants ============ */
 
-    /* ============ State Variables ============ */
+    /// @notice Treasure contract address.
+    address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+    /// @notice
+    IKintoID public immutable kintoID;
+    /// @notice
     IKintoWalletFactory public immutable walletFactory;
 
-    /// @dev Mapping of all depositors by user address and asset address
+    /* ============ State Variables ============ */
+    /// @notice Mapping of all depositors by user address and asset address
     mapping(address => mapping(address => uint256)) public override deposits;
-    /// @dev Deposit totals per asset
+    /// @notice Deposit totals per asset
     mapping(address => uint256) public override depositTotals;
-    /// @dev Count of deposits
+    /// @notice Count of deposits
     uint256 public override depositCount;
-    /// @dev Enable or disable the locks
+    /// @notice Enable or disable the locks
     bool public override unlocked;
-    /// @dev Phase IV assets
+    /// @notice Phase IV assets
     address[] public depositedAssets;
-    /// @dev admin wallet
-    address public immutable adminWallet;
+    /// @notice Set of allowed vaults for the Bridge.
+    EnumerableSet.AddressSet private _bridgeVaults;
+    // @notice Addresses that can receive assets while being not wallets on dstPreHookCall.
+    EnumerableSet.AddressSet private _receiveAllowlist;
+    // @notice Addresses that can bypass funder whitelisted check on dstPreHookCall.
+    EnumerableSet.AddressSet private _senderAllowlist;
 
     /* ============ Constructor & Upgrades ============ */
-    constructor(address _walletFactory) {
+    constructor(address _walletFactory, address _kintoID) {
         _disableInitializers();
+
         walletFactory = IKintoWalletFactory(_walletFactory);
-        adminWallet = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
+        kintoID = IKintoID(_kintoID);
     }
 
     /**
@@ -71,6 +91,71 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
     // This function is called by the proxy contract when the factory is upgraded
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
         (newImplementation);
+    }
+
+    /* ============ Withdraw  ============ */
+
+    /**
+     * @notice Internal function to handle withdrawals.
+     * @param inputAsset Address of the input asset.
+     * @param amount Amount of the input asset.
+     * @param receiver Kinto Wallet Address on L2 where tokens will be deposited.
+     * @param fee Amount paid as a fee.
+     * @param bridgeData Data required for the bridge.
+     */
+    function withdrawERC20(
+        address inputAsset,
+        uint256 amount,
+        address receiver,
+        uint256 fee,
+        IBridger.BridgeData calldata bridgeData
+    ) external nonReentrant {
+        if (walletFactory.walletTs(msg.sender) == 0) {
+            revert InvalidWallet(msg.sender);
+        }
+        if (!kintoID.isKYC(IKintoWallet(msg.sender).owners(0))) {
+            revert KYCRequired(receiver);
+        }
+        if (!IKintoWallet(msg.sender).isFunderWhitelisted(receiver)) {
+            revert InvalidReceiver(receiver);
+        }
+        if (bridgeData.gasFee > address(this).balance) revert BalanceTooLow(bridgeData.gasFee, address(this).balance);
+        // slither-disable-next-line arbitrary-send-erc20
+        IERC20(inputAsset).safeTransferFrom(msg.sender, address(this), amount);
+        if (fee > 0) {
+            // slither-disable-next-line arbitrary-send-erc20
+            IERC20(inputAsset).safeTransferFrom(msg.sender, TREASURY, fee);
+        }
+
+        if (amount == 0) revert InvalidAmount(0);
+        if (_bridgeVaults.contains(bridgeData.vault) == false) revert InvalidVault(bridgeData.vault);
+
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(inputAsset).allowance(address(this), bridgeData.vault) < amount) {
+            IERC20(inputAsset).safeApprove(bridgeData.vault, type(uint256).max);
+        }
+
+        // slither-disable-next-line arbitrary-send-eth
+        IBridge(bridgeData.vault).bridge{value: bridgeData.gasFee}(
+            receiver, amount, bridgeData.msgGasLimit, bridgeData.connector, bridgeData.execPayload, bridgeData.options
+        );
+
+        emit Withdraw(msg.sender, receiver, inputAsset, amount);
+    }
+
+    function setBridgeVault(address[] memory vault, bool[] memory flag) external onlyOwner {
+        for (uint256 index = 0; index < vault.length; index++) {
+            if (flag[index]) {
+                _bridgeVaults.add(vault[index]);
+            } else {
+                _bridgeVaults.remove(vault[index]);
+            }
+        }
+        emit BridgeVaultSet(vault, flag);
+    }
+
+    function bridgeVaults() external view returns (address[] memory) {
+        return _bridgeVaults.values();
     }
 
     /* ============ Privileged Functions ============ */
@@ -140,7 +225,7 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
      */
     function claimCommitment() external nonReentrant {
         if (walletFactory.walletTs(msg.sender) == 0) {
-            revert InvalidWallet();
+            revert InvalidWallet(msg.sender);
         }
         if (!unlocked) {
             revert NotUnlockedYet();
@@ -182,6 +267,70 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         }
     }
 
+    /* ============ Hook ============ */
+
+    function srcPreHookCall(SrcPreHookCallParams memory params_) external view {
+        address sender = params_.msgSender;
+        // allow BridgerL2 to withdraw
+        if (sender != address(this)) {
+            if (walletFactory.walletTs(sender) == 0) revert InvalidSender(sender);
+            if (!kintoID.isKYC(IKintoWallet(sender).owners(0))) {
+                revert KYCRequired(sender);
+            }
+        }
+    }
+
+    function dstPreHookCall(DstPreHookCallParams memory params_) external view {
+        address receiver = params_.transferInfo.receiver;
+        address msgSender = abi.decode(params_.transferInfo.data, (address));
+
+        if (!_receiveAllowlist.contains(receiver)) {
+            if (walletFactory.walletTs(receiver) == 0) {
+                revert InvalidReceiver(receiver);
+            }
+
+            if (!kintoID.isKYC(IKintoWallet(receiver).owners(0))) {
+                revert KYCRequired(receiver);
+            }
+        }
+
+        if (!_senderAllowlist.contains(msgSender)) {
+            if (!IKintoWallet(receiver).isFunderWhitelisted(msgSender)) {
+                revert SenderNotAllowed(msgSender);
+            }
+        }
+    }
+
+    function setReceiver(address[] memory receiver, bool[] memory allowed) external onlyOwner {
+        for (uint256 index = 0; index < receiver.length; index++) {
+            if (allowed[index]) {
+                _receiveAllowlist.add(receiver[index]);
+            } else {
+                _receiveAllowlist.remove(receiver[index]);
+            }
+        }
+        emit ReceiverSet(receiver, allowed);
+    }
+
+    function setSender(address[] memory sender, bool[] memory allowed) external onlyOwner {
+        for (uint256 index = 0; index < sender.length; index++) {
+            if (allowed[index]) {
+                _senderAllowlist.add(sender[index]);
+            } else {
+                _senderAllowlist.remove(sender[index]);
+            }
+        }
+        emit SenderSet(sender, allowed);
+    }
+
+    function receiveAllowlist() external view returns (address[] memory) {
+        return _receiveAllowlist.values();
+    }
+
+    function senderAllowlist() external view returns (address[] memory) {
+        return _senderAllowlist.values();
+    }
+
     /* ============ Internals ============ */
 
     /**
@@ -194,8 +343,15 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x0Ee700095AeDFe0814fFf7d6DFD75461De8e2b19; // weETH
         return _asset;
     }
+
+    /* ============ Fallback ============ */
+
+    /**
+     * @notice Fallback function to receive ETH.
+     */
+    receive() external payable {}
 }
 
-contract BridgerL2V9 is BridgerL2 {
-    constructor(address _walletFactory) BridgerL2(_walletFactory) {}
+contract BridgerL2V12 is BridgerL2 {
+    constructor(address walletFactory, address kintoID) BridgerL2(walletFactory, kintoID) {}
 }

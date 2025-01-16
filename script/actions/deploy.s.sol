@@ -414,7 +414,7 @@ contract DeployerScript is Create2Helper, DeployerHelper {
 
     function deployBridgerL2() public returns (BridgerL2 _bridgerL2, BridgerL2 _bridgerL2Impl) {
         bytes memory creationCode = type(BridgerL2).creationCode;
-        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory)));
+        bytes memory bytecode = abi.encodePacked(creationCode, abi.encode(address(factory), address(kintoID)));
         address implementation = _deployImplementation("BridgerL2", bytecode, false);
         address proxy = _deployProxy("BridgerL2", implementation, false);
 

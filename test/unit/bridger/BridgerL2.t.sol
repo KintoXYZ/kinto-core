@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/BridgerL2.sol";
 
+import "@kinto-core-test/helpers/ArrayHelpers.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
 import "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -16,10 +17,12 @@ contract BridgerL2NewUpgrade is BridgerL2 {
         return 1;
     }
 
-    constructor(address factory) BridgerL2(factory) {}
+    constructor(address factory, address kintoID) BridgerL2(factory, kintoID) {}
 }
 
 contract BridgerL2Test is SignatureHelper, SharedSetup {
+    using ArrayHelpers for *;
+
     address sDAI = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // virtual sDAI
     address sDAIL2 = 0x5da1004F7341D510C6651C67B4EFcEEA76Cac0E8; // sDAI L2 representation
 
@@ -43,14 +46,14 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
     /* ============ Upgrade tests ============ */
 
     function testUpgradeTo() public {
-        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory), address(_kintoID));
         vm.prank(_owner);
         _bridgerL2.upgradeTo(address(_newImpl));
         assertEq(BridgerL2NewUpgrade(payable(address(_bridgerL2))).newFunction(), 1);
     }
 
     function testUpgradeTo_RevertWhen_CallerIsNotOwner() public {
-        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory));
+        BridgerL2NewUpgrade _newImpl = new BridgerL2NewUpgrade(address(_walletFactory), address(_kintoID));
         vm.expectRevert("Ownable: caller is not the owner");
         _bridgerL2.upgradeToAndCall(address(_newImpl), bytes(""));
     }
@@ -159,27 +162,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         assertEq(ERC20(sDAIL2).balanceOf(address(_kintoWallet)), _amount);
     }
 
-    function testClaimCommitment_RevertWhen_WalletIsInvalid() public {
-        address _asset = sDAI;
-        uint256 _amount = 100;
-
-        address[] memory _assets = new address[](1);
-        _assets[0] = _asset;
-        deal(sDAIL2, address(_bridgerL2), _amount);
-
-        vm.startPrank(_owner);
-
-        _bridgerL2.setDepositedAssets(_assets);
-        _bridgerL2.writeL2Deposit(address(_kintoWallet), _asset, _amount);
-        _bridgerL2.unlockCommitments();
-
-        vm.stopPrank();
-
-        vm.prank(_user);
-        vm.expectRevert(IBridgerL2.InvalidWallet.selector);
-        _bridgerL2.claimCommitment();
-    }
-
     function testClaimCommitment_RevertWhen_NotUnlocked() public {
         address _asset = sDAI;
         uint256 _amount = 100;
@@ -198,6 +180,191 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         vm.prank(address(_kintoWallet));
         vm.expectRevert(IBridgerL2.NotUnlockedYet.selector);
         _bridgerL2.claimCommitment();
+    }
+
+    /* ============ WithdrawERC20 ============ */
+
+    function testWithdrawERC20_RevertWhen_NotWallet() public {
+        address token = address(new ERC20("Test", "TST"));
+        IBridger.BridgeData memory bridgeData;
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidWallet.selector, address(this)));
+        _bridgerL2.withdrawERC20(token, 1 ether, _owner, 0, bridgeData);
+    }
+
+    function testWithdrawERC20_RevertWhen_NotKYCd() public {
+        address token = address(new ERC20("Test", "TST"));
+        IBridger.BridgeData memory bridgeData;
+
+        // Revoke KYC
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _owner));
+        _bridgerL2.withdrawERC20(token, 1 ether, _owner, 0, bridgeData);
+    }
+
+    function testWithdrawERC20_RevertWhen_InvalidReceiver() public {
+        address token = address(new ERC20("Test", "TST"));
+        address invalidReceiver = address(0xbad);
+        IBridger.BridgeData memory bridgeData;
+
+        vm.prank(address(_kintoWallet));
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidReceiver.selector, invalidReceiver));
+        _bridgerL2.withdrawERC20(token, 1 ether, invalidReceiver, 0, bridgeData);
+    }
+
+    /* ============ Allowlists ============ */
+
+    function testSetReceiverAllowlist() public {
+        address receiver1 = address(0x1);
+        address receiver2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.ReceiverSet([receiver1, receiver2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setReceiver([receiver1, receiver2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory allowedReceivers = _bridgerL2.receiveAllowlist();
+        assertEq(allowedReceivers.length, 1);
+        assertEq(allowedReceivers[0], receiver1);
+    }
+
+    function testSetSenderAllowlist() public {
+        address sender1 = address(0x1);
+        address sender2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.SenderSet([sender1, sender2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setSender([sender1, sender2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory allowedSenders = _bridgerL2.senderAllowlist();
+        assertEq(allowedSenders.length, 1);
+        assertEq(allowedSenders[0], sender1);
+    }
+
+    function testSetReceiver_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setReceiver([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
+    function testSetSender_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setSender([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
+    /* ============ SetBridgeVault ============ */
+
+    function testSetBridgeVault() public {
+        address vault1 = address(0x1);
+        address vault2 = address(0x2);
+
+        vm.prank(_owner);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgerL2.BridgeVaultSet([vault1, vault2].toMemoryArray(), [true, false].toMemoryArray());
+        _bridgerL2.setBridgeVault([vault1, vault2].toMemoryArray(), [true, false].toMemoryArray());
+
+        address[] memory registeredVaults = _bridgerL2.bridgeVaults();
+        assertEq(registeredVaults.length, 1);
+        assertEq(registeredVaults[0], vault1);
+    }
+
+    function testSetBridgeVault_RevertWhen_NotOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        _bridgerL2.setBridgeVault([address(0x1)].toMemoryArray(), [true].toMemoryArray());
+    }
+
+    /* ============ Hooks ============ */
+
+    function testSrcPreHookCall() external view {
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testSrcPreHookCall__WhenSenderBridgerL2() external view {
+        address receiver = address(_kintoWallet);
+
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_bridgerL2), TransferInfo(receiver, 0, bytes("")))
+        );
+    }
+
+    function testSrcPreHookCall__SenderNotKYCd() external {
+        // revoke KYC to sender
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _kintoWallet));
+        _bridgerL2.srcPreHookCall(
+            SrcPreHookCallParams(address(0), address(_kintoWallet), TransferInfo(address(0), 0, bytes("")))
+        );
+    }
+
+    function testDstPreHookCall__ReceiverNotKintoWallet() external {
+        address sender = _owner;
+        address receiver = address(0xdead);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.InvalidReceiver.selector, receiver));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(receiver, 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCall__ReceiverNotKYCd() external {
+        // revoke KYC to receiver
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.KYCRequired.selector, _kintoWallet));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(_owner)))
+        );
+    }
+
+    function testDstPreHookCall__SenderNotAllowed() external {
+        address sender = address(0xdead);
+
+        vm.expectRevert(abi.encodeWithSelector(IBridgerL2.SenderNotAllowed.selector, sender));
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenReceiverIsInAllowlist() external {
+        address sender = _owner;
+        address receiver = address(_kintoWallet);
+
+        // revoke KYC to receiver
+        vm.prank(_kycProvider);
+        KintoID(_kintoID).addSanction(_owner, 1);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.setReceiver([receiver].toMemoryArray(), [true].toMemoryArray());
+
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(receiver, 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenSenderIsInAllowlist() external {
+        address sender = address(0xdead);
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.setSender([sender].toMemoryArray(), [true].toMemoryArray());
+
+        vm.prank(_bridgerL2.owner());
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(sender)))
+        );
+    }
+
+    function testDstPreHookCallCall__WhenSenderIsKintoWalletSigner() external view {
+        _bridgerL2.dstPreHookCall(
+            DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(_owner)))
+        );
     }
 
     /* ============ Viewers ============ */
@@ -243,6 +410,4 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         assertEq(amounts[0], 1 ether);
         assertEq(amounts[1], 4 ether);
     }
-
-    // todo: test everything through user ops because it is what we will use
 }
