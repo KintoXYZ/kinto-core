@@ -18,7 +18,6 @@ contract UpgradeBridgerL2Script is MigrationHelper {
 
         BridgerL2 bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
 
-
         assertEq(address(bridgerL2.walletFactory()), _getChainDeployment("KintoWalletFactory"));
         assertEq(address(bridgerL2.kintoID()), _getChainDeployment("KintoID"));
 
