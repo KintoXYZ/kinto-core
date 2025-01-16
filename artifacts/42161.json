@@ -1393,9 +1393,27 @@
               "name": "bridger_",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "safe_",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "FEE",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -1425,6 +1443,19 @@
         },
         {
           "type": "function",
+          "name": "safe",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "withdraw",
           "inputs": [
             {
@@ -1438,7 +1469,13 @@
               "internalType": "uint256"
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
           "stateMutability": "nonpayable"
         },
         {
@@ -1566,7 +1603,7 @@
           "name": "bridge",
           "inputs": [
             {
-              "name": "asset",
+              "name": "inputAsset",
               "type": "address",
               "internalType": "address"
             },
@@ -1576,7 +1613,7 @@
               "internalType": "uint256"
             },
             {
-              "name": "wallet",
+              "name": "kintoWallet",
               "type": "address",
               "internalType": "address"
             },
@@ -1618,7 +1655,13 @@
               ]
             }
           ],
-          "outputs": [],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
           "stateMutability": "payable"
         },
         {
@@ -1639,13 +1682,13 @@
           "name": "Bridged",
           "inputs": [
             {
-              "name": "wallet",
+              "name": "kintoWallet",
               "type": "address",
               "indexed": true,
               "internalType": "address"
             },
             {
-              "name": "asset",
+              "name": "inputAsset",
               "type": "address",
               "indexed": true,
               "internalType": "address"
@@ -1709,7 +1752,7 @@
           ]
         }
       ],
-      "address": "0xDd53a659E428A7d5bc472112CD7B4e06cd548D4B"
+      "address": "0x14da5E876218c6B6993b1eE982E7b67921da1088"
     },
     "CrossChainSwapWorkflow": {
       "abi": [
@@ -2065,6 +2108,30 @@
     "WithdrawWorkflow": {
       "abi": [
         {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "weth",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "WETH",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
           "type": "function",
           "name": "withdrawERC20",
           "inputs": [
@@ -2139,7 +2206,7 @@
           ]
         }
       ],
-      "address": "0x36e6cA034958B2E0D4dC7Ea9a8151f15Ba0B27D2"
+      "address": "0x794E1908A1D41760B8E2b798134c9856E24dCe65"
     },
     "Bridger": {
       "abi": [
@@ -3307,6 +3374,17 @@
           "type": "error",
           "name": "OnlyOwner",
           "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "RouterAllowanceNotZero",
+          "inputs": [
+            {
+              "name": "allowance",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
           "type": "error",
