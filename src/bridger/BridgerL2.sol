@@ -343,6 +343,13 @@ contract BridgerL2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reentr
         if (_asset == 0xC60F14d95B87417BfD17a376276DE15bE7171d31) return 0x0Ee700095AeDFe0814fFf7d6DFD75461De8e2b19; // weETH
         return _asset;
     }
+
+    /* ============ Fallback ============ */
+
+    /**
+     * @notice Fallback function to receive ETH.
+     */
+    receive() external payable {}
 }
 
 contract BridgerL2V12 is BridgerL2 {

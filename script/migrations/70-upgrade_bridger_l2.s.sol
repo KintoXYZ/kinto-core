@@ -14,13 +14,13 @@ contract UpgradeBridgerL2Script is MigrationHelper {
             abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("KintoID"))
         );
 
-        address impl = _deployImplementationAndUpgrade("BridgerL2", "V12", bytecode);
+        address impl = _deployImplementationAndUpgrade("BridgerL2", "V13", bytecode);
 
-        BridgerL2 bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
+        BridgerL2 bridgerL2 = BridgerL2(payable(_getChainDeployment("BridgerL2")));
 
         assertEq(address(bridgerL2.walletFactory()), _getChainDeployment("KintoWalletFactory"));
         assertEq(address(bridgerL2.kintoID()), _getChainDeployment("KintoID"));
 
-        saveContractAddress("BridgerL2V12-impl", impl);
+        saveContractAddress("BridgerL2V13-impl", impl);
     }
 }
