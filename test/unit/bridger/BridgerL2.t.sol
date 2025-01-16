@@ -361,7 +361,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup {
         );
     }
 
-    function testDstPreHookCallCall__WhenSenderIsKintoWalletSigner() external {
+    function testDstPreHookCallCall__WhenSenderIsKintoWalletSigner() external view {
         _bridgerL2.dstPreHookCall(
             DstPreHookCallParams(address(0), bytes(""), TransferInfo(address(_kintoWallet), 0, abi.encode(_owner)))
         );
