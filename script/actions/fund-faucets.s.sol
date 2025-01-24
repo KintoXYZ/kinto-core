@@ -15,6 +15,7 @@ contract FundFaucetsScript is MigrationHelper {
     address public constant FAUCET_CLAIMER = 0x52F09693c9eEaA93A64BA697e3d3e43a1eB65477;
     address public constant KYC_RELAYER = 0x6E31039abF8d248aBed57E307C9E1b7530c269E4;
     address public constant MINT_EOA = 0x6fe642404B7B23F31251103Ca0efb538Ad4aeC07;
+    address public constant BRIDGER_L2 = 0x26181Dfc530d96523350e895180b09BAf3d816a0;
 
     address public constant DINARI = 0xB2eEc63Cdc175d6d07B8f69804C0Ab5F66aCC3cb;
     address public constant KINTO_CORE = 0xD157904639E89df05e89e0DabeEC99aE3d74F9AA;
@@ -32,10 +33,10 @@ contract FundFaucetsScript is MigrationHelper {
         console2.log("");
         console2.log("Faucets");
 
-        address[5] memory faucets = [FAUCET, WALLET_FUNDER, FAUCET_CLAIMER, KYC_RELAYER, MINT_EOA];
-        string[5] memory names = ["FAUCET", "WALLET_FUNDER", "FAUCET_CLAIMER", "KYC_RELAYER", "MINT_EOA"];
-        uint64[5] memory limits = [0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether];
-        uint64[5] memory amounts = [0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether, 0.1 ether];
+        address[6] memory faucets = [FAUCET, WALLET_FUNDER, FAUCET_CLAIMER, KYC_RELAYER, MINT_EOA, BRIDGER_L2];
+        string[6] memory names = ["FAUCET", "WALLET_FUNDER", "FAUCET_CLAIMER", "KYC_RELAYER", "MINT_EOA", "BRIDGER_L2"];
+        uint64[6] memory limits = [0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether];
+        uint64[6] memory amounts = [0.25 ether, 0.25 ether, 0.25 ether, 0.25 ether, 0.1 ether, 0.25 ether];
 
         KintoWalletFactory factory = KintoWalletFactory(_getChainDeployment("KintoWalletFactory"));
         for (uint256 index = 0; index < faucets.length; index++) {

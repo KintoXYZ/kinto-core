@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 contract Constants {
+    uint256 internal constant KINTO_CHAINID = 7887;
     uint256 internal constant BASE_CHAINID = 8453;
     uint256 internal constant ARBITRUM_CHAINID = 42161;
     uint256 internal constant ETHEREUM_CHAINID = 1;
@@ -13,6 +14,7 @@ contract Constants {
     address internal constant WETH_ETHEREUM = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address internal constant DAI_ETHEREUM = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant DAI_ARBITRUM = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+    address internal constant DAI_KINTO = 0xdA100067134959575D87D11d54F2722Ba3C934aB;
     address internal constant USDe_ETHEREUM = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address internal constant sUSDe_ETHEREUM = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     address internal constant wstETH_ETHEREUM = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
