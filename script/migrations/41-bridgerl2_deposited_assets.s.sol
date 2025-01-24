@@ -10,7 +10,7 @@ contract KintoMigration41DeployScript is MigrationHelper {
     function run() public override {
         super.run();
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        BridgerL2 bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
+        BridgerL2 bridgerL2 = BridgerL2(payable(_getChainDeployment("BridgerL2")));
         address[] memory bridgerL2Assets = new address[](4);
         bridgerL2Assets[0] = 0x4190A8ABDe37c9A85fAC181037844615BA934711; // sDAI
         bridgerL2Assets[1] = 0xF4d81A46cc3fCA44f88d87912A35E7fCC4B398ee; // sUSDe
