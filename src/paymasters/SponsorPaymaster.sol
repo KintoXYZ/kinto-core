@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
-import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {IPaymaster} from "@aa/interfaces/IPaymaster.sol";
 import {UserOperationLib} from "@aa/core/UserOperationLib.sol";
 

@@ -8,7 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
 import {BaseAccount} from "@aa/core/BaseAccount.sol";

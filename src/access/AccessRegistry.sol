@@ -10,7 +10,7 @@ import "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import "@openzeppelin-5.0.1/contracts/utils/Create2.sol";
 import "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import {BaseAccount} from "@aa/core/BaseAccount.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import {ByteSignature} from "@kinto-core/libraries/ByteSignature.sol";

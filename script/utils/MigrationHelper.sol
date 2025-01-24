@@ -13,7 +13,7 @@ import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 
 import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
-import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";

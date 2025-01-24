@@ -8,7 +8,10 @@ ignored_warnings_from = ["lib/token-bridge-contracts/contracts/tokenbridge/libra
 "lib/nitro-contracts/test/foundry/AbsInbox.t.sol", "lib/token-bridge-contracts/contracts/tokenbridge/libraries/gateway/GatewayRouter.sol"]
 match-path = 'test/unit/**/*.sol'
 ffi = true
-solc_version = "0.8.24"
+solc_version = "0.8.23"
+optimizer = true
+optimizer_runs = 200
+viaIR = false
 remappings = [
     'node_modules/account-abstraction-0.7.0:@openzeppelin/contracts/=node_modules/openzeppelin-contracts-5.0.1',
     '@aa/=node_modules/account-abstraction-0.7.0/contracts/',

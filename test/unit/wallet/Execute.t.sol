@@ -3,7 +3,7 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core-test/SharedSetup.t.sol";
-import {IEntryPoint} from "@aa/core/BaseAccount.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 contract ExecuteTest is SharedSetup {
     address public systemApp;
