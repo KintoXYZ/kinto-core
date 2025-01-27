@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {ERC721EnumerableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -426,49 +427,6 @@ contract KintoAppRegistry is
      *      5. Permits CREATE and CREATE2 operations for eligible EOAs
      *      6. Allows dev EOAs to call their respective apps
      */
-    function isContractCallAllowedFromEOA(address from, address to) external view returns (bool) {
-        // Calls to system contracts are allwed for any EOA
-        if (_isSystemContract[to]) return true;
-
-        // Deployer EOAs are allowed to use CREATE and CREATE2
-        if (to == address(0) || to == CREATE2) {
-            address wallet = deployerToWallet[from];
-            // Only dev wallets can deploy
-            if (wallet == address(0)) return false;
-            // Deny if wallet has no KYC
-            if (!kintoID.isKYC(IKintoWallet(wallet).owners(0))) return false;
-            // Permit if EOA have a wallet, dev mode and KYC
-            return true;
-        }
-
-        // Contract calls are allowed only from dev EOAs to app's contracts
-        address app = childToParentContract[to] != address(0)
-            ? childToParentContract[to]
-            : devEoaToApp[to] != address(0) ? devEoaToApp[to] : to;
-
-        // Dev EOAs are allowed to call their respective apps
-        // Dev EOAs can send ETH to each other
-        if (devEoaToApp[from] == app || (devEoaToApp[from] == devEoaToApp[to] && devEoaToApp[from] != address(0))) {
-            // Deny if wallet has no KYC
-            address walletOwner = ownerOf(_appMetadata[app].tokenId);
-            // App owner must be a wallet
-            if (walletFactory.walletTs(walletOwner) == 0) return false;
-            if (!kintoID.isKYC(IKintoWallet(walletOwner).owners(0))) return false;
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @dev This function checks various conditions to decide if an EOA can call a specific contract:
-     *      1. Allows calls to system contracts from any EOA
-     *      2. Checks if the EOA has a linked wallet
-     *      3. Verifies if dev mode is enabled on the wallet
-     *      4. Ensures the wallet owner has completed KYC
-     *      5. Permits CREATE and CREATE2 operations for eligible EOAs
-     *      6. Allows dev EOAs to call their respective apps
-     */
     function isContractCallAllowedFromEOA(address sender, address destination, bytes calldata callData, uint256 value)
         external
         view
@@ -490,8 +448,19 @@ contract KintoAppRegistry is
         }
 
         if (isHandleOps(destination, selector)) {
+            // Parse the packed UserOperations and beneficiary
             // function handleOps(PackedUserOperation[] calldata ops, address payable beneficiary) external;
-            (, address beneficiary) = abi.decode(callData[4:], (bytes32, address));
+            (PackedUserOperation[] memory ops, address beneficiary) =
+                abi.decode(callData[4:], (PackedUserOperation[], address));
+
+            if (ops.length == 0) return false;
+
+            // For each operation, verify the sender is a KintoWallet
+            for (uint256 i = 0; i < ops.length; i++) {
+                if (walletFactory.getWalletTimestamp(ops[i].sender) == 0) {
+                    return false;
+                }
+            }
 
             if (sender != beneficiary) {
                 // Trying to handleOps from EntryPoint to a beneficiary different than the sender
