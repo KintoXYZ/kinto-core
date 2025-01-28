@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {stdJson} from "forge-std/StdJson.sol";
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
+import {IBridge} from "@kinto-core/socket/IBridge.sol";
 import {BridgerL2} from "@kinto-core/bridger/BridgerL2.sol";
 
 import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";
@@ -34,9 +35,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
         BridgerL2 _newImpl = new BridgerL2(address(_walletFactory), address(_kintoID));
         vm.prank(_owner);
         _bridgerL2.upgradeTo(address(_newImpl));
-
-        fundSponsorForApp(_owner, address(_bridgerL2));
-        registerApp(address(_kintoWallet), "bridger", address(_bridgerL2), new address[](0));
     }
 
     function setUpChain() public virtual override {
@@ -60,6 +58,8 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
 
         vm.prank(address(_kintoWallet));
         IERC20(inputAsset).approve(address(_bridgerL2), amountIn + fee);
+
+        bridgeData.gasFee = IBridge(bridgeData.vault).getMinFees(bridgeData.connector, bridgeData.msgGasLimit, 322);
 
         vm.startPrank(address(_kintoWallet));
         _bridgerL2.withdrawERC20(inputAsset, amountIn, _kintoWallet.owners(0), fee, bridgeData);
