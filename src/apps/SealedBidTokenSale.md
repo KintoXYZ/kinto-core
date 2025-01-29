@@ -1,11 +1,8 @@
-# Updated Technical Specification
+# SealedBidTokenSale Technical Specification
 
-Below is the revised **technical specification** for a Solidity **sealed‐bid, multi‐unit uniform‐price** token sale contract. The specification reflects the latest changes:
+Below is the **technical specification** for a Solidity **sealed‐bid, multi‐unit uniform‐price** token sale contract.
 
-1. **Use of OpenZeppelin’s `Ownable`** for ownership logic.  
-2. **Withdrawal of proceeds** goes to a **predetermined treasury address**.  
-
-All other core features—time‐limited deposits in USDC, minimum/maximum cap checks, finalization logic, off‐chain price discovery, Merkle‐based token claims, and refunds if the sale fails—remain consistent with the previous design.
+All other core features—time‐limited deposits in USDC, minimum/maximum cap checks, finalization logic, off‐chain price discovery, Merkle‐based token claims, and refunds if the sale fails—remain consistent with the design.
 
 ---
 
