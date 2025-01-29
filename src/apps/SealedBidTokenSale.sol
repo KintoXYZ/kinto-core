@@ -16,7 +16,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ============ Custom Errors ============ */
-    
+
     /// @notice Invalid treasury address provided (zero address)
     error InvalidTreasuryAddress(address treasury);
     /// @notice End time must be after start time
@@ -47,7 +47,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error MerkleRootNotSet();
 
     /* ============ Events ============ */
-    
+
     /// @notice Emitted on USDC deposit
     event Deposit(address indexed user, uint256 amount);
     /// @notice Emitted on USDC withdrawal
@@ -60,7 +60,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     event Claim(address indexed user, uint256 tokenAmount);
 
     /* ============ Immutable Parameters ============ */
-    
+
     /// @notice USDC token contract
     IERC20 public immutable USDC;
     /// @notice Treasury address for proceeds
@@ -75,7 +75,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     uint256 public immutable maximumCap;
 
     /* ============ State Variables ============ */
-    
+
     /// @notice Sale finalization status
     bool public finalized;
     /// @notice Sale success status
