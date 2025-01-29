@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
+import {MerkleProof} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MerkleProof.sol";
+import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title SealedBidTokenSale
@@ -16,6 +17,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *      Proceeds are withdrawn to a predetermined treasury address (set in the constructor).
  */
 contract SealedBidTokenSale is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     // -----------------------------------------------------------------------
     // Errors in 0.8 style (custom errors)
     // -----------------------------------------------------------------------
@@ -44,7 +47,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     // -----------------------------------------------------------------------
     // Immutable & Configurable Parameters
     // -----------------------------------------------------------------------
-    IERC20 public immutable usdcToken; // Address of USDC token contract
+    IERC20 public immutable USDC; // Address of USDC token contract
     IERC20 public immutable saleToken;
     address public immutable treasury; // Where proceeds go upon withdrawal
 
@@ -86,12 +89,12 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         uint256 _endTime,
         uint256 _minimumCap,
         uint256 _maximumCap
-    ) {
+    ) Ownable(msg.sender) {
         require(_treasury != address(0), "treasury cannot be zero address");
         require(_endTime > _startTime, "endTime must be after startTime");
 
         treasury = _treasury;
-        usdcToken = _usdcToken;
+        USDC = _usdcToken;
         startTime = _startTime;
         endTime = _endTime;
         minimumCap = _minimumCap;
@@ -113,8 +116,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (amount == 0) revert ZeroDeposit();
 
         // Transfer USDC from user to this contract
-        bool successTransfer = usdcToken.transferFrom(msg.sender, address(this), amount);
-        require(successTransfer, "USDC transfer failed");
+        USDC.safeTransferFrom(msg.sender, address(this), amount);
 
         // Update state
         deposits[msg.sender] += amount;
@@ -137,7 +139,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         // Zero out deposit before transferring
         deposits[msg.sender] = 0;
 
-        bool successTransfer = usdcToken.transfer(msg.sender, userDeposit);
+        bool successTransfer = USDC.transfer(msg.sender, userDeposit);
         require(successTransfer, "USDC transfer failed");
 
         emit Withdraw(msg.sender, userDeposit);
@@ -206,8 +208,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      */
     function withdrawProceeds() external onlyOwner {
         if (!finalized || !successful) revert SaleNotSuccessful();
-        uint256 balance = usdcToken.balanceOf(address(this));
-        bool successTransfer = usdcToken.transfer(treasury, balance);
-        require(successTransfer, "USDC transfer failed");
+        uint256 balance = USDC.balanceOf(address(this));
+        USDC.transfer(treasury, balance);
     }
 }
