@@ -27,7 +27,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error SaleNotSuccessful();
     error SaleWasSuccessful();
     error ZeroDeposit();
-    error ExceedsMaximumCap();
     error NothingToWithdraw();
     error AlreadyClaimed();
     error InvalidProof();
@@ -112,11 +111,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (block.timestamp > endTime) revert SaleEnded();
         if (finalized) revert AlreadyFinalized();
         if (amount == 0) revert ZeroDeposit();
-
-        // Check maximum cap if applicable
-        if ((totalDeposited + amount) > maximumCap) {
-            revert ExceedsMaximumCap();
-        }
 
         // Transfer USDC from user to this contract
         bool successTransfer = usdcToken.transferFrom(msg.sender, address(this), amount);
