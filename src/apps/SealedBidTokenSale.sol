@@ -17,6 +17,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /* ============ Custom Errors ============ */
 
+    /// @notice Invalid sale token address provided (zero address)
+    error InvalidSaleTokenAddress(address token);
     /// @notice Invalid treasury address provided (zero address)
     error InvalidTreasuryAddress(address treasury);
     /// @notice End time must be after start time
@@ -61,6 +63,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /* ============ Immutable Parameters ============ */
 
+    /// @notice Sale token contract
+    IERC20 public immutable saleToken;
     /// @notice USDC token contract
     IERC20 public immutable USDC;
     /// @notice Treasury address for proceeds
@@ -93,6 +97,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /**
      * @notice Initialize sale parameters
+     * @param _saleToken Sale token address
      * @param _treasury Treasury address for proceeds
      * @param _usdcToken USDC token address
      * @param _startTime Sale start timestamp
@@ -101,18 +106,21 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _maximumCap Maximum USDC allowed
      */
     constructor(
+        address _saleToken,
         address _treasury,
-        IERC20 _usdcToken,
+        address _usdcToken,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _minimumCap,
         uint256 _maximumCap
     ) Ownable(msg.sender) {
+        if (_saleToken == address(0)) revert InvalidSaleTokenAddress(_saleToken);
         if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
         if (_endTime <= _startTime) revert InvalidEndTime(_startTime, _endTime);
 
+        saleToken = IERC20(_saleToken);
         treasury = _treasury;
-        USDC = _usdcToken;
+        USDC = IERC20(_usdcToken);
         startTime = _startTime;
         endTime = _endTime;
         minimumCap = _minimumCap;
@@ -168,7 +176,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof();
 
         hasClaimed[msg.sender] = true;
-        // saleToken.safeTransfer(msg.sender, allocation); // Requires saleToken initialization
+        saleToken.safeTransfer(msg.sender, allocation);
 
         emit Claim(msg.sender, allocation);
     }
