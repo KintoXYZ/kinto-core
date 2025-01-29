@@ -34,6 +34,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error AlreadyClaimed();
     error InvalidProof();
     error MerkleRootNotSet();
+    error InvalidTreasuryAddress();
+    error InvalidEndTime();
 
     // -----------------------------------------------------------------------
     // Events
@@ -90,8 +92,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         uint256 _minimumCap,
         uint256 _maximumCap
     ) Ownable(msg.sender) {
-        require(_treasury != address(0), "treasury cannot be zero address");
-        require(_endTime > _startTime, "endTime must be after startTime");
+        if (_treasury == address(0)) revert InvalidTreasuryAddress();
+        if (_endTime <= _startTime) revert InvalidEndTime();
 
         treasury = _treasury;
         USDC = _usdcToken;
