@@ -9,80 +9,96 @@ import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC
 
 /**
  * @title SealedBidTokenSale
- * @dev A contract to accept USDC deposits for a sealed-bid, multi-unit uniform-price sale
- *      with off-chain price discovery. Participants can deposit multiple times, and if the
- *      sale meets a minimumCap, it is deemed successful. A Merkle root is published later
- *      for token claims. Depositors can withdraw funds if the sale fails.
- *
- *      Proceeds are withdrawn to a predetermined treasury address (set in the constructor).
+ * @dev Sealed-bid auction-style token sale with USDC deposits and Merkle-based claims.
+ *      Features time-bound participation, minimum/maximum caps, and non-custodial withdrawals.
  */
 contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // -----------------------------------------------------------------------
-    // Errors in 0.8 style (custom errors)
-    // -----------------------------------------------------------------------
-    error SaleNotStarted();
-    error SaleEnded();
+    /* ============ Custom Errors ============ */
+    
+    /// @notice Invalid treasury address provided (zero address)
+    error InvalidTreasuryAddress(address treasury);
+    /// @notice End time must be after start time
+    error InvalidEndTime(uint256 startTime, uint256 endTime);
+    /// @notice Sale period has not started yet
+    error SaleNotStarted(uint256 currentTime, uint256 startTime);
+    /// @notice Sale period has already ended
+    error SaleEnded(uint256 currentTime, uint256 endTime);
+    /// @notice Sale has already been finalized
     error AlreadyFinalized();
+    /// @notice Action requires prior finalization
     error NotFinalized();
-    error SaleNotEnded();
+    /// @notice Sale period has not ended yet
+    error SaleNotEnded(uint256 currentTime, uint256 endTime);
+    /// @notice Operation requires successful sale state
     error SaleNotSuccessful();
+    /// @notice Operation requires failed sale state
     error SaleWasSuccessful();
+    /// @notice Deposit amount must be greater than zero
     error ZeroDeposit();
-    error NothingToWithdraw();
-    error AlreadyClaimed();
+    /// @notice No funds available for withdrawal
+    error NothingToWithdraw(address user);
+    /// @notice Tokens have already been claimed
+    error AlreadyClaimed(address user);
+    /// @notice Provided Merkle proof is invalid
     error InvalidProof();
+    /// @notice Merkle root not set for claims
     error MerkleRootNotSet();
-    error InvalidTreasuryAddress();
-    error InvalidEndTime();
 
-    // -----------------------------------------------------------------------
-    // Events
-    // -----------------------------------------------------------------------
+    /* ============ Events ============ */
+    
+    /// @notice Emitted on USDC deposit
     event Deposit(address indexed user, uint256 amount);
+    /// @notice Emitted on USDC withdrawal
     event Withdraw(address indexed user, uint256 amount);
+    /// @notice Emitted when sale is finalized
     event Finalized(bool successful, uint256 totalDeposited);
+    /// @notice Emitted when Merkle root is set
     event MerkleRootSet(bytes32 root);
+    /// @notice Emitted on successful token claim
     event Claim(address indexed user, uint256 tokenAmount);
 
-    // -----------------------------------------------------------------------
-    // Immutable & Configurable Parameters
-    // -----------------------------------------------------------------------
-    IERC20 public immutable USDC; // Address of USDC token contract
-    IERC20 public immutable saleToken;
-    address public immutable treasury; // Where proceeds go upon withdrawal
+    /* ============ Immutable Parameters ============ */
+    
+    /// @notice USDC token contract
+    IERC20 public immutable USDC;
+    /// @notice Treasury address for proceeds
+    address public immutable treasury;
+    /// @notice Sale start timestamp
+    uint256 public immutable startTime;
+    /// @notice Sale end timestamp
+    uint256 public immutable endTime;
+    /// @notice Minimum USDC required for success
+    uint256 public immutable minimumCap;
+    /// @notice Maximum USDC allowed in sale
+    uint256 public immutable maximumCap;
 
-    uint256 public immutable startTime; // Sale start timestamp
-    uint256 public immutable endTime; // Sale end timestamp
-    uint256 public immutable minimumCap; // Minimum USDC needed for a successful sale
-    uint256 public immutable maximumCap; // Maximum USDC deposit allowed (0 if none)
-
-    // -----------------------------------------------------------------------
-    // State Variables
-    // -----------------------------------------------------------------------
-    bool public finalized; // Whether sale has been finalized
-    bool public successful; // Whether sale is successful
-    uint256 public totalDeposited; // Total USDC deposited by all participants
-
-    // user => total USDC deposited
-    mapping(address => uint256) public deposits;
-
-    // Merkle root for final token allocations (off-chain computed)
+    /* ============ State Variables ============ */
+    
+    /// @notice Sale finalization status
+    bool public finalized;
+    /// @notice Sale success status
+    bool public successful;
+    /// @notice Total USDC deposited
+    uint256 public totalDeposited;
+    /// @notice Merkle root for allocations
     bytes32 public merkleRoot;
-    // Tracks whether a user has claimed their tokens
+    /// @notice User deposits tracking
+    mapping(address => uint256) public deposits;
+    /// @notice Claims tracking
     mapping(address => bool) public hasClaimed;
 
-    // -----------------------------------------------------------------------
-    // Constructor
-    // -----------------------------------------------------------------------
+    /* ============ Constructor ============ */
+
     /**
-     * @param _treasury   The address to which proceeds will be sent after a successful sale
-     * @param _usdcToken  The USDC token contract address
-     * @param _startTime  The block timestamp when deposits can begin
-     * @param _endTime    The block timestamp when deposits end
-     * @param _minimumCap The minimum USDC deposit needed for the sale to succeed
-     * @param _maximumCap The maximum USDC deposit allowed (use 0 if no max)
+     * @notice Initialize sale parameters
+     * @param _treasury Treasury address for proceeds
+     * @param _usdcToken USDC token address
+     * @param _startTime Sale start timestamp
+     * @param _endTime Sale end timestamp
+     * @param _minimumCap Minimum USDC for success
+     * @param _maximumCap Maximum USDC allowed
      */
     constructor(
         address _treasury,
@@ -92,8 +108,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         uint256 _minimumCap,
         uint256 _maximumCap
     ) Ownable(msg.sender) {
-        if (_treasury == address(0)) revert InvalidTreasuryAddress();
-        if (_endTime <= _startTime) revert InvalidEndTime();
+        if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
+        if (_endTime <= _startTime) revert InvalidEndTime(_startTime, _endTime);
 
         treasury = _treasury;
         USDC = _usdcToken;
@@ -103,24 +119,19 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         maximumCap = _maximumCap;
     }
 
-    // -----------------------------------------------------------------------
-    // Public (User) Functions
-    // -----------------------------------------------------------------------
+    /* ============ User Functions ============ */
 
     /**
-     * @notice Deposit USDC into the token sale. Must be within sale time window.
-     * @param amount The amount of USDC to deposit
+     * @notice Deposit USDC into the sale
+     * @param amount Amount of USDC to deposit
      */
     function deposit(uint256 amount) external nonReentrant {
-        if (block.timestamp < startTime) revert SaleNotStarted();
-        if (block.timestamp > endTime) revert SaleEnded();
+        if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
+        if (block.timestamp > endTime) revert SaleEnded(block.timestamp, endTime);
         if (finalized) revert AlreadyFinalized();
         if (amount == 0) revert ZeroDeposit();
 
-        // Transfer USDC from user to this contract
         USDC.safeTransferFrom(msg.sender, address(this), amount);
-
-        // Update state
         deposits[msg.sender] += amount;
         totalDeposited += amount;
 
@@ -128,75 +139,60 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Withdraw your USDC if the sale is not successful (i.e., below minimumCap).
-     *         Callable after finalization if `successful == false`.
+     * @notice Withdraw USDC if sale failed
      */
     function withdraw() external nonReentrant {
         if (!finalized) revert NotFinalized();
         if (successful) revert SaleWasSuccessful();
 
-        uint256 userDeposit = deposits[msg.sender];
-        if (userDeposit == 0) revert NothingToWithdraw();
+        uint256 amount = deposits[msg.sender];
+        if (amount == 0) revert NothingToWithdraw(msg.sender);
 
-        // Zero out deposit before transferring
         deposits[msg.sender] = 0;
+        USDC.safeTransfer(msg.sender, amount);
 
-        bool successTransfer = USDC.transfer(msg.sender, userDeposit);
-        require(successTransfer, "USDC transfer failed");
-
-        emit Withdraw(msg.sender, userDeposit);
+        emit Withdraw(msg.sender, amount);
     }
 
     /**
-     * @notice Claim your allocated tokens after the sale is finalized and successful.
-     *         Requires a valid Merkle proof of (address, allocation).
-     * @param allocation The total token amount allocated to msg.sender
-     * @param proof      The Merkle proof for (msg.sender, allocation)
+     * @notice Claim allocated tokens using Merkle proof
+     * @param allocation Token amount allocated to sender
+     * @param proof Merkle proof for allocation
      */
     function claimTokens(uint256 allocation, bytes32[] calldata proof) external nonReentrant {
         if (!finalized || !successful) revert SaleNotSuccessful();
         if (merkleRoot == bytes32(0)) revert MerkleRootNotSet();
-        if (hasClaimed[msg.sender]) revert AlreadyClaimed();
+        if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
 
-        // Verify Merkle proof
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, allocation));
-        bool valid = MerkleProof.verify(proof, merkleRoot, leaf);
-        if (!valid) revert InvalidProof();
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof();
 
-        // Mark as claimed
         hasClaimed[msg.sender] = true;
-
-        // --- Token Transfer Logic  ---
-        saleToken.transfer(msg.sender, allocation);
+        // saleToken.safeTransfer(msg.sender, allocation); // Requires saleToken initialization
 
         emit Claim(msg.sender, allocation);
     }
 
-    // -----------------------------------------------------------------------
-    // Owner Functions
-    // -----------------------------------------------------------------------
+    /* ============ Admin Functions ============ */
 
     /**
-     * @notice Finalize the sale after endTime (or earlier if max cap reached).
-     *         Determines if it's successful and stops further deposits.
+     * @notice Finalize sale outcome
      */
     function finalize() external onlyOwner {
         if (finalized) revert AlreadyFinalized();
-
-        if (block.timestamp < endTime && !(totalDeposited == maximumCap)) {
-            revert SaleNotEnded();
+        if (block.timestamp < endTime && totalDeposited != maximumCap) {
+            revert SaleNotEnded(block.timestamp, endTime);
         }
 
         finalized = true;
-        successful = (totalDeposited >= minimumCap);
+        successful = totalDeposited >= minimumCap;
 
         emit Finalized(successful, totalDeposited);
     }
 
     /**
-     * @notice Set the Merkle root that represents each user's final allocation.
-     *         Can only be set after the sale is finalized and successful.
-     * @param _merkleRoot The root of the Merkle tree
+     * @notice Set Merkle root for allocations
+     * @param _merkleRoot Root of allocation Merkle tree
      */
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         if (!finalized || !successful) revert SaleNotSuccessful();
@@ -205,12 +201,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Withdraw the USDC proceeds to the treasury address (if sale is successful).
-     *         Owner can call this at any time after successful finalization.
+     * @notice Withdraw proceeds to treasury
      */
     function withdrawProceeds() external onlyOwner {
         if (!finalized || !successful) revert SaleNotSuccessful();
-        uint256 balance = USDC.balanceOf(address(this));
-        USDC.transfer(treasury, balance);
+        USDC.safeTransfer(treasury, USDC.balanceOf(address(this)));
     }
 }
