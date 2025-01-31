@@ -23,40 +23,35 @@ contract FundBridgerScript is MigrationHelper {
             return;
         }
 
-        console2.log("");
-        console2.log("Bridgers");
-
         address[3] memory bridgers = [ETHEREUM_BRIDGER, ARB_BRIDGER, BASE_BRIDGER];
 
-        if(block.chainid == ETHEREUM_CHAINID) {
+        if (block.chainid == ETHEREUM_CHAINID) {
             fund(ETHEREUM_BRIDGER, "ETHEREUM_BRIDGER", 0.25 ether, 0.25 ether);
         }
 
-        if(block.chainid == ARBITRUM_CHAINID) {
+        if (block.chainid == ARBITRUM_CHAINID) {
             fund(ARB_BRIDGER, "ARB_BRIDGER", 0.25 ether, 0.25 ether);
         }
 
-        if(block.chainid == BASE_CHAINID) {
+        if (block.chainid == BASE_CHAINID) {
             fund(BASE_BRIDGER, "BASE_BRIDGER", 0.25 ether, 0.25 ether);
         }
 
-        for (uint256 index = 0; index < bridgers.length; index++) {
-        }
+        for (uint256 index = 0; index < bridgers.length; index++) {}
     }
 
     function fund(address bridger, string memory name, uint256 limit, uint256 amount) internal {
-            uint256 balance = bridger.balance;
-            console2.log("bridger:", name);
-            console2.log("Address:", bridger);
-            console2.log("Balance: %e", balance);
+        uint256 balance = bridger.balance;
+        console2.log("Bridger:", name);
+        console2.log("Address:", bridger);
+        console2.log("Balance: %e", balance);
 
-            if (balance < limit) {
-                console2.log("Needs funding. Adding: %e", amount);
+        if (balance < limit) {
+            console2.log("Needs funding. Adding: %e", amount);
 
-                vm.broadcast(deployerPrivateKey);
-                (bool success,) = address(bridger).call{value: amount}("");
-                require(success, "Failed to send ETH");
-            }
-
+            vm.broadcast(deployerPrivateKey);
+            (bool success,) = address(bridger).call{value: amount}("");
+            require(success, "Failed to send ETH");
+        }
     }
 }
