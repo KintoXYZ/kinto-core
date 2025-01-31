@@ -44,7 +44,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /// @notice Tokens have already been claimed
     error AlreadyClaimed(address user);
     /// @notice Provided Merkle proof is invalid
-    error InvalidProof();
+    error InvalidProof(bytes32[] proof, bytes32 leaf);
     /// @notice Merkle root not set for claims
     error MerkleRootNotSet();
 
@@ -173,7 +173,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
 
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender, allocation));
-        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof();
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof(proof, leaf);
 
         hasClaimed[msg.sender] = true;
         saleToken.safeTransfer(msg.sender, allocation);
@@ -188,7 +188,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      */
     function finalize() external onlyOwner {
         if (finalized) revert AlreadyFinalized();
-        if (block.timestamp < endTime && totalDeposited != maximumCap) {
+        if (block.timestamp < endTime) {
             revert SaleNotEnded(block.timestamp, endTime);
         }
 
