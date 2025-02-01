@@ -14,7 +14,6 @@ contract FundBridgerScript is MigrationHelper {
     address public constant ARB_BRIDGER = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
     address public constant BASE_BRIDGER = 0x361C9A99Cf874ec0B0A0A89e217Bf0264ee17a5B;
 
-
     function run() public override {
         super.run();
 
