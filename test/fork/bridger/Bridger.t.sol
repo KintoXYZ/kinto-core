@@ -37,7 +37,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     address internal ENA;
     address internal wstETH;
     address internal weETH;
-    address internal usdmCurvePool;
 
     BridgerHarness internal bridger;
 
@@ -278,6 +277,65 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
             vaultAssetOutBalanceBefore + 283975689912282,
             "Invalid Vault assetOut balance"
         );
+    }
+
+    // USDC to wUSDM
+    function testDepositBySig_WhenUSDCToWUSDM() public {
+        setUpArbitrumFork();
+        vm.rollFork(301295138); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
+        address assetToDeposit = USDC_ARBITRUM;
+        uint256 amountToDeposit = 1e6;
+        uint256 sharesBefore = ERC20(wUSDM).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(wUSDM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            wUSDM,
+            amountToDeposit,
+            968e3,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // USDC to USDM quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' -H '0x-api-key: key' -H '0x-version: v2' | jq > ./test/data/swap-usdc-to-usdm-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-usdc-to-usdm-arb.json").readBytes(".transaction.data");
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_owner);
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
+        assertEq(bridger.nonces(_user), nonce + 1);
+
+        uint256 shares = ERC4626(wUSDM).previewDeposit(1000020215920662957);
+        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
     // DAI to wUSDM

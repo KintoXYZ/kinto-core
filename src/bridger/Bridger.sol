@@ -425,7 +425,7 @@ contract Bridger is
                 amount,
                 IERC20(inputAsset),
                 // If the final asset is sUSDe, swap to USDe first and then stake
-                // If the final asset is wUSDM, swap to USDC first, then swap to USDM using Curve, and finally wrap
+                // If the final asset is wUSDM, swap to USDM first and then stake
                 IERC20(_getFinalAssetByAsset(finalAsset)),
                 swapCallData
             );
@@ -475,7 +475,7 @@ contract Bridger is
             return USDe;
         }
         if (finalAsset == wUSDM) {
-            return USDC;
+            return USDM;
         }
         if (finalAsset == stUSD) {
             return USDC;
