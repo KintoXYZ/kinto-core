@@ -38,6 +38,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         assertEq(bridger.SOLV_BTC(), 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0, "Invalid SolvBtc address");
 
         // Save address
-        saveContractAddress("BridgerV14-impl", newImpl);
+        saveContractAddress("BridgerV15-impl", newImpl);
     }
 }
