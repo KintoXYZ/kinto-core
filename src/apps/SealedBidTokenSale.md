@@ -1,15 +1,14 @@
 # SealedBidTokenSale Technical Specification
 
-Below is the **technical specification** for a Solidity **sealed‐bid, multi‐unit uniform‐price** token sale contract.
-
-All other core features—time‐limited deposits in USDC, minimum/maximum cap checks, finalization logic, off‐chain price discovery, Merkle‐based token claims, and refunds if the sale fails—remain consistent with the design.
+Below is the **technical specification** for a Solidity **sealed‐bid** token sale contract based on the implemented code.
 
 ---
 
 ## 1. **Contract Overview**
 
 - **Name**: `SealedBidTokenSale`  
-- **Purpose**: Accept USDC deposits for an off‐chain price discovery token sale, enforce timing and caps, enable refunds if the sale is unsuccessful, and distribute tokens (via a Merkle proof) if successful.
+- **Purpose**: Accept USDC deposits for a token sale, enforce timing and minimum cap requirements, enable refunds if the sale is unsuccessful, and distribute tokens and USDC allocations via a Merkle proof if successful.
+- **Inheritance**: `Ownable`, `ReentrancyGuard`
 
 ---
 
@@ -17,193 +16,171 @@ All other core features—time‐limited deposits in USDC, minimum/maximum cap c
 
 - **Owner**:  
   - Inherits from OpenZeppelin `Ownable`.  
-  - The owner sets crucial parameters during contract deployment.  
-  - The owner finalizes the sale, sets the Merkle root, and withdraws proceeds to the treasury address.
+  - Sets crucial parameters during contract deployment.  
+  - Controls sale finalization, Merkle root setting, and proceeds withdrawal.
 
 - **Participants**:  
   - Deposit USDC during the sale window.  
   - Withdraw their deposit if the sale fails.  
-  - Claim tokens after the sale succeeds, using a Merkle proof.
+  - Claim tokens and USDC allocations after sale success using a Merkle proof.
 
 - **Treasury**:  
-  - A predetermined address specified at contract deployment.  
-  - Receives the USDC proceeds if the sale succeeds.
+  - Immutable address specified at deployment.  
+  - Receives USDC proceeds upon successful sale completion.
 
 ---
 
-## 3. **Immutable & Configurable Parameters**
+## 3. **Immutable Parameters**
 
-1. **`Ownable`**  
-   - The contract is governed by an owner (`owner()`) managed by OpenZeppelin’s `Ownable`.
+1. **`saleToken`** (`IERC20`)  
+   - Token being sold through the contract.
+   - Set at construction.
 
-2. **`treasury`** (`address`)  
-   - Set at construction.  
-   - **Immutable**; where funds are sent on success.
+2. **`USDC`** (`IERC20`)  
+   - USDC token contract reference for deposits.
+   - Set at construction.
 
-3. **`usdcToken`** (`IERC20`)  
-   - The address of the USDC contract.  
-   - Used for `transferFrom` and `transfer` calls.
+3. **`treasury`** (`address`)  
+   - Fixed address that receives proceeds.
+   - Set at construction.
 
-4. **`startTime`** and **`endTime`** (`uint256`)  
-   - The sale window during which deposits are accepted.
+4. **`startTime`** (`uint256`)  
+   - Sale start timestamp.
+   - Set at construction.
 
 5. **`minimumCap`** (`uint256`)  
-   - The minimum total USDC deposit threshold required for the sale to succeed.
-
-6. **`maximumCap`** (`uint256`)  
-   - The maximum total USDC deposit allowed; can be `0` if no maximum limit is needed.
+   - Minimum USDC required for success.
+   - Set at construction.
 
 ---
 
 ## 4. **State Variables**
 
-1. **`finalized`** (`bool`)  
-   - Indicates if the sale has been finalized.  
-   - Once set, the contract’s deposit logic is locked.
+1. **`saleEnded`** (`bool`)  
+   - Indicates if owner has ended the sale.
 
-2. **`successful`** (`bool`)  
-   - `true` if `totalDeposited >= minimumCap` upon finalization.  
-   - Determines whether users can claim tokens or must withdraw refunds.
+2. **`capReached`** (`bool`)  
+   - Set to `true` if `totalDeposited >= minimumCap` when sale ends.
 
 3. **`totalDeposited`** (`uint256`)  
-   - Running total of all USDC deposits received.
+   - Sum of all USDC deposits.
 
-4. **`deposits`** (`mapping(address => uint256)`)  
-   - Tracks each participant’s cumulative deposit.
+4. **`merkleRoot`** (`bytes32`)  
+   - Root hash for token and USDC allocation proofs.
 
-5. **`merkleRoot`** (`bytes32`)  
-   - Root hash of an off‐chain Merkle tree that encodes final token allocations.
+5. **`deposits`** (`mapping(address => uint256)`)  
+   - Tracks each user's USDC deposit amount.
 
 6. **`hasClaimed`** (`mapping(address => bool)`)  
-   - Tracks whether a participant has already claimed tokens.
+   - Records whether an address has claimed their allocation.
 
 ---
 
 ## 5. **Core Functions**
 
 ### 5.1 **`deposit(uint256 amount)`**
-- **Purpose**: Allows participants to deposit USDC into the sale, multiple times if desired.  
+- **Purpose**: Accepts USDC deposits from participants.  
 - **Constraints**:  
-  1. Must be called after `startTime` and before `endTime`.  
-  2. Sale must not be `finalized`.  
-  3. The `amount` must be non-zero.  
-  4. If `maximumCap > 0`, `totalDeposited + amount <= maximumCap`.  
-  5. Transfers USDC using `transferFrom(msg.sender, address(this), amount)`.  
+  1. Must be after `startTime`.
+  2. Sale must not be ended.
+  3. Amount must be non-zero.
 - **Effects**:  
-  - Increments `deposits[msg.sender]` and `totalDeposited`.  
-  - Emits a `Deposit` event.
+  - Updates `deposits[msg.sender]` and `totalDeposited`.
+  - Transfers USDC from sender to contract.
+  - Emits `Deposited` event.
 
 ### 5.2 **`withdraw()`**
-- **Purpose**: Allows participants to **refund** their USDC deposits if the sale fails.  
+- **Purpose**: Returns USDC to depositors if sale fails.  
 - **Constraints**:  
-  1. Can only be called after `finalized`.  
-  2. Only possible if `successful == false`.  
-  3. Caller’s `deposits[msg.sender]` must be > 0.  
+  1. Sale must be ended.
+  2. Cap must not be reached.
+  3. Caller must have non-zero deposit.
 - **Effects**:  
-  - Refunds the user’s entire deposit via `transfer`.  
-  - Sets `deposits[msg.sender] = 0` to prevent re‐entrancy.  
-  - Emits a `Withdraw` event.
+  - Returns user's entire USDC deposit.
+  - Zeroes their deposit balance.
+  - Emits `Withdrawn` event.
 
-### 5.3 **`finalize()`** (Owner‐only)
-- **Purpose**: Ends the deposit phase, locks in whether the sale is successful, and stops further deposits.  
+### 5.3 **`endSale()`** (Owner-only)
+- **Purpose**: Finalizes sale and determines success.  
 - **Constraints**:  
-  1. Can only be called by the **owner**.  
-  2. Must not be already `finalized`.  
-  3. Typically requires current time >= `endTime` **or** `totalDeposited == maximumCap` (if the cap is exhausted early).  
+  1. Only callable by owner.
+  2. Sale must not already be ended.
 - **Effects**:  
-  - Sets `finalized = true`.  
-  - Sets `successful = (totalDeposited >= minimumCap)`.  
-  - Emits a `Finalized` event with the final outcome.
+  - Sets `saleEnded = true`.
+  - Sets `capReached` based on minimum cap check.
+  - Emits `SaleEnded` event.
 
-### 5.4 **`setMerkleRoot(bytes32 _merkleRoot)`** (Owner‐only)
-- **Purpose**: Records the final allocations in a **Merkle root** for off‐chain computed distribution.  
+### 5.4 **`claimTokens(uint256 saleTokenAllocation, uint256 usdcAllocation, bytes32[] calldata proof, address user)`**
+- **Purpose**: Processes token and USDC claims using Merkle proofs.  
 - **Constraints**:  
-  1. Must be called by the **owner**.  
-  2. The sale must be `finalized` and `successful`.  
+  1. Sale must be ended and successful.
+  2. Merkle root must be set.
+  3. User must not have claimed.
+  4. Valid Merkle proof required.
 - **Effects**:  
-  - Updates `merkleRoot` to `_merkleRoot`.  
-  - Emits a `MerkleRootSet` event.
+  - Marks user as claimed.
+  - Transfers allocated sale tokens.
+  - Returns allocated USDC.
+  - Emits `Claimed` event.
 
-### 5.5 **`claimTokens(uint256 allocation, bytes32[] calldata proof)`**
-- **Purpose**: Lets each participant claim their allocated tokens (as computed off‐chain), verified by a **Merkle proof**.  
+### 5.5 **`setMerkleRoot(bytes32 newRoot)`** (Owner-only)
+- **Purpose**: Sets allocation Merkle root.
 - **Constraints**:  
-  1. The sale must be `finalized` and `successful`.  
-  2. A valid `merkleRoot` must be set.  
-  3. `hasClaimed[msg.sender] == false` (no double‐claim).  
-  4. The `(address, allocation)` leaf must be verified against `merkleRoot` using `MerkleProof.verify`.  
+  1. Sale must be ended and successful.
+  2. Only callable by owner.
 - **Effects**:  
-  - Marks `hasClaimed[msg.sender] = true`.  
-  - **Transfers** (or **mints**) `allocation` tokens to the caller.  
-  - Emits a `Claim` event.
+  - Sets `merkleRoot`.
+  - Emits `MerkleRootSet` event.
 
-### 5.6 **`withdrawProceeds()`** (Owner‐only)
-- **Purpose**: Transfers **all** USDC proceeds to the **predetermined `treasury`** address if the sale is successful.  
+### 5.6 **`withdrawProceeds()`** (Owner-only)
+- **Purpose**: Sends USDC to treasury.
 - **Constraints**:  
-  1. Must be called by the **owner**.  
-  2. The sale must be `finalized` and `successful`.  
+  1. Sale must be ended and successful.
+  2. Only callable by owner.
 - **Effects**:  
-  - Transfers the entire USDC balance from the contract to `treasury`.
+  - Transfers all USDC to treasury address.
 
 ---
 
-## 6. **Life Cycle**
+## 6. **Custom Errors**
 
-1. **Deployment**  
-   - Deployed with constructor parameters, including `treasury`, `startTime`, `endTime`, `minimumCap`, `maximumCap`.  
-   - The contract references the USDC address for deposits.
+1. **Parameter Validation**:
+   - `InvalidSaleTokenAddress`
+   - `InvalidTreasuryAddress`
+   - `ZeroDeposit`
 
-2. **Deposit Phase**  
-   - Participants call `deposit(amount)` any number of times from `startTime` to `endTime` (unless `maximumCap` is reached).  
-   - `totalDeposited` is aggregated.
+2. **State Checks**:
+   - `SaleNotStarted`
+   - `SaleAlreadyEnded`
+   - `SaleNotEnded`
+   - `CapNotReached`
+   - `SaleWasSuccessful`
 
-3. **Finalization**  
-   - After `endTime` (or upon reaching `maximumCap`), the owner calls `finalize()`.  
-   - The contract determines `successful` based on `minimumCap`.
-
-4. **Outcomes**  
-   - **Unsuccessful**: If `totalDeposited < minimumCap`, participants can call `withdraw()` to get refunds.  
-   - **Successful**:  
-     - The owner sets a `merkleRoot` to define each user’s final token allocation.  
-     - Participants use `claimTokens(allocation, proof)` to claim tokens.  
-     - The owner can call `withdrawProceeds()` to send USDC to the `treasury`.
-
----
-
-## 7. **Implementation Considerations**
-
-1. **Token Distribution Mechanism**  
-   - The contract must hold or be able to mint the tokens for `claimTokens()`.  
-   - This might involve transferring tokens in advance or using a mint function in an external token contract.
-
-2. **Security**  
-   - Use **OpenZeppelin** libraries (`Ownable`, `ReentrancyGuard`, `MerkleProof`) for best practices.  
-   - Validate deposit calls to prevent deposits outside the allowed window.  
-   - Carefully handle refunds (set user deposit to 0 before transferring USDC back).
-
-3. **Edge Cases**  
-   - If `maximumCap == 0`, only time gating applies.  
-   - If participants deposit after `maximumCap` is reached, the contract must revert.  
-   - The owner might finalize **early** if `totalDeposited == maximumCap` before `endTime`.  
-   - If `startTime` equals `endTime` or if `_endTime <= _startTime`, the constructor should revert.
-
-4. **No Immediate Secondary Trading**  
-   - The specification assumes tokens are **not** tradable until after the sale.  
-   - Participants may hold or wait to claim tokens; however, that is outside the core on‐chain deposit/refund logic.
-
-5. **Custom Errors**  
-   - Reverts use 0.8‐style **custom errors** for gas efficiency (e.g., `error SaleNotStarted();`, `error SaleEnded();`, etc.).  
+3. **Claim Validation**:
+   - `NothingToWithdraw`
+   - `AlreadyClaimed`
+   - `InvalidProof`
+   - `MerkleRootNotSet`
 
 ---
 
-## 8. **Final Takeaway**
+## 7. **Key Design Changes**
 
-This specification establishes a **time‐bound, USDC‐based deposit system** with:
+1. **Simplified Timing**:
+   - Only enforces start time, not end time.
+   - Owner controls sale end via `endSale()`.
 
-- A **minimum funding threshold** (`minimumCap`) for success.  
-- An **optional maximum** (`maximumCap`).  
-- **Finalization** by the owner.  
-- **Refunds** if not successful.  
-- **Merkle‐based claims** if successful.  
-- **Proceeds** withdrawn by the owner to a **fixed `treasury` address**.  
+2. **Dual Allocations**:
+   - Claims include both token and USDC amounts.
+   - Merkle proofs verify both allocations together.
 
-All **off‐chain** bid details and final allocation logic remain external; the contract only enforces **deposits**, **caps**, **timing**, and **fund distribution**, while using a **Merkle tree** for post‐sale token allocation.
+3. **Removed Maximum Cap**:
+   - No upper limit on total deposits.
+   - Sale ends only through owner action.
+
+4. **Gas Optimizations**:
+   - Uses OpenZeppelin's `SafeERC20`.
+   - Implements custom errors.
+   - Includes reentrancy protection.
+
+This implementation provides a flexible token sale mechanism with owner-controlled timing, minimum success threshold, and Merkle-based dual-asset distribution.
