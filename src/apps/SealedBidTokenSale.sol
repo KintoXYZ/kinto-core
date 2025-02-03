@@ -27,7 +27,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error SaleAlreadyEnded(uint256 currentTime);
     /// @notice Sale period has not ended yet
     error SaleNotEnded(uint256 currentTime);
-    /// @notice Operation requires successful sale state
+    /// @notice Operation requires capReached sale state
     error SaleNotSuccessful();
     /// @notice Operation requires failed sale state
     error SaleWasSuccessful();
@@ -49,10 +49,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /// @notice Emitted on USDC withdrawal
     event Withdrawn(address indexed user, uint256 amount);
     /// @notice Emitted when sale is ended
-    event SaleEnded(bool successful, uint256 totalDeposited);
+    event SaleEnded(bool capReached, uint256 totalDeposited);
     /// @notice Emitted when Merkle root is set
     event MerkleRootSet(bytes32 root);
-    /// @notice Emitted on successful token claim
+    /// @notice Emitted on capReached token claim
     event Claimed(address indexed user, uint256 tokenAmount);
 
     /* ============ Immutable Parameters ============ */
@@ -73,7 +73,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /// @notice Sale finalization status
     bool public saleEnded;
     /// @notice Sale success status
-    bool public successful;
+    bool public capReached;
     /// @notice Total USDC deposited
     uint256 public totalDeposited;
     /// @notice Merkle root for allocations
@@ -129,7 +129,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      */
     function withdraw() external nonReentrant {
         if (!saleEnded) revert SaleNotEnded(block.timestamp);
-        if (successful) revert SaleWasSuccessful();
+        if (capReached) revert SaleWasSuccessful();
 
         uint256 amount = deposits[msg.sender];
         if (amount == 0) revert NothingToWithdraw(msg.sender);
@@ -149,7 +149,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         external
         nonReentrant
     {
-        if (!saleEnded || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !capReached) revert SaleNotSuccessful();
         if (merkleRoot == bytes32(0)) revert MerkleRootNotSet();
         if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
 
@@ -178,9 +178,9 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
 
         saleEnded = true;
-        successful = totalDeposited >= minimumCap;
+        capReached = totalDeposited >= minimumCap;
 
-        emit SaleEnded(successful, totalDeposited);
+        emit SaleEnded(capReached, totalDeposited);
     }
 
     /**
@@ -188,7 +188,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param newRoot Root of allocation Merkle tree
      */
     function setMerkleRoot(bytes32 newRoot) external onlyOwner {
-        if (!saleEnded || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !capReached) revert SaleNotSuccessful();
         merkleRoot = newRoot;
         emit MerkleRootSet(newRoot);
     }
@@ -197,7 +197,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @notice Withdrawn proceeds to treasury
      */
     function withdrawProceeds() external onlyOwner {
-        if (!saleEnded || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !capReached) revert SaleNotSuccessful();
         USDC.safeTransfer(treasury, USDC.balanceOf(address(this)));
     }
 }

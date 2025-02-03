@@ -173,7 +173,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         sale.endSale();
 
         assertTrue(sale.saleEnded());
-        assertTrue(sale.successful());
+        assertTrue(sale.capReached());
     }
 
     /* ============ Withdraw ============ */
