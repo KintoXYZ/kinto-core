@@ -435,7 +435,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Attempt withdrawal on successful sale
         vm.prank(alice);
-        vm.expectRevert(SealedBidTokenSale.SaleWasSuccessful.selector);
+        vm.expectRevert(SealedBidTokenSale.CapReached.selector);
         sale.withdraw();
     }
 
