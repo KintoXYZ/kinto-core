@@ -1,6 +1,6 @@
 # SealedBidTokenSale Technical Specification
 
-Below is the **technical specification** for a Solidity **sealed‐bid** token sale contract based on the implemented code.
+Below is the **technical specification** for a Solidity **sealed‐bid** token sale contract.
 
 ---
 
@@ -162,25 +162,3 @@ Below is the **technical specification** for a Solidity **sealed‐bid** token s
    - `InvalidProof`
    - `MerkleRootNotSet`
 
----
-
-## 7. **Key Design Changes**
-
-1. **Simplified Timing**:
-   - Only enforces start time, not end time.
-   - Owner controls sale end via `endSale()`.
-
-2. **Dual Allocations**:
-   - Claims include both token and USDC amounts.
-   - Merkle proofs verify both allocations together.
-
-3. **Removed Maximum Cap**:
-   - No upper limit on total deposits.
-   - Sale ends only through owner action.
-
-4. **Gas Optimizations**:
-   - Uses OpenZeppelin's `SafeERC20`.
-   - Implements custom errors.
-   - Includes reentrancy protection.
-
-This implementation provides a flexible token sale mechanism with owner-controlled timing, minimum success threshold, and Merkle-based dual-asset distribution.
