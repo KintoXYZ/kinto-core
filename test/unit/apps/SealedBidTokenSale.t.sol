@@ -42,43 +42,84 @@ contract SealedBidTokenSaleTest is SharedSetup {
         leaves[0] = keccak256(abi.encodePacked(alice, allocation));
         leaves[1] = keccak256(abi.encodePacked(bob, allocation * 2));
         merkleRoot = buildRoot(leaves);
-        proof = getProof(leaves, 0);
+        proof = buildProof(leaves, 0);
     }
 
-    // Helper to build Merkle root
-    function buildRoot(bytes32[] memory leaves) internal pure returns (bytes32) {
-        bytes32[] memory nodes = leaves;
-        uint256 n = leaves.length;
-        while (n > 1) {
-            for (uint256 i = 0; i < n; i += 2) {
-                nodes[i / 2] = keccak256(abi.encodePacked(nodes[i], nodes[i + 1]));
-            }
-            n = (n + 1) / 2;
+    // Following code is adapted from https://github.com/dmfxyz/murky/blob/main/src/common/MurkyBase.sol.
+    function buildRoot(bytes32[] memory leaves) private pure returns (bytes32) {
+        require(leaves.length > 1);
+        while (leaves.length > 1) {
+            leaves = hashLevel(leaves);
         }
-        return nodes[0];
+        return leaves[0];
     }
 
-    // Helper to get proof for a leaf
-    function getProof(bytes32[] memory leaves, uint256 index) internal pure returns (bytes32[] memory) {
-        bytes32[] memory proof = new bytes32[](leaves.length);
-        uint256 level = 0;
-        uint256 n = leaves.length;
+    function buildProof(bytes32[] memory leaves, uint256 nodeIndex) private pure returns (bytes32[] memory) {
+        require(leaves.length > 1);
 
-        while (n > 1) {
-            if (index % 2 == 1) {
-                proof[level] = leaves[index - 1];
-            } else if (index + 1 < n) {
-                proof[level] = leaves[index + 1];
+        bytes32[] memory result = new bytes32[](64);
+        uint256 pos;
+
+        while (leaves.length > 1) {
+            unchecked {
+                if (nodeIndex & 0x1 == 1) {
+                    result[pos] = leaves[nodeIndex - 1];
+                } else if (nodeIndex + 1 == leaves.length) {
+                    result[pos] = bytes32(0);
+                } else {
+                    result[pos] = leaves[nodeIndex + 1];
+                }
+                ++pos;
+                nodeIndex /= 2;
             }
-            index /= 2;
-            n = (n + 1) / 2;
-            level++;
+            leaves = hashLevel(leaves);
         }
-        return proof;
+        // Resize the length of the array to fit.
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(result, pos)
+        }
+
+        return result;
+    }
+
+    function hashLevel(bytes32[] memory leaves) private pure returns (bytes32[] memory) {
+        bytes32[] memory result;
+        unchecked {
+            uint256 length = leaves.length;
+            if (length & 0x1 == 1) {
+                result = new bytes32[](length / 2 + 1);
+                result[result.length - 1] = hashPair(leaves[length - 1], bytes32(0));
+            } else {
+                result = new bytes32[](length / 2);
+            }
+            uint256 pos = 0;
+            for (uint256 i = 0; i < length - 1; i += 2) {
+                result[pos] = hashPair(leaves[i], leaves[i + 1]);
+                ++pos;
+            }
+        }
+        return result;
+    }
+
+    function hashPair(bytes32 left, bytes32 right) private pure returns (bytes32 result) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            switch lt(left, right)
+            case 0 {
+                mstore(0x0, right)
+                mstore(0x20, left)
+            }
+            default {
+                mstore(0x0, left)
+                mstore(0x20, right)
+            }
+            result := keccak256(0x0, 0x40)
+        }
     }
 
     /* ============ Constructor Tests ============ */
-    function testConstructor() public {
+    function testConstructor() public view {
         assertEq(address(sale.saleToken()), address(saleToken));
         assertEq(address(sale.USDC()), address(usdc));
         assertEq(sale.treasury(), TREASURY);
@@ -164,6 +205,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.warp(startTime + 1);
 
         usdc.mint(alice, MAX_CAP);
+        saleToken.mint(address(sale), allocation);
 
         vm.prank(alice);
         usdc.approve(address(sale), MAX_CAP);
@@ -183,6 +225,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         assertTrue(sale.hasClaimed(alice));
         assertEq(saleToken.balanceOf(alice), allocation);
+        assertEq(saleToken.balanceOf(address(sale)), 0);
     }
 
     /* ============ Admin Function Tests ============ */
