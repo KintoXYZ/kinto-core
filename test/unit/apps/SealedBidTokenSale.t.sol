@@ -21,7 +21,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
     bytes32 public merkleRoot;
     bytes32[] public proof;
-    uint256 public allocation = 500 ether;
+    uint256 public allocation = 1000 * 1e18;
 
     function setUp() public override {
         super.setUp();
@@ -35,7 +35,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Deploy sale contract with admin as owner
         vm.prank(admin);
-        sale = new SealedBidTokenSale(address(saleToken), TREASURY, address(usdc), startTime, endTime, MIN_CAP, MAX_CAP);
+        sale = new SealedBidTokenSale(address(saleToken), TREASURY, address(usdc), startTime, MIN_CAP);
 
         // Setup Merkle tree with alice and bob
         bytes32[] memory leaves = new bytes32[](2);
@@ -126,7 +126,6 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(sale.treasury(), TREASURY);
         assertEq(sale.startTime(), startTime);
         assertEq(sale.minimumCap(), MIN_CAP);
-        assertEq(sale.maximumCap(), MAX_CAP);
         assertEq(sale.owner(), admin);
     }
 

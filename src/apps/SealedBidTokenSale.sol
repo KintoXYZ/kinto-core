@@ -67,8 +67,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     uint256 public immutable startTime;
     /// @notice Minimum USDC required for success
     uint256 public immutable minimumCap;
-    /// @notice Maximum USDC allowed in sale
-    uint256 public immutable maximumCap;
 
     /* ============ State Variables ============ */
 
@@ -94,17 +92,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _usdcToken USDC token address
      * @param _startTime Sale start timestamp
      * @param _minimumCap Minimum USDC for success
-     * @param _maximumCap Maximum USDC allowed
      */
-    constructor(
-        address _saleToken,
-        address _treasury,
-        address _usdcToken,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _minimumCap,
-        uint256 _maximumCap
-    ) Ownable(msg.sender) {
+    constructor(address _saleToken, address _treasury, address _usdcToken, uint256 _startTime, uint256 _minimumCap)
+        Ownable(msg.sender)
+    {
         if (_saleToken == address(0)) revert InvalidSaleTokenAddress(_saleToken);
         if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
 
@@ -113,7 +104,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         USDC = IERC20(_usdcToken);
         startTime = _startTime;
         minimumCap = _minimumCap;
-        maximumCap = _maximumCap;
     }
 
     /* ============ User Functions ============ */
@@ -185,12 +175,12 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /**
      * @notice Set Merkle root for allocations
-     * @param _merkleRoot Root of allocation Merkle tree
+     * @param newRoot Root of allocation Merkle tree
      */
-    function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+    function setMerkleRoot(bytes32 newRoot) external onlyOwner {
         if (!saleEnded || !successful) revert SaleNotSuccessful();
-        merkleRoot = _merkleRoot;
-        emit MerkleRootSet(_merkleRoot);
+        merkleRoot = newRoot;
+        emit MerkleRootSet(newRoot);
     }
 
     /**
