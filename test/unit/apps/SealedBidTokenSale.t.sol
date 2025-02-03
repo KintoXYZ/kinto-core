@@ -119,12 +119,12 @@ contract SealedBidTokenSaleTest is SharedSetup {
     }
 
     /* ============ Constructor Tests ============ */
+
     function testConstructor() public view {
         assertEq(address(sale.saleToken()), address(saleToken));
         assertEq(address(sale.USDC()), address(usdc));
         assertEq(sale.treasury(), TREASURY);
         assertEq(sale.startTime(), startTime);
-        assertEq(sale.endTime(), endTime);
         assertEq(sale.minimumCap(), MIN_CAP);
         assertEq(sale.maximumCap(), MAX_CAP);
         assertEq(sale.owner(), admin);
@@ -155,8 +155,9 @@ contract SealedBidTokenSaleTest is SharedSetup {
         sale.deposit(100 ether);
     }
 
-    /* ============ Finalize Tests ============ */
-    function testFinalize_Success() public {
+    /* ============ endSale ============ */
+
+    function testEndSale() public {
         vm.warp(startTime + 1);
 
         usdc.mint(alice, MAX_CAP);
@@ -167,15 +168,15 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         sale.deposit(MAX_CAP);
 
-        vm.warp(endTime);
         vm.prank(admin);
-        sale.finalize();
+        sale.endSale();
 
-        assertTrue(sale.finalized());
+        assertTrue(sale.saleEnded());
         assertTrue(sale.successful());
     }
 
-    /* ============ Withdraw Tests ============ */
+    /* ============ Withdraw ============ */
+
     function testWithdraw() public {
         uint256 amount = 1000 * 1e6;
 
@@ -191,7 +192,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         vm.warp(endTime);
         vm.prank(admin);
-        sale.finalize();
+        sale.endSale();
 
         vm.prank(alice);
         sale.withdraw();
@@ -200,7 +201,8 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(usdc.balanceOf(alice), amount);
     }
 
-    /* ============ Claim Tests ============ */
+    /* ============ claimTokens ============ */
+
     function testClaimTokens() public {
         vm.warp(startTime + 1);
 
@@ -215,7 +217,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         vm.warp(endTime);
         vm.prank(admin);
-        sale.finalize();
+        sale.endSale();
 
         vm.prank(admin);
         sale.setMerkleRoot(merkleRoot);
@@ -228,7 +230,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(saleToken.balanceOf(address(sale)), 0);
     }
 
-    /* ============ Admin Function Tests ============ */
+    /* ============ withdrawProceeds ============ */
 
     function testWithdrawProceeds() public {
         vm.warp(startTime + 1);
@@ -243,7 +245,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         vm.warp(endTime);
         vm.prank(admin);
-        sale.finalize();
+        sale.endSale();
 
         vm.prank(admin);
         sale.withdrawProceeds();

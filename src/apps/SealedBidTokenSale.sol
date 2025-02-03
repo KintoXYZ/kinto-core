@@ -21,23 +21,17 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error InvalidSaleTokenAddress(address token);
     /// @notice Invalid treasury address provided (zero address)
     error InvalidTreasuryAddress(address treasury);
-    /// @notice End time must be after start time
-    error InvalidEndTime(uint256 startTime, uint256 endTime);
     /// @notice Sale period has not started yet
     error SaleNotStarted(uint256 currentTime, uint256 startTime);
     /// @notice Sale period has already ended
-    error SaleEnded(uint256 currentTime, uint256 endTime);
-    /// @notice Sale has already been finalized
-    error AlreadyFinalized();
-    /// @notice Action requires prior finalization
-    error NotFinalized();
+    error SaleAlreadyEnded(uint256 currentTime);
     /// @notice Sale period has not ended yet
-    error SaleNotEnded(uint256 currentTime, uint256 endTime);
+    error SaleNotEnded(uint256 currentTime);
     /// @notice Operation requires successful sale state
     error SaleNotSuccessful();
     /// @notice Operation requires failed sale state
     error SaleWasSuccessful();
-    /// @notice Deposit amount must be greater than zero
+    /// @notice Deposited amount must be greater than zero
     error ZeroDeposit();
     /// @notice No funds available for withdrawal
     error NothingToWithdraw(address user);
@@ -51,15 +45,15 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /* ============ Events ============ */
 
     /// @notice Emitted on USDC deposit
-    event Deposit(address indexed user, uint256 amount);
+    event Deposited(address indexed user, uint256 amount);
     /// @notice Emitted on USDC withdrawal
-    event Withdraw(address indexed user, uint256 amount);
-    /// @notice Emitted when sale is finalized
-    event Finalized(bool successful, uint256 totalDeposited);
+    event Withdrawn(address indexed user, uint256 amount);
+    /// @notice Emitted when sale is ended
+    event SaleEnded(bool successful, uint256 totalDeposited);
     /// @notice Emitted when Merkle root is set
     event MerkleRootSet(bytes32 root);
     /// @notice Emitted on successful token claim
-    event Claim(address indexed user, uint256 tokenAmount);
+    event Claimed(address indexed user, uint256 tokenAmount);
 
     /* ============ Immutable Parameters ============ */
 
@@ -71,8 +65,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     address public immutable treasury;
     /// @notice Sale start timestamp
     uint256 public immutable startTime;
-    /// @notice Sale end timestamp
-    uint256 public immutable endTime;
     /// @notice Minimum USDC required for success
     uint256 public immutable minimumCap;
     /// @notice Maximum USDC allowed in sale
@@ -81,7 +73,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /* ============ State Variables ============ */
 
     /// @notice Sale finalization status
-    bool public finalized;
+    bool public saleEnded;
     /// @notice Sale success status
     bool public successful;
     /// @notice Total USDC deposited
@@ -101,7 +93,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _treasury Treasury address for proceeds
      * @param _usdcToken USDC token address
      * @param _startTime Sale start timestamp
-     * @param _endTime Sale end timestamp
      * @param _minimumCap Minimum USDC for success
      * @param _maximumCap Maximum USDC allowed
      */
@@ -116,13 +107,11 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     ) Ownable(msg.sender) {
         if (_saleToken == address(0)) revert InvalidSaleTokenAddress(_saleToken);
         if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
-        if (_endTime <= _startTime) revert InvalidEndTime(_startTime, _endTime);
 
         saleToken = IERC20(_saleToken);
         treasury = _treasury;
         USDC = IERC20(_usdcToken);
         startTime = _startTime;
-        endTime = _endTime;
         minimumCap = _minimumCap;
         maximumCap = _maximumCap;
     }
@@ -130,27 +119,26 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /* ============ User Functions ============ */
 
     /**
-     * @notice Deposit USDC into the sale
+     * @notice Deposited USDC into the sale
      * @param amount Amount of USDC to deposit
      */
     function deposit(uint256 amount) external nonReentrant {
         if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
-        if (block.timestamp > endTime) revert SaleEnded(block.timestamp, endTime);
-        if (finalized) revert AlreadyFinalized();
+        if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
         if (amount == 0) revert ZeroDeposit();
 
         USDC.safeTransferFrom(msg.sender, address(this), amount);
         deposits[msg.sender] += amount;
         totalDeposited += amount;
 
-        emit Deposit(msg.sender, amount);
+        emit Deposited(msg.sender, amount);
     }
 
     /**
-     * @notice Withdraw USDC if sale failed
+     * @notice Withdrawn USDC if sale failed
      */
     function withdraw() external nonReentrant {
-        if (!finalized) revert NotFinalized();
+        if (!saleEnded) revert SaleNotEnded(block.timestamp);
         if (successful) revert SaleWasSuccessful();
 
         uint256 amount = deposits[msg.sender];
@@ -159,16 +147,16 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         deposits[msg.sender] = 0;
         USDC.safeTransfer(msg.sender, amount);
 
-        emit Withdraw(msg.sender, amount);
+        emit Withdrawn(msg.sender, amount);
     }
 
     /**
-     * @notice Claim allocated tokens using Merkle proof
+     * @notice Claimed allocated tokens using Merkle proof
      * @param allocation Token amount allocated to sender
      * @param proof Merkle proof for allocation
      */
     function claimTokens(uint256 allocation, bytes32[] calldata proof) external nonReentrant {
-        if (!finalized || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !successful) revert SaleNotSuccessful();
         if (merkleRoot == bytes32(0)) revert MerkleRootNotSet();
         if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
 
@@ -178,24 +166,21 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         hasClaimed[msg.sender] = true;
         saleToken.safeTransfer(msg.sender, allocation);
 
-        emit Claim(msg.sender, allocation);
+        emit Claimed(msg.sender, allocation);
     }
 
     /* ============ Admin Functions ============ */
 
     /**
-     * @notice Finalize sale outcome
+     * @notice Ends sale
      */
-    function finalize() external onlyOwner {
-        if (finalized) revert AlreadyFinalized();
-        if (block.timestamp < endTime) {
-            revert SaleNotEnded(block.timestamp, endTime);
-        }
+    function endSale() external onlyOwner {
+        if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
 
-        finalized = true;
+        saleEnded = true;
         successful = totalDeposited >= minimumCap;
 
-        emit Finalized(successful, totalDeposited);
+        emit SaleEnded(successful, totalDeposited);
     }
 
     /**
@@ -203,16 +188,16 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _merkleRoot Root of allocation Merkle tree
      */
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
-        if (!finalized || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !successful) revert SaleNotSuccessful();
         merkleRoot = _merkleRoot;
         emit MerkleRootSet(_merkleRoot);
     }
 
     /**
-     * @notice Withdraw proceeds to treasury
+     * @notice Withdrawn proceeds to treasury
      */
     function withdrawProceeds() external onlyOwner {
-        if (!finalized || !successful) revert SaleNotSuccessful();
+        if (!saleEnded || !successful) revert SaleNotSuccessful();
         USDC.safeTransfer(treasury, USDC.balanceOf(address(this)));
     }
 }
