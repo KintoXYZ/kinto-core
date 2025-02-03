@@ -142,21 +142,31 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /**
      * @notice Claimed allocated tokens using Merkle proof
-     * @param allocation Token amount allocated to sender
+     * @param saleTokenAllocation Token amount allocated to sender
      * @param proof Merkle proof for allocation
      */
-    function claimTokens(uint256 allocation, bytes32[] calldata proof) external nonReentrant {
+    function claimTokens(uint256 saleTokenAllocation, uint256 usdcAllocation, bytes32[] calldata proof)
+        external
+        nonReentrant
+    {
         if (!saleEnded || !successful) revert SaleNotSuccessful();
         if (merkleRoot == bytes32(0)) revert MerkleRootNotSet();
         if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
 
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, allocation));
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, saleTokenAllocation, usdcAllocation));
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof(proof, leaf);
 
         hasClaimed[msg.sender] = true;
-        saleToken.safeTransfer(msg.sender, allocation);
 
-        emit Claimed(msg.sender, allocation);
+        if (saleTokenAllocation > 0) {
+            saleToken.safeTransfer(msg.sender, saleTokenAllocation);
+        }
+
+        if (usdcAllocation > 0) {
+            USDC.safeTransfer(msg.sender, usdcAllocation);
+        }
+
+        emit Claimed(msg.sender, saleTokenAllocation);
     }
 
     /* ============ Admin Functions ============ */

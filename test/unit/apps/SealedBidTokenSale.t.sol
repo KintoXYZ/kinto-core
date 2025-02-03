@@ -21,7 +21,8 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
     bytes32 public merkleRoot;
     bytes32[] public proof;
-    uint256 public allocation = 1000 * 1e18;
+    uint256 public saleTokenAllocation = 1000 * 1e18;
+    uint256 public usdcAllocation = 1000 * 1e6;
 
     function setUp() public override {
         super.setUp();
@@ -39,8 +40,9 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Setup Merkle tree with alice and bob
         bytes32[] memory leaves = new bytes32[](2);
-        leaves[0] = keccak256(abi.encodePacked(alice, allocation));
-        leaves[1] = keccak256(abi.encodePacked(bob, allocation * 2));
+        leaves[0] = keccak256(abi.encodePacked(alice, saleTokenAllocation, usdcAllocation));
+        leaves[1] = keccak256(abi.encodePacked(bob, saleTokenAllocation * 2, usdcAllocation));
+
         merkleRoot = buildRoot(leaves);
         proof = buildProof(leaves, 0);
     }
@@ -206,7 +208,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.warp(startTime + 1);
 
         usdc.mint(alice, MAX_CAP);
-        saleToken.mint(address(sale), allocation);
+        saleToken.mint(address(sale), saleTokenAllocation);
 
         vm.prank(alice);
         usdc.approve(address(sale), MAX_CAP);
@@ -222,10 +224,11 @@ contract SealedBidTokenSaleTest is SharedSetup {
         sale.setMerkleRoot(merkleRoot);
 
         vm.prank(alice);
-        sale.claimTokens(allocation, proof);
+        sale.claimTokens(saleTokenAllocation, usdcAllocation, proof);
 
         assertTrue(sale.hasClaimed(alice));
-        assertEq(saleToken.balanceOf(alice), allocation);
+        assertEq(saleToken.balanceOf(alice), saleTokenAllocation);
+        assertEq(usdc.balanceOf(alice), usdcAllocation);
         assertEq(saleToken.balanceOf(address(sale)), 0);
     }
 
