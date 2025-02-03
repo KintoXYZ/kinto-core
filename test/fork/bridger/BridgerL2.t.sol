@@ -49,7 +49,6 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
         uint256 fee = 1;
 
         IBridger.BridgeData memory bridgeData = bridgeData[block.chainid][DAI_KINTO];
-        deal(address(_bridgerL2), bridgeData.gasFee);
 
         deal(inputAsset, address(_kintoWallet), amountIn + fee);
 
@@ -60,6 +59,7 @@ contract BridgerL2Test is SignatureHelper, SharedSetup, BridgeDataHelper {
         IERC20(inputAsset).approve(address(_bridgerL2), amountIn + fee);
 
         bridgeData.gasFee = IBridge(bridgeData.vault).getMinFees(bridgeData.connector, bridgeData.msgGasLimit, 322);
+        deal(address(_bridgerL2), bridgeData.gasFee);
 
         vm.startPrank(address(_kintoWallet));
         _bridgerL2.withdrawERC20(inputAsset, amountIn, _kintoWallet.owners(0), fee, bridgeData);
