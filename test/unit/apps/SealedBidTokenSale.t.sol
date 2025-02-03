@@ -40,8 +40,8 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Setup Merkle tree with alice and bob
         bytes32[] memory leaves = new bytes32[](2);
-        leaves[0] = keccak256(abi.encodePacked(alice, saleTokenAllocation, usdcAllocation));
-        leaves[1] = keccak256(abi.encodePacked(bob, saleTokenAllocation * 2, usdcAllocation));
+        leaves[0] = keccak256(bytes.concat(keccak256(abi.encode(alice, saleTokenAllocation, usdcAllocation))));
+        leaves[1] = keccak256(bytes.concat(keccak256(abi.encode(bob, saleTokenAllocation * 2, usdcAllocation))));
 
         merkleRoot = buildRoot(leaves);
         proof = buildProof(leaves, 0);
@@ -223,8 +223,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(admin);
         sale.setMerkleRoot(merkleRoot);
 
-        vm.prank(alice);
-        sale.claimTokens(saleTokenAllocation, usdcAllocation, proof);
+        sale.claimTokens(saleTokenAllocation, usdcAllocation, proof, alice);
 
         assertTrue(sale.hasClaimed(alice));
         assertEq(saleToken.balanceOf(alice), saleTokenAllocation);

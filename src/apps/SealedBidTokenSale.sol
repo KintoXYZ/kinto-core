@@ -90,6 +90,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _saleToken Sale token address
      * @param _treasury Treasury address for proceeds
      * @param _usdcToken USDC token address
+     *
      * @param _startTime Sale start timestamp
      * @param _minimumCap Minimum USDC for success
      */
@@ -117,9 +118,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
         if (amount == 0) revert ZeroDeposit();
 
-        USDC.safeTransferFrom(msg.sender, address(this), amount);
         deposits[msg.sender] += amount;
         totalDeposited += amount;
+
+        USDC.safeTransferFrom(msg.sender, address(this), amount);
 
         emit Deposited(msg.sender, amount);
     }
@@ -144,29 +146,30 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @notice Claimed allocated tokens using Merkle proof
      * @param saleTokenAllocation Token amount allocated to sender
      * @param proof Merkle proof for allocation
+     * @param user User to claim tokens for
      */
-    function claimTokens(uint256 saleTokenAllocation, uint256 usdcAllocation, bytes32[] calldata proof)
+    function claimTokens(uint256 saleTokenAllocation, uint256 usdcAllocation, bytes32[] calldata proof, address user)
         external
         nonReentrant
     {
         if (!saleEnded || !capReached) revert SaleNotSuccessful();
         if (merkleRoot == bytes32(0)) revert MerkleRootNotSet();
-        if (hasClaimed[msg.sender]) revert AlreadyClaimed(msg.sender);
+        if (hasClaimed[user]) revert AlreadyClaimed(user);
 
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, saleTokenAllocation, usdcAllocation));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(user, saleTokenAllocation, usdcAllocation))));
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert InvalidProof(proof, leaf);
 
-        hasClaimed[msg.sender] = true;
+        hasClaimed[user] = true;
 
         if (saleTokenAllocation > 0) {
-            saleToken.safeTransfer(msg.sender, saleTokenAllocation);
+            saleToken.safeTransfer(user, saleTokenAllocation);
         }
 
         if (usdcAllocation > 0) {
-            USDC.safeTransfer(msg.sender, usdcAllocation);
+            USDC.safeTransfer(user, usdcAllocation);
         }
 
-        emit Claimed(msg.sender, saleTokenAllocation);
+        emit Claimed(user, saleTokenAllocation);
     }
 
     /* ============ Admin Functions ============ */
