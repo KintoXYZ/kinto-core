@@ -24,6 +24,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
     bytes32[] public proof;
     uint256 public saleTokenAllocation = 1000 * 1e18;
     uint256 public usdcAllocation = 1000 * 1e6;
+    uint256 public maxPrice = 1000 * 1e6;
 
     function setUp() public override {
         super.setUp();
@@ -143,19 +144,20 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), amount);
 
-        // Deposit through Kinto Wallet
+        // Deposit with maxPrice
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         assertEq(sale.deposits(alice), amount);
         assertEq(sale.totalDeposited(), amount);
         assertEq(usdc.balanceOf(address(sale)), amount);
+        assertEq(sale.maxPrices(alice), maxPrice);
     }
 
     function testDeposit_RevertWhen_BeforeStart() public {
         vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, startTime));
         vm.prank(alice);
-        sale.deposit(100 ether);
+        sale.deposit(100 ether, maxPrice);
     }
 
     function testDeposit_RevertWhen_SaleEnded() public {
@@ -174,7 +176,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleAlreadyEnded.selector, block.timestamp));
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
     }
 
     function testDeposit_RevertWhen_ZeroAmount() public {
@@ -184,7 +186,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         // Try to deposit zero amount
         vm.prank(alice);
         vm.expectRevert(SealedBidTokenSale.ZeroDeposit.selector);
-        sale.deposit(0);
+        sale.deposit(0, maxPrice);
     }
 
     function testDeposit_MultipleDeposits() public {
@@ -202,16 +204,17 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Make first deposit
         vm.prank(alice);
-        sale.deposit(firstAmount);
+        sale.deposit(firstAmount, maxPrice);
 
         // Make second deposit
         vm.prank(alice);
-        sale.deposit(secondAmount);
+        sale.deposit(secondAmount, maxPrice * 2);
 
         // Verify final state
         assertEq(sale.deposits(alice), totalAmount);
         assertEq(sale.totalDeposited(), totalAmount);
         assertEq(usdc.balanceOf(address(sale)), totalAmount);
+        assertEq(sale.maxPrices(alice), maxPrice * 2);
     }
 
     function testDeposit_MultipleUsers() public {
@@ -234,16 +237,19 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Make deposits
         vm.prank(alice);
-        sale.deposit(aliceAmount);
+        sale.deposit(aliceAmount, maxPrice * 2);
 
         vm.prank(bob);
-        sale.deposit(bobAmount);
+        sale.deposit(bobAmount, maxPrice);
 
         // Verify final state
         assertEq(sale.deposits(alice), aliceAmount);
         assertEq(sale.deposits(bob), bobAmount);
+        assertEq(sale.maxPrices(alice), maxPrice * 2);
         assertEq(sale.totalDeposited(), totalAmount);
         assertEq(usdc.balanceOf(address(sale)), totalAmount);
+        assertEq(sale.maxPrices(bob), maxPrice);
+        assertEq(sale.maxPrices(alice), maxPrice * 2);
     }
 
     /* ============ endSale ============ */
@@ -257,7 +263,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -276,7 +282,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale
         vm.prank(admin);
@@ -297,7 +303,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale
         vm.prank(admin);
@@ -354,7 +360,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), aliceAmount);
 
         vm.prank(alice);
-        sale.deposit(aliceAmount);
+        sale.deposit(aliceAmount, maxPrice);
 
         // Bob's deposit
         usdc.mint(bob, bobAmount);
@@ -362,7 +368,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), bobAmount);
 
         vm.prank(bob);
-        sale.deposit(bobAmount);
+        sale.deposit(bobAmount, maxPrice);
 
         // End sale
         vm.prank(admin);
@@ -386,7 +392,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -409,7 +415,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // Attempt withdrawal before sale ends
         vm.prank(alice);
@@ -427,7 +433,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale successfully
         vm.prank(admin);
@@ -463,7 +469,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), aliceAmount);
 
         vm.prank(alice);
-        sale.deposit(aliceAmount);
+        sale.deposit(aliceAmount, maxPrice);
 
         // Setup and execute Bob's deposit
         usdc.mint(bob, bobAmount);
@@ -471,7 +477,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), bobAmount);
 
         vm.prank(bob);
-        sale.deposit(bobAmount);
+        sale.deposit(bobAmount, maxPrice);
 
         // End sale as failed
         vm.warp(endTime);
@@ -503,7 +509,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale as failed
         vm.warp(endTime);
@@ -536,7 +542,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -571,7 +577,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale (will fail due to not meeting min cap)
         vm.warp(endTime);
@@ -591,7 +597,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -612,7 +618,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -644,7 +650,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -672,7 +678,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -709,7 +715,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), MAX_CAP);
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         vm.warp(endTime);
         vm.prank(admin);
@@ -747,7 +753,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MIN_CAP);
 
         vm.prank(alice);
-        sale.deposit(MIN_CAP);
+        sale.deposit(MIN_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -782,7 +788,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -802,7 +808,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), MIN_CAP);
         vm.prank(alice);
-        sale.deposit(MIN_CAP);
+        sale.deposit(MIN_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -823,7 +829,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MIN_CAP);
 
         vm.prank(alice);
-        sale.deposit(MIN_CAP);
+        sale.deposit(MIN_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -849,7 +855,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), MIN_CAP);
         vm.prank(alice);
-        sale.deposit(MIN_CAP);
+        sale.deposit(MIN_CAP, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -873,14 +879,14 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), depositAmount);
 
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
 
         // Check initial balances
         uint256 initialTreasuryBalance = usdc.balanceOf(TREASURY);
-        uint256 initialSaleBalance = usdc.balanceOf(address(sale));
+        usdc.balanceOf(address(sale));
 
         // Withdraw proceeds
         vm.prank(admin);
@@ -901,7 +907,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), depositAmount);
 
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         // Try to withdraw before ending sale
         vm.prank(admin);
@@ -918,7 +924,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), depositAmount);
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -938,7 +944,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), depositAmount);
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -962,14 +968,14 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), aliceAmount);
         vm.prank(alice);
-        sale.deposit(aliceAmount);
+        sale.deposit(aliceAmount, maxPrice);
 
         // Bob's deposit
         usdc.mint(bob, bobAmount);
         vm.prank(bob);
         usdc.approve(address(sale), bobAmount);
         vm.prank(bob);
-        sale.deposit(bobAmount);
+        sale.deposit(bobAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -995,7 +1001,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), depositAmount);
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -1022,7 +1028,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), depositAmount);
         vm.prank(alice);
-        sale.deposit(depositAmount);
+        sale.deposit(depositAmount, maxPrice);
 
         vm.prank(admin);
         sale.endSale();
@@ -1035,6 +1041,130 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         assertEq(usdc.balanceOf(TREASURY), initialTreasuryBalance + depositAmount);
         assertEq(usdc.balanceOf(address(sale)), 0);
+    }
+
+    /* ============ updateMaxPrice ============ */
+
+    function testUpdateMaxPrice_Timing() public {
+        // Should fail before sale starts
+        vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, startTime));
+        vm.prank(alice);
+        sale.updateMaxPrice(1e6);
+
+        // Should work during sale
+        vm.warp(startTime + 1);
+        vm.prank(alice);
+        sale.updateMaxPrice(1e6);
+        assertEq(sale.maxPrices(alice), 1e6);
+
+        // Should fail after sale ends
+        vm.prank(admin);
+        sale.endSale();
+
+        vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleAlreadyEnded.selector, block.timestamp));
+        vm.prank(alice);
+        sale.updateMaxPrice(2e6);
+    }
+
+    function testUpdateMaxPrice_StateChanges() public {
+        vm.warp(startTime + 1);
+
+        // Initial state
+        assertEq(sale.maxPrices(alice), 0);
+
+        // First update
+        uint256 firstPrice = 1e6;
+        vm.prank(alice);
+        sale.updateMaxPrice(firstPrice);
+        assertEq(sale.maxPrices(alice), firstPrice);
+
+        // Update to higher price
+        uint256 higherPrice = 2e6;
+        vm.prank(alice);
+        sale.updateMaxPrice(higherPrice);
+        assertEq(sale.maxPrices(alice), higherPrice);
+
+        // Update to lower price
+        uint256 lowerPrice = 5e5;
+        vm.prank(alice);
+        sale.updateMaxPrice(lowerPrice);
+        assertEq(sale.maxPrices(alice), lowerPrice);
+
+        // Update to same price
+        vm.prank(alice);
+        sale.updateMaxPrice(lowerPrice);
+        assertEq(sale.maxPrices(alice), lowerPrice);
+
+        // Update to zero
+        vm.prank(alice);
+        sale.updateMaxPrice(0);
+        assertEq(sale.maxPrices(alice), 0);
+
+        // Update to max uint256
+        vm.prank(alice);
+        sale.updateMaxPrice(type(uint256).max);
+        assertEq(sale.maxPrices(alice), type(uint256).max);
+    }
+
+    function testUpdateMaxPrice_MultipleUsersIndependently() public {
+        vm.warp(startTime + 1);
+
+        // Update prices for different users
+        vm.prank(alice);
+        sale.updateMaxPrice(1e6);
+        assertEq(sale.maxPrices(alice), 1e6);
+
+        vm.prank(bob);
+        sale.updateMaxPrice(2e6);
+        assertEq(sale.maxPrices(bob), 2e6);
+
+        // Verify changes don't affect other users
+        assertEq(sale.maxPrices(alice), 1e6);
+        assertEq(sale.maxPrices(bob), 2e6);
+
+        // Update alice's price again
+        vm.prank(alice);
+        sale.updateMaxPrice(3e6);
+        assertEq(sale.maxPrices(alice), 3e6);
+        assertEq(sale.maxPrices(bob), 2e6);
+    }
+
+    function testUpdateMaxPrice_WithDeposit() public {
+        vm.warp(startTime + 1);
+
+        // Setup initial deposit with maxPrice
+        uint256 depositAmount = 1000 * 1e6;
+        uint256 initialMaxPrice = 2e6;
+
+        usdc.mint(alice, depositAmount);
+        vm.prank(alice);
+        usdc.approve(address(sale), depositAmount);
+
+        vm.prank(alice);
+        sale.deposit(depositAmount, initialMaxPrice);
+        assertEq(sale.maxPrices(alice), initialMaxPrice);
+
+        // Update maxPrice after deposit
+        uint256 newMaxPrice = 3e6;
+        vm.prank(alice);
+        sale.updateMaxPrice(newMaxPrice);
+        assertEq(sale.maxPrices(alice), newMaxPrice);
+
+        // Verify deposit amount remains unchanged
+        assertEq(sale.deposits(alice), depositAmount);
+    }
+
+    function testUpdateMaxPrice_EventEmission() public {
+        vm.warp(startTime + 1);
+
+        uint256 oldPrice = 0; // Initial price
+        uint256 newPrice = 1e6;
+
+        vm.expectEmit(true, false, false, true);
+        emit SealedBidTokenSale.MaxPriceUpdated(alice, oldPrice, newPrice);
+
+        vm.prank(alice);
+        sale.updateMaxPrice(newPrice);
     }
 
     /* ============ saleStatus ============ */
@@ -1054,6 +1184,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(info.hasClaimed, false, "User should not have claimed");
         assertEq(info.depositAmount, 0, "User deposit amount should be 0");
         assertEq(info.contributorCount, 0, "Contributor count should be 0");
+        assertEq(info.maxPrice, 0, "maxPrice should be 0");
     }
 
     function testSaleStatus_AfterDeposit() public {
@@ -1067,7 +1198,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Make deposit
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // Check state after deposit
         SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
@@ -1087,7 +1218,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), amount);
 
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // End sale without reaching cap
         vm.warp(endTime);
@@ -1104,6 +1235,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(info.totalWithdrawn, amount, "Total withdrawn should match deposit");
         assertEq(info.depositAmount, 0, "User deposit should be 0 after withdrawal");
         assertEq(info.saleEnded, true, "Sale should be ended");
+        assertEq(info.maxPrice, maxPrice, "maxPrice should be maxPrice");
     }
 
     function testSaleStatus_AfterSuccessfulSaleAndClaim() public {
@@ -1117,7 +1249,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc.approve(address(sale), MAX_CAP);
 
         vm.prank(alice);
-        sale.deposit(MAX_CAP);
+        sale.deposit(MAX_CAP, maxPrice);
 
         // End sale
         vm.warp(endTime);
@@ -1138,6 +1270,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(info.saleEnded, true, "Sale should be ended");
         assertEq(info.capReached, true, "Cap should be reached");
         assertEq(info.hasClaimed, true, "User should have claimed");
+        assertEq(info.maxPrice, maxPrice, "maxPrice should be maxPrice");
     }
 
     function testSaleStatus_MultipleUsers() public {
@@ -1150,14 +1283,14 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         usdc.approve(address(sale), amount);
         vm.prank(alice);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // Setup Bob
         usdc.mint(bob, amount);
         vm.prank(bob);
         usdc.approve(address(sale), amount);
         vm.prank(bob);
-        sale.deposit(amount);
+        sale.deposit(amount, maxPrice);
 
         // Check states for both users
         SealedBidTokenSale.SaleInfo memory aliceInfo = sale.saleStatus(alice);

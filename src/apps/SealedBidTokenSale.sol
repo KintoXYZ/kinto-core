@@ -32,8 +32,9 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         bool saleEnded;
         bool capReached;
         bool hasClaimed;
-        uint256 depositAmount;
         uint256 contributorCount;
+        uint256 depositAmount;
+        uint256 maxPrice;
     }
 
     /* ============ Custom Errors ============ */
@@ -89,6 +90,13 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /// @param tokenAmount Amount of tokens claimed
     event Claimed(address indexed user, uint256 tokenAmount);
 
+    // Add this event to the SealedBidTokenSale contract's events section
+    /// @notice Emitted when a user updates their max price
+    /// @param user Address of the user updating their max price
+    /// @param oldPrice Previous max price value
+    /// @param newPrice New max price value
+    event MaxPriceUpdated(address indexed user, uint256 oldPrice, uint256 newPrice);
+
     /* ============ Immutable Parameters ============ */
 
     /// @notice Token being sold in the sale
@@ -122,6 +130,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     mapping(address => uint256) public deposits;
     /// @notice Maps user addresses to whether they've claimed tokens
     mapping(address => bool) public hasClaimed;
+    /// @notice Maps user addresses to their selected maxPrice
+    mapping(address => uint256) public maxPrices;
     /// @notice Count of all contributors
     uint256 public contributorCount;
 
@@ -154,11 +164,12 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @notice Allows users to deposit USDC into the token sale
      * @dev - Sale must be active (after start time, before end)
      *      - Amount must be greater than zero
-     *      - Updates user's deposit balance and total deposits
+     *      - Updates user's deposit balance, total deposits, and maxPrice
      *      - Transfers USDC from user to contract
      * @param amount Amount of USDC to deposit
+     * @param maxPrice The maximum price set by the user for the token sale
      */
-    function deposit(uint256 amount) external nonReentrant {
+    function deposit(uint256 amount, uint256 maxPrice) external nonReentrant {
         // Verify sale is active and deposit is valid
         if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
@@ -168,6 +179,9 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         deposits[msg.sender] += amount;
         totalDeposited += amount;
         contributorCount++;
+
+        // Save the user's maxPrice
+        maxPrices[msg.sender] = maxPrice;
 
         // Transfer USDC from user to contract
         USDC.safeTransferFrom(msg.sender, address(this), amount);
@@ -246,6 +260,19 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         emit Claimed(user, saleTokenAllocation);
     }
 
+    /**
+     * @notice Allows users to update their selected maxPrice for the token sale.
+     * @param newMaxPrice The new maximum price value to be set for the user.
+     */
+    function updateMaxPrice(uint256 newMaxPrice) external nonReentrant {
+        if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
+        if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
+
+        uint256 oldPrice = maxPrices[msg.sender];
+        maxPrices[msg.sender] = newMaxPrice;
+        emit MaxPriceUpdated(msg.sender, oldPrice, newMaxPrice);
+    }
+
     /* ============ Admin Functions ============ */
 
     /**
@@ -310,7 +337,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
             capReached: capReached,
             hasClaimed: hasClaimed[user],
             depositAmount: deposits[user],
-            contributorCount: contributorCount
+            contributorCount: contributorCount,
+            maxPrice: maxPrices[user]
         });
     }
 }
