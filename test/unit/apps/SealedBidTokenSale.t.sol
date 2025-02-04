@@ -1036,4 +1036,138 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(usdc.balanceOf(TREASURY), initialTreasuryBalance + depositAmount);
         assertEq(usdc.balanceOf(address(sale)), 0);
     }
+
+    /* ============ saleStatus ============ */
+
+    function testSaleStatus_InitialState() public view {
+        // Check initial state
+        SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
+
+        assertEq(info.startTime, startTime, "Start time should match constructor");
+        assertEq(info.minimumCap, MIN_CAP, "Minimum cap should match constructor");
+        assertEq(info.totalDeposited, 0, "Total deposited should be 0");
+        assertEq(info.totalWithdrawn, 0, "Total withdrawn should be 0");
+        assertEq(info.totalUsdcClaimed, 0, "Total USDC claimed should be 0");
+        assertEq(info.totalSaleTokenClaimed, 0, "Total sale token claimed should be 0");
+        assertEq(info.saleEnded, false, "Sale should not be ended");
+        assertEq(info.capReached, false, "Cap should not be reached");
+        assertEq(info.hasClaimed, false, "User should not have claimed");
+        assertEq(info.depositAmount, 0, "User deposit amount should be 0");
+        assertEq(info.contributorCount, 0, "Contributor count should be 0");
+    }
+
+    function testSaleStatus_AfterDeposit() public {
+        // Setup deposit
+        vm.warp(startTime + 1);
+        uint256 amount = 1000 * 1e6;
+
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        // Make deposit
+        vm.prank(alice);
+        sale.deposit(amount);
+
+        // Check state after deposit
+        SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
+
+        assertEq(info.totalDeposited, amount, "Total deposited should match deposit");
+        assertEq(info.depositAmount, amount, "User deposit should match deposit");
+        assertEq(info.contributorCount, 1, "Contributor count should be 1");
+    }
+
+    function testSaleStatus_AfterWithdraw() public {
+        // Setup deposit
+        vm.warp(startTime + 1);
+        uint256 amount = 1000 * 1e6;
+
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        vm.prank(alice);
+        sale.deposit(amount);
+
+        // End sale without reaching cap
+        vm.warp(endTime);
+        vm.prank(admin);
+        sale.endSale();
+
+        // Withdraw
+        vm.prank(alice);
+        sale.withdraw();
+
+        // Check state after withdrawal
+        SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
+
+        assertEq(info.totalWithdrawn, amount, "Total withdrawn should match deposit");
+        assertEq(info.depositAmount, 0, "User deposit should be 0 after withdrawal");
+        assertEq(info.saleEnded, true, "Sale should be ended");
+    }
+
+    function testSaleStatus_AfterSuccessfulSaleAndClaim() public {
+        // Setup successful sale
+        vm.warp(startTime + 1);
+
+        usdc.mint(alice, MAX_CAP);
+        saleToken.mint(address(sale), saleTokenAllocation);
+
+        vm.prank(alice);
+        usdc.approve(address(sale), MAX_CAP);
+
+        vm.prank(alice);
+        sale.deposit(MAX_CAP);
+
+        // End sale
+        vm.warp(endTime);
+        vm.prank(admin);
+        sale.endSale();
+
+        // Set merkle root and claim
+        vm.prank(admin);
+        sale.setMerkleRoot(merkleRoot);
+
+        sale.claimTokens(saleTokenAllocation, usdcAllocation, proof, alice);
+
+        // Check state after claim
+        SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
+
+        assertEq(info.totalUsdcClaimed, usdcAllocation, "Total USDC claimed should match allocation");
+        assertEq(info.totalSaleTokenClaimed, saleTokenAllocation, "Total sale token claimed should match allocation");
+        assertEq(info.saleEnded, true, "Sale should be ended");
+        assertEq(info.capReached, true, "Cap should be reached");
+        assertEq(info.hasClaimed, true, "User should have claimed");
+    }
+
+    function testSaleStatus_MultipleUsers() public {
+        // Setup deposits for multiple users
+        vm.warp(startTime + 1);
+        uint256 amount = 1000 * 1e6;
+
+        // Setup Alice
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+        vm.prank(alice);
+        sale.deposit(amount);
+
+        // Setup Bob
+        usdc.mint(bob, amount);
+        vm.prank(bob);
+        usdc.approve(address(sale), amount);
+        vm.prank(bob);
+        sale.deposit(amount);
+
+        // Check states for both users
+        SealedBidTokenSale.SaleInfo memory aliceInfo = sale.saleStatus(alice);
+        SealedBidTokenSale.SaleInfo memory bobInfo = sale.saleStatus(bob);
+
+        assertEq(aliceInfo.totalDeposited, amount * 2, "Total deposited should include both deposits");
+        assertEq(bobInfo.totalDeposited, amount * 2, "Total deposited should be same for all users");
+        assertEq(aliceInfo.depositAmount, amount, "Alice deposit should match her deposit");
+        assertEq(bobInfo.depositAmount, amount, "Bob deposit should match his deposit");
+        assertEq(aliceInfo.contributorCount, 2, "Contributor count should be 2");
+        assertEq(bobInfo.contributorCount, 2, "Contributor count should be same for all users");
+    }
 }

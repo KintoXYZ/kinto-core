@@ -20,6 +20,22 @@ import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC
 contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    /* ============ Struct ============ */
+
+    struct SaleInfo {
+        uint256 startTime;
+        uint256 minimumCap;
+        uint256 totalDeposited;
+        uint256 totalWithdrawn;
+        uint256 totalUsdcClaimed;
+        uint256 totalSaleTokenClaimed;
+        bool saleEnded;
+        bool capReached;
+        bool hasClaimed;
+        uint256 depositAmount;
+        uint256 contributorCount;
+    }
+
     /* ============ Custom Errors ============ */
 
     /// @notice Thrown when attempting to initialize with zero address for sale token
@@ -92,14 +108,22 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     bool public saleEnded;
     /// @notice Whether the minimum cap was reached by end of sale
     bool public capReached;
+    /// @notice Running total of USDC withdrawn from sale
+    uint256 public totalWithdrawn;
     /// @notice Running total of USDC deposited into sale
     uint256 public totalDeposited;
+    /// @notice Running total of USDC claimed from sale
+    uint256 public totalUsdcClaimed;
+    /// @notice Running total of sale token withdrawn from sale
+    uint256 public totalSaleTokenClaimed;
     /// @notice Merkle root for verifying token allocations
     bytes32 public merkleRoot;
     /// @notice Maps user addresses to their USDC deposit amounts
     mapping(address => uint256) public deposits;
     /// @notice Maps user addresses to whether they've claimed tokens
     mapping(address => bool) public hasClaimed;
+    /// @notice Count of all contributors
+    uint256 public contributorCount;
 
     /* ============ Constructor ============ */
 
@@ -143,6 +167,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         // Update deposit accounting
         deposits[msg.sender] += amount;
         totalDeposited += amount;
+        contributorCount++;
 
         // Transfer USDC from user to contract
         USDC.safeTransferFrom(msg.sender, address(this), amount);
@@ -169,6 +194,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
         // Clear user's deposit before transfer
         deposits[msg.sender] = 0;
+        totalWithdrawn += amount;
 
         // Return USDC to user
         USDC.safeTransfer(msg.sender, amount);
@@ -207,11 +233,13 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         // Transfer allocated sale tokens if any
         if (saleTokenAllocation > 0) {
             saleToken.safeTransfer(user, saleTokenAllocation);
+            totalSaleTokenClaimed += saleTokenAllocation;
         }
 
         // Transfer allocated USDC if any
         if (usdcAllocation > 0) {
             USDC.safeTransfer(user, usdcAllocation);
+            totalUsdcClaimed += usdcAllocation;
         }
 
         // Emit claim event
@@ -266,5 +294,23 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
         // Transfer all USDC balance to treasury
         USDC.safeTransfer(treasury, USDC.balanceOf(address(this)));
+    }
+
+    /* ============ View Functions ============ */
+
+    function saleStatus(address user) external view returns (SaleInfo memory) {
+        return SaleInfo({
+            startTime: startTime,
+            minimumCap: minimumCap,
+            totalDeposited: totalDeposited,
+            totalWithdrawn: totalWithdrawn,
+            totalUsdcClaimed: totalUsdcClaimed,
+            totalSaleTokenClaimed: totalSaleTokenClaimed,
+            saleEnded: saleEnded,
+            capReached: capReached,
+            hasClaimed: hasClaimed[user],
+            depositAmount: deposits[user],
+            contributorCount: contributorCount
+        });
     }
 }
