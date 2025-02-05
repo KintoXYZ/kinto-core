@@ -450,6 +450,32 @@
         },
         {
           "type": "function",
+          "name": "EXIT_WINDOW_PERIOD",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "GOVERNANCE_ROLE",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "KYC_PROVIDER_ROLE",
           "inputs": [],
           "outputs": [
@@ -457,6 +483,19 @@
               "name": "",
               "type": "bytes32",
               "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "SANCTION_EXPIRY_PERIOD",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "stateMutability": "view"
@@ -590,6 +629,19 @@
                   "internalType": "bytes"
                 }
               ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "confirmSanction",
+          "inputs": [
+            {
+              "name": "_account",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "outputs": [],
@@ -1230,6 +1282,25 @@
         },
         {
           "type": "function",
+          "name": "sanctionedAt",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "setApprovalForAll",
           "inputs": [
             {
@@ -1679,6 +1750,25 @@
         },
         {
           "type": "event",
+          "name": "SanctionConfirmed",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "timestamp",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "SanctionRemoved",
           "inputs": [
             {
@@ -1802,6 +1892,22 @@
         },
         {
           "type": "error",
+          "name": "ExitWindowPeriod",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "sanctionedAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "InvalidNonce",
           "inputs": []
         },
@@ -1830,9 +1936,20 @@
           "name": "MethodNotAllowed",
           "inputs": [
             {
-              "name": "reason",
+              "name": "message",
               "type": "string",
               "internalType": "string"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "NoActiveSanction",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
             }
           ]
         },
@@ -4020,13 +4137,18 @@
               "name": "_walletFactory",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "_kintoID",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "nonpayable"
         },
         {
           "type": "function",
-          "name": "adminWallet",
+          "name": "TREASURY",
           "inputs": [],
           "outputs": [
             {
@@ -4072,6 +4194,19 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "bridgeVaults",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -4157,6 +4292,53 @@
         },
         {
           "type": "function",
+          "name": "dstPreHookCall",
+          "inputs": [
+            {
+              "name": "params_",
+              "type": "tuple",
+              "internalType": "struct DstPreHookCallParams",
+              "components": [
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "connectorCache",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "transferInfo",
+                  "type": "tuple",
+                  "internalType": "struct TransferInfo",
+                  "components": [
+                    {
+                      "name": "receiver",
+                      "type": "address",
+                      "internalType": "address"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "data",
+                      "type": "bytes",
+                      "internalType": "bytes"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getTotalDeposits",
           "inputs": [],
           "outputs": [
@@ -4196,6 +4378,19 @@
         },
         {
           "type": "function",
+          "name": "kintoID",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "contract IKintoID"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "owner",
           "inputs": [],
           "outputs": [
@@ -4222,8 +4417,52 @@
         },
         {
           "type": "function",
+          "name": "receiveAllowlist",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "renounceOwnership",
           "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "senderAllowlist",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "setBridgeVault",
+          "inputs": [
+            {
+              "name": "vault",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "flag",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            }
+          ],
           "outputs": [],
           "stateMutability": "nonpayable"
         },
@@ -4239,6 +4478,89 @@
           ],
           "outputs": [],
           "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "setReceiver",
+          "inputs": [
+            {
+              "name": "receiver",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "allowed",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "setSender",
+          "inputs": [
+            {
+              "name": "sender",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "allowed",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "srcPreHookCall",
+          "inputs": [
+            {
+              "name": "params_",
+              "type": "tuple",
+              "internalType": "struct SrcPreHookCallParams",
+              "components": [
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "msgSender",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "transferInfo",
+                  "type": "tuple",
+                  "internalType": "struct TransferInfo",
+                  "components": [
+                    {
+                      "name": "receiver",
+                      "type": "address",
+                      "internalType": "address"
+                    },
+                    {
+                      "name": "amount",
+                      "type": "uint256",
+                      "internalType": "uint256"
+                    },
+                    {
+                      "name": "data",
+                      "type": "bytes",
+                      "internalType": "bytes"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -4319,6 +4641,71 @@
         },
         {
           "type": "function",
+          "name": "withdrawERC20",
+          "inputs": [
+            {
+              "name": "inputAsset",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "receiver",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "fee",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "writeL2Deposit",
           "inputs": [
             {
@@ -4368,6 +4755,25 @@
               "type": "address",
               "indexed": true,
               "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "BridgeVaultSet",
+          "inputs": [
+            {
+              "name": "vault",
+              "type": "address[]",
+              "indexed": true,
+              "internalType": "address[]"
+            },
+            {
+              "name": "flag",
+              "type": "bool[]",
+              "indexed": false,
+              "internalType": "bool[]"
             }
           ],
           "anonymous": false
@@ -4431,6 +4837,44 @@
         },
         {
           "type": "event",
+          "name": "ReceiverSet",
+          "inputs": [
+            {
+              "name": "receiver",
+              "type": "address[]",
+              "indexed": true,
+              "internalType": "address[]"
+            },
+            {
+              "name": "allowed",
+              "type": "bool[]",
+              "indexed": false,
+              "internalType": "bool[]"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "SenderSet",
+          "inputs": [
+            {
+              "name": "sender",
+              "type": "address[]",
+              "indexed": true,
+              "internalType": "address[]"
+            },
+            {
+              "name": "allowed",
+              "type": "bool[]",
+              "indexed": false,
+              "internalType": "bool[]"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "Upgraded",
           "inputs": [
             {
@@ -4443,14 +4887,133 @@
           "anonymous": false
         },
         {
+          "type": "event",
+          "name": "Withdraw",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "l1Address",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "inputAsset",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "amount",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "BalanceTooLow",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "balance",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidAmount",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidReceiver",
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidSender",
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "InvalidVault",
+          "inputs": [
+            {
+              "name": "vault",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
           "type": "error",
           "name": "InvalidWallet",
-          "inputs": []
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "KYCRequired",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
           "name": "NotUnlockedYet",
           "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SenderNotAllowed",
+          "inputs": [
+            {
+              "name": "wallet",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
         },
         {
           "type": "error",
@@ -9530,6 +10093,19 @@
         },
         {
           "type": "function",
+          "name": "NEW_USER_REWARD_END_TIMESTAMP",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "NEW_USER_REWARD_TIMESTAMP",
           "inputs": [],
           "outputs": [
@@ -9813,7 +10389,7 @@
           "name": "newUserClaim",
           "inputs": [
             {
-              "name": "wallet",
+              "name": "",
               "type": "address",
               "internalType": "address"
             }
@@ -13223,6 +13799,11 @@
         {
           "type": "error",
           "name": "NoTokenIDsProvided",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "TransferNotAllowed",
           "inputs": []
         }
       ],

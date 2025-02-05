@@ -13,7 +13,7 @@ contract AssignWstEthRefundsScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        BridgerL2 bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
+        BridgerL2 bridgerL2 = BridgerL2(payable(_getChainDeployment("BridgerL2")));
 
         string memory json = vm.readFile("./script/data/wstETHgasUsed.json");
         string[] memory keys = vm.parseJsonKeys(json, "$");

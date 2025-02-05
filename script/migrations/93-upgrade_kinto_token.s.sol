@@ -11,14 +11,22 @@ contract UpgradeKintoTokenDeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        address impl = _deployImplementationAndUpgrade("KINTO", "V3", abi.encodePacked(type(BridgedKinto).creationCode));
+        address impl = _deployImplementationAndUpgrade("KINTO", "V5", abi.encodePacked(type(BridgedKinto).creationCode));
 
-        BridgedKinto bridgedToken = BridgedKinto(_getChainDeployment("KINTO"));
+        BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
 
-        require(bridgedToken.decimals() == 18, "Decimals mismatch");
-        require(bridgedToken.symbol().equal("K"), "");
-        require(bridgedToken.name().equal("Kinto Token"), "");
+        require(kintoToken.decimals() == 18, "Decimals mismatch");
+        require(kintoToken.symbol().equal("K"), "");
+        require(kintoToken.name().equal("Kinto Token"), "");
 
-        saveContractAddress("KV3-impl", impl);
+        saveContractAddress("KV5-impl", impl);
+
+        // Check that votes supply is 0
+        assertEq(kintoToken.getPastTotalSupply(block.timestamp - 1), 0);
+        // Fix supply
+        _handleOps(abi.encodeWithSelector(BridgedKinto.fixVotingSupply.selector), address(kintoToken));
+        vm.warp(block.timestamp + 1);
+        // Check that the fix is working
+        assertEq(kintoToken.getPastTotalSupply(block.timestamp - 1), kintoToken.totalSupply());
     }
 }

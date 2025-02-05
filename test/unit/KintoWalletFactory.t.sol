@@ -69,8 +69,8 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
 
         assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 1e18);
-        assertEq(_rewardsDistributor.claimedByUser(address(_kintoWallet)), 1e18);
+        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 0);
+        assertEq(_rewardsDistributor.claimedByUser(address(_kintoWallet)), 0);
     }
 
     function testCreateAccount_WhenAfterNewRewards() public {
@@ -82,7 +82,7 @@ contract KintoWalletFactoryTest is SharedSetup {
         _kintoWallet = _walletFactory.createAccount(_owner, _owner, 0);
 
         assertEq(_kintoWallet.owners(0), _owner);
-        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 1e18);
+        assertEq(_bridgedKinto.balanceOf(address(_kintoWallet)), 0);
         assertEq(_rewardsDistributor.claimedByUser(address(_kintoWallet)), 0);
     }
 

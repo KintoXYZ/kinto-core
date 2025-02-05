@@ -27,8 +27,7 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         Bridger bridger = Bridger(payable(_getChainDeployment("Bridger")));
 
         vm.broadcast(deployerPrivateKey);
-        address newImpl =
-            address(new Bridger(EXCHANGE_PROXY, USDC, WETH, address(0), address(0), address(0), address(0)));
+        address newImpl = address(new Bridger(EXCHANGE_PROXY, USDC, WETH, DAI, USDe, sUSDe, wstETH));
 
         vm.prank(bridger.owner());
         bridger.upgradeTo(newImpl);
@@ -39,6 +38,6 @@ contract UpgradeBridgerScript is Constants, Test, MigrationHelper {
         assertEq(bridger.SOLV_BTC(), 0x3647c54c4c2C65bC7a2D63c0Da2809B399DBBDC0, "Invalid SolvBtc address");
 
         // Save address
-        saveContractAddress("BridgerV11-impl", newImpl);
+        saveContractAddress("BridgerV15-impl", newImpl);
     }
 }

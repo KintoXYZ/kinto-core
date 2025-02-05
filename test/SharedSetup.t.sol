@@ -198,7 +198,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _kycViewer = KYCViewer(_getChainDeployment("KYCViewer"));
         _walletViewer = WalletViewer(_getChainDeployment("WalletViewer"));
         _faucet = Faucet(payable(_getChainDeployment("Faucet")));
-        _bridgerL2 = BridgerL2(_getChainDeployment("BridgerL2"));
+        _bridgerL2 = BridgerL2(payable(_getChainDeployment("BridgerL2")));
         _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
         _engenGovernance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
 

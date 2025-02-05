@@ -12,7 +12,7 @@ contract KintoMigration35DeployScript is MigrationHelper {
         bytes memory bytecode =
             abi.encodePacked(type(BridgerL2).creationCode, abi.encode(_getChainDeployment("KintoWalletFactory")));
         address implementation = _deployImplementation("BridgerL2", "V1", bytecode);
-        address proxy = _deployProxy("BridgerL2", implementation);
+        address payable proxy = payable(_deployProxy("BridgerL2", implementation));
 
         _whitelistApp(proxy);
         _initialize(proxy, deployerPrivateKey);

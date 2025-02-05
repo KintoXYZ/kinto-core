@@ -7,6 +7,7 @@ contract Constants is CommonBase {
     uint256 internal constant LEDGER = 0;
     uint256 internal constant TREZOR = 1;
 
+    uint256 internal constant KINTO_CHAINID = 7887;
     uint256 internal constant BASE_CHAINID = 8453;
     uint256 internal constant ARBITRUM_CHAINID = 42161;
     uint256 internal constant ETHEREUM_CHAINID = 1;

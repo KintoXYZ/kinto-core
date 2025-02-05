@@ -37,7 +37,6 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     address internal ENA;
     address internal wstETH;
     address internal weETH;
-    address internal usdmCurvePool;
 
     BridgerHarness internal bridger;
 
@@ -165,6 +164,57 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     }
 
     // DAI to wstETH
+    function testDepositBySig_WhenSwap_WhenAllowanceNotSpent() public {
+        vm.rollFork(20444390); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        // top-up _user DAI balance
+        IBridger.BridgeData memory data = bridgeData[block.chainid][wstETH];
+        address assetIn = DAI;
+
+        // make it twice bigger so it is unspent by 0x router
+        amountIn = amountIn * 2;
+
+        deal(assetIn, _user, amountIn);
+        deal(_user, data.gasFee);
+
+        // create a permit signature to allow the bridger to transfer the user's DAI
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user, address(bridger), amountIn, ERC20Permit(assetIn).nonces(_user), block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetIn)
+        );
+
+        // create a bridge signature to allow the bridger to deposit the user's DAI
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetIn,
+            bridger.wstETH(),
+            amountIn,
+            224787412523677,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // DAI to wstETH quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=1&sellToken=0x6B175474E89094C44Da98b954EedeAC495271d0F&buyToken=0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0&sellAmount=1000000000000000000&taker=0x0f1b7bd7762662B23486320AA91F30312184f70C' --header '0x-api-key: KEY' | jq > ./test/data/swap-dai-to-wsteth-quote.json
+        bytes memory swapCalldata =
+            vm.readFile("./test/data/swap-dai-to-wsteth-quote.json").readBytes(".transaction.data");
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(bridger.senderAccount());
+        vm.expectRevert(abi.encodeWithSelector(IBridger.RouterAllowanceNotZero.selector, amountIn / 2));
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
+    }
+
+    // DAI to wstETH
     function testDepositBySig_WhenSwap_WhenDAItoWstETH() public {
         vm.rollFork(20444390); // block number in which the 0x API data was fetched
         upgradeBridger();
@@ -229,6 +279,65 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         );
     }
 
+    // USDC to wUSDM
+    function testDepositBySig_WhenUSDCToWUSDM() public {
+        setUpArbitrumFork();
+        vm.rollFork(301295138); // block number in which the 0x API data was fetched
+        upgradeBridger();
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
+        address assetToDeposit = USDC_ARBITRUM;
+        uint256 amountToDeposit = 1e6;
+        uint256 sharesBefore = ERC20(wUSDM).balanceOf(address(bridger));
+        uint256 vaultSharesBefore = ERC20(wUSDM).balanceOf(address(data.vault));
+
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        assertEq(ERC20(assetToDeposit).balanceOf(_user), amountToDeposit);
+
+        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
+            kintoWalletL2,
+            bridger,
+            _user,
+            assetToDeposit,
+            wUSDM,
+            amountToDeposit,
+            968e3,
+            _userPk,
+            block.timestamp + 1000
+        );
+
+        bytes memory permitSignature = _auxCreatePermitSignature(
+            IBridger.Permit(
+                _user,
+                address(bridger),
+                amountToDeposit,
+                ERC20Permit(assetToDeposit).nonces(_user),
+                block.timestamp + 1000
+            ),
+            _userPk,
+            ERC20Permit(assetToDeposit)
+        );
+        uint256 nonce = bridger.nonces(_user);
+
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // USDC to USDM quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x59D9356E565Ab3A36dD77763Fc0d87fEaf85508C&sellToken=0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' -H '0x-api-key: key' -H '0x-version: v2' | jq > ./test/data/swap-usdc-to-usdm-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-usdc-to-usdm-arb.json").readBytes(".transaction.data");
+
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_owner);
+        bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
+        assertEq(bridger.nonces(_user), nonce + 1);
+
+        uint256 shares = ERC4626(wUSDM).previewDeposit(1000020215920662957);
+        assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
+    }
+
     // DAI to wUSDM
     function testDepositBySig_WhenDaiToWUSDM() public {
         setUpArbitrumFork();
@@ -291,7 +400,7 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
     // ETH to wUSDM
     function testDepositETH_WhenEthToWUSDM() public {
         setUpArbitrumFork();
-        vm.rollFork(257072953); // block number in which the 0x API data was fetched
+        vm.rollFork(285059787); // block number in which the 0x API data was fetched
         upgradeBridger();
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][wUSDM];
@@ -311,10 +420,10 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
 
         vm.prank(_owner);
         bridger.depositETH{value: amountToDeposit + data.gasFee}(
-            amountToDeposit, kintoWalletL2, wUSDM, 251959574561240729584, swapCalldata, data
+            amountToDeposit, kintoWalletL2, wUSDM, 3669545701321597978394, swapCalldata, data
         );
 
-        uint256 shares = ERC4626(wUSDM).previewDeposit(264112831900159671031);
+        uint256 shares = ERC4626(wUSDM).previewDeposit(3888343338301535049557);
         assertEq(ERC20(wUSDM).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(wUSDM).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }

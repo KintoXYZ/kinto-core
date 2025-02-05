@@ -48,8 +48,9 @@ contract DeployScript is Script, MigrationHelper {
         registry.allowWorkflow(address(aaveRepayWorkflow));
 
         registry.disallowWorkflow(_getChainDeployment("AaveWithdrawWorkflow"));
-        AaveWithdrawWorkflow aaveWithdrawWorkflow =
-            new AaveWithdrawWorkflow(getAavePoolProvider(), _getChainDeployment("Bridger"));
+        AaveWithdrawWorkflow aaveWithdrawWorkflow = new AaveWithdrawWorkflow(
+            getAavePoolProvider(), _getChainDeployment("Bridger"), getMamoriSafeByChainId(block.chainid)
+        );
         saveContractAddress("AaveWithdrawWorkflow", address(aaveWithdrawWorkflow));
         registry.allowWorkflow(address(aaveWithdrawWorkflow));
 
