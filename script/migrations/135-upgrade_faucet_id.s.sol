@@ -14,8 +14,8 @@ contract UpgradeKintoIDScript is MigrationHelper {
             abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
         );
 
-        address impl = _deployImplementationAndUpgrade("KintoID", "V10", bytecode);
-        saveContractAddress("KintoIDV10-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KintoID", "V11", bytecode);
+        saveContractAddress("KintoIDV11-impl", impl);
 
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
         address nioGovernor = _getChainDeployment("NioGovernor");
