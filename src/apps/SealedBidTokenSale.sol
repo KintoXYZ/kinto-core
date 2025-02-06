@@ -16,6 +16,7 @@ import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC
  *  - USDC deposits from users
  *  - Merkle-based token allocation claims
  *  - Full refunds if minimum cap not reached
+ *  - Early participation window for first 700 emissaries
  */
 contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -23,17 +24,33 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /* ============ Struct ============ */
 
     struct SaleInfo {
+        /// @notice Timestamp when emissary early access begins
+        uint256 preStartTime;
+        /// @notice Timestamp when public sale begins
         uint256 startTime;
+        /// @notice Minimum USDC required for sale success
         uint256 minimumCap;
+        /// @notice Total USDC deposited by all users
         uint256 totalDeposited;
+        /// @notice Total USDC withdrawn after failed sale
         uint256 totalWithdrawn;
+        /// @notice Total USDC claimed by users
         uint256 totalUsdcClaimed;
+        /// @notice Total sale tokens claimed
         uint256 totalSaleTokenClaimed;
+        /// @notice Whether sale has been officially ended
         bool saleEnded;
+        /// @notice Whether minimum cap was reached
         bool capReached;
+        /// @notice Whether specified user has claimed tokens
         bool hasClaimed;
+        /// @notice Total number of unique depositors
         uint256 contributorCount;
+        /// @notice Current number of emissary participants
+        uint256 currentEmissaryCount;
+        /// @notice Deposit amount for specified user
         uint256 depositAmount;
+        /// @notice Max price set by specified user
         uint256 maxPrice;
     }
 
@@ -65,6 +82,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error MinDeposit(uint256 amount);
     /// @notice Thrown when new max price is out of range
     error MaxPriceOutOfRange(uint256 amount);
+    /// @notice Thrown when emissary slots are fully occupied
+    error EmissaryFull();
+    /// @notice Thrown when time configuration is invalid
+    error InvalidTimeConfiguration();
 
     /* ============ Events ============ */
 
@@ -103,6 +124,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     /// @notice Token being sold in the sale
     uint256 public constant MIN_DEPOSIT = 250 * 1e6;
+    /// @notice Maximum number of emissaries
+    uint256 public constant MAX_EMISSARIES = 700;
 
     /* ============ Immutable ============ */
 
@@ -112,6 +135,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     IERC20 public immutable USDC;
     /// @notice Address where sale proceeds will be sent
     address public immutable treasury;
+    /// @notice Timestamp when emissary early access begins
+    uint256 public immutable preStartTime;
     /// @notice Timestamp when the sale begins
     uint256 public immutable startTime;
     /// @notice Minimum amount of USDC required for sale success
@@ -141,6 +166,10 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     mapping(address => uint256) public maxPrices;
     /// @notice Count of all contributors
     uint256 public contributorCount;
+    /// @notice Current number of emissary participants
+    uint256 public currentEmissaryCount;
+    /// @notice Maps user addresses to emissary status
+    mapping(address => bool) public isEmissary;
 
     /* ============ Constructor ============ */
 
@@ -152,15 +181,22 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param _startTime Timestamp when sale will begin
      * @param _minimumCap Minimum USDC amount required for sale success
      */
-    constructor(address _saleToken, address _treasury, address _usdcToken, uint256 _startTime, uint256 _minimumCap)
-        Ownable(msg.sender)
-    {
+    constructor(
+        address _saleToken,
+        address _treasury,
+        address _usdcToken,
+        uint256 _preStartTime,
+        uint256 _startTime,
+        uint256 _minimumCap
+    ) Ownable(msg.sender) {
         if (_saleToken == address(0)) revert InvalidSaleTokenAddress(_saleToken);
         if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
+        if (_preStartTime >= _startTime) revert InvalidTimeConfiguration();
 
         saleToken = IERC20(_saleToken);
         treasury = _treasury;
         USDC = IERC20(_usdcToken);
+        preStartTime = _preStartTime;
         startTime = _startTime;
         minimumCap = _minimumCap;
     }
@@ -177,13 +213,20 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param maxPrice The maximum price set by the user for the token sale
      */
     function deposit(uint256 amount, uint256 maxPrice) external nonReentrant {
-        // Verify sale is active and deposit is valid
-        if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
+        if (block.timestamp < preStartTime) revert SaleNotStarted(block.timestamp, preStartTime);
         if (amount < MIN_DEPOSIT) revert MinDeposit(amount);
         _checkMaxPrice(maxPrice);
 
-        // Update deposit accounting
+        // Handle emissary period
+        if (block.timestamp < startTime) {
+            if (currentEmissaryCount >= MAX_EMISSARIES) revert EmissaryFull();
+            if (!isEmissary[msg.sender]) {
+                isEmissary[msg.sender] = true;
+                currentEmissaryCount++;
+            }
+        }
+
         deposits[msg.sender] += amount;
         totalDeposited += amount;
         contributorCount++;
@@ -273,7 +316,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
      * @param newMaxPrice The new maximum price value to be set for the user.
      */
     function updateMaxPrice(uint256 newMaxPrice) external nonReentrant {
-        if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
+        if (block.timestamp < preStartTime) revert SaleNotStarted(block.timestamp, preStartTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
         _checkMaxPrice(newMaxPrice);
 
@@ -283,9 +326,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     }
 
     function _checkMaxPrice(uint256 newMaxPrice) internal pure {
-        if (newMaxPrice < 10 * 1e6 || newMaxPrice > 30 * 1e6) {
-            revert MaxPriceOutOfRange(newMaxPrice);
-        }
+        if (newMaxPrice < 10 * 1e6 || newMaxPrice > 30 * 1e6) revert MaxPriceOutOfRange(newMaxPrice);
     }
 
     /* ============ Admin Functions ============ */
@@ -342,6 +383,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
 
     function saleStatus(address user) external view returns (SaleInfo memory) {
         return SaleInfo({
+            preStartTime: preStartTime,
             startTime: startTime,
             minimumCap: minimumCap,
             totalDeposited: totalDeposited,
@@ -351,8 +393,9 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
             saleEnded: saleEnded,
             capReached: capReached,
             hasClaimed: hasClaimed[user],
-            depositAmount: deposits[user],
             contributorCount: contributorCount,
+            currentEmissaryCount: currentEmissaryCount,
+            depositAmount: deposits[user],
             maxPrice: maxPrices[user]
         });
     }

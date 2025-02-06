@@ -15,6 +15,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
     ERC20Mock public usdc;
     ERC20Mock public saleToken;
 
+    uint256 public preStartTime;
     uint256 public startTime;
     uint256 public endTime;
     uint256 public constant MIN_CAP = 10e6 * 1e6;
@@ -29,7 +30,8 @@ contract SealedBidTokenSaleTest is SharedSetup {
     function setUp() public override {
         super.setUp();
 
-        startTime = block.timestamp + 1 days;
+        preStartTime = block.timestamp + 1 days;
+        startTime = block.timestamp + 2 days;
         endTime = startTime + 4 days;
 
         // Deploy mock tokens
@@ -38,7 +40,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Deploy sale contract with admin as owner
         vm.prank(admin);
-        sale = new SealedBidTokenSale(address(saleToken), TREASURY, address(usdc), startTime, MIN_CAP);
+        sale = new SealedBidTokenSale(address(saleToken), TREASURY, address(usdc), preStartTime, startTime, MIN_CAP);
 
         // Setup Merkle tree with alice and bob
         bytes32[] memory leaves = new bytes32[](2);
@@ -155,7 +157,9 @@ contract SealedBidTokenSaleTest is SharedSetup {
     }
 
     function testDeposit_RevertWhen_BeforeStart() public {
-        vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, startTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, preStartTime)
+        );
         vm.prank(alice);
         sale.deposit(100 ether, maxPrice);
     }
@@ -1047,7 +1051,9 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
     function testUpdateMaxPrice_Timing() public {
         // Should fail before sale starts
-        vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, startTime));
+        vm.expectRevert(
+            abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, block.timestamp, preStartTime)
+        );
         vm.prank(alice);
         sale.updateMaxPrice(1e6);
 
@@ -1292,5 +1298,168 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(bobInfo.depositAmount, amount, "Bob deposit should match his deposit");
         assertEq(aliceInfo.contributorCount, 2, "Contributor count should be 2");
         assertEq(bobInfo.contributorCount, 2, "Contributor count should be same for all users");
+    }
+
+    /* ============ saleStatus ============ */
+
+    function testEmissaryDeposit_During_EarlyAccess() public {
+        // Set time to early access period
+        vm.warp(preStartTime + 1);
+
+        uint256 amount = 1000 * 1e6;
+        uint256 initialEmissaryCount = sale.currentEmissaryCount();
+
+        // Setup deposit
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        // Make deposit during early access
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+
+        // Verify emissary status
+        assertTrue(sale.isEmissary(alice));
+        assertEq(sale.currentEmissaryCount(), initialEmissaryCount + 1);
+        assertEq(sale.deposits(alice), amount);
+    }
+
+    function testEmissaryDeposit_RevertWhen_MaxEmissariesReached() public {
+        // Set time to early access period
+        vm.warp(preStartTime + 1);
+
+        uint256 amount = 1000 * 1e6;
+
+        // Fill up emissary slots
+        for (uint256 i = 0; i < sale.MAX_EMISSARIES(); i++) {
+            address emissary = address(uint160(i + 1000)); // Generate unique addresses
+
+            usdc.mint(emissary, amount);
+            vm.prank(emissary);
+            usdc.approve(address(sale), amount);
+
+            vm.prank(emissary);
+            sale.deposit(amount, maxPrice);
+        }
+
+        // Try to add one more emissary
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        vm.expectRevert(SealedBidTokenSale.EmissaryFull.selector);
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+    }
+
+    function testEmissaryDeposit_MultipleDeposits_SameEmissary() public {
+        // Set time to early access period
+        vm.warp(preStartTime + 1);
+
+        uint256 amount = 1000 * 1e6;
+        uint256 initialEmissaryCount = sale.currentEmissaryCount();
+
+        // First deposit
+        usdc.mint(alice, amount * 2);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount * 2);
+
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+
+        // Second deposit from same emissary
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+
+        // Verify emissary count only increased once
+        assertTrue(sale.isEmissary(alice));
+        assertEq(sale.currentEmissaryCount(), initialEmissaryCount + 1);
+        assertEq(sale.deposits(alice), amount * 2);
+    }
+
+    function testDeposit_After_EmissaryPeriod() public {
+        // Set time after early access period
+        vm.warp(startTime + 1);
+
+        uint256 amount = 1000 * 1e6;
+
+        // Setup deposit
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        // Make regular deposit after early access
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+
+        // Verify not counted as emissary
+        assertFalse(sale.isEmissary(alice));
+        assertEq(sale.currentEmissaryCount(), 0);
+        assertEq(sale.deposits(alice), amount);
+    }
+
+    function testSaleStatus_EmissaryCount() public {
+        // Set time to early access period
+        vm.warp(preStartTime + 1);
+
+        uint256 amount = 1000 * 1e6;
+
+        // Add a few emissaries
+        for (uint256 i = 0; i < 3; i++) {
+            address emissary = address(uint160(i + 1000));
+
+            usdc.mint(emissary, amount);
+            vm.prank(emissary);
+            usdc.approve(address(sale), amount);
+
+            vm.prank(emissary);
+            sale.deposit(amount, maxPrice);
+        }
+
+        // Check emissary count in status
+        SealedBidTokenSale.SaleInfo memory info = sale.saleStatus(alice);
+        assertEq(info.currentEmissaryCount, 3);
+    }
+
+    function testEmissaryDeposit_Boundaries() public {
+        uint256 amount = 1000 * 1e6;
+
+        // Try just before preStartTime
+        vm.warp(preStartTime - 1);
+        usdc.mint(alice, amount);
+        vm.prank(alice);
+        usdc.approve(address(sale), amount);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(SealedBidTokenSale.SaleNotStarted.selector, preStartTime - 1, preStartTime)
+        );
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+
+        // Try at exactly preStartTime
+        vm.warp(preStartTime);
+        vm.prank(alice);
+        sale.deposit(amount, maxPrice);
+        assertTrue(sale.isEmissary(alice));
+
+        // Try just before startTime
+        vm.warp(startTime - 1);
+        usdc.mint(bob, amount);
+        vm.prank(bob);
+        usdc.approve(address(sale), amount);
+
+        vm.prank(bob);
+        sale.deposit(amount, maxPrice);
+        assertTrue(sale.isEmissary(bob));
+
+        // Try at exactly startTime
+        vm.warp(startTime);
+        usdc.mint(address(0x123), amount);
+        vm.prank(address(0x123));
+        usdc.approve(address(sale), amount);
+
+        vm.prank(address(0x123));
+        sale.deposit(amount, maxPrice);
+        assertFalse(sale.isEmissary(address(0x123)));
     }
 }
