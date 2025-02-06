@@ -53,8 +53,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error CapNotReached();
     /// @notice Thrown when attempting withdrawals if cap is reached
     error CapReached();
-    /// @notice Thrown when attempting to deposit zero amount
-    error ZeroDeposit();
     /// @notice Thrown when user has no funds to withdraw
     error NothingToWithdraw(address user);
     /// @notice Thrown when attempting to claim tokens more than once
@@ -63,6 +61,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error InvalidProof(bytes32[] proof, bytes32 leaf);
     /// @notice Thrown when attempting claims before Merkle root is set
     error MerkleRootNotSet();
+    /// @notice Thrown when attempting to deposit less than MIN_DEPOSIT
+    error MinDeposit(uint256 amount);
 
     /* ============ Events ============ */
 
@@ -97,7 +97,12 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     /// @param newPrice New max price value
     event MaxPriceUpdated(address indexed user, uint256 oldPrice, uint256 newPrice);
 
-    /* ============ Immutable Parameters ============ */
+    /* ============ Constant  ============ */
+
+    /// @notice Token being sold in the sale
+    uint256 public constant MIN_DEPOSIT = 250 * 1e6;
+
+    /* ============ Immutable ============ */
 
     /// @notice Token being sold in the sale
     IERC20 public immutable saleToken;
@@ -173,7 +178,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         // Verify sale is active and deposit is valid
         if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
-        if (amount == 0) revert ZeroDeposit();
+        if (amount < MIN_DEPOSIT) revert MinDeposit(amount);
 
         // Update deposit accounting
         deposits[msg.sender] += amount;

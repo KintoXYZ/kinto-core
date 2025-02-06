@@ -179,21 +179,21 @@ contract SealedBidTokenSaleTest is SharedSetup {
         sale.deposit(amount, maxPrice);
     }
 
-    function testDeposit_RevertWhen_ZeroAmount() public {
+    function testDeposit_RevertWhen_MinAmount() public {
         // Advance time to start of sale
         vm.warp(startTime + 1);
 
         // Try to deposit zero amount
         vm.prank(alice);
-        vm.expectRevert(SealedBidTokenSale.ZeroDeposit.selector);
-        sale.deposit(0, maxPrice);
+        vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.MinDeposit.selector, 250 * 1e6 - 1));
+        sale.deposit(250 * 1e6 - 1, maxPrice);
     }
 
     function testDeposit_MultipleDeposits() public {
         // Advance time to start of sale
         vm.warp(startTime + 1);
 
-        uint256 firstAmount = 1000 * 1e6;
+        uint256 firstAmount = 250 * 1e6;
         uint256 secondAmount = 2000 * 1e6;
         uint256 totalAmount = firstAmount + secondAmount;
 
