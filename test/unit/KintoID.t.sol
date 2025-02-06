@@ -256,6 +256,19 @@ contract KintoIDTest is SharedSetup {
         _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
     }
 
+    function testIsKYC_WhenMonitorExpires() public {
+        IKintoID.SignatureData memory sigdata = _auxCreateSignature(_kintoID, _user, _userPk, block.timestamp + 1000);
+        uint16[] memory traits = new uint16[](0);
+        vm.startPrank(_kycProvider);
+        _kintoID.mintIndividualKyc(sigdata, traits);
+
+        assertEq(_kintoID.isKYC(_user), true);
+
+        vm.warp(block.timestamp + 11 days);
+
+        assertEq(_kintoID.isKYC(_user), false);
+    }
+
     function testIsSanctionsMonitored() public {
         vm.prank(_kycProvider);
         _kintoID.monitor(new address[](0), new IKintoID.MonitorUpdateData[][](0));
