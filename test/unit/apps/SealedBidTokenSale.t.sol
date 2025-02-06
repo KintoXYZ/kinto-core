@@ -24,7 +24,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
     bytes32[] public proof;
     uint256 public saleTokenAllocation = 1000 * 1e18;
     uint256 public usdcAllocation = 1000 * 1e6;
-    uint256 public maxPrice = 1000 * 1e6;
+    uint256 public maxPrice = 10 * 1e6;
 
     function setUp() public override {
         super.setUp();
@@ -1054,8 +1054,8 @@ contract SealedBidTokenSaleTest is SharedSetup {
         // Should work during sale
         vm.warp(startTime + 1);
         vm.prank(alice);
-        sale.updateMaxPrice(1e6);
-        assertEq(sale.maxPrices(alice), 1e6);
+        sale.updateMaxPrice(10e6);
+        assertEq(sale.maxPrices(alice), 10e6);
 
         // Should fail after sale ends
         vm.prank(admin);
@@ -1073,19 +1073,19 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(sale.maxPrices(alice), 0);
 
         // First update
-        uint256 firstPrice = 1e6;
+        uint256 firstPrice = 10e6;
         vm.prank(alice);
         sale.updateMaxPrice(firstPrice);
         assertEq(sale.maxPrices(alice), firstPrice);
 
         // Update to higher price
-        uint256 higherPrice = 2e6;
+        uint256 higherPrice = 20e6;
         vm.prank(alice);
         sale.updateMaxPrice(higherPrice);
         assertEq(sale.maxPrices(alice), higherPrice);
 
         // Update to lower price
-        uint256 lowerPrice = 5e5;
+        uint256 lowerPrice = 15e6;
         vm.prank(alice);
         sale.updateMaxPrice(lowerPrice);
         assertEq(sale.maxPrices(alice), lowerPrice);
@@ -1094,16 +1094,6 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.prank(alice);
         sale.updateMaxPrice(lowerPrice);
         assertEq(sale.maxPrices(alice), lowerPrice);
-
-        // Update to zero
-        vm.prank(alice);
-        sale.updateMaxPrice(0);
-        assertEq(sale.maxPrices(alice), 0);
-
-        // Update to max uint256
-        vm.prank(alice);
-        sale.updateMaxPrice(type(uint256).max);
-        assertEq(sale.maxPrices(alice), type(uint256).max);
     }
 
     function testUpdateMaxPrice_MultipleUsersIndependently() public {
@@ -1111,22 +1101,22 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Update prices for different users
         vm.prank(alice);
-        sale.updateMaxPrice(1e6);
-        assertEq(sale.maxPrices(alice), 1e6);
+        sale.updateMaxPrice(10e6);
+        assertEq(sale.maxPrices(alice), 10e6);
 
         vm.prank(bob);
-        sale.updateMaxPrice(2e6);
-        assertEq(sale.maxPrices(bob), 2e6);
+        sale.updateMaxPrice(20e6);
+        assertEq(sale.maxPrices(bob), 20e6);
 
         // Verify changes don't affect other users
-        assertEq(sale.maxPrices(alice), 1e6);
-        assertEq(sale.maxPrices(bob), 2e6);
+        assertEq(sale.maxPrices(alice), 10e6);
+        assertEq(sale.maxPrices(bob), 20e6);
 
         // Update alice's price again
         vm.prank(alice);
-        sale.updateMaxPrice(3e6);
-        assertEq(sale.maxPrices(alice), 3e6);
-        assertEq(sale.maxPrices(bob), 2e6);
+        sale.updateMaxPrice(30e6);
+        assertEq(sale.maxPrices(alice), 30e6);
+        assertEq(sale.maxPrices(bob), 20e6);
     }
 
     function testUpdateMaxPrice_WithDeposit() public {
@@ -1134,7 +1124,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Setup initial deposit with maxPrice
         uint256 depositAmount = 1000 * 1e6;
-        uint256 initialMaxPrice = 2e6;
+        uint256 initialMaxPrice = 10 * 1e6;
 
         usdc.mint(alice, depositAmount);
         vm.prank(alice);
@@ -1145,7 +1135,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         assertEq(sale.maxPrices(alice), initialMaxPrice);
 
         // Update maxPrice after deposit
-        uint256 newMaxPrice = 3e6;
+        uint256 newMaxPrice = 30 * 1e6;
         vm.prank(alice);
         sale.updateMaxPrice(newMaxPrice);
         assertEq(sale.maxPrices(alice), newMaxPrice);
@@ -1158,7 +1148,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.warp(startTime + 1);
 
         uint256 oldPrice = 0; // Initial price
-        uint256 newPrice = 1e6;
+        uint256 newPrice = 10e6;
 
         vm.expectEmit(true, false, false, true);
         emit SealedBidTokenSale.MaxPriceUpdated(alice, oldPrice, newPrice);

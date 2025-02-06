@@ -63,6 +63,8 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     error MerkleRootNotSet();
     /// @notice Thrown when attempting to deposit less than MIN_DEPOSIT
     error MinDeposit(uint256 amount);
+    /// @notice Thrown when new max price is out of range
+    error MaxPriceOutOfRange(uint256 amount);
 
     /* ============ Events ============ */
 
@@ -179,6 +181,7 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
         if (amount < MIN_DEPOSIT) revert MinDeposit(amount);
+        _checkMaxPrice(maxPrice);
 
         // Update deposit accounting
         deposits[msg.sender] += amount;
@@ -272,10 +275,17 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     function updateMaxPrice(uint256 newMaxPrice) external nonReentrant {
         if (block.timestamp < startTime) revert SaleNotStarted(block.timestamp, startTime);
         if (saleEnded) revert SaleAlreadyEnded(block.timestamp);
+        _checkMaxPrice(newMaxPrice);
 
         uint256 oldPrice = maxPrices[msg.sender];
         maxPrices[msg.sender] = newMaxPrice;
         emit MaxPriceUpdated(msg.sender, oldPrice, newMaxPrice);
+    }
+
+    function _checkMaxPrice(uint256 newMaxPrice) internal pure {
+        if (newMaxPrice < 10 * 1e6 || newMaxPrice > 30 * 1e6) {
+            revert MaxPriceOutOfRange(newMaxPrice);
+        }
     }
 
     /* ============ Admin Functions ============ */
