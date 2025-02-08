@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@openzeppelin-5.0.1/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin-5.0.1/contracts/utils/ReentrancyGuard.sol";
 import {MerkleProof} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MerkleProof.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -18,7 +21,7 @@ import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC
  *  - Full refunds if minimum cap not reached
  *  - Early participation window for first 700 emissaries
  */
-contract SealedBidTokenSale is Ownable, ReentrancyGuard {
+contract SealedBidTokenSale is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     /* ============ Struct ============ */
@@ -172,7 +175,6 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
     mapping(address => bool) public isEmissary;
 
     /* ============ Constructor ============ */
-
     /**
      * @notice Initializes the token sale with required parameters
      * @param _saleToken Address of the token being sold
@@ -188,7 +190,9 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         uint256 _preStartTime,
         uint256 _startTime,
         uint256 _minimumCap
-    ) Ownable(msg.sender) {
+    ) {
+        _disableInitializers();
+
         if (_saleToken == address(0)) revert InvalidSaleTokenAddress(_saleToken);
         if (_treasury == address(0)) revert InvalidTreasuryAddress(_treasury);
         if (_preStartTime >= _startTime) revert InvalidTimeConfiguration();
@@ -199,6 +203,21 @@ contract SealedBidTokenSale is Ownable, ReentrancyGuard {
         preStartTime = _preStartTime;
         startTime = _startTime;
         minimumCap = _minimumCap;
+    }
+
+    /// @dev initialize the proxy
+    function initialize() external virtual initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
+
+    /**
+     * @dev Authorize the upgrade. Only by an owner.
+     * @param newImplementation address of the new implementation
+     */
+    // This function is called by the proxy contract when the factory is upgraded
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
+        (newImplementation);
     }
 
     /* ============ User Functions ============ */

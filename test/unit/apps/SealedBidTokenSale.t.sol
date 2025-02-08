@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {Test} from "forge-std/Test.sol";
 import {SealedBidTokenSale} from "@kinto-core/apps/SealedBidTokenSale.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
@@ -38,9 +39,11 @@ contract SealedBidTokenSaleTest is SharedSetup {
         usdc = new ERC20Mock("USDC", "USDC", 6);
         saleToken = new ERC20Mock("K", "KINTO", 18);
 
-        // Deploy sale contract with admin as owner
-        vm.prank(admin);
         sale = new SealedBidTokenSale(address(saleToken), TREASURY, address(usdc), preStartTime, startTime, MIN_CAP);
+        vm.startPrank(admin);
+        sale = SealedBidTokenSale(address(new UUPSProxy{salt: 0}(address(sale), "")));
+        sale.initialize();
+        vm.stopPrank();
 
         // Setup Merkle tree with alice and bob
         bytes32[] memory leaves = new bytes32[](2);
