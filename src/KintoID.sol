@@ -467,7 +467,7 @@ contract KintoID is
      */
     function isSanctionsSafe(address _account) public view virtual override returns (bool) {
         // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
-        return isSanctionsMonitored(EXIT_WINDOW_PERIOD)
+        return isSanctionsMonitored(EXIT_WINDOW_PERIOD / (1 days))
             && (
                 _kycmetas[_account].sanctionsCount == 0
                     || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
@@ -483,7 +483,7 @@ contract KintoID is
      */
     function isSanctionsSafeIn(address _account, uint16 _countryId) external view virtual override returns (bool) {
         // If the sanction is not confirmed within SANCTION_EXPIRY_PERIOD, consider the account sanctions safe
-        return isSanctionsMonitored(EXIT_WINDOW_PERIOD)
+        return isSanctionsMonitored(EXIT_WINDOW_PERIOD / (1 days))
             && (
                 !_kycmetas[_account].sanctions.get(_countryId)
                     || (sanctionedAt[_account] != 0 && (block.timestamp - sanctionedAt[_account]) > SANCTION_EXPIRY_PERIOD)
