@@ -6,8 +6,8 @@ import {ECDSA} from "@openzeppelin-5.0.1/contracts/utils/cryptography/ECDSA.sol"
 import {UpgradeableBeacon} from "@openzeppelin-5.0.1/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
 
-import {PackedUserOperation} from "@aa-v7/interfaces/PackedUserOperation.sol";
-import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import {AccessRegistry} from "@kinto-core/access/AccessRegistry.sol";
 import {AccessPoint} from "@kinto-core/access/AccessPoint.sol";

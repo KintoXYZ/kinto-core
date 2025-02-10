@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@aa/core/EntryPoint.sol";
+import {EntryPoint} from "@aa/core/EntryPoint.sol";
 
 import "../../src/KintoID.sol";
 import "@kinto-core-script/utils/MigrationHelper.sol";

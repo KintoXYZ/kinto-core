@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/interfaces/IKintoEntryPoint.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IKintoAppRegistry.sol";
 
