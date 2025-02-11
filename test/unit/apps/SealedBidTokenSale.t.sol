@@ -1362,6 +1362,18 @@ contract SealedBidTokenSaleTest is SharedSetup {
         uint256 amount = 1000 * 1e6;
         uint256 initialEmissaryCount = sale.currentEmissaryCount();
 
+        // Fill up emissary slots
+        for (uint256 i = 0; i < sale.MAX_EMISSARIES() - 1; i++) {
+            address emissary = address(uint160(i + 1000)); // Generate unique addresses
+
+            usdc.mint(emissary, amount);
+            vm.prank(emissary);
+            usdc.approve(address(sale), amount);
+
+            vm.prank(emissary);
+            sale.deposit(amount, maxPrice);
+        }
+
         // First deposit
         usdc.mint(alice, amount * 2);
         vm.prank(alice);
@@ -1376,7 +1388,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Verify emissary count only increased once
         assertTrue(sale.isEmissary(alice));
-        assertEq(sale.currentEmissaryCount(), initialEmissaryCount + 1);
+        assertEq(sale.currentEmissaryCount(), 700);
         assertEq(sale.deposits(alice), amount * 2);
     }
 

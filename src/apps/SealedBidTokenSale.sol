@@ -239,7 +239,7 @@ contract SealedBidTokenSale is Initializable, UUPSUpgradeable, OwnableUpgradeabl
 
         // Handle emissary period
         if (block.timestamp < startTime) {
-            if (currentEmissaryCount >= MAX_EMISSARIES) revert EmissaryFull();
+            if (isEmissary[msg.sender] == false && currentEmissaryCount >= MAX_EMISSARIES) revert EmissaryFull();
             if (!isEmissary[msg.sender]) {
                 isEmissary[msg.sender] = true;
                 currentEmissaryCount++;
