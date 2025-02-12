@@ -126,5 +126,44 @@ contract DeployScript is MigrationHelper {
             ),
             address(newImpl)
         );
+
+        bytes4[] memory selectors = new bytes4[](3);
+        selectors[0] = KintoAppRegistry.updateSystemApps.selector;
+        selectors[1] = KintoAppRegistry.updateSystemContracts.selector;
+        selectors[2] = KintoAppRegistry.updateReservedContracts.selector;
+
+        // set functions for L1 council
+        _handleOps(
+            abi.encodeWithSelector(
+                AccessManager.setTargetFunctionRole.selector, registry, selectors, SECURITY_COUNCIL_ROLE
+            ),
+            address(accessManager)
+        );
+
+        // grant role to the L1 council
+        _handleOps(
+            abi.encodeWithSelector(
+                AccessManager.grantRole.selector,
+                SECURITY_COUNCIL_ROLE,
+                L1_SECURITY_COUNCIL,
+                uint32(SECURITY_COUNCIL_DELAY)
+            ),
+            address(accessManager)
+        );
+
+        // Label the role
+        _handleOps(
+            abi.encodeWithSelector(AccessManager.labelRole.selector, SECURITY_COUNCIL_ROLE, "SECURITY_COUNCIL_ROLE"),
+            address(accessManager)
+        );
+
+        (immediate, delay) =
+            accessManager.canCall(L1_SECURITY_COUNCIL, registry, KintoAppRegistry.updateSystemApps.selector);
+        assertFalse(immediate);
+        assertEq(delay, SECURITY_COUNCIL_DELAY);
+
+        (isMember, currentDelay) = accessManager.hasRole(SECURITY_COUNCIL_ROLE, L1_SECURITY_COUNCIL);
+        assertTrue(isMember);
+        assertEq(currentDelay, SECURITY_COUNCIL_DELAY);
     }
 }
