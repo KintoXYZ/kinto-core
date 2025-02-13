@@ -99,34 +99,6 @@ contract DeployScript is MigrationHelper {
         assertTrue(isMember);
         assertEq(currentDelay, UPGRADE_DELAY);
 
-        // test that we can upgrade to a new KintoID
-        KintoID newImpl = new KintoID(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"));
-
-        bytes memory upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, newImpl);
-
-        vm.prank(L1_SECURITY_COUNCIL);
-        accessManager.schedule(address(kintoID), upgradeCalldata, uint48(block.timestamp + UPGRADE_DELAY));
-
-        vm.warp(block.timestamp + UPGRADE_DELAY);
-
-        vm.prank(L1_SECURITY_COUNCIL);
-        accessManager.execute(address(kintoID), upgradeCalldata);
-
-        // Read implementation address from proxy storage and compare it to a new address
-        assertEq(
-            address(
-                uint160(
-                    uint256(
-                        vm.load(
-                            address(kintoID),
-                            bytes32(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
-                        )
-                    )
-                )
-            ),
-            address(newImpl)
-        );
-
         bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = KintoAppRegistry.updateSystemApps.selector;
         selectors[1] = KintoAppRegistry.updateSystemContracts.selector;
@@ -165,5 +137,33 @@ contract DeployScript is MigrationHelper {
         (isMember, currentDelay) = accessManager.hasRole(SECURITY_COUNCIL_ROLE, L1_SECURITY_COUNCIL);
         assertTrue(isMember);
         assertEq(currentDelay, SECURITY_COUNCIL_DELAY);
+
+        // test that we can upgrade to a new KintoID
+        KintoID newImpl = new KintoID(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"));
+
+        bytes memory upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, newImpl);
+
+        vm.prank(L1_SECURITY_COUNCIL);
+        accessManager.schedule(address(kintoID), upgradeCalldata, uint48(block.timestamp + UPGRADE_DELAY));
+
+        vm.warp(block.timestamp + UPGRADE_DELAY);
+
+        vm.prank(L1_SECURITY_COUNCIL);
+        accessManager.execute(address(kintoID), upgradeCalldata);
+
+        // Read implementation address from proxy storage and compare it to a new address
+        assertEq(
+            address(
+                uint160(
+                    uint256(
+                        vm.load(
+                            address(kintoID),
+                            bytes32(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
+                        )
+                    )
+                )
+            ),
+            address(newImpl)
+        );
     }
 }
