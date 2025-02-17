@@ -12,7 +12,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
 import {console2} from "forge-std/console2.sol";
 
-contract TransferDclmScript is MigrationHelper {
+contract Script is MigrationHelper {
     using LibString for *;
     using Strings for string;
     using stdJson for string;
@@ -20,8 +20,8 @@ contract TransferDclmScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        uint256 amount = 85_000e18;
-        address DCLM = 0x26E508D5d63499e549D958B42c4e2630272Ce2a2;
+        uint256 amount = 250_000e18;
+        address target = 0x5a1E00884e35bF2dC39Af51712D08bEF24b1817f;
 
         address kintoToken = _getChainDeployment("KINTO");
 
@@ -31,10 +31,10 @@ contract TransferDclmScript is MigrationHelper {
             kintoToken
         );
 
-        // Mint tokens to DCLM address
-        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, DCLM, amount), kintoToken);
+        // Mint tokens to target address
+        _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, target, amount), kintoToken);
 
         // Check that tokens received
-        assertEq(ERC20(kintoToken).balanceOf(DCLM), amount);
+        assertEq(ERC20(kintoToken).balanceOf(target), amount);
     }
 }
