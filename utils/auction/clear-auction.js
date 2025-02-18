@@ -2,223 +2,198 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Runs a uniform-price auction and returns:
- *  - The final clearing price
- *  - How many tokens each user gets
- *  - How much USDC is refunded to each user
+ * A uniform-price auction that uses BigInt for 6-decimal USDC calculations.
  *
- * @param {Object[]} bids           Array of bid objects.
- * @param {string}   bids[].address Ethereum address of bidder (unique ID).
- * @param {number}   bids[].usdcAmount  Amount of USDC the user commits.
- * @param {number}   bids[].maxPrice    Maximum price per token the user is willing to pay.
- * @param {number}   bids[].priority    Priority for tie-breaking (higher is better).
- * @param {number}   totalTokens        Total number of tokens available in the auction.
+ * @param {Object[]} bids - The array of bids.
+ * @param {string} bids[].address - Ethereum address of the bidder.
+ * @param {bigint} bids[].usdcAmount - The amount of USDC committed (6-decimal integer).
+ * @param {bigint} bids[].maxPrice   - The bidder's maximum price per token (also 6-decimal integer).
+ * @param {bigint} bids[].priority   - Priority for tie-breaking.
+ * @param {bigint} totalTokens       - Total tokens available, in 6-decimal “token units” if partial tokens are allowed.
+ *
  * @returns {{
- *   finalPrice: number,
+ *   finalPrice: bigint,  // 6-decimal integer, or 0n if auction not successful
  *   allocations: {
  *     [address: string]: {
- *       tokens: number,
- *       usedUSDC: number,
- *       refundedUSDC: number
+ *       tokens: bigint,      // number of tokens (6 decimals) allocated
+ *       usedUSDC: bigint,    // how much USDC was actually spent
+ *       refundedUSDC: bigint // how much USDC was refunded
  *     }
  *   }
  * }}
  */
 function runAuction(bids, totalTokens) {
-  // --- 1. Sort bids by (maxPrice desc, priority desc) ---
+  // 1. Sort bids: highest maxPrice first, then highest priority
   bids.sort((a, b) => {
-    // If maxPrice is the same, compare priority
     if (b.maxPrice === a.maxPrice) {
-      return b.priority - a.priority;
+      // Sort descending by priority
+      return Number(b.priority - a.priority);
     }
-    // Otherwise compare by maxPrice
-    return b.maxPrice - a.maxPrice;
+    // Sort descending by maxPrice
+    return Number(b.maxPrice - a.maxPrice);
   });
 
-  // --- 2. Find the clearing price ---
-  let tokensAccumulated = 0;
-  let finalPrice = 0;
-  for (let i = 0; i < bids.length; i++) {
-    const bid = bids[i];
-    const tokensDemanded = bid.usdcAmount / bid.maxPrice; 
-    tokensAccumulated += tokensDemanded;
+  // 2. Determine the clearing price by accumulating demanded tokens
+  let tokensAccumulated = 0n;
+  let finalPrice = 0n;
+
+  for (const bid of bids) {
+    // tokensDemanded = usdcAmount / maxPrice in a “token scale.”  
+    // But to do fractional tokens with BigInt, we need a tokenScale factor.  
+    // Let's define 1 token = 1,000,000 “token units” (6 decimals).
+    const TOKEN_SCALE = 1_000_000n;
     
+    // tokensDemanded = (usdcAmount * TOKEN_SCALE) / maxPrice
+    const tokensDemanded = (bid.usdcAmount * TOKEN_SCALE) / bid.maxPrice;
+
+    tokensAccumulated += tokensDemanded;
     if (tokensAccumulated >= totalTokens) {
-      // As soon as we exceed the totalTokens,
-      // the current bid's maxPrice sets the clearing price
       finalPrice = bid.maxPrice;
       break;
     }
   }
 
-  // If finalPrice is 0, it means we never reached totalTokens
-  // -> Auction not successful
-  if (finalPrice === 0) {
-    // Everyone is refunded fully
+  // If finalPrice is 0n, we never reached totalTokens → auction not successful
+  if (finalPrice === 0n) {
     const allocations = {};
     for (const bid of bids) {
       allocations[bid.address] = {
-        tokens: 0,
-        usedUSDC: 0,
+        tokens: 0n,
+        usedUSDC: 0n,
         refundedUSDC: bid.usdcAmount
       };
     }
-    return {
-      finalPrice: 0,
-      allocations
-    };
+    return { finalPrice, allocations };
   }
 
-  // --- 3. Allocate tokens to each user based on finalPrice ---
-  // We do a second pass to figure out exactly how many tokens each user gets,
-  // especially for the last "partial" fill if we don't need their entire demand.
-  let tokensLeft = totalTokens;
+  // 3. Allocate tokens with finalPrice known
   const allocations = {};
+  let tokensLeft = totalTokens;
+  const TOKEN_SCALE = 1_000_000n;
 
   for (const bid of bids) {
-    // Anyone whose maxPrice is below finalPrice gets nothing
+    // If bid.maxPrice < finalPrice, user gets 0 tokens, full refund
     if (bid.maxPrice < finalPrice) {
       allocations[bid.address] = {
-        tokens: 0,
-        usedUSDC: 0,
+        tokens: 0n,
+        usedUSDC: 0n,
         refundedUSDC: bid.usdcAmount
       };
       continue;
     }
 
-    // Otherwise, user is willing to pay finalPrice:
-    // The number of tokens they'd *like* to buy at finalPrice
-    const tokensWanted = bid.usdcAmount / finalPrice;
+    // tokensWanted = (usdcAmount * TOKEN_SCALE) / finalPrice
+    let tokensWanted = (bid.usdcAmount * TOKEN_SCALE) / finalPrice;
 
-    // If we don't have enough tokens left for their full "want," they get partial
-    const tokensAllocated = (tokensWanted > tokensLeft) ? tokensLeft : tokensWanted;
-    
-    // How much USDC does the user actually pay?
-    const usedUSDC = tokensAllocated * finalPrice;
+    // If not enough tokens left for full "wanted," do partial
+    if (tokensWanted > tokensLeft) {
+      tokensWanted = tokensLeft;
+    }
 
-    // Refund the rest
-    const refundedUSDC = bid.usdcAmount - usedUSDC;
+    // usedUSDC = (tokensAllocated * finalPrice) / TOKEN_SCALE
+    let usedUSDC = (tokensWanted * finalPrice) / TOKEN_SCALE;
+
+    // refundedUSDC = usdcAmount - usedUSDC  (clamp to 0)
+    let refundedUSDC = bid.usdcAmount - usedUSDC;
+    if (refundedUSDC < 0n) {
+      refundedUSDC = 0n;
+    }
 
     allocations[bid.address] = {
-      tokens: tokensAllocated,
-      usedUSDC: usedUSDC,
-      refundedUSDC: refundedUSDC
+      tokens: tokensWanted,
+      usedUSDC,
+      refundedUSDC
     };
 
-    // Decrease the pool of tokens left
-    tokensLeft -= tokensAllocated;
-
-    // If we've allocated all tokens, break early
-    if (tokensLeft <= 0) {
+    tokensLeft -= tokensWanted;
+    if (tokensLeft <= 0n) {
       break;
     }
   }
 
-  // For any remaining bidders (if the final fill ended early),
-  // they did not get tokens (and thus are refunded in full).
-  if (tokensLeft > 0) {
-    // In theory, if `tokensLeft > 0`, that would suggest
-    // a partial or incomplete auction. However, we found finalPrice
-    // from the step above, so let's just ensure that
-    // all remaining users after we break are also accounted for:
+  // If we broke early, ensure remaining bidders get 0 tokens if not set
+  if (tokensLeft > 0n) {
     for (const bid of bids) {
-      // If not yet in allocations, user gets 0 tokens
       if (!allocations[bid.address]) {
         allocations[bid.address] = {
-          tokens: 0,
-          usedUSDC: 0,
+          tokens: 0n,
+          usedUSDC: 0n,
           refundedUSDC: bid.usdcAmount
         };
       }
     }
   }
 
-  return {
-    finalPrice,
-    allocations
-  };
+  return { finalPrice, allocations };
 }
 
-// ------------------------------
-// 2) Read input file
-// ------------------------------
+// ----------------------------------------------------------------------
+//  Reading the input file (address amount maxPrice priority) as BigInt
+// ----------------------------------------------------------------------
 function readBidsFromFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split(/\r?\n/);
 
   const bids = [];
   for (const line of lines) {
-    // Skip empty lines
-    if (!line.trim()) {
-      continue;
-    }
+    if (!line.trim()) continue; // skip empty lines
 
     const [address, amountStr, maxPriceStr, priorityStr] = line.trim().split(/\s+/);
     if (!address || !amountStr || !maxPriceStr || !priorityStr) {
-      // If there's a malformed line, skip or handle error
-      continue;
+      continue; // skip malformed lines
     }
 
-    // Convert strings to numbers
-    const usdcAmount = Number(amountStr);
-    const maxPrice = Number(maxPriceStr);
-    const priority = Number(priorityStr);
+    // Convert to BigInt
+    const usdcAmount = BigInt(amountStr);
+    const maxPrice   = BigInt(maxPriceStr);
+    const priority   = BigInt(priorityStr);
 
-    // Push to array
-    bids.push({
-      address,
-      usdcAmount,
-      maxPrice,
-      priority
-    });
+    bids.push({ address, usdcAmount, maxPrice, priority });
   }
   return bids;
 }
 
-// ------------------------------
-// 3) Write results to output file
-// ------------------------------
+// ----------------------------------------------------------------------
+//  Writing the output file
+// ----------------------------------------------------------------------
 function writeOutputToFile(filePath, finalPrice, allocations) {
-  // We can build a string or JSON. Let's do a text-based format:
-  let output = '';
+  // We'll create a text file with finalPrice on the first line,
+  // then a line for each bidder with their address, tokens, usedUSDC, refundedUSDC
 
-  // 1) Final price
-  output += `Final Price: ${finalPrice}\n`;
-  output += `\nAllocations:\n`;
+  let output = `Final Price: ${finalPrice.toString()}\n\nAllocations:\n`;
 
-  // 2) Each user’s allocation
-  // format: address tokens usedUSDC refundedUSDC
   for (const address in allocations) {
     const { tokens, usedUSDC, refundedUSDC } = allocations[address];
-    output += `${address} ${tokens} ${usedUSDC} ${refundedUSDC}\n`;
+    output += `${address} ${tokens.toString()} ${usedUSDC.toString()} ${refundedUSDC.toString()}\n`;
   }
 
   fs.writeFileSync(filePath, output, 'utf-8');
 }
 
-// ------------------------------
-// 4) Main Logic
-// ------------------------------
+// ----------------------------------------------------------------------
+//  Main Execution
+// ----------------------------------------------------------------------
 function main() {
-  const inputFilePath = path.join(__dirname, './script/data/auction/bids.txt');
-  const outputFilePath = path.join(__dirname, './script/data/auction/allocations.txt');
+  const inputFilePath = path.join(__dirname, '../../script/data/auction/bids.txt');
+  const outputFilePath = path.join(__dirname, '../../script/data/auction/allocations.txt');
 
-  // Read the bids
+  // 1) Read the bids as BigInts
   const bids = readBidsFromFile(inputFilePath);
 
-  // Choose how many tokens are available for the auction
-  const totalTokens = 1_000_000; // 
+  // 2) totalTokens as BigInt (in 6 decimals if partial tokens are allowed)
+  // For example, if you have 1000.000000 tokens, that is:
+  const totalTokens = 1_000_000_000_000n;  // 1000 tokens * 1,000,000 (6 decimals) = 1,000,000,000,000
 
-  // Run the auction
+  // 3) Run the auction
   const { finalPrice, allocations } = runAuction(bids, totalTokens);
 
-  // Write results
+  // 4) Write results
   writeOutputToFile(outputFilePath, finalPrice, allocations);
 
   console.log(`Auction complete. Results written to ${outputFilePath}`);
 }
 
-// Run main if called directly:
+// If you want to run directly from CLI: "node auction-bigint.js"
 if (require.main === module) {
   main();
 }
