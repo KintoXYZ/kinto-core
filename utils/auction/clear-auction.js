@@ -90,9 +90,9 @@ function runAuction(bids, totalTokens) {
     // usedUSDC = (tokensAllocated * finalPrice) / TOKEN_SCALE
     let usedUSDC = (tokensWanted * finalPrice) / TOKEN_SCALE;
 
-    // Refund leftover USDC. Clamp to 0 if negative.
+    // Refund leftover USDC. Clamp to 0 if negative or 1.
     let refundedUSDC = bid.usdcAmount - usedUSDC;
-    if (refundedUSDC < 0n) {
+    if (refundedUSDC < 2n) {
       refundedUSDC = 0n;
     }
 
@@ -174,7 +174,7 @@ function main() {
 
   // If we want to sell 1,000 tokens, in 18-decimal:
   //  1000 tokens * 1e18 = 1e21
-  const totalTokens = 1_000n * 1_000_000_000_000_000_000n; // 1000 * 1e18 = 1e21
+  const totalTokens = 40_000n * 1_000_000_000_000_000_000n; // 1000 * 1e18 = 1e21
 
   const { finalPrice, allocations } = runAuction(bids, totalTokens);
 
