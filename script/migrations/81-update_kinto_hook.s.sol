@@ -28,9 +28,20 @@ contract Script is MigrationHelper {
 
         _whitelistApp(bridgerL2);
 
-        _handleOps(abi.encodeWithSelector(BridgerL2.setReceiver.selector, [rewardsDistributor].toMemoryArray(), [true].toMemoryArray()), bridgerL2, deployerPrivateKey);
+        _handleOps(
+            abi.encodeWithSelector(
+                BridgerL2.setReceiver.selector, [rewardsDistributor].toMemoryArray(), [true].toMemoryArray()
+            ),
+            bridgerL2,
+            deployerPrivateKey
+        );
 
-        _handleOps(abi.encodeWithSelector(BridgerL2.setSender.selector, [miningAdaptor].toMemoryArray(), [true].toMemoryArray()), bridgerL2, deployerPrivateKey);
-
+        _handleOps(
+            abi.encodeWithSelector(
+                BridgerL2.setSender.selector, [miningAdaptor].toMemoryArray(), [true].toMemoryArray()
+            ),
+            bridgerL2,
+            deployerPrivateKey
+        );
     }
 }
