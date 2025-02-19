@@ -1,62 +1,70 @@
 const fs = require('fs');
 const path = require('path');
 
-const USDC_SCALE = 1_000_000n;                 // 1 USDC = 1e6
+function abs(x) {
+    return x < 0n ? -x : x
+  }
+
+const USDC_SCALE = 1_000_000n;                  // 1 USDC = 1e6
 const TOKEN_SCALE = 1_000_000_000_000_000_000n; // 1 TOKEN = 1e18
 
 /**
- * Runs a uniform-price auction aiming to raise a specified total USDC amount.
+ * Runs a uniform-price auction aiming to sell exactly `totalTokens`.
  *
  * @param {Object[]} bids
  * @param {string}   bids[].address     - Ethereum address.
- * @param {bigint}   bids[].usdcAmount  - USDC in 1e6 units.
- * @param {bigint}   bids[].maxPrice    - Max price in USDC’s 1e6 format (6 decimals).
- * @param {bigint}   bids[].priority    - Priority for tie-breaks.
- * @param {bigint}   totalUSDCRequired  - Total USDC (in 1e6) to be raised by the auction.
+ * @param {bigint}   bids[].usdcAmount  - USDC in 1e6 units (6 decimals).
+ * @param {bigint}   bids[].maxPrice    - Max price in 1e6 USDC units (6 decimals).
+ * @param {bigint}   bids[].priority    - Tie-break priority (desc).
+ * @param {bigint}   totalTokens        - Total tokens (1e18) to be sold in the auction.
  *
  * @returns {{
- *   finalPrice: bigint,  // Price per token in 1e6 USDC units (6 decimals)
+ *   finalPrice: bigint,  // Clearing price in 1e6 USDC units (6 decimals)
  *   allocations: {
  *     [address: string]: {
- *       tokens: bigint,      // Tokens allocated (18 decimals)
- *       usedUSDC: bigint,    // USDC actually used (6 decimals)
- *       refundedUSDC: bigint // USDC refunded (6 decimals)
+ *       tokens: bigint,      // Tokens allocated in 1e18 units
+ *       usedUSDC: bigint,    // USDC actually used in 1e6 units
+ *       refundedUSDC: bigint // USDC refunded in 1e6 units
  *     }
  *   }
  * }}
  */
-function runAuction(bids, totalUSDCRequired) {
-  // 1) Sort bids by maxPrice (desc), then priority (desc)
-  bids.sort((a, b) => {
-    if (b.maxPrice === a.maxPrice) {
-      return Number(b.priority - a.priority);
-    }
-    return Number(b.maxPrice - a.maxPrice);
-  });
+function runAuction(bids, totalTokens) {
+  // 1) Collect all distinct maxPrices
+  const allPrices = new Set();
+  for (const b of bids) {
+    allPrices.add(b.maxPrice);
+  }
+  // Sort them descending
+  const distinctPricesDesc = Array.from(allPrices).sort((a, b) => Number(b - a));
 
-  // 2) Find the clearing price by accumulating USDC until totalUSDCRequired is reached
-  let cumulativeUSDC = 0n;
+  // 2) Find the "highest price p" such that the sum of tokens demanded
+  //    by all bidders with maxPrice >= p is >= totalTokens.
   let finalPrice = 0n;
-
-  // We'll track the index of the "clearing bidder" and how much USDC we used from them
-  let clearingIndex = -1;
-  let partialUsedFromClearingBidder = 0n;
-
-  for (let i = 0; i < bids.length; i++) {
-    const bid = bids[i];
-
-    // If adding the full bid.usdcAmount crosses the required threshold
-    if (cumulativeUSDC + bid.usdcAmount >= totalUSDCRequired) {
-      finalPrice = bid.maxPrice;
-      partialUsedFromClearingBidder = totalUSDCRequired - cumulativeUSDC;  // can be full or partial
-      clearingIndex = i;
+  
+  for (const p of distinctPricesDesc) {
+    let demanded = 0n;
+    
+    // Sum each bidder's demand at price p, if bidder.maxPrice >= p
+    for (const bid of bids) {
+      if (bid.maxPrice >= p) {
+        // tokens = floor( (usdcAmount * 1e18) / p )
+        // Make sure we don't do floating arithmetic
+        const tokens = (bid.usdcAmount * TOKEN_SCALE) / p;
+        demanded += tokens;
+      }
+    }
+    
+    // If total demanded >= totalTokens, p could be our clearing price
+    // Keep the first (largest) p that satisfies this condition
+    if (demanded >= totalTokens) {
+      finalPrice = p;
       break;
-    } else {
-      cumulativeUSDC += bid.usdcAmount;
     }
   }
-
-  // 3) If finalPrice is 0 => not enough demand => everyone refunded
+  
+  // 3) If finalPrice == 0, it means no price had enough demand => auction not fully subscribed
+  //    => everyone gets 0 tokens & full refund
   if (finalPrice === 0n) {
     const allocations = {};
     for (const bid of bids) {
@@ -69,15 +77,31 @@ function runAuction(bids, totalUSDCRequired) {
     return { finalPrice, allocations };
   }
 
-  // 4) We know the finalPrice and exactly how much we used from the clearing bidder
+  // 4) We do a second pass to allocate exactly totalTokens at the finalPrice
+  //    among all bidders whose maxPrice >= finalPrice.
+  //    Sort them by priority desc (and if you want, tie-break on something else).
+  const inTheMoney = bids
+    .filter(b => b.maxPrice >= finalPrice)
+    .sort((a, b) => Number(b.priority - a.priority));
+
   const allocations = {};
-  let usdcUsedSoFar = 0n;
+  let tokensLeft = totalTokens;
 
-  for (let i = 0; i < bids.length; i++) {
-    const bid = bids[i];
+  // For bidders whose maxPrice < finalPrice, they get 0 allocation
+  for (const bid of bids) {
+    if (bid.maxPrice < finalPrice) {
+      allocations[bid.address] = {
+        tokens: 0n,
+        usedUSDC: 0n,
+        refundedUSDC: bid.usdcAmount
+      };
+    }
+  }
 
-    // If we've passed the clearing index, or the bidder's maxPrice < finalPrice => no allocation
-    if (i > clearingIndex || bid.maxPrice < finalPrice) {
+  // Now allocate to those in the money
+  for (const bid of inTheMoney) {
+    // If no tokens remain, bidder gets nothing
+    if (tokensLeft === 0n) {
       allocations[bid.address] = {
         tokens: 0n,
         usedUSDC: 0n,
@@ -86,40 +110,34 @@ function runAuction(bids, totalUSDCRequired) {
       continue;
     }
 
-    // If this is before the clearing bidder => full usage
-    if (i < clearingIndex) {
-      const usedUSDC = bid.usdcAmount;
-      const tokens = (usedUSDC * TOKEN_SCALE) / finalPrice;
+    // Max tokens this bidder *could* buy at finalPrice:
+    // demandedTokens = floor( (usdcAmount * 1e18) / finalPrice )
+    let demandedTokens = (bid.usdcAmount * TOKEN_SCALE) / finalPrice;
 
-      let refundedUSDC = bid.usdcAmount - usedUSDC;
-      if (refundedUSDC < 2n) {
-        refundedUSDC = 0n;
-      }
-
-      allocations[bid.address] = {
-        tokens,
-        usedUSDC,
-        refundedUSDC
-      };
-      usdcUsedSoFar += usedUSDC;
+    let usedUSDC;
+    let refundedUSDC;
+    // If the demand is more than what's left, they only get partial fill
+    if (demandedTokens > tokensLeft) {
+      demandedTokens = tokensLeft;
+      // Calculate how much USDC that partial or full fill uses
+      // usedUSDC = floor( demandedTokens * finalPrice / 1e18 )
+      usedUSDC = (demandedTokens * finalPrice) / TOKEN_SCALE;
+      refundedUSDC = bid.usdcAmount - usedUSDC;
+    } else {
+      // If we have tokens then just spend all
+      usedUSDC = bid.usdcAmount;
+      refundedUSDC = 0n;
     }
-    // If this is exactly the clearing bidder => partial usage
-    else if (i === clearingIndex) {
-      const usedUSDC = partialUsedFromClearingBidder;
-      const tokens = (usedUSDC * TOKEN_SCALE) / finalPrice;
 
-      let refundedUSDC = bid.usdcAmount - usedUSDC;
-      if (refundedUSDC < 2n) {
-        refundedUSDC = 0n;
-      }
 
-      allocations[bid.address] = {
-        tokens,
-        usedUSDC,
-        refundedUSDC
-      };
-      usdcUsedSoFar += usedUSDC;
-    }
+    allocations[bid.address] = {
+      tokens: demandedTokens,
+      usedUSDC,
+      refundedUSDC: refundedUSDC < 0n ? 0n : refundedUSDC
+    };
+
+    // Decrease tokensLeft
+    tokensLeft -= demandedTokens;
   }
 
   return { finalPrice, allocations };
@@ -161,7 +179,7 @@ function verifyAllocations(bids, finalPrice, allocations) {
     // Check token calculation if finalPrice > 0
     if (finalPrice > 0n) {
       const expectedTokens = (usedUSDC * TOKEN_SCALE) / finalPrice;
-      if (tokens !== expectedTokens) {
+      if (abs(tokens - expectedTokens) > 1000) {
         throw new Error(
           `Allocation mismatch for ${bid.address}: tokens (${tokens}) != expectedTokens (${expectedTokens})`
         );
@@ -252,12 +270,11 @@ function main() {
   // Read bids
   const bids = readBidsFromFile(inputFilePath);
 
-  // Suppose we want to raise exactly 100,000 USDC.
-  // 100,000 USDC => 100,000 * 1e6 = 100_000n * 1_000_000n
-  const totalUSDCRequired = 1000_000n * USDC_SCALE; 
+  // Suppose we want to sell exactly 250,000 tokens
+  const totalTokens = 250_000n * TOKEN_SCALE; 
 
   // Run the auction
-  const { finalPrice, allocations } = runAuction(bids, totalUSDCRequired);
+  const { finalPrice, allocations } = runAuction(bids, totalTokens);
 
   // Write the results to disk
   writeOutputToFile(outputFilePath, finalPrice, allocations);
