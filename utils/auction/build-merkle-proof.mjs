@@ -26,8 +26,8 @@ async function main() {
   // all as strings, matching ["address","uint256","uint256"] in the tree schema.
   const values = [];
   for (const line of lines) {
-    const [address, saleAlloc, usdcAlloc] = line.trim().split(/\s+/);
-    if (!address || !saleAlloc || !usdcAlloc) {
+    const [address, saleAlloc, spentUsdcAlloc, usdcAlloc] = line.trim().split(/\s+/);
+    if (!address || !saleAlloc || !spentUsdcAlloc || !usdcAlloc) {
       console.warn(`Skipping malformed line: "${line}"`);
       continue;
     }
