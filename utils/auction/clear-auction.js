@@ -217,6 +217,26 @@ function verifyAllocations(bids, finalPrice, allocations) {
 }
 
 // ----------------------------------------------------------------------
+//  Read emissaries users from a file
+// ----------------------------------------------------------------------
+function readEmissariesFromFile(filePath, bids) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const users = content.split(/\r?\n/);
+
+  for (let index = 0; index < users.length; index++) {
+    let user = users[index];
+    for (const bid of bids) {
+      // If Engen user then give priority
+      if(user === bid.address) {
+        bid.priority = users.length - index + 1e5;
+        console.log('bid:', bid)
+      }
+    }
+  }
+  return bids;
+}
+
+// ----------------------------------------------------------------------
 //  Read engen users from a file
 // ----------------------------------------------------------------------
 function readEngenFromFile(filePath, bids) {
@@ -286,12 +306,16 @@ function main() {
     '../../script/data/auction/allocations.txt'
   );
   const engenFilePath = path.join(__dirname, '../../script/data/auction/engen-holders.txt');
+  const emissaryFilePath = path.join(__dirname, '../../script/data/auction/emissaries.txt');
 
   // Read bids
   let bids = readBidsFromFile(inputFilePath);
 
   // Read Engen users and set priority for them
   bids = readEngenFromFile(engenFilePath, bids);
+
+  // Read Emissary user and set priority for them
+  bids = readEmissariesFromFile(emissaryFilePath, bids);
 
   // Suppose we want to sell exactly 250,000 tokens
   const totalTokens = 250_000n * TOKEN_SCALE; 
