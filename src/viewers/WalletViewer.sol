@@ -58,7 +58,7 @@ contract WalletViewer is Initializable, UUPSUpgradeable, OwnableUpgradeable, IWa
      * @param _index start index
      * @return address[50] list of 50 applications
      */
-    function fetchAppAddresesFromIndex(uint256 _index) external view override returns (address[50] memory) {
+    function fetchAppAddressesFromIndex(uint256 _index) external view override returns (address[50] memory) {
         address[50] memory _appAddresses;
         for (uint256 i = 0; i < 50; i++) {
             _appAddresses[i] = appRegistry.tokenIdToApp(_index + i);
