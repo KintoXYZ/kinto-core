@@ -82,7 +82,7 @@ forge test
 ```
 Alternatively, you run `yarn test`
 
-To run tests on a fork from fokr chain you need to set the env vars `FOUNDRY_PROFILE=fork`
+To run tests on a fork from fork chain you need to set the env vars `FOUNDRY_PROFILE=fork`
 ```
 FOUNDRY_PROFILE=fork forge test -vvv
 ```
@@ -96,7 +96,7 @@ In order to run Slither for static analysis, execute the following command:
 slither --checklist --solc-remaps "$(tr '\n' ' ' < remappings.txt | xargs)" ./src/
 ```
 
-## Continous Integration
+## Сontinuous Integration
 
 We use Github Actions to run tests (both local and fork tests) and several other checks.
 
@@ -121,7 +121,7 @@ forge coverage --report lcov && mv lcov.info lcov-local.info && FOUNDRY_PROFILE=
 On the `/script` directory, you can find the following subdirectories:
 - `/migrations`: all our executed migrations with contracts upgrades.
 - `/samples`: sample scripts to, for example, deploy & interact with other contracts, create a Kinto Wallet, upgrade contracts.
-- `/utilts`: scripts with some util actions
+- `/utils`: scripts with some util actions
 
 Find below the instructions to run some of these scripts:
 
