@@ -228,8 +228,46 @@ function readEmissariesFromFile(filePath, bids) {
     for (const bid of bids) {
       // If Engen user then give priority
       if(user === bid.address) {
-        bid.priority = users.length - index + 1e5;
-        console.log('bid:', bid)
+        const newPriority = users.length - index + 1e5;
+        bid.priority = newPriority > bid.priority ? newPriority : bid.priority;
+      }
+    }
+  }
+  return bids;
+}
+
+// ----------------------------------------------------------------------
+//  Read users from a file
+// ----------------------------------------------------------------------
+function readUsersFromFile(filePath, bids) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const lines = content.split(/\r?\n/);
+
+  const users = [];
+  for (const line of lines) {
+    if (!line.trim()) continue; // skip empty lines
+
+    const [address, amountStr] = line
+      .trim()
+      .split(/\s+/);
+    if (!address || !amountStr) {
+      throw new Error('Corrupted file');
+    }
+
+    // Convert to BigInt
+    const amount = BigInt(amountStr);
+
+    users.push({ address, amount });
+  }
+  const sortedUsers = Array.from(users).sort((a, b) => Number(b.amount - a.amount));
+
+  for (let index = 0; index < sortedUsers.length; index++) {
+    let user = sortedUsers[index];
+    for (const bid of bids) {
+      // If Engen user then give priority
+      if(user.address === bid.address) {
+        const newPriority = sortedUsers.length - index;
+        bid.priority = newPriority > bid.priority ? newPriority : bid.priority;
       }
     }
   }
@@ -284,6 +322,19 @@ function readBidsFromFile(filePath) {
 }
 
 // ----------------------------------------------------------------------
+//  Write bids file
+// ----------------------------------------------------------------------
+function writeBidsToFile(filePath, bids) {
+  let output = '';
+  for (const bid of bids) {
+    const { address, usdcAmount, maxPrice, priority } = bid;
+    output += `${address} ${usdcAmount.toString()} ${maxPrice.toString()} ${priority.toString()}\n`;
+  }
+
+  fs.writeFileSync(filePath, output, 'utf-8');
+}
+
+// ----------------------------------------------------------------------
 //  Write output file
 // ----------------------------------------------------------------------
 function writeOutputToFile(filePath, finalPrice, allocations) {
@@ -307,6 +358,8 @@ function main() {
   );
   const engenFilePath = path.join(__dirname, '../../script/data/auction/engen-holders.txt');
   const emissaryFilePath = path.join(__dirname, '../../script/data/auction/emissaries.txt');
+  const usersFilePath = path.join(__dirname, '../../script/data/auction/users-k-balance.txt');
+  const finalBidsFilePath = path.join(__dirname, '../../script/data/auction/final-bids.txt');
 
   // Read bids
   let bids = readBidsFromFile(inputFilePath);
@@ -314,8 +367,14 @@ function main() {
   // Read Engen users and set priority for them
   bids = readEngenFromFile(engenFilePath, bids);
 
-  // Read Emissary user and set priority for them
+  // Read Emissary users and set priority for them
   bids = readEmissariesFromFile(emissaryFilePath, bids);
+
+  // Read users and set priority for them
+  bids = readUsersFromFile(usersFilePath, bids);
+
+  // Write final bids for manual checks
+  writeBidsToFile(finalBidsFilePath, bids);
 
   // Suppose we want to sell exactly 250,000 tokens
   const totalTokens = 250_000n * TOKEN_SCALE; 
