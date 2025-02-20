@@ -18,7 +18,7 @@ interface IWalletViewer {
 
     /* ============ Basic Viewers ============ */
 
-    function fetchAppAddresesFromIndex(uint256 _index) external view returns (address[50] memory);
+    function fetchAppAddressesFromIndex(uint256 _index) external view returns (address[50] memory);
 
     function fetchUserAppAddressesFromIndex(address walletAddress, uint256 _index)
         external
