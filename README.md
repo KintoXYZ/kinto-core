@@ -189,7 +189,7 @@ source .env && forge script script/samples/upgrades/upgrade.sol:KintoIDUpgradeSc
 On Testnet:
 
 ```
-forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-url http://test-explorer.kinto.xyz/api --num-of-optimizations 100000 0xE40C427226D78060062670E341b0d8D8e66d725A ETHPriceIsRight
+forge verify-contract --watch --verifier blockscout --chain-id 42888 --verifier-url https://test-explorer.kinto.xyz/api --num-of-optimizations 100000 0xE40C427226D78060062670E341b0d8D8e66d725A ETHPriceIsRight
 ```
 
 On Mainnet:
