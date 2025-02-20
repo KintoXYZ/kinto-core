@@ -96,7 +96,7 @@ In order to run Slither for static analysis, execute the following command:
 slither --checklist --solc-remaps "$(tr '\n' ' ' < remappings.txt | xargs)" ./src/
 ```
 
-## Continous Integration
+## Continuous Integration
 
 We use Github Actions to run tests (both local and fork tests) and several other checks.
 
