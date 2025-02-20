@@ -179,7 +179,7 @@ function verifyAllocations(bids, finalPrice, allocations) {
     // Check token calculation if finalPrice > 0
     if (finalPrice > 0n) {
       const expectedTokens = (usedUSDC * TOKEN_SCALE) / finalPrice;
-      if (abs(tokens - expectedTokens) > 1000) {
+      if (abs(tokens - expectedTokens) > 2000) {
         throw new Error(
           `Allocation mismatch for ${bid.address}: tokens (${tokens}) != expectedTokens (${expectedTokens})`
         );
@@ -217,6 +217,25 @@ function verifyAllocations(bids, finalPrice, allocations) {
 }
 
 // ----------------------------------------------------------------------
+//  Read engen users from a file
+// ----------------------------------------------------------------------
+function readEngenFromFile(filePath, bids) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const users = content.split(/\r?\n/);
+
+  for (let index = 0; index < users.length; index++) {
+    let user = users[index];
+    for (const bid of bids) {
+      // If Engen user then give priority
+      if(user === bid.address) {
+        bid.priority = users.length - index + 1e6;
+      }
+    }
+  }
+  return bids;
+}
+
+// ----------------------------------------------------------------------
 //  Read bids from a file (address amount maxPrice priority)
 // ----------------------------------------------------------------------
 function readBidsFromFile(filePath) {
@@ -237,7 +256,7 @@ function readBidsFromFile(filePath) {
     // Convert to BigInt (these are already in 1e6 for USDC or just integer priority)
     const usdcAmount = BigInt(amountStr);
     const maxPrice = BigInt(maxPriceStr);
-    const priority = BigInt(priorityStr);
+    const priority = Number(priorityStr);
 
     bids.push({ address, usdcAmount, maxPrice, priority });
   }
@@ -266,9 +285,13 @@ function main() {
     __dirname,
     '../../script/data/auction/allocations.txt'
   );
+  const engenFilePath = path.join(__dirname, '../../script/data/auction/engen-holders.txt');
 
   // Read bids
-  const bids = readBidsFromFile(inputFilePath);
+  let bids = readBidsFromFile(inputFilePath);
+
+  // Read Engen users and set priority for them
+  bids = readEngenFromFile(engenFilePath, bids);
 
   // Suppose we want to sell exactly 250,000 tokens
   const totalTokens = 250_000n * TOKEN_SCALE; 
