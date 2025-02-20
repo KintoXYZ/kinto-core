@@ -257,7 +257,7 @@ filtered{f -> !viewOrUpgrade(f)} {
 
 /// @title No operation can front-run and make a call to withdrawTokensTo() revert.
 rule cannotDos_withdrawTokensTo(method f)
-/// The owner is supposed to be restircted from calling this function:  
+/// The owner is supposed to be restricted from calling this function:  
 filtered{f -> !viewOrUpgrade(f)} {
     env e1;
     require e1.block.number > 0;
