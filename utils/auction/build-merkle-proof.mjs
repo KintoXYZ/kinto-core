@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 const ALLOCATIONS_FILE = path.join(__dirname, "../../script/data/auction/allocations.txt");
 const BIDS_FILE = path.join(__dirname, "../../script/data/auction/bids.txt");
 const OUTPUT_JSON = path.join(__dirname, "../../script/data/auction/merkle-tree.json");
+const OUTPUT_CSV = path.join(__dirname, "../../script/data/auction/allocations.csv");
 
 async function main() {
   // 1) Read lines from allocations.txt
@@ -63,6 +64,7 @@ async function main() {
 
   // 5) Build a "claims" object that maps each user address to { saleAlloc, usdcAlloc, proof }
   const claims = {};
+  const validLines = []; // Keep track of valid lines for CSV
   for (const [i, v] of tree.entries()) {
     const proof = tree.getProof(i);
     const [addr, saleAlloc, usdcAlloc] = v;
@@ -75,6 +77,15 @@ async function main() {
       proof,
       addr,
     };
+
+    // Keep full info for CSV output
+    validLines.push({
+      bidAmount: bid[1],
+      bidPrice: bid[2] / 1e6,
+      saleAlloc,
+      usdcAlloc,
+      address: addr,
+    });
   }
 
   // 6) Construct a final JSON output that contains:
@@ -87,6 +98,17 @@ async function main() {
 
   fs.writeFileSync(OUTPUT_JSON, JSON.stringify(fullOutput, null, 2), "utf-8");
   console.log(`Merkle tree and per-address claims saved to ${OUTPUT_JSON}`);
+
+  // 7) Write a CSV file (no proofs, just address + saleAlloc + spentUsdcAlloc + usdcAlloc)
+  const csvHeader = "address,bidAmount,bidPrice,saleAlloc,usdcAlloc";
+  const csvRows = [csvHeader];
+  for (const lineObj of validLines) {
+    const { address, saleAlloc, bidAmount, usdcAlloc, bidPrice } = lineObj;
+    csvRows.push(`${address},${bidAmount},${bidPrice},${saleAlloc},${usdcAlloc}`);
+  }
+
+  fs.writeFileSync(OUTPUT_CSV, csvRows.join("\n"), "utf-8");
+  console.log(`Allocations CSV (no proofs) saved to: ${OUTPUT_CSV}`);
 }
 
 main().catch(err => {
