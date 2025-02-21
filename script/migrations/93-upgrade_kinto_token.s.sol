@@ -11,7 +11,7 @@ contract UpgradeKintoTokenDeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        address impl = _deployImplementationAndUpgrade("KINTO", "V5", abi.encodePacked(type(BridgedKinto).creationCode));
+        address impl = _deployImplementationAndUpgrade("KINTO", "V6", abi.encodePacked(type(BridgedKinto).creationCode));
 
         BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
 
@@ -19,14 +19,6 @@ contract UpgradeKintoTokenDeployScript is MigrationHelper {
         require(kintoToken.symbol().equal("K"), "");
         require(kintoToken.name().equal("Kinto Token"), "");
 
-        saveContractAddress("KV5-impl", impl);
-
-        // Check that votes supply is 0
-        assertEq(kintoToken.getPastTotalSupply(block.timestamp - 1), 0);
-        // Fix supply
-        _handleOps(abi.encodeWithSelector(BridgedKinto.fixVotingSupply.selector), address(kintoToken));
-        vm.warp(block.timestamp + 1);
-        // Check that the fix is working
-        assertEq(kintoToken.getPastTotalSupply(block.timestamp - 1), kintoToken.totalSupply());
+        saveContractAddress("KV6-impl", impl);
     }
 }

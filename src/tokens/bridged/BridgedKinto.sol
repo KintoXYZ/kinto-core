@@ -26,6 +26,9 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     /// @notice Emmitted when new mining contract is set.
     event MiningContractSet(address indexed miningContract, address oldMiningContract);
 
+    /// @notice Sale contract address.
+    address public constant SALE = 0x5a1E00884e35bF2dC39Af51712D08bEF24b1817f;
+
     /// @notice Treasure contract address.
     address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
@@ -61,20 +64,10 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
 
         if (
             from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
-                && to != TREASURY
+                && to != TREASURY && from != SALE && to != SALE
         ) {
             revert TransferIsNotAllowed(from, to, amount);
         }
-    }
-
-    /**
-     * @dev DO NOT CALL.
-     */
-    function fixVotingSupply() public onlyRole(MINTER_ROLE) {
-        require(_getTotalSupply() == 0, "nope");
-        // to address doesn't matter if from is 0x0
-        _transferVotingUnits(address(0), address(this), totalSupply());
-        require(_getTotalSupply() == totalSupply(), "failed");
     }
 
     function nonces(address user) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
