@@ -69,7 +69,7 @@ async function main() {
     let bid = bids.filter(bid => bid[0] === addr)[0];
     claims[addr.toLowerCase()] = {
       bidAmount: bid[1],
-      bidPrice: bid[2],
+      bidPrice: bid[2] / 1e6,
       saleAlloc,
       usdcAlloc,
       proof,
