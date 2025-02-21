@@ -7,11 +7,8 @@ import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Relative path to your allocations file.
-// Adjust if needed, or make it an absolute path.
+// Relative paths or absolute paths as needed
 const ALLOCATIONS_FILE = path.join(__dirname, "../../script/data/auction/allocations.txt");
-
-// JSON file to dump the entire Merkle tree.
 const OUTPUT_JSON = path.join(__dirname, "../../script/data/auction/merkle-tree.json");
 
 async function main() {
@@ -22,17 +19,18 @@ async function main() {
   const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
 
   // 2) Build the "values" array for Merkle tree
-  // Each element is [ userAddress, saleTokenAllocation, usdcAllocation ]
-  // all as strings, matching ["address","uint256","uint256"] in the tree schema.
+  //    Each element is [address, saleTokenAllocation, usdcAllocation]
   const values = [];
   for (const line of lines) {
     const [address, saleAlloc, spentUsdcAlloc, usdcAlloc] = line.trim().split(/\s+/);
+
     if (!address || !saleAlloc || !spentUsdcAlloc || !usdcAlloc) {
       console.warn(`Skipping malformed line: "${line}"`);
       continue;
     }
 
-    // Push as an array: [ string, string, string ]
+    // For the tree, we only need [address, saleAlloc, usdcAlloc],
+    // matching ["address","uint256","uint256"] in the schema.
     values.push([address, saleAlloc, usdcAlloc]);
   }
 
@@ -42,15 +40,33 @@ async function main() {
   }
 
   // 3) Create the Merkle tree
-  // The schema must match the types: ["address", "uint256", "uint256"]
   const tree = StandardMerkleTree.of(values, ["address", "uint256", "uint256"]);
 
   // 4) Print the Merkle root (paste this into your contract)
   console.log("Merkle Root:", tree.root);
 
-  // 5) Write the entire tree to a JSON file (for off-chain reference)
-  fs.writeFileSync(OUTPUT_JSON, JSON.stringify(tree.dump()), "utf-8");
-  console.log(`Merkle tree dumped to ${OUTPUT_JSON}`);
+  // 5) Build a "claims" object that maps each user address to { saleAlloc, usdcAlloc, proof }
+  const claims = {};
+  for (const [i, v] of tree.entries()) {
+    const proof = tree.getProof(i);
+    const [addr, saleAlloc, usdcAlloc] = v;
+    claims[addr] = {
+      saleAlloc,
+      usdcAlloc,
+      proof,
+    };
+  }
+
+  // 6) Construct a final JSON output that contains:
+  //    - The Merkle root
+  //    - The claims object
+  const fullOutput = {
+    merkleRoot: tree.root,
+    claims,
+  };
+
+  fs.writeFileSync(OUTPUT_JSON, JSON.stringify(fullOutput, null, 2), "utf-8");
+  console.log(`Merkle tree and per-address claims saved to ${OUTPUT_JSON}`);
 }
 
 main().catch(err => {
