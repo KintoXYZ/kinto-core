@@ -388,14 +388,15 @@ contract SealedBidTokenSale is Initializable, UUPSUpgradeable, OwnableUpgradeabl
     /**
      * @notice Allows owner to withdraw sale proceeds to treasury
      * @dev - Sale must be ended successfully
-     *      - Transfers all USDC to treasury address
+     *      - Transfers USDC to treasury address
+     * @param amount The amount to move to the treasury
      */
-    function withdrawProceeds() external onlyOwner {
+    function withdrawProceeds(uint256 amount) external onlyOwner {
         // Verify sale ended successfully
         if (!saleEnded || !capReached) revert CapNotReached();
 
         // Transfer all USDC balance to treasury
-        USDC.safeTransfer(treasury, USDC.balanceOf(address(this)));
+        USDC.safeTransfer(treasury, amount);
     }
 
     /* ============ View Functions ============ */
