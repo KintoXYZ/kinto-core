@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Relative paths or absolute paths as needed
 const ALLOCATIONS_FILE = path.join(__dirname, "../../script/data/auction/allocations.txt");
+const BIDS_FILE = path.join(__dirname, "../../script/data/auction/bids.txt");
 const OUTPUT_JSON = path.join(__dirname, "../../script/data/auction/merkle-tree.json");
 
 async function main() {
@@ -16,7 +17,7 @@ async function main() {
   const content = fs.readFileSync(ALLOCATIONS_FILE, "utf-8");
 
   // Split into non-empty lines
-  const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
+  let lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
 
   // 2) Build the "values" array for Merkle tree
   //    Each element is [address, saleTokenAllocation, usdcAllocation]
@@ -45,15 +46,34 @@ async function main() {
   // 4) Print the Merkle root (paste this into your contract)
   console.log("Merkle Root:", tree.root);
 
+  // Split into non-empty lines
+  lines = fs.readFileSync(BIDS_FILE, "utf-8").split(/\r?\n/).filter(line => line.trim().length > 0);
+
+  const bids = [];
+  for (const line of lines) {
+    const [address, amount, price, priority] = line.trim().split(/\s+/);
+
+    if (!address || !amount || !price || !priority) {
+      console.warn(`Skipping malformed line: "${line}"`);
+      continue;
+    }
+
+    bids.push([address, amount, price]);
+  }
+
   // 5) Build a "claims" object that maps each user address to { saleAlloc, usdcAlloc, proof }
   const claims = {};
   for (const [i, v] of tree.entries()) {
     const proof = tree.getProof(i);
     const [addr, saleAlloc, usdcAlloc] = v;
-    claims[addr] = {
+    let bid = bids.filter(bid => bid[0] === addr)[0];
+    claims[addr.toLowerCase()] = {
+      bidAmount: bid[1],
+      bidPrice: bid[2],
       saleAlloc,
       usdcAlloc,
       proof,
+      addr,
     };
   }
 
