@@ -384,7 +384,7 @@ function main() {
   writeBidsToFile(finalBidsFilePath, bids);
 
   // Suppose we want to sell exactly 250,000 tokens
-  const totalTokens = 250_000n * TOKEN_SCALE; 
+  const totalTokens = 256_000n * TOKEN_SCALE; 
 
   // Run the auction
   const { finalPrice, allocations } = runAuction(bids, totalTokens);
