@@ -81,8 +81,15 @@ function runAuction(bids, totalTokens) {
   //    among all bidders whose maxPrice >= finalPrice.
   //    Sort them by priority desc (and if you want, tie-break on something else).
   const inTheMoney = bids
-    .filter(b => b.maxPrice >= finalPrice)
-    .sort((a, b) => Number(b.priority - a.priority));
+  .filter(b => b.maxPrice >= finalPrice)
+  .sort((a, b) => {
+    // 1) Compare by maxPrice, descending
+    if (b.maxPrice !== a.maxPrice) {
+      return Number(b.maxPrice - a.maxPrice);
+    }
+    // 2) If same maxPrice, compare by priority, descending
+    return Number(b.priority - a.priority);
+  });
 
   const allocations = {};
   let tokensLeft = totalTokens;
