@@ -15,7 +15,7 @@ contract Script is MigrationHelper {
         super.run();
 
         AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager"));
-        address kintoAdmin = _getChainDeployment("KintoAdmin");
+        address kintoAdmin = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
 
         _handleOps(
             abi.encodeWithSelector(AccessManager.grantRole.selector, NIO_GOVERNOR_ROLE, kintoAdmin, uint32(NO_DELAY)),
