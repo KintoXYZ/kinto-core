@@ -25,6 +25,7 @@ contract Constants is CommonBase {
     uint256 internal constant RATE_LIMIT_THRESHOLD = 10;
     uint256 internal constant GAS_LIMIT_PERIOD = 30 days;
     uint256 internal constant GAS_LIMIT_THRESHOLD = 0.01 ether;
+    uint256 internal constant NO_DELAY = 0 days;
 
     address internal constant ARB_AAVE_POOL_PROVIDER = 0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb;
     address internal constant BASE_AAVE_POOL_PROVIDER = 0xe20fCBdBfFC4Dd138cE8b2E6FBb6CB49777ad64D;
