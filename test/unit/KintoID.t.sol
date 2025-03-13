@@ -646,28 +646,28 @@ contract KintoIDTest is SharedSetup {
         addKYC();
 
         vm.startPrank(_kycProvider);
-        
+
         // Add first sanction
         _kintoID.addSanction(_user, 10);
-        
+
         // Wait past exit window
         vm.warp(block.timestamp + 11 days);
-        
+
         // Add another sanction
         _kintoID.addSanction(_user, 20);
-        
+
         // Verify both sanctions are active
         assertEq(_kintoID.isSanctionsSafeIn(_user, 10), false);
         assertEq(_kintoID.isSanctionsSafeIn(_user, 20), false);
-        
+
         // Remove one sanction after exit window
         vm.warp(block.timestamp + 11 days);
         _kintoID.removeSanction(_user, 10);
-        
+
         // Verify correct sanction state
         assertEq(_kintoID.isSanctionsSafeIn(_user, 10), true);
         assertEq(_kintoID.isSanctionsSafeIn(_user, 20), false);
-        
+
         vm.stopPrank();
     }
 
@@ -675,78 +675,78 @@ contract KintoIDTest is SharedSetup {
         // Approve KYC for multiple users
         approveKYC(_kycProvider, _user, _userPk);
         approveKYC(_kycProvider, _user2, _user2Pk);
-        
+
         // Create monitor update data
         address[] memory accounts = new address[](2);
         accounts[0] = _user;
         accounts[1] = _user2;
-        
+
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](2);
-        
+
         // Updates for first user
         updates[0] = new IKintoID.MonitorUpdateData[](3);
-        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);   // Add trait 5
+        updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5); // Add trait 5
         updates[0][1] = IKintoID.MonitorUpdateData(false, true, 10); // Add sanction 10
-        updates[0][2] = IKintoID.MonitorUpdateData(true, true, 15);  // Add trait 15
-        
+        updates[0][2] = IKintoID.MonitorUpdateData(true, true, 15); // Add trait 15
+
         // Updates for second user
         updates[1] = new IKintoID.MonitorUpdateData[](2);
-        updates[1][0] = IKintoID.MonitorUpdateData(true, true, 20);   // Add trait 20
-        updates[1][1] = IKintoID.MonitorUpdateData(false, true, 30);  // Add sanction 30
-        
+        updates[1][0] = IKintoID.MonitorUpdateData(true, true, 20); // Add trait 20
+        updates[1][1] = IKintoID.MonitorUpdateData(false, true, 30); // Add sanction 30
+
         // Execute monitor
         vm.prank(_kycProvider);
         _kintoID.monitor(accounts, updates);
-        
+
         // Verify updates were applied correctly
         assertEq(_kintoID.hasTrait(_user, 5), true);
         assertEq(_kintoID.hasTrait(_user, 15), true);
         assertEq(_kintoID.isSanctionsSafeIn(_user, 10), false);
-        
+
         assertEq(_kintoID.hasTrait(_user2, 20), true);
         assertEq(_kintoID.isSanctionsSafeIn(_user2, 30), false);
     }
 
     /* ============ TransferOnRecovery tests ============ */
-    
+
     function testTransferOnRecovery() public {
         // Setup KYC for initial user
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenId = _kintoID.tokenOfOwnerByIndex(_user, 0);
-        
+
         // Verify initial state
         assertEq(_kintoID.balanceOf(_user), 1);
         assertEq(_kintoID.balanceOf(_user2), 0);
         assertEq(_kintoID.ownerOf(tokenId), _user);
-        
+
         // Execute recovery transfer
         vm.prank(address(_walletFactory));
         _kintoID.transferOnRecovery(_user, _user2);
-        
+
         // Verify transfer completed
         assertEq(_kintoID.balanceOf(_user), 0);
         assertEq(_kintoID.balanceOf(_user2), 1);
         assertEq(_kintoID.ownerOf(tokenId), _user2);
-        
+
         // Verify recovery target was cleared
         assertEq(_kintoID.recoveryTargets(_user), address(0));
     }
-    
+
     function testTransferOnRecovery_RevertWhen_BalanceInvalid() public {
         // Setup KYC for both users
         approveKYC(_kycProvider, _user, _userPk);
         approveKYC(_kycProvider, _user2, _user2Pk);
-        
+
         // Try recovery when target already has a token
         vm.expectRevert("Invalid transfer");
         vm.prank(address(_walletFactory));
         _kintoID.transferOnRecovery(_user, _user2);
     }
-    
+
     function testTransferOnRecovery_RevertWhen_UnauthorizedCaller() public {
         // Setup KYC
         approveKYC(_kycProvider, _user, _userPk);
-        
+
         // Try recovery from unauthorized address
         vm.expectRevert("Only the wallet factory or admins can trigger this");
         vm.prank(_user);
@@ -757,11 +757,11 @@ contract KintoIDTest is SharedSetup {
         // Setup KYC for initial user
         approveKYC(_kycProvider, _user, _userPk);
         uint256 tokenId = _kintoID.tokenOfOwnerByIndex(_user, 0);
-        
+
         // Execute recovery transfer as admin
         vm.prank(_owner);
         _kintoID.transferOnRecovery(_user, _user2);
-        
+
         // Verify transfer completed
         assertEq(_kintoID.balanceOf(_user2), 1);
         assertEq(_kintoID.ownerOf(tokenId), _user2);
@@ -799,24 +799,24 @@ contract KintoIDTest is SharedSetup {
         address[] memory accounts = new address[](2);
         accounts[0] = address(0x123); // Non-KYCd address
         accounts[1] = _user;
-        
+
         // Add KYC for one user only
         approveKYC(_kycProvider, _user, _userPk);
-        
+
         IKintoID.MonitorUpdateData[][] memory updates = new IKintoID.MonitorUpdateData[][](2);
-        
+
         // Updates for non-KYCd user (should be skipped)
         updates[0] = new IKintoID.MonitorUpdateData[](1);
         updates[0][0] = IKintoID.MonitorUpdateData(true, true, 5);
-        
+
         // Updates for KYCd user
         updates[1] = new IKintoID.MonitorUpdateData[](1);
         updates[1][0] = IKintoID.MonitorUpdateData(true, true, 10);
-        
+
         // Execute monitor
         vm.prank(_kycProvider);
         _kintoID.monitor(accounts, updates);
-        
+
         // Verify only valid user was updated
         assertEq(_kintoID.hasTrait(_user, 10), true);
     }
@@ -824,10 +824,10 @@ contract KintoIDTest is SharedSetup {
     function testTransferOnRecovery_BlockedForSanctionedAccount() public {
         // Setup KYC and add sanction
         approveKYC(_kycProvider, _user, _userPk);
-        
+
         vm.prank(_kycProvider);
         _kintoID.addSanction(_user, 5);
-        
+
         // Attempt transfer on recovery should fail due to sanctions
         vm.expectRevert(IKintoID.OnlyMintBurnOrTransfer.selector);
         vm.prank(address(_walletFactory));
@@ -837,16 +837,16 @@ contract KintoIDTest is SharedSetup {
     function testIsKYCWithSanctionsExpired() public {
         // Setup KYC and add sanction
         approveKYC(_kycProvider, _user, _userPk);
-        
+
         vm.prank(_kycProvider);
         _kintoID.addSanction(_user, 5);
-        
+
         // User should not be KYC'd when sanctioned
         assertEq(_kintoID.isKYC(_user), false);
-        
-        // After sanction expiry period 
+
+        // After sanction expiry period
         vm.warp(block.timestamp + 3 days + 1);
-        
+
         // User should now be KYC'd again (sanction expired)
         assertEq(_kintoID.isKYC(_user), true);
     }
@@ -854,18 +854,18 @@ contract KintoIDTest is SharedSetup {
     function testSanctionsAfterGovernanceConfirmation() public {
         // Setup KYC and add sanction
         approveKYC(_kycProvider, _user, _userPk);
-        
+
         vm.prank(_kycProvider);
         _kintoID.addSanction(_user, 5);
-        
+
         // Governance confirms the sanction
         vm.prank(_owner);
         _kintoID.confirmSanction(_user);
-        
+
         // Sanction should stay active even after the expiry period
         vm.warp(block.timestamp + 4 days);
         assertEq(_kintoID.isKYC(_user), false);
-        
+
         // Sanction should still be active even after a long time
         vm.warp(block.timestamp + 100 days);
         assertEq(_kintoID.isKYC(_user), false);
@@ -898,7 +898,7 @@ contract KintoIDTest is SharedSetup {
     function testSignatureForContractSigner_Revert() public {
         // Create a mock contract
         address mockContract = address(new KintoIDv2(address(_walletFactory), address(_faucet)));
-        
+
         // Try to create signature for a contract (should fail)
         IKintoID.SignatureData memory sigdata = IKintoID.SignatureData({
             signer: mockContract,
@@ -906,9 +906,9 @@ contract KintoIDTest is SharedSetup {
             expiresAt: block.timestamp + 1000,
             signature: hex"01"
         });
-        
+
         uint16[] memory traits = new uint16[](1);
-        
+
         // Should revert due to contract signer
         vm.prank(_kycProvider);
         vm.expectRevert(IKintoID.SignerNotEOA.selector);
@@ -920,7 +920,7 @@ contract KintoIDTest is SharedSetup {
     function testDomainSeparatorConsistency() public {
         // Get domain separator from the contract
         bytes32 contractSeparator = _kintoID.domainSeparator();
-        
+
         // Manually compute the expected domain separator
         bytes32 expectedSeparator = keccak256(
             abi.encode(
@@ -931,7 +931,7 @@ contract KintoIDTest is SharedSetup {
                 address(_kintoID)
             )
         );
-        
+
         // Verify they match
         assertEq(contractSeparator, expectedSeparator);
     }

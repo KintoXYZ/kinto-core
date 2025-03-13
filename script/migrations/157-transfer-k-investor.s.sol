@@ -20,8 +20,8 @@ contract TransferDclmScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        uint256 amount = 14_638e18;
-        address investor = 0x85bD43dBb99A2290E4cD930fc6B952D903f83fFb;
+        uint256 amount = 6_000e18;
+        address investor = 0x5a1E00884e35bF2dC39Af51712D08bEF24b1817f;
 
         address kintoToken = _getChainDeployment("KINTO");
         uint256 balanceBefore = ERC20(kintoToken).balanceOf(investor);

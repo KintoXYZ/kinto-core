@@ -893,11 +893,11 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Check initial balances
         uint256 initialTreasuryBalance = usdc.balanceOf(TREASURY);
-        usdc.balanceOf(address(sale));
+        uint256 saleBalance = usdc.balanceOf(address(sale));
 
         // Withdraw proceeds
         vm.prank(admin);
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
 
         // Verify balances after withdrawal
         assertEq(usdc.balanceOf(TREASURY), initialTreasuryBalance + depositAmount);
@@ -919,7 +919,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         // Try to withdraw before ending sale
         vm.prank(admin);
         vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.CapNotReached.selector));
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
     }
 
     function testWithdrawProceeds_RevertWhen_CapNotReached() public {
@@ -939,7 +939,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         // Try to withdraw when cap not reached
         vm.prank(admin);
         vm.expectRevert(abi.encodeWithSelector(SealedBidTokenSale.CapNotReached.selector));
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
     }
 
     function testWithdrawProceeds_RevertWhen_NotOwner() public {
@@ -959,7 +959,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
         // Try to withdraw from non-owner account
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
     }
 
     function testWithdrawProceeds_MultipleDeposits() public {
@@ -992,7 +992,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Withdraw proceeds
         vm.prank(admin);
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(totalAmount);
 
         // Verify full amount was transferred
         assertEq(usdc.balanceOf(TREASURY), initialTreasuryBalance + totalAmount);
@@ -1015,13 +1015,13 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // First withdrawal
         vm.prank(admin);
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
         assertEq(usdc.balanceOf(TREASURY), depositAmount);
         assertEq(usdc.balanceOf(address(sale)), 0);
 
         // Second withdrawal (should succeed but transfer 0)
         vm.prank(admin);
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(0);
         assertEq(usdc.balanceOf(TREASURY), depositAmount); // Balance unchanged
         assertEq(usdc.balanceOf(address(sale)), 0);
     }
@@ -1044,7 +1044,7 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Withdraw proceeds
         vm.prank(admin);
-        sale.withdrawProceeds();
+        sale.withdrawProceeds(depositAmount);
 
         assertEq(usdc.balanceOf(TREASURY), initialTreasuryBalance + depositAmount);
         assertEq(usdc.balanceOf(address(sale)), 0);
