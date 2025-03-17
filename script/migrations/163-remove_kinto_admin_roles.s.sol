@@ -22,41 +22,45 @@ contract DeployScript is MigrationHelper {
         // Verify admin roles before removal
         console2.log("Checking roles before removal:");
         console2.log(
-            "KintoAdminMultisig has DEFAULT_ADMIN_ROLE:", kintoID.hasRole(kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet)
+            "KintoAdminMultisig has DEFAULT_ADMIN_ROLE:",
+            kintoID.hasRole(kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet)
         );
-        console2.log("KintoAdminMultisig has UPGRADER_ROLE:", kintoID.hasRole(kintoID.UPGRADER_ROLE(), kintoAdminWallet));
-        console2.log("KintoAdminMultisig has GOVERNANCE_ROLE:", kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), kintoAdminWallet));
+        console2.log(
+            "KintoAdminMultisig has UPGRADER_ROLE:", kintoID.hasRole(kintoID.UPGRADER_ROLE(), kintoAdminWallet)
+        );
+        console2.log(
+            "KintoAdminMultisig has GOVERNANCE_ROLE:", kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), kintoAdminWallet)
+        );
 
         // Revoke UPGRADER_ROLE
         _handleOps(
-            abi.encodeWithSelector(
-            IAccessControl.revokeRole.selector, kintoID.UPGRADER_ROLE(), kintoAdminWallet
-            ),
+            abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.UPGRADER_ROLE(), kintoAdminWallet),
             address(kintoID)
         );
 
         // Revoke GOVERNANCE_ROLE
         _handleOps(
-            abi.encodeWithSelector(
-            IAccessControl.revokeRole.selector, kintoID.GOVERNANCE_ROLE(), kintoAdminWallet
-            ),
+            abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.GOVERNANCE_ROLE(), kintoAdminWallet),
             address(kintoID)
         );
         // Revoke DEFAULT_ADMIN_ROLE
         _handleOps(
-            abi.encodeWithSelector(
-            IAccessControl.revokeRole.selector, kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet
-            ),
+            abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet),
             address(kintoID)
         );
 
         // Verify roles were successfully removed
         console2.log("Checking roles after removal:");
         console2.log(
-            "KintoAdminMultisig has DEFAULT_ADMIN_ROLE:", kintoID.hasRole(kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet)
+            "KintoAdminMultisig has DEFAULT_ADMIN_ROLE:",
+            kintoID.hasRole(kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet)
         );
-        console2.log("KintoAdminMultisig has UPGRADER_ROLE:", kintoID.hasRole(kintoID.UPGRADER_ROLE(), kintoAdminWallet));
-        console2.log("KintoAdminMultisig has GOVERNANCE_ROLE:", kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), kintoAdminWallet));
+        console2.log(
+            "KintoAdminMultisig has UPGRADER_ROLE:", kintoID.hasRole(kintoID.UPGRADER_ROLE(), kintoAdminWallet)
+        );
+        console2.log(
+            "KintoAdminMultisig has GOVERNANCE_ROLE:", kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), kintoAdminWallet)
+        );
 
         // Assert that role removals were successful
         require(!kintoID.hasRole(kintoID.DEFAULT_ADMIN_ROLE(), kintoAdminWallet), "DEFAULT_ADMIN_ROLE removal failed");
