@@ -359,14 +359,14 @@ contract StakedKintoTest is SharedSetup {
         vault.deposit(1000 * 1e18, alice);
 
         // Initial rewards should be 0
-        assertEq(vault.calculateRewards(alice), 0);
+        assertEq(vault.calculateRewards(alice, 0), 0);
 
         // Advance time by 6 months
         vm.warp(block.timestamp + 182 days);
 
         // Calculate expected rewards: amount * rate * duration / (365 days * 100)
         uint256 expectedRewards = (1000 * 1e18 * REWARD_RATE * 182 days) / (365 days * 100);
-        assertApproxEqAbs(vault.calculateRewards(alice), expectedRewards, 10); // Allow small rounding difference
+        assertApproxEqAbs(vault.calculateRewards(alice, 0), expectedRewards, 10); // Allow small rounding difference
     }
 
     function testRewardsDistribution() public {
@@ -399,7 +399,8 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(admin);
         vault.setMaxCapacity(newCapacity);
 
-        assertEq(vault.maxCapacity(), newCapacity);
+        (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity) = vault.getPeriodInfo(0);
+        assertEq(maxCapacity, newCapacity);
         assertEq(vault.maxDeposit(alice), newCapacity);
     }
 
@@ -422,6 +423,150 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(vault.owner());
         vault.upgradeTo(address(_implementationV2));
         assertEq(StakedKintoUpgraded(address(vault)).newFunction(), 1);
+    }
+
+ /* ============ Rollover Tests ============ */
+
+    function testNeedsRollover() public {
+        // First period setup
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // End first period and start new one
+        vm.warp(endTime + 1);
+        vm.prank(admin);
+        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
+
+        // Alice should need rollover
+        assertTrue(vault.needsRollover(alice));
+
+        // Bob shouldn't need rollover (no stake in previous period)
+        assertFalse(vault.needsRollover(bob));
+    }
+
+    function testRollover() public {
+        // First period setup
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        uint256 firstPeriodTimestamp = block.timestamp;
+
+        // End first period and start new one
+        vm.warp(endTime + 1);
+        vm.prank(admin);
+        uint256 newEndDate = endTime + 365 days;
+        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+
+        uint256 secondPeriodStartTime = block.timestamp;
+
+        // Verify alice needs rollover
+        assertTrue(vault.needsRollover(alice));
+
+        // Execute rollover
+        vm.prank(alice);
+        vault.rollover();
+
+        // Verify alice no longer needs rollover
+        assertFalse(vault.needsRollover(alice));
+
+        // Check that stake was properly rolled over
+        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice);
+        assertEq(amount, 1000 * 1e18);
+        assertEq(weightedTimestamp, secondPeriodStartTime);
+
+        // Verify alice can't rollover again
+        vm.expectRevert(abi.encodeWithSignature('AlreadyRolledOver()'));
+        vm.prank(alice);
+        vault.rollover();
+    }
+
+    function testRollover_RevertWhen_NoPreviousPeriod() public {
+        // Try to rollover when there's no previous period
+        vm.expectRevert(abi.encodeWithSignature('NoPreviousPeriod()'));
+        vm.prank(alice);
+        vault.rollover();
+    }
+
+    function testRollover_RevertWhen_NoPreviousStake() public {
+        // End first period and start new one
+        vm.warp(endTime + 1);
+        vm.prank(admin);
+        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
+
+        // Try to rollover with no stake in previous period
+        vm.expectRevert(abi.encodeWithSignature('NoPreviousStake()'));
+        vm.prank(alice);
+        vault.rollover();
+    }
+
+    function testWithdrawAfterRollover() public {
+        // First period setup
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // End first period and start new one
+        vm.warp(endTime + 1);
+        vm.prank(admin);
+        uint256 newEndDate = endTime + 365 days;
+        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+
+        // Execute rollover
+        vm.prank(alice);
+        vault.rollover();
+
+        // Advance to end of second period
+        vm.warp(newEndDate + 1);
+
+        // Withdraw after rollover
+        vm.prank(alice);
+        vault.withdraw(1000 * 1e18, alice, alice);
+
+        // Verify withdrawal was successful
+        assertEq(vault.balanceOf(alice), 0);
+        assertEq(kToken.balanceOf(alice), 100_000 * 1e18);
+        assertGt(usdc.balanceOf(alice), 0); // Should have received rewards
+    }
+
+    function testMultiplePeriodRollovers() public {
+        // First period setup
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // End first period and start second
+        vm.warp(endTime + 1);
+        vm.prank(admin);
+        uint256 secondEndDate = endTime + 365 days;
+        vault.startNewPeriod(secondEndDate, REWARD_RATE, MAX_CAPACITY);
+
+        // Rollover to second period
+        vm.prank(alice);
+        vault.rollover();
+
+        // End second period and start third
+        vm.warp(secondEndDate + 1);
+        vm.prank(admin);
+        uint256 thirdEndDate = secondEndDate + 365 days;
+        vault.startNewPeriod(thirdEndDate, REWARD_RATE, MAX_CAPACITY);
+
+        // Rollover to third period
+        vm.prank(alice);
+        vault.rollover();
+
+        // Verify stake is in third period
+        (uint256 amount, , ) = vault.getUserStakeInfo(alice);
+        assertEq(amount, 1000 * 1e18);
+
+        // Advance to end of third period
+        vm.warp(thirdEndDate + 1);
+
+        // Withdraw after multiple rollovers
+        vm.prank(alice);
+        vault.withdraw(1000 * 1e18, alice, alice);
+
+        // Verify withdrawal was successful
+        assertEq(vault.balanceOf(alice), 0);
+        assertEq(kToken.balanceOf(alice), 100_000 * 1e18);
+        assertGt(usdc.balanceOf(alice), 0); // Should have received rewards
     }
 
     /* ============ Edge Cases Tests ============ */
