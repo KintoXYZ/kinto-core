@@ -11,7 +11,7 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {
     IERC20Upgradeable,
     IERC20MetadataUpgradeable
-} from '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol';
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
 import "@kinto-core-test/helpers/ArrayHelpers.sol";
 import {Script} from "forge-std/Script.sol";
@@ -54,7 +54,16 @@ contract DeployScript is Script, MigrationHelper {
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = deployerPrivateKey;
         _handleOps(
-            abi.encodeWithSelector(StakedKinto.initialize.selector, IERC20MetadataUpgradeable(K), IERC20Upgradeable(USDC), 3, END_TIME, 'Staked Kinto', 'stK', 500_000 * 1e18),
+            abi.encodeWithSelector(
+                StakedKinto.initialize.selector,
+                IERC20MetadataUpgradeable(K),
+                IERC20Upgradeable(USDC),
+                3,
+                END_TIME,
+                "Staked Kinto",
+                "stK",
+                500_000 * 1e18
+            ),
             payable(kintoAdminWallet),
             address(proxy),
             0,

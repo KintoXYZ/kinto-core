@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ERC4626Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
-import {ERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol';
+import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {
     IERC20Upgradeable,
     IERC20MetadataUpgradeable
-} from '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol';
-import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {SafeMathUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol';
-import {SafeERC20Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol';
-import {MathUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol';
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
 /**
  * @title StakedKinto
@@ -64,9 +64,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     /* ============ Constants ============ */
     uint256 public constant MAX_REWARD_RATE = 50; // 50% APY cap
 
-
     /* ============ State ============ */
-    
+
     IERC20Upgradeable public rewardToken;
     StakingPeriod[] public stakingPeriods;
     uint256 public currentPeriodId;
@@ -118,11 +117,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @param _rewardRate The reward rate for the new period
      * @param _maxCapacity The maximum capacity for the new period
      */
-    function startNewPeriod(
-        uint256 _endDate,
-        uint256 _rewardRate,
-        uint256 _maxCapacity
-    ) external onlyOwner {
+    function startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) external onlyOwner {
         _startNewPeriod(_endDate, _rewardRate, _maxCapacity);
     }
 
@@ -145,7 +140,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         });
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
-
 
     // Override deposit function to implement weighted timestamp logic and check capacity
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
@@ -243,7 +237,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return _convertToShares(userStake, MathUpgradeable.Rounding.Down);
     }
 
-
     function maxWithdraw(address owner) public view override returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         if (block.timestamp < currentPeriod.endTime) {
@@ -305,8 +298,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return True if the user needs to rollover, false otherwise
      */
     function needsRollover(address user) public view returns (bool) {
-        return periodUserStakes[currentPeriodId - 1][user].amount > 0 &&
-            periodUserStakes[currentPeriodId][user].amount == 0;
+        return periodUserStakes[currentPeriodId - 1][user].amount > 0
+            && periodUserStakes[currentPeriodId][user].amount == 0;
     }
 
     /**
@@ -317,12 +310,11 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return rewardRate The reward rate for the period
      * @return maxCapacity The maximum capacity for the period
      */
-    function getPeriodInfo(uint256 periodId) public view returns (
-        uint256 startTime,
-        uint256 endTime,
-        uint256 rewardRate,
-        uint256 maxCapacity
-    ) {
+    function getPeriodInfo(uint256 periodId)
+        public
+        view
+        returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity)
+    {
         StakingPeriod memory period = stakingPeriods[periodId];
         return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity);
     }
@@ -364,12 +356,14 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
         if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
-        stakingPeriods.push(StakingPeriod({
-            startTime: block.timestamp,
-            endTime: _endDate,
-            rewardRate: _rewardRate,
-            maxCapacity: _maxCapacity
-        }));
+        stakingPeriods.push(
+            StakingPeriod({
+                startTime: block.timestamp,
+                endTime: _endDate,
+                rewardRate: _rewardRate,
+                maxCapacity: _maxCapacity
+            })
+        );
 
         currentPeriodId = stakingPeriods.length - 1;
 
@@ -389,9 +383,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         // Calculate new weighted timestamp
         if (userStake.amount > 0) {
             // Use moving average formula to update weighted timestamp
-            userStake.weightedTimestamp =
-                ((userStake.amount * userStake.weightedTimestamp) + (assets * block.timestamp))
-                / (userStake.amount + assets);
+            userStake.weightedTimestamp = (
+                (userStake.amount * userStake.weightedTimestamp) + (assets * block.timestamp)
+            ) / (userStake.amount + assets);
         } else {
             // First deposit sets timestamp directly
             userStake.weightedTimestamp = block.timestamp;
@@ -399,7 +393,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         // Update stake amount
         userStake.amount += assets;
-
 
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
     }

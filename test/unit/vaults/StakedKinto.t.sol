@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Test} from 'forge-std/Test.sol';
-import {ERC20Mock} from '@kinto-core-test/helpers/ERC20Mock.sol';
-import {StakedKinto} from '@kinto-core/vaults/StakedKinto.sol';
-import {UUPSProxy} from '@kinto-core-test/helpers/UUPSProxy.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IERC20Metadata} from '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
+import {Test} from "forge-std/Test.sol";
+import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
+import {StakedKinto} from "@kinto-core/vaults/StakedKinto.sol";
+import {UUPSProxy} from "@kinto-core-test/helpers/UUPSProxy.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {
     IERC20Upgradeable,
     IERC20MetadataUpgradeable
-} from '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol';
-import {MathUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol';
-import {SharedSetup} from '@kinto-core-test/SharedSetup.t.sol';
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 
 contract StakedKintoUpgraded is StakedKinto {
     function newFunction() external pure returns (uint256) {
@@ -39,8 +39,8 @@ contract StakedKintoTest is SharedSetup {
         super.setUp();
 
         // Deploy mock tokens
-        kToken = new ERC20Mock('Kinto Token', 'K', 18);
-        usdc = new ERC20Mock('USD Coin', 'USDC', 6);
+        kToken = new ERC20Mock("Kinto Token", "K", 18);
+        usdc = new ERC20Mock("USD Coin", "USDC", 6);
 
         // Set timestamps for the vault
         startTime = block.timestamp;
@@ -49,14 +49,14 @@ contract StakedKintoTest is SharedSetup {
         // Deploy vault
         vault = new StakedKinto();
         vm.startPrank(admin);
-        vault = StakedKinto(address(new UUPSProxy{salt: 0}(address(vault), '')));
+        vault = StakedKinto(address(new UUPSProxy{salt: 0}(address(vault), "")));
         vault.initialize(
             IERC20MetadataUpgradeable(address(kToken)),
             IERC20Upgradeable(address(usdc)),
             REWARD_RATE,
             endTime,
-            'Staked Kinto',
-            'stK',
+            "Staked Kinto",
+            "stK",
             MAX_CAPACITY
         );
 
@@ -278,7 +278,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to deposit more
         vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSignature('MaxCapacityReached()'));
+        vm.expectRevert(abi.encodeWithSignature("MaxCapacityReached()"));
         vault.deposit(1000 * 1e18, bob);
     }
 
@@ -288,7 +288,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to deposit
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSignature('StakingPeriodEnded()'));
+        vm.expectRevert(abi.encodeWithSignature("StakingPeriodEnded()"));
         vault.deposit(1000 * 1e18, alice);
     }
 
@@ -301,7 +301,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to withdraw before end date
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSignature('CannotWithdrawBeforeEndDate()'));
+        vm.expectRevert(abi.encodeWithSignature("CannotWithdrawBeforeEndDate()"));
         vault.withdraw(1000 * 1e18, alice, alice);
     }
 
@@ -334,7 +334,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to redeem before end date
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSignature('CannotRedeemBeforeEndDate()'));
+        vm.expectRevert(abi.encodeWithSignature("CannotRedeemBeforeEndDate()"));
         vault.redeem(1000 * 1e18, alice, alice);
     }
 
@@ -422,7 +422,7 @@ contract StakedKintoTest is SharedSetup {
     function testUpgradeTo_RevertWhen_CallerIsNotOwner(address someone) public {
         vm.assume(someone != _owner);
         StakedKintoUpgraded _implementationV2 = new StakedKintoUpgraded();
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(someone);
         vault.upgradeTo(address(_implementationV2));
     }
@@ -434,7 +434,7 @@ contract StakedKintoTest is SharedSetup {
         assertEq(StakedKintoUpgraded(address(vault)).newFunction(), 1);
     }
 
- /* ============ Rollover Tests ============ */
+    /* ============ Rollover Tests ============ */
 
     function testNeedsRollover() public {
         // First period setup
@@ -482,14 +482,14 @@ contract StakedKintoTest is SharedSetup {
         assertEq(weightedTimestamp, secondPeriodStartTime);
 
         // Verify alice can't rollover again
-        vm.expectRevert(abi.encodeWithSignature('AlreadyRolledOver()'));
+        vm.expectRevert(abi.encodeWithSignature("AlreadyRolledOver()"));
         vm.prank(alice);
         vault.rollover();
     }
 
     function testRollover_RevertWhen_NoPreviousPeriod() public {
         // Try to rollover when there's no previous period
-        vm.expectRevert(abi.encodeWithSignature('NoPreviousPeriod()'));
+        vm.expectRevert(abi.encodeWithSignature("NoPreviousPeriod()"));
         vm.prank(alice);
         vault.rollover();
     }
@@ -501,7 +501,7 @@ contract StakedKintoTest is SharedSetup {
         vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
 
         // Try to rollover with no stake in previous period
-        vm.expectRevert(abi.encodeWithSignature('NoPreviousStake()'));
+        vm.expectRevert(abi.encodeWithSignature("NoPreviousStake()"));
         vm.prank(alice);
         vault.rollover();
     }
@@ -562,7 +562,7 @@ contract StakedKintoTest is SharedSetup {
         vault.rollover();
 
         // Verify stake is in third period
-        (uint256 amount, , ) = vault.getUserStakeInfo(alice);
+        (uint256 amount,,) = vault.getUserStakeInfo(alice);
         assertEq(amount, 1000 * 1e18);
 
         // Advance to end of third period
