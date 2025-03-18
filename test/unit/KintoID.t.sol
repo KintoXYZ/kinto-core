@@ -917,7 +917,7 @@ contract KintoIDTest is SharedSetup {
 
     /* ============ Dominate Separator Tests ============ */
 
-    function testDomainSeparatorConsistency() public {
+    function testDomainSeparatorConsistency() public view {
         // Get domain separator from the contract
         bytes32 contractSeparator = _kintoID.domainSeparator();
 

@@ -55,7 +55,11 @@ contract ByteSignatureTest is UserOp {
         this.extractSignatures(invalidSignature, 1);
     }
 
-    function extractSignatures(bytes memory signature, uint256 count) external returns (bytes[] memory signatures) {
+    function extractSignatures(bytes memory signature, uint256 count)
+        external
+        pure
+        returns (bytes[] memory signatures)
+    {
         return ByteSignature.extractSignatures(signature, count);
     }
 }
