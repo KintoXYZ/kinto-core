@@ -100,6 +100,14 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     error AlreadyClaimed(address user);
 
+    /**
+     * @notice Thrown when the user does not have enough tokens to reverse.
+     * @param user The user address.
+     * @param amount The amount of tokens to reverse.
+     * @param claimed The amount of tokens claimed by the user.
+     */
+    error NotEnoughTokens(address user, uint256 amount, uint256 claimed);
+
     /* ============ Constants & Immutables ============ */
 
     /// @notice Role to update the root.
@@ -292,6 +300,21 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     function updateBonusAmount(uint256 newBonusAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit BonusAmountUpdated(newBonusAmount, bonusAmount);
         bonusAmount = newBonusAmount;
+    }
+
+    /**
+    * @notice updates the claimed tokens for a user
+    * @param user The address of the user to update the claimed tokens for.
+    * @param amount The amount of tokens to update the claimed tokens for.
+     */
+    function reverseClaimedTokens(address user, uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        //ensure user has enough tokens to reverse
+        if (totalClaimed < amount || _claimedByUser[user] < amount) {
+            revert NotEnoughTokens(user, amount, _claimedByUser[user]);
+        }
+
+        _claimedByUser[user] -= amount;
+        totalClaimed -= amount;
     }
 
     /* ============ View ============ */
