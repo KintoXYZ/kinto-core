@@ -51,6 +51,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     error NoPreviousPeriod();
     error NoPreviousStake();
     error AlreadyRolledOver();
+    error RewardRateTooHigh();
+    error DepositTooSmall();
 
     /* ============ Events ============ */
     event RewardsDistributed(address indexed user, uint256 amount);
@@ -58,6 +60,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     event MaxCapacityUpdated(uint256 newMaxCapacity);
     event NewPeriodStarted(uint256 periodId, uint256 startTime, uint256 endTime);
     event Rollover(address indexed user, uint256 amount, uint256 weightedTimestamp);
+
+    /* ============ Constants ============ */
+    uint256 public constant MAX_REWARD_RATE = 50; // 50% APY cap
+
 
     /* ============ State ============ */
     
@@ -140,36 +146,18 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
 
+
     // Override deposit function to implement weighted timestamp logic and check capacity
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
-
-        // Check if deposit would exceed max capacity
-        if (totalAssets() + assets > currentPeriod.maxCapacity) revert MaxCapacityReached();
-
-        // Get current stake info
-        UserStake storage userStake = periodUserStakes[currentPeriodId][receiver];
-
-        // Calculate new weighted timestamp
-        if (userStake.amount > 0) {
-            // Calculate weighted timestamp: (oldAmount * oldTimestamp + newAmount * currentTimestamp) / totalAmount
-            uint256 totalAmount = userStake.amount.add(assets);
-            uint256 weightedTimestamp =
-                userStake.amount.mul(userStake.weightedTimestamp).add(assets.mul(block.timestamp)).div(totalAmount);
-
-            userStake.weightedTimestamp = weightedTimestamp;
-            userStake.amount = totalAmount;
-        } else {
-            // First time staking
-            userStake.amount = assets;
-            userStake.weightedTimestamp = block.timestamp;
-        }
-
-        emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
+        _innerDeposit(assets, receiver);
 
         // Call parent deposit function to handle the actual token transfer and share minting
         return super.deposit(assets, receiver);
+    }
+
+    function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
+        _innerDeposit(convertToAssets(shares), receiver);
+        return super.mint(shares, receiver);
     }
 
     // Override withdraw function to prevent withdrawals before end date
@@ -236,6 +224,41 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return _convertToShares(remainingCapacity, MathUpgradeable.Rounding.Down);
     }
 
+    function maxRedeem(address user) public view override returns (uint256) {
+        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+        if (block.timestamp < currentPeriod.endTime) {
+            return 0; // Cannot withdraw before end date
+        }
+
+        uint256 currentAssets = totalAssets();
+        if (currentAssets == 0) {
+            return 0;
+        }
+
+        uint256 userStake = periodUserStakes[currentPeriodId][user].amount;
+        if (userStake == 0) {
+            return 0;
+        }
+
+        return _convertToShares(userStake, MathUpgradeable.Rounding.Down);
+    }
+
+
+    function maxWithdraw(address owner) public view override returns (uint256) {
+        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+        if (block.timestamp < currentPeriod.endTime) {
+            return 0; // Cannot withdraw before end date
+        }
+
+        uint256 currentAssets = totalAssets();
+        if (currentAssets == 0) {
+            return 0;
+        }
+
+        // After end date, return the full convertible amount of the owner's shares
+        return convertToAssets(balanceOf(owner));
+    }
+
     /**
      * @notice Calculate rewards for a user in a specific period
      * @param user The address of the user
@@ -256,7 +279,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         // Calculate rewards: amount * rate * duration / (365 days * 100)
         // This assumes rewardRate is in percentage per year
-        return userStake.amount.mul(currentPeriod.rewardRate).mul(stakingDuration).div(365 days).div(100);
+        // normalizes decimals
+        return userStake.amount.mul(currentPeriod.rewardRate).mul(stakingDuration).div(365 days).div(100).div(10 ** 12);
     }
 
     /**
@@ -323,9 +347,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         if (rewards > 0) {
             if (rewardToken.balanceOf(address(this)) < rewards) revert InsufficientRewardTokenBalance();
+            hasClaimedRewards[currentPeriodId][user] = true;
             rewardToken.safeTransfer(receiver, rewards);
             emit RewardsDistributed(user, rewards);
-            hasClaimedRewards[currentPeriodId][user] = true;
         }
     }
 
@@ -338,6 +362,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         }
         // Ensure new end date is in the future
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
+        if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
         stakingPeriods.push(StakingPeriod({
             startTime: block.timestamp,
@@ -349,5 +374,33 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         currentPeriodId = stakingPeriods.length - 1;
 
         emit NewPeriodStarted(currentPeriodId, block.timestamp, _endDate);
+    }
+
+    function _innerDeposit(uint256 assets, address receiver) internal {
+        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+        if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
+
+        // Check if deposit would exceed max capacity
+        if (totalAssets() + assets > currentPeriod.maxCapacity) revert MaxCapacityReached();
+        if (assets == 0) revert DepositTooSmall();
+        // Get current stake info
+        UserStake storage userStake = periodUserStakes[currentPeriodId][receiver];
+
+        // Calculate new weighted timestamp
+        if (userStake.amount > 0) {
+            // Use moving average formula to update weighted timestamp
+            userStake.weightedTimestamp =
+                ((userStake.amount * userStake.weightedTimestamp) + (assets * block.timestamp))
+                / (userStake.amount + assets);
+        } else {
+            // First deposit sets timestamp directly
+            userStake.weightedTimestamp = block.timestamp;
+        }
+
+        // Update stake amount
+        userStake.amount += assets;
+
+
+        emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
     }
 }
