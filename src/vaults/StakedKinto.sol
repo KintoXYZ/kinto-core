@@ -260,7 +260,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      */
     function calculateRewards(address user, uint256 periodId) public view returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[periodId];
-        UserStake storage userStake = periodUserStakes[periodId][user];
+        UserStake memory userStake = periodUserStakes[periodId][user];
 
         if (userStake.amount == 0) {
             return 0;
