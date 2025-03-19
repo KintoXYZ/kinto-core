@@ -202,11 +202,11 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
         _inflator = KintoInflator(_getChainDeployment("KintoInflator"));
         _engenGovernance = EngenGovernance(payable(_getChainDeployment("EngenGovernance")));
 
-        address adminWallet = _getChainDeployment("KintoWallet-admin");
+        address accessManager = _getChainDeployment("AccessManager");
 
         // grant admin role to _owner on kintoID
         bytes32 role = _kintoID.DEFAULT_ADMIN_ROLE();
-        vm.prank(adminWallet);
+        vm.prank(accessManager);
         _kintoID.grantRole(role, _owner);
 
         // grant KYC provider role to _kycProvider and _owner on kintoID

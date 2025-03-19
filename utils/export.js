@@ -16,7 +16,7 @@ let contracts = {};
  * @param {string} contractName - name of the contract.
  */
 function processSolidityFile(filePath, contractName) {
-  const cmd = `forge inspect ${filePath}:${contractName} abi`;
+  const cmd = `forge inspect ${filePath}:${contractName} abi --json`;
   const result = execSync(cmd).toString();
   const jsonObject = JSON.parse(result);
   console.log(`Processing: ${contractName}`);

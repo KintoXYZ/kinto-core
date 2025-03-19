@@ -95,7 +95,7 @@ contract NioGovernorTest is SharedSetup {
         vm.warp(block.timestamp + VOTING_DELAY + 1 seconds);
         assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Active));
 
-        (uint32 delay, bool[] memory indirect, bool[] memory withDelay) = governor.proposalExecutionPlan(hashProposal);
+        governor.proposalExecutionPlan(hashProposal);
     }
 
     /* ============ Vote Proposal ============ */
@@ -161,7 +161,7 @@ contract NioGovernorTest is SharedSetup {
 
     /* ============ Helper ============ */
 
-    function queueProposal(uint256 hashProposal) internal returns (uint256 hash) {
+    function queueProposal(uint256 hashProposal) internal {
         governor.queue(hashProposal);
         assertEq(uint8(governor.state(hashProposal)), uint8(IGovernor.ProposalState.Queued));
     }
