@@ -101,9 +101,10 @@ contract DeployScript is MigrationHelper {
 
         if (hasRole) {
             console2.log("Revoking GOVERNANCE_ROLE from NioGovernor");
+            bytes memory data = abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.GOVERNANCE_ROLE(), nioGovernor);
             _handleOps(
-                abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.GOVERNANCE_ROLE(), nioGovernor),
-                address(kintoID)
+                abi.encodeWithSelector(AccessManager.execute.selector, address(kintoID), data),
+                address(accessManager)
             );
 
             bool roleRevoked = !kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), nioGovernor);
