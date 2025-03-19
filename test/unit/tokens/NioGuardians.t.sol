@@ -94,7 +94,7 @@ contract NioGuardiansTest is SharedSetup {
         assertFalse(nioGuardians.exists(1));
     }
 
-    function testClockAndClockMode() public {
+    function testClockAndClockMode() public view {
         assertEq(nioGuardians.clock(), block.timestamp);
         assertEq(nioGuardians.CLOCK_MODE(), "mode=timestamp");
     }

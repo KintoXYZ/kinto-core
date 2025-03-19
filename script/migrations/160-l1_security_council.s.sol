@@ -31,7 +31,6 @@ contract DeployScript is MigrationHelper {
         super.run();
 
         AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager"));
-        address factory = _getChainDeployment("KintoWalletFactory");
         address registry = _getChainDeployment("KintoAppRegistry");
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
 
