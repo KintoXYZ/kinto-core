@@ -52,10 +52,9 @@ contract VestingContract is Ownable, IVestingContract {
     /* ============ Constructor ============ */
 
     /**
-     * @dev Sets the sender as the initial owner, the beneficiary as the pending owner, the start timestamp and the
-     * vesting duration of the vesting wallet.
+     * @notice Sets vesting token and the owner
      */
-    constructor(address token) Ownable(msg.sender) {
+    constructor(address token, address owner) Ownable(owner) {
         kintoToken = token;
     }
 

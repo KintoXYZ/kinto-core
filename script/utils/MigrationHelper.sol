@@ -438,6 +438,16 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
     function deployBridgedToken(string memory symbol, string memory name, uint256 decimals, string memory startsWith)
         internal
     {
+        deployBridgedToken(symbol, name, decimals, startsWith, kintoAdminWallet);
+    }
+
+    function deployBridgedToken(
+        string memory symbol,
+        string memory name,
+        uint256 decimals,
+        string memory startsWith,
+        address admin
+    ) internal {
         // deploy token
         bytes memory bytecode = abi.encodePacked(type(BridgedToken).creationCode, abi.encode(decimals));
         address implementation = _deployImplementation(name, "V1", bytecode, keccak256(abi.encodePacked(name, symbol)));
@@ -453,21 +463,16 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
 
         _whitelistApp(proxy);
 
-        _handleOps(
-            abi.encodeWithSelector(
-                BridgedToken.initialize.selector, name, symbol, kintoAdminWallet, kintoAdminWallet, kintoAdminWallet
-            ),
-            proxy
-        );
+        _handleOps(abi.encodeWithSelector(BridgedToken.initialize.selector, name, symbol, admin, admin, admin), proxy);
 
         BridgedToken bridgedToken = BridgedToken(proxy);
 
         assertEq(bridgedToken.name(), name);
         assertEq(bridgedToken.symbol(), symbol);
         assertEq(bridgedToken.decimals(), decimals);
-        assertTrue(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), kintoAdminWallet), "Admin role not set");
-        assertTrue(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), kintoAdminWallet), "Minter role not set");
-        assertTrue(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), kintoAdminWallet), "Upgrader role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.DEFAULT_ADMIN_ROLE(), admin), "Admin role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.MINTER_ROLE(), admin), "Minter role not set");
+        assertTrue(bridgedToken.hasRole(bridgedToken.UPGRADER_ROLE(), admin), "Upgrader role not set");
 
         console2.log("All checks passed!");
 

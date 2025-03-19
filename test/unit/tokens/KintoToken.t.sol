@@ -139,7 +139,7 @@ contract KintoTokenTest is Test {
     function testTransferToVestingContract() public {
         vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
         vm.startPrank(_owner);
-        address _vestingContract = address(new VestingContract(address(_token)));
+        address _vestingContract = address(new VestingContract(address(_token), address(this)));
         _token.setVestingContract(_vestingContract);
         _token.mint(_vestingContract, 100);
         vm.stopPrank();
@@ -186,7 +186,7 @@ contract KintoTokenTest is Test {
 
     function testSetVestingContract() public {
         vm.startPrank(_owner);
-        address _vestingContract = address(new VestingContract(address(_token)));
+        address _vestingContract = address(new VestingContract(address(_token), address(this)));
         _token.setVestingContract(_vestingContract);
         vm.stopPrank();
     }
