@@ -3,9 +3,8 @@ pragma solidity ^0.8.24;
 
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {
-    IERC20MetadataUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import {IERC20MetadataUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -129,10 +128,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         UserStake memory lastPeriodUserStake = _periodUserStakes[currentPeriodId - 1][msg.sender];
         if (lastPeriodUserStake.amount == 0) revert NoPreviousStake();
         if (_periodUserStakes[currentPeriodId][msg.sender].amount > 0) revert AlreadyRolledOver();
-        _periodUserStakes[currentPeriodId][msg.sender] = UserStake({
-            amount: lastPeriodUserStake.amount,
-            weightedTimestamp: currentPeriod.startTime
-        });
+        _periodUserStakes[currentPeriodId][msg.sender] =
+            UserStake({amount: lastPeriodUserStake.amount, weightedTimestamp: currentPeriod.startTime});
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
 
@@ -200,7 +197,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         uint256 userStake = _checkWithdrawAllowed(owner);
         return userStake;
     }
-
 
     /**
      * @notice Calculate rewards for a user in a specific period
@@ -280,8 +276,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         // Single transfer instead of multiple
         if (totalRewards > 0) {
-            if (rewardToken.balanceOf(address(this)) < totalRewards)
+            if (rewardToken.balanceOf(address(this)) < totalRewards) {
                 revert InsufficientRewardTokenBalance();
+            }
             rewardToken.safeTransfer(receiver, totalRewards);
             emit RewardsDistributed(user, totalRewards);
         }
@@ -292,12 +289,14 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
         if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
-        stakingPeriods.push(StakingPeriod({
-            startTime: uint64(block.timestamp),
-            endTime: uint64(_endDate),
-            rewardRate: uint32(_rewardRate),
-            maxCapacity: uint96(_maxCapacity)
-        }));
+        stakingPeriods.push(
+            StakingPeriod({
+                startTime: uint64(block.timestamp),
+                endTime: uint64(_endDate),
+                rewardRate: uint32(_rewardRate),
+                maxCapacity: uint96(_maxCapacity)
+            })
+        );
 
         currentPeriodId = stakingPeriods.length - 1;
         emit NewPeriodStarted(currentPeriodId, block.timestamp, _endDate);
