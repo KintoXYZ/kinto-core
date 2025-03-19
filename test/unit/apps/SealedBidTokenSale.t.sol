@@ -893,7 +893,6 @@ contract SealedBidTokenSaleTest is SharedSetup {
 
         // Check initial balances
         uint256 initialTreasuryBalance = usdc.balanceOf(TREASURY);
-        uint256 saleBalance = usdc.balanceOf(address(sale));
 
         // Withdraw proceeds
         vm.prank(admin);
@@ -1360,7 +1359,6 @@ contract SealedBidTokenSaleTest is SharedSetup {
         vm.warp(preStartTime + 1);
 
         uint256 amount = 1000 * 1e6;
-        uint256 initialEmissaryCount = sale.currentEmissaryCount();
 
         // Fill up emissary slots
         for (uint256 i = 0; i < sale.MAX_EMISSARIES() - 1; i++) {
