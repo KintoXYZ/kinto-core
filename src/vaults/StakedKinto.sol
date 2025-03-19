@@ -4,13 +4,11 @@ pragma solidity ^0.8.24;
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {
-    IERC20Upgradeable,
     IERC20MetadataUpgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {SafeMathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 
@@ -20,15 +18,13 @@ import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/Ma
  * @dev This contract implements a weighted timestamp staking mechanism for rewards distribution
  */
 contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, OwnableUpgradeable {
-    using SafeMathUpgradeable for uint256;
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20Upgradeable for ERC20Upgradeable;
 
     /* ============ Struct ============ */
 
     struct UserStake {
         uint256 amount;
         uint256 weightedTimestamp;
-        bool hasClaimedRewards;
     }
 
     struct StakingPeriod {
@@ -66,7 +62,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ State ============ */
 
-    IERC20Upgradeable public rewardToken;
+    ERC20Upgradeable public rewardToken;
     StakingPeriod[] public stakingPeriods;
     uint256 public currentPeriodId;
     mapping(uint256 => mapping(address => UserStake)) public periodUserStakes;
@@ -81,7 +77,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     function initialize(
         IERC20MetadataUpgradeable _stakingToken,
-        IERC20Upgradeable _rewardToken,
+        ERC20Upgradeable _rewardToken,
         uint256 _rewardRate,
         uint256 _endDate,
         string memory _name,
@@ -135,8 +131,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         if (periodUserStakes[currentPeriodId][msg.sender].amount > 0) revert AlreadyRolledOver();
         periodUserStakes[currentPeriodId][msg.sender] = UserStake({
             amount: lastPeriodUserStake.amount,
-            weightedTimestamp: currentPeriod.startTime,
-            hasClaimedRewards: false
+            weightedTimestamp: currentPeriod.startTime
         });
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
@@ -208,6 +203,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return userStake;
     }
 
+
     /**
      * @notice Calculate rewards for a user in a specific period
      * @param user The address of the user
@@ -215,21 +211,16 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return The amount of rewards for the user in the period
      */
     function calculateRewards(address user, uint256 periodId) public view returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[periodId];
+        StakingPeriod memory period = stakingPeriods[periodId];
         UserStake memory userStake = periodUserStakes[periodId][user];
 
-        if (userStake.amount == 0) {
-            return 0;
-        }
+        if (userStake.amount == 0 || hasClaimedRewards[periodId][user]) return 0;
 
-        // Calculate staking duration (capped at end date)
-        uint256 stakingEndTime = block.timestamp < currentPeriod.endTime ? block.timestamp : currentPeriod.endTime;
-        uint256 stakingDuration = stakingEndTime.sub(userStake.weightedTimestamp);
+        uint256 stakingEndTime = block.timestamp < period.endTime ? block.timestamp : period.endTime;
+        uint256 stakingDuration = stakingEndTime - userStake.weightedTimestamp;
 
-        // Calculate rewards: amount * rate * duration / (365 days * 100)
-        // This assumes rewardRate is in percentage per year
-        // normalizes decimals
-        return userStake.amount.mul(currentPeriod.rewardRate).mul(stakingDuration).div(365 days).div(100).div(10 ** 12);
+        // Simplify calculation
+        return (userStake.amount * period.rewardRate * stakingDuration) / (365 days * 100) / (10 ** 12);
     }
 
     /**
@@ -253,7 +244,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @param user The address of the user
      * @return True if the user needs to rollover, false otherwise
      */
-    function needsRollover(address user) public view returns (bool) {
+    function needsRollover(address user) external view returns (bool) {
         return periodUserStakes[currentPeriodId - 1][user].amount > 0
             && periodUserStakes[currentPeriodId][user].amount == 0;
     }
@@ -267,7 +258,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return maxCapacity The maximum capacity for the period
      */
     function getPeriodInfo(uint256 periodId)
-        public
+        external
         view
         returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity)
     {
@@ -277,56 +268,44 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ Internal Functions ============ */
 
-    // Helper function to handle rewards and reset user stake data
-    function _handleRewardsAndReset(address user, address receiver) internal {
-        // Calculate and transfer rewards
-        uint256 rewards = 0;
+    function _handleRewardsAndReset(address user, address receiver) private {
+        // Combine reward calculations
+        uint256 totalRewards = 0;
 
-        // Claim previous periods if any
-        for (uint256 i = 0; i <= currentPeriodId; i++) {
+        // Previous periods (use a more efficient loop)
+        for (uint256 i = 0; i <= currentPeriodId; ++i) {
             if (!hasClaimedRewards[i][user]) {
-                uint256 rewardsPeriod = calculateRewards(user, i);
-                if (rewardsPeriod > 0) {
-                    rewards = rewards.add(rewardsPeriod);
-                    hasClaimedRewards[i][user] = true;
-                }
+                totalRewards += calculateRewards(user, i);
+                hasClaimedRewards[i][user] = true;
             }
         }
 
-        if (rewards > 0) {
-            if (rewardToken.balanceOf(address(this)) < rewards) revert InsufficientRewardTokenBalance();
-            hasClaimedRewards[currentPeriodId][user] = true;
-            rewardToken.safeTransfer(receiver, rewards);
-            emit RewardsDistributed(user, rewards);
+        // Single transfer instead of multiple
+        if (totalRewards > 0) {
+            if (rewardToken.balanceOf(address(this)) < totalRewards)
+                revert InsufficientRewardTokenBalance();
+            rewardToken.safeTransfer(receiver, totalRewards);
+            emit RewardsDistributed(user, totalRewards);
         }
     }
 
     // Helper function to start a new staking period
-    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) internal {
-        // If there's a previous period, check it's ended
-        if (stakingPeriods.length > 0) {
-            // Change to custom error
-            if (block.timestamp < stakingPeriods[currentPeriodId].endTime) revert StakingPeriodNotEnded();
-        }
-        // Ensure new end date is in the future
+    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) private {
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
         if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
-        stakingPeriods.push(
-            StakingPeriod({
-                startTime: block.timestamp,
-                endTime: _endDate,
-                rewardRate: _rewardRate,
-                maxCapacity: _maxCapacity
-            })
-        );
+        stakingPeriods.push(StakingPeriod({
+            startTime: uint64(block.timestamp),
+            endTime: uint64(_endDate),
+            rewardRate: uint32(_rewardRate),
+            maxCapacity: uint96(_maxCapacity)
+        }));
 
         currentPeriodId = stakingPeriods.length - 1;
-
         emit NewPeriodStarted(currentPeriodId, block.timestamp, _endDate);
     }
 
-    function _innerDeposit(uint256 assets, address receiver) internal {
+    function _innerDeposit(uint256 assets, address receiver) private {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
 
@@ -353,7 +332,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
     }
 
-    function _getRemainingCapacity() internal view returns (uint256) {
+    function _getRemainingCapacity() private view returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         if (block.timestamp >= currentPeriod.endTime) {
             return 0;
@@ -367,7 +346,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return currentPeriod.maxCapacity - currentAssets;
     }
 
-    function _checkWithdrawAllowed(address user) internal view returns (uint256) {
+    function _checkWithdrawAllowed(address user) private view returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         if (block.timestamp < currentPeriod.endTime) {
             return 0; // Cannot withdraw before end date
