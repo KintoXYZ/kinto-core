@@ -61,7 +61,7 @@ contract DeployScript is Script, MigrationHelper {
                 3,
                 END_TIME,
                 "Staked Kinto",
-                "stK",
+                "sK",
                 500_000 * 1e18
             ),
             payable(kintoAdminWallet),
@@ -73,7 +73,15 @@ contract DeployScript is Script, MigrationHelper {
 
         assertEq(address(stakedKinto), address(expectedAddress));
         assertEq(address(stakedKinto.rewardToken()), USDC);
-
+        assertEq(stakedKinto.name(), "Staked Kinto");
+        assertEq(stakedKinto.symbol(), "sK");
+        assertEq(stakedKinto.totalSupply(), 0);
+        assertEq(stakedKinto.balanceOf(address(proxy)), 0);
+        (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity) = stakedKinto.getPeriodInfo(0);
+        assertEq(startTime, block.timestamp);
+        assertEq(endTime, END_TIME);
+        assertEq(rewardRate, 3);
+        assertEq(maxCapacity, 500_000 * 1e18);
         saveContractAddress("stakedKinto", address(stakedKinto));
         saveContractAddress("stakedKinto-impl", address(impl));
     }

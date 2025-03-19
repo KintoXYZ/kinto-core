@@ -184,17 +184,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return The maximum amount of assets that can be deposited
      */
     function maxDeposit(address receiver) public view override returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp >= currentPeriod.endTime) {
-            return 0;
-        }
-
-        uint256 currentAssets = totalAssets();
-        if (currentAssets >= currentPeriod.maxCapacity) {
-            return 0;
-        }
-
-        uint256 remainingCapacity = currentPeriod.maxCapacity - currentAssets;
+        uint256 remainingCapacity = _getRemainingCapacity();
         return remainingCapacity < super.maxDeposit(receiver) ? remainingCapacity : super.maxDeposit(receiver);
     }
 
@@ -204,52 +194,18 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return The maximum amount of shares that can be minted
      */
     function maxMint(address /* _receiver */ ) public view override returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp >= currentPeriod.endTime) {
-            return 0;
-        }
-
-        uint256 currentAssets = totalAssets();
-        if (currentAssets >= currentPeriod.maxCapacity) {
-            return 0;
-        }
-
-        uint256 remainingCapacity = currentPeriod.maxCapacity - currentAssets;
+        uint256 remainingCapacity = _getRemainingCapacity();
         return _convertToShares(remainingCapacity, MathUpgradeable.Rounding.Down);
     }
 
     function maxRedeem(address user) public view override returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp < currentPeriod.endTime) {
-            return 0; // Cannot withdraw before end date
-        }
-
-        uint256 currentAssets = totalAssets();
-        if (currentAssets == 0) {
-            return 0;
-        }
-
-        uint256 userStake = periodUserStakes[currentPeriodId][user].amount;
-        if (userStake == 0) {
-            return 0;
-        }
-
+        uint256 userStake = _checkWithdrawAllowed(user);
         return _convertToShares(userStake, MathUpgradeable.Rounding.Down);
     }
 
     function maxWithdraw(address owner) public view override returns (uint256) {
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp < currentPeriod.endTime) {
-            return 0; // Cannot withdraw before end date
-        }
-
-        uint256 currentAssets = totalAssets();
-        if (currentAssets == 0) {
-            return 0;
-        }
-
-        // After end date, return the full convertible amount of the owner's shares
-        return convertToAssets(balanceOf(owner));
+        uint256 userStake = _checkWithdrawAllowed(owner);
+        return userStake;
     }
 
     /**
@@ -395,5 +351,38 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         userStake.amount += assets;
 
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
+    }
+
+    function _getRemainingCapacity() internal view returns (uint256) {
+        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+        if (block.timestamp >= currentPeriod.endTime) {
+            return 0;
+        }
+
+        uint256 currentAssets = totalAssets();
+        if (currentAssets >= currentPeriod.maxCapacity) {
+            return 0;
+        }
+
+        return currentPeriod.maxCapacity - currentAssets;
+    }
+
+    function _checkWithdrawAllowed(address user) internal view returns (uint256) {
+        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+        if (block.timestamp < currentPeriod.endTime) {
+            return 0; // Cannot withdraw before end date
+        }
+
+        uint256 currentAssets = totalAssets();
+        if (currentAssets == 0) {
+            return 0;
+        }
+
+        uint256 userStake = periodUserStakes[currentPeriodId][user].amount;
+        if (userStake == 0) {
+            return 0;
+        }
+
+        return userStake;
     }
 }
