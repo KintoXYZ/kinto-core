@@ -45,6 +45,7 @@ contract DeployKintoScript is MigrationHelper {
 
         BridgedToken bridgedToken = BridgedToken(proxy);
 
+        vm.broadcast(deployerPrivateKey);
         bridgedToken.initialize(name, symbol, admin, admin, admin);
 
         assertEq(bridgedToken.name(), name);
