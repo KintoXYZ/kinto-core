@@ -39,6 +39,8 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
     uint256 public constant MAX_CAP_SUPPLY_EVER = 15_000_000e18;
     /// @dev Governance time bomb
     uint256 public constant GOVERNANCE_RELEASE_DEADLINE = 1717113600; // May 31st UTC
+    /// @dev Staking contract address
+    address public constant STAKING_CONTRACT = 0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10;
 
     /// @dev Timestamp of the contract deployment
     uint256 public immutable deployedAt;
@@ -101,6 +103,7 @@ contract KintoToken is ERC20, Ownable, ERC20Permit, ERC20Votes {
         if (
             !tokenTransfersEnabled && from != address(0) && from != address(miningContract)
                 && from != address(vestingContract) && to != address(vestingContract) && to != address(miningContract)
+                && to != STAKING_CONTRACT
         ) revert TransfersDisabled();
         super._update(from, to, amount);
     }
