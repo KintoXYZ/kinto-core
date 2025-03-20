@@ -24,9 +24,6 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        // whitelist AA app
-        _whitelistApp(0x14A1EC9b43c270a61cDD89B6CbdD985935D897fE);
-
         // Fetch deployed contracts
         AccessManager accessManager = AccessManager(_getChainDeployment("AccessManager"));
 
