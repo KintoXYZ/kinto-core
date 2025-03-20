@@ -85,6 +85,13 @@ contract BridgedKintoTest is SharedSetup {
         assertEq(token.balanceOf(TREASURY), 500);
     }
 
+    function testTransfer_WhenToStaking() public {
+        vm.prank(_user);
+        token.transfer(STAKING, 500);
+
+        assertEq(token.balanceOf(STAKING), 500);
+    }
+
     function testTransfer_WhenFromTreasury() public {
         vm.prank(minter);
         token.mint(TREASURY, 1000);

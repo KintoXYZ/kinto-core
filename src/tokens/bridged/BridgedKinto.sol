@@ -32,6 +32,9 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     /// @notice Treasure contract address.
     address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
 
+    /// @notice Staking contract address
+    address public constant STAKING = 0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10;
+
     /// @notice Address of the mining contract.
     address public miningContract;
 
@@ -64,7 +67,7 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
 
         if (
             from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
-                && to != TREASURY && from != SALE && to != SALE
+                && to != TREASURY && from != SALE && to != SALE && from != STAKING && to != STAKING
         ) {
             revert TransferIsNotAllowed(from, to, amount);
         }
