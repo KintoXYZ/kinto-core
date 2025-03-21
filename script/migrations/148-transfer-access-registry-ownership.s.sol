@@ -8,7 +8,7 @@ import {AccessManager} from "@openzeppelin-5.0.1/contracts/access/manager/Access
 import {Ownable} from "@openzeppelin-5.0.1/contracts/access/Ownable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
-import {IEntryPoint} from "@aa-v7/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 

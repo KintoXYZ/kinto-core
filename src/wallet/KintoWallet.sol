@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import "@aa/core/BaseAccount.sol";
-import "@aa/samples/callback/TokenCallbackHandler.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
+import {BaseAccount} from "@aa/core/BaseAccount.sol";
+import {TokenCallbackHandler} from "@aa/samples/callback/TokenCallbackHandler.sol";
 
 import {Constants} from "@kinto-core/libraries/Const.sol";
-
-import "@kinto-core/interfaces/IKintoID.sol";
-import "@kinto-core/interfaces/IKintoEntryPoint.sol";
-import "@kinto-core/interfaces/IKintoWallet.sol";
-import "@kinto-core/interfaces/IEngenCredits.sol";
-import "@kinto-core/interfaces/bridger/IBridgerL2.sol";
-import "@kinto-core/governance/EngenGovernance.sol";
-import "@kinto-core/interfaces/IKintoAppRegistry.sol";
-import "@kinto-core/libraries/ByteSignature.sol";
+import {IKintoWalletFactory} from "../interfaces/IKintoWalletFactory.sol";
+import {IKintoID} from "../interfaces/IKintoID.sol";
+import {IKintoWallet} from "../interfaces/IKintoWallet.sol";
+import {IEngenCredits} from "../interfaces/IEngenCredits.sol";
+import {IBridgerL2} from "../interfaces/bridger/IBridgerL2.sol";
+import {IKintoAppRegistry} from "../interfaces/IKintoAppRegistry.sol";
+import {EngenGovernance} from "../governance/EngenGovernance.sol";
+import {ByteSignature} from "../libraries/ByteSignature.sol";
 
 import "forge-std/console2.sol";
 
@@ -73,9 +75,6 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
 
     /// @inheritdoc IKintoWallet
     uint256 public constant WALLET_TARGET_LIMIT = 5;
-
-    /// @dev Constant indicating successful signature validation
-    uint256 internal constant SIG_VALIDATION_SUCCESS = 0;
 
     /// @dev Address of the Bridger contract on Mainnet
     address internal constant BRIDGER_MAINNET = 0x0f1b7bd7762662B23486320AA91F30312184f70C;
@@ -403,7 +402,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     /// implement template method of BaseAccount
     /// @dev we don't want to do requires here as it would revert the whole transaction
     /// @dev this is very similar to SponsorPaymaster._decodeCallData, consider unifying
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+    function _validateSignature(PackedUserOperation calldata userOp, bytes32 userOpHash)
         internal
         virtual
         override
@@ -497,7 +496,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
         if (signer != hashData.recover(signature)) {
             return SIG_VALIDATION_FAILED;
         }
-        return _packValidationData(false, 0, 0);
+        return SIG_VALIDATION_SUCCESS;
     }
 
     /**
@@ -620,7 +619,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
      */
     function _onlyFactory() internal view {
         //directly through the factory
-        if (msg.sender != IKintoEntryPoint(address(_entryPoint)).walletFactory()) revert OnlyFactory();
+        if (msg.sender != address(factory)) revert OnlyFactory();
     }
 
     /**

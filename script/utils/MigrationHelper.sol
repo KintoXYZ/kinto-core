@@ -8,10 +8,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import {EntryPoint} from "@aa/core/EntryPoint.sol";
 import {KintoID} from "@kinto-core/KintoID.sol";
+import {KintoWalletFactory} from "@kinto-core/wallet/KintoWalletFactory.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
+import {KintoAppRegistry} from "@kinto-core/apps/KintoAppRegistry.sol";
 
-import "@kinto-core/wallet/KintoWalletFactory.sol";
-import "@kinto-core/paymasters/SponsorPaymaster.sol";
-import "@kinto-core/apps/KintoAppRegistry.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+
+import {ISponsorPaymaster} from "@kinto-core/interfaces/ISponsorPaymaster.sol";
+import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
+import {IKintoID} from "@kinto-core/interfaces/IKintoID.sol";
+import {IKintoAppRegistry} from "@kinto-core/interfaces/IKintoAppRegistry.sol";
+import {KintoWallet} from "@kinto-core/wallet/KintoWallet.sol";
 
 import "@kinto-core/interfaces/ISponsorPaymaster.sol";
 import "@kinto-core/interfaces/IKintoWallet.sol";
@@ -287,7 +295,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         address sponsorPaymaster,
         uint256[] memory privateKeys
     ) internal {
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             block.chainid,
             from,
@@ -341,7 +349,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         uint256[] memory privateKeys = new uint256[](1);
         privateKeys[0] = signerPk;
 
-        UserOperation[] memory userOps = new UserOperation[](selectorAndParams.length);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](selectorAndParams.length);
         uint256 nonce = IKintoWallet(from).getNonce();
         for (uint256 i = 0; i < selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(
@@ -362,7 +370,7 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         require(selectorAndParams.length == tos.length, "selectorAndParams and tos mismatch");
         address payable from = payable(kintoAdminWallet);
 
-        UserOperation[] memory userOps = new UserOperation[](selectorAndParams.length);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](selectorAndParams.length);
         uint256 nonce = IKintoWallet(from).getNonce();
         for (uint256 i = 0; i < selectorAndParams.length; i++) {
             userOps[i] = _createUserOperation(

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "../../src/apps/KintoAppRegistry.sol";
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import "../../src/tokens/EngenCredits.sol";
 import "../../src/viewers/KYCViewer.sol";
 import "../../src/wallet/KintoWallet.sol";

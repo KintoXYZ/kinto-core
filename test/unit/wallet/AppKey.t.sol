@@ -8,7 +8,7 @@ contract AppKeyTest is SharedSetup {
     /* ============ App Key ============ */
 
     function testSetAppKey() public {
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
@@ -30,7 +30,7 @@ contract AppKeyTest is SharedSetup {
         // make sure app is not whitelisted
         whitelistApp(address(_engenCredits), false);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
@@ -54,7 +54,7 @@ contract AppKeyTest is SharedSetup {
     }
 
     function testSetAppKey_RevertWhen_InvalidApp() public {
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
@@ -77,7 +77,7 @@ contract AppKeyTest is SharedSetup {
     function testSetAppKey_RevertWhen_InvalidSigner() public {
         whitelistApp(address(_engenCredits), true);
 
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
