@@ -79,7 +79,6 @@ contract AdjustKintoTokenSupplyScript is MigrationHelper {
         vestingBalance = IERC20(KINTO).balanceOf(vestingContract);
         currentSupply = IERC20(KINTO).totalSupply();
 
-
         // Calculate rewards allocation
         mintAmount = TOTAL_SUPPLY - currentSupply;
         console2.log("Minting %s tokens to RewardsDistributor", mintAmount / 1e18);
