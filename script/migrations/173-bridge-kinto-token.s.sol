@@ -17,12 +17,12 @@ contract BridgeKintoTokenScript is MigrationHelper {
     address public constant KINTO_ADMIN = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
     address public constant SOCKET_VAULT = 0x3De040ef2Fbf9158BADF559C5606d7706ca72309;
     address public constant RECEIVER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
-    uint256 public constant AMOUNT = 28000000000000000000000; // 28,000 KINTO tokens
+    uint256 public constant AMOUNT = 36_350 * 1e18; // 36_350 KINTO tokens
     uint256 public constant MSG_GAS_LIMIT = 500000;
     address public constant CONNECTOR = 0xbef01d401b54C19B2bcFe93f5e55e0355fE24A73;
     bytes public constant EXEC_PAYLOAD = "";
     bytes public constant OPTIONS = "";
-    uint256 public constant GAS_FEE = 50000000000000000; // 0.05 ETH
+    uint256 public constant GAS_FEE = 1 ether / 1000; // 0.001 ETH
 
     function run() public override {
         super.run();
@@ -32,21 +32,23 @@ contract BridgeKintoTokenScript is MigrationHelper {
         console.log("Socket Vault:", SOCKET_VAULT);
         console.log("Amount to bridge:", AMOUNT);
 
-        // 1. Set infinite allowance for the Socket Vault using handleOps
-        _handleOps(abi.encodeWithSelector(IERC20.approve.selector, SOCKET_VAULT, MAX_UINT), KINTO_TOKEN);
-
-        console.log("Allowance set successfully!");
-
-        // 2. Bridge the tokens using the KintoAdmin wallet
+        // Bridge the tokens using the KintoAdmin wallet
         console.log("Bridging tokens to Ethereum");
         console.log("Receiver:", RECEIVER);
         console.log("Connector:", CONNECTOR);
 
+        uint256[] memory privKeys = new uint256[](2);
+        privKeys[0] = deployerPrivateKey;
+        privKeys[1] = hardwareWalletType;
         _handleOps(
             abi.encodeWithSelector(
                 IBridge.bridge.selector, RECEIVER, AMOUNT, MSG_GAS_LIMIT, CONNECTOR, EXEC_PAYLOAD, OPTIONS
             ),
-            SOCKET_VAULT
+            KINTO_ADMIN,
+            SOCKET_VAULT,
+            GAS_FEE,
+            address(0),
+            privKeys
         );
 
         console.log("Tokens bridged successfully!");
