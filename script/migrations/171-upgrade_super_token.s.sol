@@ -45,7 +45,6 @@ contract UpgradeScript is Constants, Test, MigrationHelper {
         vm.broadcast(deployerPrivateKey);
         token.revokeRole(UPGRADER_ROLE, deployer);
 
-
         // Checks
         assertEq(token.decimals(), 18, "Invalid decimals");
 

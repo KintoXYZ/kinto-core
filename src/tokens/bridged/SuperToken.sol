@@ -50,10 +50,7 @@ contract SuperToken is
      * @dev Uses role-based access control for role assignments. Grants the deploying address the default admin
      * role for role management and assigns the MINTER_ROLE to a specified minter.
      */
-    function initialize(string memory name, string memory symbol, address admin)
-        public
-        initializer
-    {
+    function initialize(string memory name, string memory symbol, address admin) public initializer {
         __ERC20_init(name, symbol);
         __ERC20Permit_init(name);
         __AccessControl_init();
