@@ -32,11 +32,19 @@ contract UpgradeScript is Constants, Test, MigrationHelper {
         // Deploy implementation
         vm.broadcast(deployerPrivateKey);
         newImpl = address(new SuperToken(18));
-        // Stop broadcast because the Owner is Safe account
 
         token = SuperToken(payable(kAddress));
+        bytes32 UPGRADER_ROLE = token.UPGRADER_ROLE();
+
+        vm.broadcast(deployerPrivateKey);
+        token.grantRole(UPGRADER_ROLE, deployer);
+
         vm.broadcast(deployerPrivateKey);
         token.upgradeToAndCall(newImpl, bytes(""));
+
+        vm.broadcast(deployerPrivateKey);
+        token.revokeRole(UPGRADER_ROLE, deployer);
+
 
         // Checks
         assertEq(token.decimals(), 18, "Invalid decimals");
