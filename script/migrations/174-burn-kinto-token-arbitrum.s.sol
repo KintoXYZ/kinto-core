@@ -8,11 +8,11 @@ import {Test} from "forge-std/Test.sol";
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
-contract MintKintoTokenScript is Test, MigrationHelper {
+contract BurnKintoTokenScript is Test, MigrationHelper {
     // Constants
     bytes32 constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
     address public constant KINTO_TOKEN_ARBITRUM = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
-    uint256 public constant TOKENS_TO_MINT = 36_350e18; // 36,350 KINTO tokens
+    uint256 public constant TOKENS_TO_BURN = 36_350e18; // 36,350 KINTO tokens
 
     SuperToken internal token;
 
@@ -24,10 +24,10 @@ contract MintKintoTokenScript is Test, MigrationHelper {
 
         token = SuperToken(payable(KINTO_TOKEN_ARBITRUM));
 
-        console.log("Minting KINTO tokens on Arbitrum");
+        console.log("Burning KINTO tokens on Arbitrum");
         console.log("Token address:", KINTO_TOKEN_ARBITRUM);
-        console.log("Amount to mint:", TOKENS_TO_MINT);
-        console.log("Recipient (deployer):", deployer);
+        console.log("Amount to burn:", TOKENS_TO_BURN);
+        console.log("Burner (deployer):", deployer);
 
         // Grant controller role to deployer if needed
         if (!token.hasRole(CONTROLLER_ROLE, deployer)) {
@@ -37,15 +37,27 @@ contract MintKintoTokenScript is Test, MigrationHelper {
             token.grantRole(CONTROLLER_ROLE, deployer);
         }
 
-        // Mint tokens to deployer
+        // Get initial balances and total supply
+        uint256 initialBalance = token.balanceOf(deployer);
+        uint256 initialTotalSupply = token.totalSupply();
+        console.log("Initial deployer balance:", initialBalance);
+        console.log("Initial total supply:", initialTotalSupply);
+
+        // Burn tokens from deployer
         vm.broadcast(deployerPrivateKey);
-        token.mint(deployer, TOKENS_TO_MINT);
+        token.burn(deployer, TOKENS_TO_BURN);
 
-        console.log("Successfully minted", TOKENS_TO_MINT, "KINTO tokens to", deployer);
+        // Get final balances
+        uint256 finalBalance = token.balanceOf(deployer);
+        uint256 finalTotalSupply = token.totalSupply();
+        console.log("Final deployer balance:", finalBalance);
+        console.log("Final total supply:", finalTotalSupply);
 
-        // Verify the tokens were minted
-        uint256 balance = token.balanceOf(deployer);
-        console.log("New deployer balance:", balance);
+        // Verify the burn was successful
+        assertEq(finalBalance, initialBalance - TOKENS_TO_BURN, "Balance should decrease by burned amount");
+        assertEq(finalTotalSupply, initialTotalSupply - TOKENS_TO_BURN, "Total supply should decrease by burned amount");
+
+        console.log("Successfully burned", TOKENS_TO_BURN, "KINTO tokens from", deployer);
 
         // Revoke controller role if it was granted in this script
         if (token.hasRole(CONTROLLER_ROLE, deployer)) {
