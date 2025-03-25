@@ -34,7 +34,9 @@ contract Script is MigrationHelper {
 
         // Update connector status to false
         _handleOps(
-            abi.encodeWithSelector(IController.updateConnectorStatus.selector, [CONNECTOR].toMemoryArray(), [false].toMemoryArray()),
+            abi.encodeWithSelector(
+                IController.updateConnectorStatus.selector, [CONNECTOR].toMemoryArray(), [false].toMemoryArray()
+            ),
             CONTROLLER,
             deployerPrivateKey
         );

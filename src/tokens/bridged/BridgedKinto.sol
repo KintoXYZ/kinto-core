@@ -35,6 +35,9 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     /// @notice Staking contract address
     address public constant STAKING = 0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10;
 
+    /// @notice Socket Vault
+    address public constant VAULT = 0x3De040ef2Fbf9158BADF559C5606d7706ca72309;
+
     /// @notice Address of the mining contract.
     address public miningContract;
 
@@ -67,7 +70,8 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
 
         if (
             from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
-                && to != TREASURY && from != SALE && to != SALE && from != STAKING && to != STAKING
+                && to != TREASURY && from != SALE && to != SALE && from != STAKING && to != STAKING && from != VAULT
+                && to != VAULT
         ) {
             revert TransferIsNotAllowed(from, to, amount);
         }
