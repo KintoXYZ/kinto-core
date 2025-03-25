@@ -25,7 +25,7 @@ contract VestingContractTest is Test, Create2Helper {
     function setUp() public {
         vm.startPrank(_owner);
         _token = new KintoToken();
-        _vestingContract = new VestingContract(address(_token));
+        _vestingContract = new VestingContract(address(_token), address(_owner));
         _token.setVestingContract(address(_vestingContract));
         _token.transfer(address(_vestingContract), _token.SEED_TOKENS());
         vm.stopPrank();
