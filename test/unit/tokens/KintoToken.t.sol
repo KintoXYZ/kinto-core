@@ -154,6 +154,12 @@ contract KintoTokenTest is Test {
         vm.stopPrank();
     }
 
+    function testTransferToStakingContract() public {
+        vm.warp(_token.GOVERNANCE_RELEASE_DEADLINE());
+        vm.prank(_owner);
+        _token.mint(0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10, 100);
+    }
+
     function testEnableTokenTransfers_RevertWhen_CallerIsNotOwner() public {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         _token.enableTokenTransfers();

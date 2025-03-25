@@ -29,6 +29,7 @@ abstract contract SharedSetup is ForkTest, UserOp, AATestScaffolding, ArtifactsR
 
     address internal constant KINTO_TOKEN = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
     address internal constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+    address internal constant STAKING = 0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10;
 
     address[] internal users;
 
