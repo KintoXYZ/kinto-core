@@ -42,8 +42,7 @@ contract KintoMainnetMigration1DeployScript is Create2Helper, ArtifactsReader, T
         address mamoriSafe = 0xf152Abda9E4ce8b134eF22Dc3C6aCe19C4895D82;
 
         _token = new KintoToken();
-        _vestingContract = new VestingContract(address(_token));
-        _vestingContract.transferOwnership(mamoriSafe);
+        _vestingContract = new VestingContract(address(_token), mamoriSafe);
         _token.setVestingContract(address(_vestingContract));
         _token.transfer(address(_vestingContract), _token.SEED_TOKENS());
         _token.transferOwnership(0x4108162ADC07c627eb575c6e54a00F898c7b3e18);
