@@ -37,7 +37,6 @@ contract DeployScript is MigrationHelper {
             console2.log("UPGRADER_ROLE delay:", upgraderDelay);
             console2.log("Renounce of UPGRADER_ROLE from KintoAdminMultisig");
 
-
             _handleOps(
                 abi.encodeWithSelector(AccessManager.renounceRole.selector, UPGRADER_ROLE, KINTO_ADMIN_MULTISIG),
                 address(accessManager)
