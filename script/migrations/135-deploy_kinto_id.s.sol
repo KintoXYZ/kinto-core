@@ -14,15 +14,10 @@ contract UpgradeKintoIDScript is MigrationHelper {
             abi.encode(_getChainDeployment("KintoWalletFactory"), _getChainDeployment("Faucet"))
         );
 
-        address impl = _deployImplementationAndUpgrade("KintoID", "V11", bytecode);
-        saveContractAddress("KintoIDV11-impl", impl);
+        address impl = _deployImplementationAndUpgrade("KintoID", "V12", bytecode);
+        saveContractAddress("KintoIDV12-impl", impl);
 
         KintoID kintoID = KintoID(_getChainDeployment("KintoID"));
-        address nioGovernor = _getChainDeployment("NioGovernor");
-        bytes32 governanceRole = kintoID.GOVERNANCE_ROLE();
-
-        assertTrue(kintoID.hasRole(governanceRole, kintoAdminWallet));
-        assertTrue(kintoID.hasRole(governanceRole, nioGovernor));
 
         assertTrue(kintoID.isKYC(deployer));
     }

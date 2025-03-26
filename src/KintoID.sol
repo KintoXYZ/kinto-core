@@ -96,7 +96,7 @@ contract KintoID is
     uint256 public constant SANCTION_EXPIRY_PERIOD = 3 days;
 
     /// @notice The period of time during which additional sanctions can't be applied and user can exit, unless sanctions approved by governance
-    uint256 public constant EXIT_WINDOW_PERIOD = 10 days;
+    uint256 public constant EXIT_WINDOW_PERIOD = 12 days;
 
     /// @notice Address of the wallet factory contract
     address public immutable override walletFactory;

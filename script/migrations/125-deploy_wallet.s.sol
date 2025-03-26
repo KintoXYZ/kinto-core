@@ -20,8 +20,8 @@ contract UpgradeWalletDeployScript is MigrationHelper {
             )
         );
 
-        address impl = _deployImplementationAndUpgrade("KintoWallet", "V33", bytecode);
+        address impl = _deployImplementation("KintoWallet", "V34", bytecode);
 
-        saveContractAddress("KintoWalletV33-impl", impl);
+        saveContractAddress("KintoWalletV34-impl", impl);
     }
 }

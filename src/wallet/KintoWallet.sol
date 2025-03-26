@@ -69,7 +69,7 @@ contract KintoWallet is Initializable, BaseAccount, TokenCallbackHandler, IKinto
     uint8 public constant override TWO_SIGNERS = 4;
 
     /// @inheritdoc IKintoWallet
-    uint256 public constant override RECOVERY_TIME = 7 days;
+    uint256 public constant override RECOVERY_TIME = 12 days;
 
     /// @inheritdoc IKintoWallet
     uint256 public constant WALLET_TARGET_LIMIT = 5;
