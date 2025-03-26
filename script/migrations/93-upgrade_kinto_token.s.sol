@@ -11,7 +11,7 @@ contract UpgradeKintoTokenDeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        address impl = _deployImplementationAndUpgrade("KINTO", "V8", abi.encodePacked(type(BridgedKinto).creationCode));
+        address impl = _deployImplementationAndUpgrade("KINTO", "V9", abi.encodePacked(type(BridgedKinto).creationCode));
 
         BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
 
@@ -19,6 +19,6 @@ contract UpgradeKintoTokenDeployScript is MigrationHelper {
         require(kintoToken.symbol().equal("K"), "");
         require(kintoToken.name().equal("Kinto Token"), "");
 
-        saveContractAddress("KV8-impl", impl);
+        saveContractAddress("KV9-impl", impl);
     }
 }
