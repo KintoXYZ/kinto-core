@@ -100,6 +100,14 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     error AlreadyClaimed(address user);
 
+    /**
+     * @notice Thrown when daily claim limit is exceeded.
+     * @param amount The amount attempted to be claimed.
+     * @param limit The daily limit.
+     * @param available The amount still available to claim today.
+     */
+    error DailyLimitExceeded(uint256 amount, uint256 limit, uint256 available);
+
     /* ============ Constants & Immutables ============ */
 
     /// @notice Role to update the root.
@@ -129,6 +137,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice New user rewards end timestmap
     uint256 public constant NEW_USER_REWARD_END_TIMESTAMP = 1734133547;
 
+    /// @notice Daily claim limit per user in K tokens (5000 tokens)
+    uint256 public constant DAILY_CLAIM_LIMIT = 5000 * 1e18;
+
+    /// @notice One day in seconds (24 hours)
+    uint256 public constant ONE_DAY = 24 * 60 * 60;
+
     /* ============ State Variables ============ */
 
     /// @notice The root of the merkle tree for Kinto token distribition.
@@ -157,6 +171,12 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
     // Mapping to track which root a user has claimed for.
     mapping(address => bytes32) public claimedRoot;
+
+    /// @notice Mapping to track last claim timestamp for each user
+    mapping(address => uint256) public lastClaimTimestamp;
+
+    /// @notice Mapping to track amount claimed by user for the current day
+    mapping(address => uint256) public dailyClaimedAmount;
 
     /* ============ Constructor ============ */
 
@@ -256,6 +276,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         if (amount > getUnclaimedLimit()) {
             revert MaxLimitReached(totalClaimed + amount, getTotalLimit());
         }
+
+        // Check and update daily claim limits
+        checkAndUpdateDailyLimit(user, amount);
 
         // Update the total claimed amount and the amount claimed by the user
         totalClaimed += amount;
@@ -383,5 +406,62 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
             return claimed >= NEW_USER_REWARD ? claimed - NEW_USER_REWARD : claimed;
         }
         return claimed;
+    }
+
+    /**
+     * @notice Returns the amount of tokens a user can still claim today
+     * @param user The address of the user
+     * @return The amount of tokens still claimable today
+     */
+    function getDailyRemainingClaimable(address user) public view returns (uint256) {
+        // If the user has never claimed or this is a new day, user has the full daily limit available
+        if (lastClaimTimestamp[user] == 0 || block.timestamp >= lastClaimTimestamp[user] + ONE_DAY) {
+            return DAILY_CLAIM_LIMIT;
+        }
+
+        // Calculate current day based on timestamp
+        uint256 currentDay = block.timestamp / ONE_DAY;
+        uint256 lastClaimDay = lastClaimTimestamp[user] / ONE_DAY;
+
+        // If this is a new day, user has the full daily limit available
+        if (currentDay > lastClaimDay) {
+            return DAILY_CLAIM_LIMIT;
+        }
+
+        // If user has claimed less than the daily limit, return remaining amount
+        if (dailyClaimedAmount[user] < DAILY_CLAIM_LIMIT) {
+            return DAILY_CLAIM_LIMIT - dailyClaimedAmount[user];
+        }
+
+        // User has already claimed the full daily limit
+        return 0;
+    }
+
+    /**
+     * @notice Checks if a claim amount is within daily limits and updates tracking state if valid
+     * @param user The address of the user claiming tokens
+     * @param amount The amount being claimed
+     */
+    function checkAndUpdateDailyLimit(address user, uint256 amount) internal {
+        // Calculate current day based on timestamp
+        uint256 currentDay = block.timestamp / ONE_DAY;
+        uint256 lastClaimDay = lastClaimTimestamp[user] == 0 ? 0 : lastClaimTimestamp[user] / ONE_DAY;
+
+        // Reset daily claim counter if it's a new day or first claim
+        if (lastClaimTimestamp[user] == 0 || currentDay > lastClaimDay) {
+            dailyClaimedAmount[user] = 0;
+        }
+
+        // Calculate how much the user can still claim today
+        uint256 remainingDaily = getDailyRemainingClaimable(user);
+
+        // Revert if trying to claim more than allowed for today
+        if (amount > remainingDaily) {
+            revert DailyLimitExceeded(amount, DAILY_CLAIM_LIMIT, remainingDaily);
+        }
+
+        // Update the daily claimed amount and last claim timestamp
+        dailyClaimedAmount[user] += amount;
+        lastClaimTimestamp[user] = block.timestamp;
     }
 }
