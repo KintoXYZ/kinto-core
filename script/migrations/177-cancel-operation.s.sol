@@ -73,5 +73,3 @@ contract CancelOperationScript is MigrationHelper {
         }
     }
 }
-
-
