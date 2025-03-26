@@ -107,4 +107,33 @@ contract BridgedKintoTest is SharedSetup {
         vm.expectRevert(abi.encodeWithSelector(BridgedKinto.TransferIsNotAllowed.selector, _user, _user2, 500));
         token.transfer(_user2, 500);
     }
+
+    function testBurnByMinter() public {
+        uint256 initialBalance = token.balanceOf(_user);
+        uint256 initialSupply = token.totalSupply();
+        uint256 burnAmount = 200;
+
+        vm.prank(minter);
+        token.burn(_user, burnAmount);
+
+        assertEq(token.balanceOf(_user), initialBalance - burnAmount);
+        assertEq(token.totalSupply(), initialSupply - burnAmount);
+    }
+
+    function testBurn_TransfersToZeroShouldBeAllowed() public {
+        // Our changes to _update allow the contract itself to transfer to address(0) during burn
+        // Test with minter role burning tokens from user
+        uint256 initialBalance = token.balanceOf(_user);
+        uint256 initialSupply = token.totalSupply();
+        uint256 burnAmount = 300;
+
+        vm.prank(minter);
+        token.burn(_user, burnAmount);
+
+        assertEq(token.balanceOf(_user), initialBalance - burnAmount);
+        assertEq(token.totalSupply(), initialSupply - burnAmount);
+
+        // This affirms that our _update function allows transfer to zero address,
+        // which is important when calling burn functions
+    }
 }

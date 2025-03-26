@@ -68,6 +68,11 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     {
         super._update(from, to, amount);
 
+        // Allow burning (transfer to address(0))
+        if (to == address(0)) {
+            return; // Permit burning by sending to zero address
+        }
+
         if (
             from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
                 && to != TREASURY && from != SALE && to != SALE && from != STAKING && to != STAKING && from != VAULT
