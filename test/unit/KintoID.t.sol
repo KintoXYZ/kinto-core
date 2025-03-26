@@ -264,7 +264,7 @@ contract KintoIDTest is SharedSetup {
 
         assertEq(_kintoID.isKYC(_user), true);
 
-        vm.warp(block.timestamp + 11 days);
+        vm.warp(block.timestamp + 13 days);
 
         assertEq(_kintoID.isKYC(_user), false);
     }
@@ -311,7 +311,7 @@ contract KintoIDTest is SharedSetup {
 
         assertEq(_kintoID.isSanctionsSafeIn(_user, 3), false);
 
-        vm.warp(block.timestamp + 10 days);
+        vm.warp(block.timestamp + 12 days);
 
         updates = new IKintoID.MonitorUpdateData[][](1);
         updates[0] = new IKintoID.MonitorUpdateData[](1);
@@ -459,7 +459,7 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.isSanctionsSafeIn(_user, 1), false);
 
         // has to wait for the exit window to be over
-        vm.warp(block.timestamp + 10 days);
+        vm.warp(block.timestamp + 12 days);
 
         _kintoID.removeSanction(_user, 1);
         vm.stopPrank();
@@ -488,7 +488,7 @@ contract KintoIDTest is SharedSetup {
         _kintoID.addSanction(_user, 2);
 
         // Should succeed after window
-        vm.warp(sanctionTime + 10 days + 1);
+        vm.warp(sanctionTime + 12 days + 1);
         _kintoID.addSanction(_user, 2);
 
         vm.stopPrank();
@@ -513,7 +513,7 @@ contract KintoIDTest is SharedSetup {
         _kintoID.removeSanction(_user, 1);
 
         // Should succeed after window
-        vm.warp(sanctionTime + 10 days + 1);
+        vm.warp(sanctionTime + 12 days + 1);
         _kintoID.removeSanction(_user, 1);
 
         vm.stopPrank();
@@ -529,7 +529,7 @@ contract KintoIDTest is SharedSetup {
         uint256 firstSanctionTime = block.timestamp;
 
         // Advance past window
-        vm.warp(firstSanctionTime + 10 days + 1);
+        vm.warp(firstSanctionTime + 12 days + 1);
 
         // Add second sanction
         _kintoID.addSanction(_user, 2);
@@ -651,7 +651,7 @@ contract KintoIDTest is SharedSetup {
         _kintoID.addSanction(_user, 10);
 
         // Wait past exit window
-        vm.warp(block.timestamp + 11 days);
+        vm.warp(block.timestamp + 13 days);
 
         // Add another sanction
         _kintoID.addSanction(_user, 20);
@@ -661,7 +661,7 @@ contract KintoIDTest is SharedSetup {
         assertEq(_kintoID.isSanctionsSafeIn(_user, 20), false);
 
         // Remove one sanction after exit window
-        vm.warp(block.timestamp + 11 days);
+        vm.warp(block.timestamp + 13 days);
         _kintoID.removeSanction(_user, 10);
 
         // Verify correct sanction state
