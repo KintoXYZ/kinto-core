@@ -23,7 +23,7 @@ contract MintKintoToAdminScript is MigrationHelper {
     address public constant KINTO = 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87;
 
     // Amount to mint and burn
-    uint256 public constant AMOUNT = 36_350e18; // 36,350 tokens
+    uint256 public constant AMOUNT = 1_000e18; // 1'000 tokens
 
     function run() public override {
         super.run();
