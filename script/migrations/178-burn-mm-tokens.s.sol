@@ -30,14 +30,7 @@ contract TransferDclmScript is MigrationHelper {
         uint256 rd_balanceBefore = ERC20(kintoToken).balanceOf(rd_address);
 
         // Burn tokens from mm_address
-        _handleOps(
-            abi.encodeWithSelector(
-                BridgedToken.burn.selector,
-                mm_address,
-                amount
-            ),
-            kintoToken
-        );
+        _handleOps(abi.encodeWithSelector(BridgedToken.burn.selector, mm_address, amount), kintoToken);
 
         // Mint tokens to rd_address
         _handleOps(abi.encodeWithSelector(BridgedToken.mint.selector, rd_address, amount), kintoToken);
