@@ -59,53 +59,28 @@ contract BridgedKintoTest is SharedSetup {
         assertEq(token.balanceOf(address(_kintoAppRegistry)), 1000);
     }
 
-    function testTransfer_WhenToMiningContract() public {
-        vm.prank(admin);
-        token.setMiningContract(_user2);
-
+    function testTransfer_ToEOA() public {
         vm.prank(_user);
         token.transfer(_user2, 500);
 
+        assertEq(token.balanceOf(_user), 0);
         assertEq(token.balanceOf(_user2), 500);
     }
 
-    function testTransfer_WhenFromMiningContract() public {
-        vm.prank(admin);
-        token.setMiningContract(_user);
-
+    function testTransfer_BetweenEOAs() public {
+        // First transfer to user2
         vm.prank(_user);
-        token.transfer(_user2, 500);
-        assertEq(token.balanceOf(_user2), 500);
-    }
+        token.transfer(_user2, 300);
 
-    function testTransfer_WhenToTreasury() public {
-        vm.prank(_user);
-        token.transfer(TREASURY, 500);
+        // Then transfer from user2 to user3
+        address _user3 = createUser("user3");
+        vm.prank(_user2);
+        token.transfer(_user3, 100);
 
-        assertEq(token.balanceOf(TREASURY), 500);
-    }
-
-    function testTransfer_WhenToStaking() public {
-        vm.prank(_user);
-        token.transfer(STAKING, 500);
-
-        assertEq(token.balanceOf(STAKING), 500);
-    }
-
-    function testTransfer_WhenFromTreasury() public {
-        vm.prank(minter);
-        token.mint(TREASURY, 1000);
-
-        vm.prank(TREASURY);
-        token.transfer(_user2, 500);
-
-        assertEq(token.balanceOf(_user2), 500);
-    }
-
-    function testTransfer_RevertWhenToNotAllowedEOA() public {
-        vm.prank(_user);
-        vm.expectRevert(abi.encodeWithSelector(BridgedKinto.TransferIsNotAllowed.selector, _user, _user2, 500));
-        token.transfer(_user2, 500);
+        // Verify balances
+        assertEq(token.balanceOf(_user), 200);
+        assertEq(token.balanceOf(_user2), 200);
+        assertEq(token.balanceOf(_user3), 100);
     }
 
     function testBurnByMinter() public {
