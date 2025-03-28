@@ -17,7 +17,7 @@ contract BridgeKintoTokenScript is MigrationHelper {
     address public constant KINTO_ADMIN = 0x2e2B1c42E38f5af81771e65D87729E57ABD1337a;
     address public constant SOCKET_VAULT = 0x3De040ef2Fbf9158BADF559C5606d7706ca72309;
     address public constant RECEIVER = 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c;
-    uint256 public constant AMOUNT = 36_350 * 1e18; // 36_350 KINTO tokens
+    uint256 public constant AMOUNT = 1_000 * 1e18; // 1_000 KINTO tokens
     uint256 public constant MSG_GAS_LIMIT = 500000;
     address public constant CONNECTOR = 0xbef01d401b54C19B2bcFe93f5e55e0355fE24A73;
     bytes public constant EXEC_PAYLOAD = "";

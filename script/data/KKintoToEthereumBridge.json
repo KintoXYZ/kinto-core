@@ -2,7 +2,7 @@
   "from": "0x2e2B1c42E38f5af81771e65D87729E57ABD1337a",
   "vault": "0x3De040ef2Fbf9158BADF559C5606d7706ca72309",
   "receiver": "0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c",
-  "amount": "28000000000000000000000",
+  "amount": "1000000000000000000000",
   "msgGasLimit": "500000",
   "connector": "0xbef01d401b54C19B2bcFe93f5e55e0355fE24A73",
   "execPayload": "0x",
