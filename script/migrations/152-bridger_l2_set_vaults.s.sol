@@ -55,6 +55,7 @@ contract Script is MigrationHelper {
         vaults.push(0x7799B5f05d75DecE15d85507875879cedc62e16E);
         vaults.push(0x0B61E51cbcfd6a9F7A03c413731B0BBB378EB6d4);
         vaults.push(0xC27a019Dd349c52B0Af2195303D3Cd0528eD29dC);
+        vaults.push(0x3De040ef2Fbf9158BADF559C5606d7706ca72309);
 
         for (uint256 index = 0; index < vaults.length; index++) {
             flags.push(true);
