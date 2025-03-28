@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/interfaces/IKintoEntryPoint.sol";
+import {PackedUserOperation} from "@aa/interfaces/PackedUserOperation.sol";
+import {IEntryPoint} from "@aa/interfaces/IEntryPoint.sol";
+
 import "../../src/interfaces/IKintoID.sol";
 import "../../src/interfaces/IKintoAppRegistry.sol";
 
@@ -12,7 +14,7 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
 contract SponsorPaymasterHarness is SponsorPaymaster {
     constructor(IEntryPoint entryPoint, IKintoWalletFactory factory) SponsorPaymaster(entryPoint, factory) {}
 
-    function exposed_validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+    function exposed_validatePaymasterUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
         public
         view
         returns (bytes memory context, uint256 validationData)

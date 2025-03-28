@@ -229,7 +229,7 @@ contract EngenCreditsTest is SharedSetup {
         _engenCredits.setCredits(addresses, points);
 
         // mint credit
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
@@ -258,7 +258,7 @@ contract EngenCreditsTest is SharedSetup {
         assertEq(_engenCredits.earnedCredits(address(_kintoWallet)), 10);
 
         // mint credits
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
@@ -285,7 +285,7 @@ contract EngenCreditsTest is SharedSetup {
         _engenCredits.setCredits(addresses, points);
 
         // mint creidts
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
@@ -326,7 +326,7 @@ contract EngenCreditsTest is SharedSetup {
         _engenCredits.setTransfersEnabled(true);
 
         // mint credit
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
@@ -352,7 +352,7 @@ contract EngenCreditsTest is SharedSetup {
         _engenCredits.setBurnsEnabled(true);
 
         // mint credit
-        UserOperation[] memory userOps = new UserOperation[](1);
+        PackedUserOperation[] memory userOps = new PackedUserOperation[](1);
         userOps[0] = _createUserOperation(
             address(_kintoWallet),
             address(_engenCredits),
