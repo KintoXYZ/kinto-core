@@ -227,9 +227,6 @@ contract DeployerScript is Create2Helper, DeployerHelper {
         // deploy rewardsDistributor
         (rewardsDistributor, rewardsDistributorImpl) = deployRewardsDistributor();
 
-        privateKey > 0 ? vm.broadcast(privateKey) : vm.broadcast();
-        bridgedKinto.setMiningContract(address(rewardsDistributor));
-
         // deploy & upgrade KintoID implementation (passing the factory)
         bytes memory bytecode =
             abi.encodePacked(type(KintoID).creationCode, abi.encode(address(factory), address(faucet)));

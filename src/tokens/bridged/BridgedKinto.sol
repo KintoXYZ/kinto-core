@@ -20,40 +20,13 @@ import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.so
  * Extends BridgedToken.
  */
 contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
-    /// @notice The error thrown if the recipient is not allowed.
-    error TransferIsNotAllowed(address from, address to, uint256 amount);
-
-    /// @notice Emmitted when new mining contract is set.
-    event MiningContractSet(address indexed miningContract, address oldMiningContract);
-
-    /// @notice Sale contract address.
-    address public constant SALE = 0x5a1E00884e35bF2dC39Af51712D08bEF24b1817f;
-
-    /// @notice Treasure contract address.
-    address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
-
-    /// @notice Staking contract address
-    address public constant STAKING = 0x5A1e00984Af33BED5520Fd13e9c940F9f913cF10;
-
-    /// @notice Socket Vault
-    address public constant VAULT = 0x3De040ef2Fbf9158BADF559C5606d7706ca72309;
-
-    /// @notice Address of the mining contract.
-    address public miningContract;
+    /// @notice DEPRECATED: Address of the mining contract.
+    address private __miningContract;
 
     /**
      * @notice Constructor to initialize the BridgedKinto.
      */
     constructor() BridgedToken(18) {}
-
-    /**
-     * @notice Set the mining contract address.
-     * @param newMiningContract The address of the mining contract.
-     */
-    function setMiningContract(address newMiningContract) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit MiningContractSet(newMiningContract, miningContract);
-        miningContract = newMiningContract;
-    }
 
     /**
      * @dev Transfers a `value` amount of tokens from `from` to `to`, or alternatively mints (or burns) if `from`
@@ -67,19 +40,6 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
         override(ERC20Upgradeable, ERC20VotesUpgradeable)
     {
         super._update(from, to, amount);
-
-        // Allow burning (transfer to address(0))
-        if (to == address(0)) {
-            return; // Permit burning by sending to zero address
-        }
-
-        if (
-            from != address(0) && from != address(miningContract) && to != address(miningContract) && from != TREASURY
-                && to != TREASURY && from != SALE && to != SALE && from != STAKING && to != STAKING && from != VAULT
-                && to != VAULT
-        ) {
-            revert TransferIsNotAllowed(from, to, amount);
-        }
     }
 
     function nonces(address user) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
