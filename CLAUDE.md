@@ -27,3 +27,4 @@
 ## Claude Preferences
 - **Commits and PRs**: Do not add Claude credits or Co-Authored-By lines to commits or PRs
 - **Commit Messages**: Keep concise and descriptive, follow project conventions
+- Always run 'forge fmt' after making changes to Solidity code
