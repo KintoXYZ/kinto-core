@@ -12,8 +12,9 @@ import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import "forge-std/console2.sol";
 
 contract DeployScript is MigrationHelper {
-    // Define a unique name for the GOVERNANCE_OPERATOR role
-    uint64 constant GOVERNANCE_OPERATOR_ROLE = uint64(uint256(keccak256("GOVERNANCE_OPERATOR_ROLE")));
+    // Define unique roles
+    uint64 constant RECOVERY_APPROVER_ROLE = uint64(uint256(keccak256("RECOVERY_APPROVER_ROLE")));
+    uint64 constant SANCTIONER_ROLE = uint64(uint256(keccak256("SANCTIONER_ROLE")));
 
     // Address is calculated based on aliasing rules for L1 address
     address constant L1_SECURITY_COUNCIL = 0x28fC10E12A78f986c78F973Fc70ED88072b34c8e;
@@ -28,7 +29,7 @@ contract DeployScript is MigrationHelper {
     function run() public override {
         super.run();
 
-        console2.log("Starting GOVERNANCE_OPERATOR role creation script");
+        console2.log("Starting role creation script");
         console2.log("Current chain ID:", block.chainid);
 
         // Store addresses in storage variables to avoid stack too deep
@@ -49,48 +50,58 @@ contract DeployScript is MigrationHelper {
         bytes4[] memory walletFactorySelectors = new bytes4[](1);
         walletFactorySelectors[0] = KintoWalletFactory.approveWalletRecovery.selector;
 
-        console2.log("Setting up GOVERNANCE_OPERATOR role");
+        console2.log("Setting up RECOVERY_APPROVER_ROLE and SANCTIONER_ROLE");
 
-        // Step 2: Set up the function roles and label
+        // Step 2: Set up the function roles and labels
 
-        // Initialize AccessManager and check delays
+        // Initialize AccessManager
         AccessManager accessManager = AccessManager(accessManagerAddr);
 
-        // Prepare calldata for the operations
-        bytes memory labelRoleData = abi.encodeWithSelector(
-            AccessManager.labelRole.selector, GOVERNANCE_OPERATOR_ROLE, "GOVERNANCE_OPERATOR_ROLE"
-        );
-
-        bytes memory setKintoIDRoleData = abi.encodeWithSelector(
-            AccessManager.setTargetFunctionRole.selector, kintoIDAddr, kintoIDSelectors, GOVERNANCE_OPERATOR_ROLE
-        );
-
+        // Function role assignments
         bytes memory setWalletFactoryRoleData = abi.encodeWithSelector(
             AccessManager.setTargetFunctionRole.selector,
             walletFactoryAddr,
             walletFactorySelectors,
-            GOVERNANCE_OPERATOR_ROLE
+            RECOVERY_APPROVER_ROLE
+        );
+
+        bytes memory setKintoIDRoleData = abi.encodeWithSelector(
+            AccessManager.setTargetFunctionRole.selector, kintoIDAddr, kintoIDSelectors, SANCTIONER_ROLE
         );
 
         // Schedule the operations
-        console2.log("Scheduling labelRole operation");
+        console2.log("Scheduling labelRole operations");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, labelRoleData, 0),
+            abi.encodeWithSelector(
+                AccessManager.schedule.selector,
+                accessManagerAddr,
+                abi.encodeWithSelector(
+                    AccessManager.labelRole.selector, RECOVERY_APPROVER_ROLE, "RECOVERY_APPROVER_ROLE"
+                ),
+                0
+            ),
+            accessManagerAddr
+        );
+        _handleOps(
+            abi.encodeWithSelector(
+                AccessManager.schedule.selector,
+                accessManagerAddr,
+                abi.encodeWithSelector(AccessManager.labelRole.selector, SANCTIONER_ROLE, "SANCTIONER_ROLE"),
+                0
+            ),
             accessManagerAddr
         );
 
-        console2.log("Scheduling setTargetFunctionRole operation for KintoID");
+        console2.log("Scheduling setTargetFunctionRole operations");
+        _handleOps(
+            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, setWalletFactoryRoleData, 0),
+            accessManagerAddr
+        );
         _handleOps(
             abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, setKintoIDRoleData, 0),
             accessManagerAddr
         );
 
-        console2.log("Scheduling setTargetFunctionRole operation for KintoWalletFactory");
-        _handleOps(
-            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, setWalletFactoryRoleData, 0),
-            accessManagerAddr
-        );
-
         // Warp time to after the admin delay
         console2.log("Current timestamp:", block.timestamp);
         console2.log("Warping time by:", ADMIN_DELAY + 1);
@@ -98,51 +109,47 @@ contract DeployScript is MigrationHelper {
         console2.log("New timestamp:", block.timestamp);
 
         // Execute the operations
-        console2.log("Executing labelRole operation");
+        console2.log("Executing setTargetFunctionRole operations");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, labelRoleData), accessManagerAddr
+            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, setWalletFactoryRoleData),
+            accessManagerAddr
         );
-
-        console2.log("Executing setTargetFunctionRole for KintoID");
         _handleOps(
             abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, setKintoIDRoleData),
             accessManagerAddr
         );
 
-        console2.log("Executing setTargetFunctionRole for KintoWalletFactory");
-        _handleOps(
-            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, setWalletFactoryRoleData),
-            accessManagerAddr
-        );
-
-        // Step 3: Grant roles directly
+        // Step 3: Grant roles
 
         // Prepare call data for granting roles
-        bytes memory kintoAdminGrantData = abi.encodeWithSelector(
-            AccessManager.grantRole.selector, GOVERNANCE_OPERATOR_ROLE, kintoAdminWallet, uint32(NO_DELAY)
+        bytes memory kintoAdminRecoveryRoleData = abi.encodeWithSelector(
+            AccessManager.grantRole.selector, RECOVERY_APPROVER_ROLE, kintoAdminWallet, uint32(NO_DELAY)
         );
 
-        bytes memory securityCouncilGrantData = abi.encodeWithSelector(
-            AccessManager.grantRole.selector, GOVERNANCE_OPERATOR_ROLE, L1_SECURITY_COUNCIL, uint32(NO_DELAY)
+        bytes memory securityCouncilSanctionerRoleData = abi.encodeWithSelector(
+            AccessManager.grantRole.selector, SANCTIONER_ROLE, L1_SECURITY_COUNCIL, uint32(NO_DELAY)
         );
 
         // Schedule operations due to target admin delay
-        console2.log("Scheduling grantRole operation for kintoAdminWallet");
+        console2.log("Scheduling grantRole operations");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, kintoAdminGrantData, 0),
+            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, kintoAdminRecoveryRoleData, 0),
             accessManagerAddr
         );
-
-        console2.log("Scheduling grantRole operation for L1_SECURITY_COUNCIL");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.schedule.selector, accessManagerAddr, securityCouncilGrantData, 0),
+            abi.encodeWithSelector(
+                AccessManager.schedule.selector, accessManagerAddr, securityCouncilSanctionerRoleData, 0
+            ),
             accessManagerAddr
         );
 
         // Get scheduled time
-        accessManager.getSchedule(accessManager.hashOperation(address(0), accessManagerAddr, kintoAdminGrantData));
-
-        accessManager.getSchedule(accessManager.hashOperation(address(0), accessManagerAddr, securityCouncilGrantData));
+        accessManager.getSchedule(
+            accessManager.hashOperation(address(0), accessManagerAddr, kintoAdminRecoveryRoleData)
+        );
+        accessManager.getSchedule(
+            accessManager.hashOperation(address(0), accessManagerAddr, securityCouncilSanctionerRoleData)
+        );
 
         // Warp time to after the admin delay
         console2.log("Current timestamp:", block.timestamp);
@@ -151,42 +158,48 @@ contract DeployScript is MigrationHelper {
         console2.log("New timestamp:", block.timestamp);
 
         // Execute the operations
-        console2.log("Executing grantRole for kintoAdminWallet");
+        console2.log("Executing grantRole operations");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, kintoAdminGrantData),
+            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, kintoAdminRecoveryRoleData),
             accessManagerAddr
         );
-
-        console2.log("Executing grantRole for L1_SECURITY_COUNCIL");
         _handleOps(
-            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, securityCouncilGrantData),
+            abi.encodeWithSelector(AccessManager.execute.selector, accessManagerAddr, securityCouncilSanctionerRoleData),
             accessManagerAddr
         );
 
         // Step 4: Verify the grants were successful
 
         // Verify roles
-        (bool isMember1, uint32 delay1) = accessManager.hasRole(GOVERNANCE_OPERATOR_ROLE, kintoAdminWallet);
-        (bool isMember2, uint32 delay2) = accessManager.hasRole(GOVERNANCE_OPERATOR_ROLE, L1_SECURITY_COUNCIL);
+        (bool isRecoveryApprover, uint32 recoveryDelay) =
+            accessManager.hasRole(RECOVERY_APPROVER_ROLE, kintoAdminWallet);
+        (bool isSanctioner, uint32 sanctionerDelay) = accessManager.hasRole(SANCTIONER_ROLE, L1_SECURITY_COUNCIL);
 
-        console2.log("kintoAdminWallet has role:", isMember1, "with delay:", delay1);
-        console2.log("L1_SECURITY_COUNCIL has role:", isMember2, "with delay:", delay2);
+        console2.log("kintoAdminWallet has RECOVERY_APPROVER_ROLE:", isRecoveryApprover, "with delay:", recoveryDelay);
+        console2.log("L1_SECURITY_COUNCIL has SANCTIONER_ROLE:", isSanctioner, "with delay:", sanctionerDelay);
 
-        assertTrue(isMember1, "Role not granted to kintoAdminWallet");
-        assertTrue(isMember2, "Role not granted to L1_SECURITY_COUNCIL");
+        assertTrue(isRecoveryApprover, "RECOVERY_APPROVER_ROLE not granted to kintoAdminWallet");
+        assertTrue(isSanctioner, "SANCTIONER_ROLE not granted to L1_SECURITY_COUNCIL");
 
         // Verify function access
         bytes4 confirmSanctionSelector = KintoID.confirmSanction.selector;
         bytes4 approveWalletRecoverySelector = KintoWalletFactory.approveWalletRecovery.selector;
 
-        (bool immediate1,) = accessManager.canCall(kintoAdminWallet, kintoIDAddr, confirmSanctionSelector);
-        (bool immediate2,) = accessManager.canCall(kintoAdminWallet, walletFactoryAddr, approveWalletRecoverySelector);
-        (bool immediate3,) = accessManager.canCall(L1_SECURITY_COUNCIL, kintoIDAddr, confirmSanctionSelector);
-        (bool immediate4,) =
+        (bool recoveryAccess,) =
+            accessManager.canCall(kintoAdminWallet, walletFactoryAddr, approveWalletRecoverySelector);
+        (bool sanctionAccess,) = accessManager.canCall(L1_SECURITY_COUNCIL, kintoIDAddr, confirmSanctionSelector);
+
+        assertTrue(recoveryAccess, "kintoAdminWallet cannot call approveWalletRecovery");
+        assertTrue(sanctionAccess, "L1_SECURITY_COUNCIL cannot call confirmSanction");
+
+        // Verify correct role separation
+        (bool incorrectRecoveryAccess,) =
             accessManager.canCall(L1_SECURITY_COUNCIL, walletFactoryAddr, approveWalletRecoverySelector);
+        (bool incorrectSanctionAccess,) = accessManager.canCall(kintoAdminWallet, kintoIDAddr, confirmSanctionSelector);
 
-        assertTrue(immediate1 && immediate2 && immediate3 && immediate4, "Function access verification failed");
+        assertTrue(!incorrectRecoveryAccess, "L1_SECURITY_COUNCIL incorrectly can call approveWalletRecovery");
+        assertTrue(!incorrectSanctionAccess, "kintoAdminWallet incorrectly can call confirmSanction");
 
-        console2.log("GOVERNANCE_OPERATOR role creation script completed");
+        console2.log("Role creation and assignment completed successfully");
     }
 }
