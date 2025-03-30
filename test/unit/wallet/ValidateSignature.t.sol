@@ -3,12 +3,9 @@
 pragma solidity ^0.8.18;
 
 import "@kinto-core-test/SharedSetup.t.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "@aa/core/Helpers.sol";
 
 contract ValidateSignatureTest is SharedSetup {
-    // constants
-    uint256 constant SIG_VALIDATION_FAILED = 1;
-    uint256 constant SIG_VALIDATION_SUCCESS = 0;
-
     function setUp() public override {
         super.setUp();
         useHarness();
@@ -17,7 +14,7 @@ contract ValidateSignatureTest is SharedSetup {
     function testValidateSignature_RevertWhen_OwnerIsNotKYCd() public {
         revokeKYC(_kycProvider, _owner, _ownerPk);
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
             KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
@@ -29,7 +26,7 @@ contract ValidateSignatureTest is SharedSetup {
     function testValidateSignature_RevertWhen_SignatureLengthMismatch() public {
         revokeKYC(_kycProvider, _owner, _ownerPk);
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
             KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
@@ -41,7 +38,7 @@ contract ValidateSignatureTest is SharedSetup {
     function testValidateSignature_RevertWhen_UsingAppKey_SignatureLengthMismatch() public {
         revokeKYC(_kycProvider, _owner, _ownerPk);
 
-        UserOperation memory userOp;
+        PackedUserOperation memory userOp;
         assertEq(
             SIG_VALIDATION_FAILED,
             KintoWalletHarness(payable(address(_kintoWallet))).validateSignature(
@@ -66,7 +63,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[0] = _ownerPk;
 
         // call increment
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -87,7 +84,7 @@ contract ValidateSignatureTest is SharedSetup {
     // function testValidateSignature_WhenOneSignerPolicy_WhenMultipleOwners_WhenOneSigner() public {}
 
     function testValidateSignature_WhenMultipleOwners_When1SignerPolicy() public {
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -119,7 +116,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[1] = _userPk;
 
         // create increment user op
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -150,7 +147,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[1] = _userPk;
 
         // create op with wrong private keys
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce() + 1,
@@ -175,7 +172,7 @@ contract ValidateSignatureTest is SharedSetup {
         resetSigners(owners, _kintoWallet.ALL_SIGNERS());
 
         // create op with wrong private keys
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -207,7 +204,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[2] = _user2Pk;
 
         // create op with wrong private keys
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce() + 1,
@@ -245,7 +242,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[2] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -285,7 +282,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[2] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -326,7 +323,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[2] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -376,7 +373,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[3] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -410,7 +407,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[2] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -445,7 +442,7 @@ contract ValidateSignatureTest is SharedSetup {
         calls[limit + 1] = abi.encodeWithSignature("increment()");
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -469,7 +466,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         // create user op with app key as signer
         privateKeys[0] = _userPk;
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -502,7 +499,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         // create user op with the app key as signer
         privateKeys[0] = _userPk;
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -530,7 +527,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         // create Counter increment transaction
         privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -554,7 +551,7 @@ contract ValidateSignatureTest is SharedSetup {
         setAppKey(address(counter), _user);
 
         // create user op with the owner as signer
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -579,7 +576,7 @@ contract ValidateSignatureTest is SharedSetup {
         setAppKey(address(counter), _user);
 
         // try doing a wallet call and it should work
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(_kintoWallet),
             _kintoWallet.getNonce(),
@@ -615,7 +612,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -654,7 +651,7 @@ contract ValidateSignatureTest is SharedSetup {
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -696,7 +693,7 @@ contract ValidateSignatureTest is SharedSetup {
         }
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
         privateKeys[0] = _userPk; // we want to make use of the app key
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -746,7 +743,7 @@ contract ValidateSignatureTest is SharedSetup {
         values[CALLS_NUMBER - 1] = 0;
 
         OperationParamsBatch memory opParams = OperationParamsBatch({targets: targets, values: values, bytesOps: calls});
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet), _kintoWallet.getNonce(), privateKeys, opParams, address(_paymaster)
         );
 
@@ -775,7 +772,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[0] = _ownerPk;
         privateKeys[1] = _userPk;
 
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -826,7 +823,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[0] = _userPk;
         privateKeys[1] = _user2Pk;
 
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -878,7 +875,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys = new uint256[](1);
         privateKeys[0] = _userPk;
 
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -914,7 +911,7 @@ contract ValidateSignatureTest is SharedSetup {
         privateKeys[1] = _userPk;
         privateKeys[2] = _user2Pk;
 
-        UserOperation memory userOp = _createUserOperation(
+        PackedUserOperation memory userOp = _createUserOperation(
             address(_kintoWallet),
             address(counter),
             _kintoWallet.getNonce(),
@@ -945,7 +942,7 @@ contract ValidateSignatureTest is SharedSetup {
     //     privateKeys = new uint256[](1);
     //     privateKeys[0] = _userPk;
 
-    //     UserOperation memory userOp = _createUserOperation(
+    //     PackedUserOperation memory userOp = _createUserOperation(
     //         address(_kintoWallet),
     //         address(counter),
     //         _kintoWallet.getNonce(),

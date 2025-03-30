@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../../src/paymasters/SponsorPaymaster.sol";
+import {SponsorPaymaster} from "@kinto-core/paymasters/SponsorPaymaster.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 contract KintoMigration69DeployScript is MigrationHelper {

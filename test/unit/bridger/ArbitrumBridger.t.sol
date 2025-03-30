@@ -19,7 +19,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import "@kinto-core/interfaces/IKintoWallet.sol";
 import "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
-import {SharedSetup, UserOperation} from "@kinto-core-test/SharedSetup.t.sol";
+import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
 
 contract ArbitrumBridgerTest is SharedSetup {
     L2ArbitrumGateway public l2Gateway;
