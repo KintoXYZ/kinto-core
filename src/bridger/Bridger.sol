@@ -15,6 +15,8 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -99,7 +101,7 @@ contract Bridger is
     /// @notice $K address on Arbitrum.
     address public constant K = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
     /// @notice Uniswap router address on Arbitrum.
-    address public constant UNI_ROUTER = 0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3;
+    address public constant UNI_ROUTER = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -456,10 +458,24 @@ contract Bridger is
 
         // If the final asset is $K, then swap USDT to $K.
         if (finalAsset == K) {
-            uint256 balance = IERC20(USDT).balanceOf(address(this));
-            if (IERC20(USDT).allowance(address(this), address(PERMIT2)) < type(uint256).max) {
-                IERC20(USDT).safeApprove(address(PERMIT2), type(uint256).max);
+            uint256 balance = IERC20(WETH).balanceOf(address(this));
+            if (IERC20(WETH).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
+                IERC20(WETH).safeApprove(address(UNI_ROUTER), type(uint256).max);
             }
+
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: WETH,
+                tokenOut: K,
+                fee: 10000, // 1%
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: balance,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+            // The call to `exactInputSingle` executes the swap.
+            amountBought = swapRouter.exactInputSingle(params);
         }
 
         // If the final asset is stUSD, then swap USDC to USDA and wrap it.
