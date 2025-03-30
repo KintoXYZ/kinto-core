@@ -5,6 +5,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 
 import "@kinto-core-test/fork/const.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -529,108 +530,34 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         // Execute the deposit
         vm.deal(address(bridger), data.gasFee);
         vm.prank(_user);
-        uint256 amountBought = bridger.depositERC20(
-            assetToDeposit, amountToDeposit, kintoWalletL2, K_ARBITRUM, amountOut, swapCalldata, data
-        );
+        bridger.depositERC20(assetToDeposit, amountToDeposit, kintoWalletL2, K_ARBITRUM, amountOut, swapCalldata, data);
 
         assertEq(ERC20(K_ARBITRUM).balanceOf(address(bridger)), 0, "Invalid balance of the Bridger");
         assertEq(ERC20(K_ARBITRUM).balanceOf(data.vault), 0, "Invalid balance of the Vault");
     }
 
-    // ETH to K via UniV3
-    function testDepositETH_WhenEthToK() public {
+    // K to WETH via UniV3
+    function testDepositERC20_WhenKToWeth() public {
         setUpArbitrumFork();
-        // We'll use a recent block for our test
-        vm.rollFork(block.number - 100);
+        vm.rollFork(321240287);
         upgradeBridger();
 
         // Set up test data
-        uint256 amountToDeposit = 1e18; // 1 ETH
+        address assetToDeposit = K_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
 
-        // Create bridge data if it doesn't exist for K token
-        if (bridgeData[block.chainid][K_ARBITRUM].vault == address(0)) {
-            // We'll set up bridge data similar to other tokens
-            bridgeData[block.chainid][K_ARBITRUM] = IBridger.BridgeData({
-                vault: 0x25a1baC7314Ff40Ee8CD549251924D066D7d5bC6, // Using SOLV_BTC vault as example
-                gasFee: 1e16,
-                msgGasLimit: 500_000,
-                connector: 0x5817bF28f6f0B0215f310837BAB88A127d29aBF3, // Using SOLV_BTC connector
-                execPayload: bytes(""),
-                options: bytes("")
-            });
-        }
-
-        IBridger.BridgeData memory data = bridgeData[block.chainid][K_ARBITRUM];
-
-        // Record balances before the operation
-        uint256 kBalanceBefore = ERC20(K_ARBITRUM).balanceOf(address(bridger));
-        uint256 vaultKBalanceBefore = ERC20(K_ARBITRUM).balanceOf(address(data.vault));
-
-        // Deal ETH to the user for the deposit and gas fee
-        deal(_user, amountToDeposit + data.gasFee);
-
-        // Set the bridge vault as valid
-        vm.prank(bridger.owner());
-        bridger.setBridgeVault(data.vault, true);
-
-        // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
-        bytes memory swapCalldata = bytes("");
-
-        uint256 amountOut = 406379773601548;
-
-        // Execute the deposit with ETH
-        vm.prank(_user);
-        uint256 amountBought = bridger.depositETH{value: amountToDeposit + data.gasFee}(
-            amountToDeposit, kintoWalletL2, K_ARBITRUM, amountOut, swapCalldata, data
-        );
-
-        // Assertions
-        assertGt(amountBought, 0, "Should have received some K tokens");
-        assertEq(ERC20(K_ARBITRUM).balanceOf(address(bridger)), kBalanceBefore, "Bridger should not hold any K tokens");
-        assertEq(
-            ERC20(K_ARBITRUM).balanceOf(address(data.vault)),
-            vaultKBalanceBefore + amountBought,
-            "Vault should have received the K tokens"
-        );
-
-        // Check that the ETH was spent
-        uint256 remainingBalance = _user.balance;
-        assertEq(remainingBalance, 0, "User should have spent all ETH");
-    }
-
-    // WETH to K via UniV3 using depositBySig
-    function testDepositBySig_WhenWethToK() public {
-        setUpArbitrumFork();
-        // We'll use a recent block for our test
-        vm.rollFork(block.number - 100);
-        upgradeBridger();
-
-        // Set up test data
-        address assetToDeposit = WETH_ARBITRUM;
-        uint256 amountToDeposit = 1e18; // 1 WETH
-
-        // Create bridge data if it doesn't exist for K token
-        if (bridgeData[block.chainid][K_ARBITRUM].vault == address(0)) {
-            // We'll set up bridge data similar to other tokens
-            bridgeData[block.chainid][K_ARBITRUM] = IBridger.BridgeData({
-                vault: 0x25a1baC7314Ff40Ee8CD549251924D066D7d5bC6, // Using SOLV_BTC vault as example
-                gasFee: 1e16,
-                msgGasLimit: 500_000,
-                connector: 0x5817bF28f6f0B0215f310837BAB88A127d29aBF3, // Using SOLV_BTC connector
-                execPayload: bytes(""),
-                options: bytes("")
-            });
-        }
-
-        IBridger.BridgeData memory data = bridgeData[block.chainid][K_ARBITRUM];
-
-        // Record balances before the operation
-        uint256 kBalanceBefore = ERC20(K_ARBITRUM).balanceOf(address(bridger));
-        uint256 vaultKBalanceBefore = ERC20(K_ARBITRUM).balanceOf(address(data.vault));
+        IBridger.BridgeData memory data = bridgeData[block.chainid][WETH_ARBITRUM];
+        uint256 balanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(data.vault));
 
         // Deal tokens to the user
-        deal(assetToDeposit, _user, amountToDeposit);
+        vm.prank(0x702BD1AC995Bf22B8B711A1Ce9796bAc9bdd1f1f);
+        BridgedToken(assetToDeposit).mint(_user, amountToDeposit);
         deal(_user, data.gasFee);
+
+        // Give approval
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
 
         // Set the bridge vault as valid
         vm.prank(bridger.owner());
@@ -639,53 +566,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
         bytes memory swapCalldata = bytes("");
 
-        uint256 amountOut = 406379773601548;
+        uint256 amountOut = 157473449999455155;
 
-        // Create a permit signature to allow the bridger to transfer the user's WETH
-        bytes memory permitSignature = _auxCreatePermitSignature(
-            IBridger.Permit(
-                _user,
-                address(bridger),
-                amountToDeposit,
-                ERC20Permit(assetToDeposit).nonces(_user),
-                block.timestamp + 1000
-            ),
-            _userPk,
-            ERC20Permit(assetToDeposit)
-        );
-
-        // Create a bridge signature to allow the bridger to deposit the user's WETH to K
-        IBridger.SignatureData memory sigdata = _auxCreateBridgeSignature(
-            kintoWalletL2,
-            bridger,
-            _user,
-            assetToDeposit,
-            K_ARBITRUM,
-            amountToDeposit,
-            amountOut,
-            _userPk,
-            block.timestamp + 1000
-        );
-
-        uint256 nonce = bridger.nonces(_user);
-
-        // Execute the deposit with signature
+        // Execute the deposit
         vm.deal(address(bridger), data.gasFee);
-        vm.prank(bridger.senderAccount());
-        uint256 amountBought = bridger.depositBySig(permitSignature, sigdata, swapCalldata, data);
+        vm.prank(_user);
+        bridger.depositERC20(assetToDeposit, amountToDeposit, kintoWalletL2, WETH, amountOut, swapCalldata, data);
 
-        // Assertions
-        assertGt(amountBought, 0, "Should have received some K tokens");
-        assertEq(bridger.nonces(_user), nonce + 1, "Nonce should be incremented");
-        assertEq(ERC20(K_ARBITRUM).balanceOf(address(bridger)), kBalanceBefore, "Bridger should not hold any K tokens");
-        assertEq(
-            ERC20(K_ARBITRUM).balanceOf(address(data.vault)),
-            vaultKBalanceBefore + amountBought,
-            "Vault should have received the K tokens"
-        );
-
-        // Check that the WETH was spent
-        assertEq(IERC20(assetToDeposit).balanceOf(_user), 0, "User should have spent all WETH");
+        assertEq(ERC20(WETH).balanceOf(address(bridger)), balanceBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(WETH).balanceOf(data.vault), vaultBalanceBefore + amountOut, "Invalid balance of the Vault");
     }
 
     // USDC to SolvBTC

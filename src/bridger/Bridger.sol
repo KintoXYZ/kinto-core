@@ -424,6 +424,29 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
+        if (inputAsset == K) {
+            uint256 balance = IERC20(address(K)).balanceOf(address(this));
+            if (IERC20(address(K)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
+                IERC20(address(K)).safeApprove(address(UNI_ROUTER), type(uint256).max);
+            }
+
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: K,
+                tokenOut: address(WETH),
+                fee: 10000, // 1%
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: balance,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+            // The call to `exactInputSingle` executes the swap.
+            amount = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
+            inputAsset = address(WETH);
+            amountBought = amount;
+        }
+
         if (inputAsset == wUSDM) {
             amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
             inputAsset = USDM;
