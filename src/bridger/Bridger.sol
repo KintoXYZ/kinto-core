@@ -101,7 +101,7 @@ contract Bridger is
     /// @notice $K address on Arbitrum.
     address public constant K = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
     /// @notice Uniswap router address on Arbitrum.
-    address public constant UNI_ROUTER = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
+    address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -458,13 +458,13 @@ contract Bridger is
 
         // If the final asset is $K, then swap USDT to $K.
         if (finalAsset == K) {
-            uint256 balance = IERC20(WETH).balanceOf(address(this));
-            if (IERC20(WETH).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
-                IERC20(WETH).safeApprove(address(UNI_ROUTER), type(uint256).max);
+            uint256 balance = IERC20(address(WETH)).balanceOf(address(this));
+            if (IERC20(address(WETH)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
+                IERC20(address(WETH)).safeApprove(address(UNI_ROUTER), type(uint256).max);
             }
 
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: WETH,
+                tokenIn: address(WETH),
                 tokenOut: K,
                 fee: 10000, // 1%
                 recipient: address(this),
@@ -475,7 +475,7 @@ contract Bridger is
             });
 
             // The call to `exactInputSingle` executes the swap.
-            amountBought = swapRouter.exactInputSingle(params);
+            amountBought = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
         }
 
         // If the final asset is stUSD, then swap USDC to USDA and wrap it.
@@ -503,6 +503,9 @@ contract Bridger is
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
+        if (finalAsset == K) {
+            return address(WETH);
+        }
         if (finalAsset == sUSDe) {
             return USDe;
         }
