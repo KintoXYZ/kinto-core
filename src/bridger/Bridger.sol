@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -49,6 +50,7 @@ contract Bridger is
     using SignatureChecker for address;
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
+    using SafeCast for uint160;
 
     /* ============ Events ============ */
 
@@ -92,6 +94,12 @@ contract Bridger is
     address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
     /// @notice USDA pool id on Arbitrum.
     address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
+    /// @notice USDT address on Arbitrum.
+    address public constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    /// @notice $K address on Arbitrum.
+    address public constant K = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
+    /// @notice Uniswap router address on Arbitrum.
+    address public constant UNI_ROUTER = 0xA51afAFe0263b40EdaEf0Df8781eA9aa03E381a3;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -444,6 +452,14 @@ contract Bridger is
             uint256 balance = IERC20(USDM).balanceOf(address(this));
             IERC20(USDM).safeApprove(wUSDM, balance);
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
+        }
+
+        // If the final asset is $K, then swap USDT to $K.
+        if (finalAsset == K) {
+            uint256 balance = IERC20(USDT).balanceOf(address(this));
+            if (IERC20(USDT).allowance(address(this), address(PERMIT2)) < type(uint256).max) {
+                IERC20(USDT).safeApprove(address(PERMIT2), type(uint256).max);
+            }
         }
 
         // If the final asset is stUSD, then swap USDC to USDA and wrap it.
