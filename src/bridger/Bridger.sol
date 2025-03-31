@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,6 +14,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
@@ -49,6 +52,7 @@ contract Bridger is
     using SignatureChecker for address;
     using ECDSA for bytes32;
     using SafeERC20 for IERC20;
+    using SafeCast for uint160;
 
     /* ============ Events ============ */
 
@@ -92,6 +96,12 @@ contract Bridger is
     address public constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
     /// @notice USDA pool id on Arbitrum.
     address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
+    /// @notice USDT address on Arbitrum.
+    address public constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
+    /// @notice $K address on Arbitrum.
+    address public constant K = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
+    /// @notice Uniswap router address on Arbitrum.
+    address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -414,6 +424,29 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
+        if (inputAsset == K) {
+            uint256 balance = IERC20(address(K)).balanceOf(address(this));
+            if (IERC20(address(K)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
+                IERC20(address(K)).safeApprove(address(UNI_ROUTER), type(uint256).max);
+            }
+
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: K,
+                tokenOut: address(WETH),
+                fee: 10000, // 1%
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: balance,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+            // The call to `exactInputSingle` executes the swap.
+            amount = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
+            inputAsset = address(WETH);
+            amountBought = amount;
+        }
+
         if (inputAsset == wUSDM) {
             amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
             inputAsset = USDM;
@@ -446,6 +479,28 @@ contract Bridger is
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
 
+        // If the final asset is $K, then swap USDT to $K.
+        if (finalAsset == K) {
+            uint256 balance = IERC20(address(WETH)).balanceOf(address(this));
+            if (IERC20(address(WETH)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
+                IERC20(address(WETH)).safeApprove(address(UNI_ROUTER), type(uint256).max);
+            }
+
+            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+                tokenIn: address(WETH),
+                tokenOut: K,
+                fee: 10000, // 1%
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: balance,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+            // The call to `exactInputSingle` executes the swap.
+            amountBought = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
+        }
+
         // If the final asset is stUSD, then swap USDC to USDA and wrap it.
         if (finalAsset == stUSD) {
             uint256 balance = IERC20(USDC).balanceOf(address(this));
@@ -471,6 +526,9 @@ contract Bridger is
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
+        if (finalAsset == K) {
+            return address(WETH);
+        }
         if (finalAsset == sUSDe) {
             return USDe;
         }

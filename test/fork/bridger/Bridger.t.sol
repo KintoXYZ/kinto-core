@@ -5,6 +5,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 
 import "@kinto-core/interfaces/bridger/IBridger.sol";
 import "@kinto-core/bridger/Bridger.sol";
+import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 
 import "@kinto-core-test/fork/const.sol";
 import "@kinto-core-test/helpers/UUPSProxy.sol";
@@ -495,6 +496,85 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         uint256 shares = ERC4626(stUSD).previewDeposit(2993214711000000000000);
         assertEq(ERC20(stUSD).balanceOf(address(bridger)), sharesBefore, "Invalid balance of the Bridger");
         assertEq(ERC20(stUSD).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
+    }
+
+    // WETH to K via UniV3
+    function testDepositERC20_WhenWethToK() public {
+        setUpArbitrumFork();
+        vm.rollFork(321240287);
+        upgradeBridger();
+
+        // Set up test data
+        address assetToDeposit = WETH_ARBITRUM;
+        uint256 amountToDeposit = 1e13;
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][K_ARBITRUM];
+
+        // Deal tokens to the user
+        deal(assetToDeposit, _user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // Give approval
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        // Set the bridge vault as valid
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
+        bytes memory swapCalldata = bytes("");
+
+        uint256 amountOut = 5991827719450;
+
+        // Execute the deposit
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_user);
+        bridger.depositERC20(assetToDeposit, amountToDeposit, kintoWalletL2, K_ARBITRUM, amountOut, swapCalldata, data);
+
+        assertEq(ERC20(K_ARBITRUM).balanceOf(address(bridger)), 0, "Invalid balance of the Bridger");
+        assertEq(ERC20(K_ARBITRUM).balanceOf(data.vault), 0, "Invalid balance of the Vault");
+    }
+
+    // K to WETH via UniV3
+    function testDepositERC20_WhenKToWeth() public {
+        setUpArbitrumFork();
+        vm.rollFork(321240287);
+        upgradeBridger();
+
+        // Set up test data
+        address assetToDeposit = K_ARBITRUM;
+        uint256 amountToDeposit = 1e18;
+
+        IBridger.BridgeData memory data = bridgeData[block.chainid][WETH_ARBITRUM];
+        uint256 balanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(bridger));
+        uint256 vaultBalanceBefore = ERC20(WETH_ARBITRUM).balanceOf(address(data.vault));
+
+        // Deal tokens to the user
+        vm.prank(0x702BD1AC995Bf22B8B711A1Ce9796bAc9bdd1f1f);
+        BridgedToken(assetToDeposit).mint(_user, amountToDeposit);
+        deal(_user, data.gasFee);
+
+        // Give approval
+        vm.prank(_user);
+        IERC20(assetToDeposit).approve(address(bridger), amountToDeposit);
+
+        // Set the bridge vault as valid
+        vm.prank(bridger.owner());
+        bridger.setBridgeVault(data.vault, true);
+
+        // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
+        bytes memory swapCalldata = bytes("");
+
+        uint256 amountOut = 157473449999455155;
+
+        // Execute the deposit
+        vm.deal(address(bridger), data.gasFee);
+        vm.prank(_user);
+        bridger.depositERC20(assetToDeposit, amountToDeposit, kintoWalletL2, WETH, amountOut, swapCalldata, data);
+
+        assertEq(ERC20(WETH).balanceOf(address(bridger)), balanceBefore, "Invalid balance of the Bridger");
+        assertEq(ERC20(WETH).balanceOf(data.vault), vaultBalanceBefore + amountOut, "Invalid balance of the Vault");
     }
 
     // USDC to SolvBTC
