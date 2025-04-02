@@ -18,7 +18,7 @@ contract UpgradeDistributorScript is MigrationHelper {
             )
         );
 
-        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V9", bytecode);
+        address impl = _deployImplementationAndUpgrade("RewardsDistributor", "V10", bytecode);
 
         RewardsDistributor distr = RewardsDistributor(_getChainDeployment("RewardsDistributor"));
 
@@ -26,6 +26,6 @@ contract UpgradeDistributorScript is MigrationHelper {
         assertEq(distr.startTime(), LIQUIDITY_MINING_START_DATE);
         assertEq(distr.walletFactory(), _getChainDeployment("KintoWalletFactory"));
 
-        saveContractAddress("RewardsDistributorV9-impl", impl);
+        saveContractAddress("RewardsDistributorV10-impl", impl);
     }
 }
