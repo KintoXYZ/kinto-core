@@ -138,7 +138,7 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     uint256 public constant NEW_USER_REWARD_END_TIMESTAMP = 1734133547;
 
     /// @notice Daily claim limit per user in K tokens (5000 tokens)
-    uint256 public constant DAILY_CLAIM_LIMIT = 50000 * 1e18;
+    uint256 public constant DAILY_CLAIM_LIMIT = 5000 * 1e18;
 
     /// @notice One day in seconds (24 hours)
     uint256 public constant ONE_DAY = 24 * 60 * 60;
