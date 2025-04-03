@@ -427,7 +427,7 @@ contract Bridger is
         if (inputAsset == K) {
             uint256 balance = IERC20(address(K)).balanceOf(address(this));
             if (IERC20(address(K)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
-                IERC20(address(K)).safeApprove(address(UNI_ROUTER), type(uint256).max);
+                IERC20(address(K)).forceApprove(address(UNI_ROUTER), type(uint256).max);
             }
 
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
@@ -483,7 +483,7 @@ contract Bridger is
         if (finalAsset == K) {
             uint256 balance = IERC20(address(WETH)).balanceOf(address(this));
             if (IERC20(address(WETH)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
-                IERC20(address(WETH)).safeApprove(address(UNI_ROUTER), type(uint256).max);
+                IERC20(address(WETH)).forceApprove(address(UNI_ROUTER), type(uint256).max);
             }
 
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({

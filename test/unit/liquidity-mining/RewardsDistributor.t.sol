@@ -406,9 +406,10 @@ contract RewardsDistributorTest is SharedSetup {
     function testDailyLimit() public {
         uint256 belowLimit = 4000 * 1e18; // 4000 Kinto tokens (below the 5000 limit)
         uint256 exactLimit = 5000 * 1e18; // Exactly 5000 Kinto tokens
+        uint256 aboveLimit = 6000 * 1e18; // 6000 Kinto tokens (above the 5000 limit)
 
         // Mint enough tokens to the distributor
-        kinto.mint(address(distributor), exactLimit + belowLimit);
+        kinto.mint(address(distributor), aboveLimit);
 
         // Set up valid merkle proof for the first claim
         bytes32[] memory proof = _setupNewMerkleRoot(_user, belowLimit);
@@ -429,29 +430,15 @@ contract RewardsDistributorTest is SharedSetup {
         assertEq(distributor.getDailyRemainingClaimable(_user), exactLimit - belowLimit);
 
         // Set up valid merkle proof for the second claim
-        proof = _setupNewMerkleRoot(_user, exactLimit + belowLimit);
+        proof = _setupNewMerkleRoot(_user, aboveLimit);
 
-        // Trying to claim more than the remaining daily limit should fail
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                RewardsDistributor.DailyLimitExceeded.selector,
-                exactLimit,
-                distributor.DAILY_CLAIM_LIMIT(),
-                exactLimit - belowLimit
-            )
-        );
-        distributor.claim(proof, _user, exactLimit + belowLimit);
-
-        // Set up valid merkle proof for a claim within the daily limit
-        proof = _setupNewMerkleRoot(_user, belowLimit + (exactLimit - belowLimit));
-
-        // A claim within the remaining daily limit should succeed
+        // Claim more than the remaining daily limit - should transfer available limit only
         uint256 remainingAmount = exactLimit - belowLimit;
         vm.expectEmit(true, true, true, true);
         emit RewardsDistributor.UserClaimed(_user, remainingAmount);
-        distributor.claim(proof, _user, belowLimit + remainingAmount);
+        distributor.claim(proof, _user, aboveLimit);
 
-        // Verify claim data was updated correctly
+        // Verify claim data was updated correctly - should show only the daily limit was claimed
         assertEq(kinto.balanceOf(_user), exactLimit);
         assertEq(distributor.totalClaimed(), exactLimit);
         assertEq(distributor.claimedByUser(_user), exactLimit);
@@ -544,5 +531,57 @@ contract RewardsDistributorTest is SharedSetup {
         uint256 newRemainingLimit = distributor.getDailyRemainingClaimable(_user);
         assertTrue(newRemainingLimit > 0, "Daily limit should have reset");
         assertEq(newRemainingLimit, distributor.DAILY_CLAIM_LIMIT());
+    }
+
+    function testMultiDayClaim() public {
+        uint256 exactLimit = 5000 * 1e18; // Exactly 5000 Kinto tokens (daily limit)
+        uint256 largeAmount = 12000 * 1e18; // 12000 Kinto tokens (multiple days worth)
+
+        // Mint enough tokens to the distributor
+        kinto.mint(address(distributor), largeAmount);
+
+        // Day 1: First claim - should get exactly the daily limit
+        bytes32[] memory proof = _setupNewMerkleRoot(_user, exactLimit);
+
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.UserClaimed(_user, exactLimit);
+        distributor.claim(proof, _user, exactLimit);
+
+        // Verify user received the daily limit
+        assertEq(kinto.balanceOf(_user), exactLimit);
+        assertEq(distributor.dailyClaimedAmount(_user), exactLimit);
+        assertEq(distributor.claimedByUser(_user), exactLimit);
+
+        // Advance to day 2
+        vm.warp(block.timestamp + distributor.ONE_DAY() + 1);
+
+        // Day 2: Second claim - another exactLimit
+        proof = _setupNewMerkleRoot(_user, exactLimit * 2);
+
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.UserClaimed(_user, exactLimit);
+        distributor.claim(proof, _user, exactLimit * 2);
+
+        // Verify user received another daily limit
+        assertEq(kinto.balanceOf(_user), exactLimit * 2);
+        assertEq(distributor.dailyClaimedAmount(_user), exactLimit);
+        assertEq(distributor.claimedByUser(_user), exactLimit * 2);
+
+        // Advance to day 3
+        vm.warp(block.timestamp + distributor.ONE_DAY() + 1);
+
+        // Day 3: Final claim - remaining 2000 tokens
+        uint256 remaining = largeAmount - (exactLimit * 2);
+        proof = _setupNewMerkleRoot(_user, largeAmount);
+
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDistributor.UserClaimed(_user, remaining);
+        distributor.claim(proof, _user, largeAmount);
+
+        // Verify user received the final remaining amount
+        assertEq(kinto.balanceOf(_user), largeAmount);
+        assertEq(distributor.dailyClaimedAmount(_user), remaining);
+        assertEq(distributor.claimedByUser(_user), largeAmount);
+        assertEq(distributor.getDailyRemainingClaimable(_user), exactLimit - remaining);
     }
 }
