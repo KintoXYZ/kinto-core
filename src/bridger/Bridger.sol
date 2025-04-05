@@ -15,8 +15,6 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 import {MessageHashUtils} from "@openzeppelin-5.0.1/contracts/utils/cryptography/MessageHashUtils.sol";
@@ -98,10 +96,6 @@ contract Bridger is
     address public constant USDA = 0x0000206329b97DB379d5E1Bf586BbDB969C63274;
     /// @notice USDT address on Arbitrum.
     address public constant USDT = 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9;
-    /// @notice $K address on Arbitrum.
-    address public constant K = 0x010700AB046Dd8e92b0e3587842080Df36364ed3;
-    /// @notice Uniswap router address on Arbitrum.
-    address public constant UNI_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     /// @notice The WETH contract instance.
     IWETH public immutable WETH;
     /// @notice The address of the USDC token.
@@ -424,29 +418,6 @@ contract Bridger is
             inputAsset = address(WETH);
         }
 
-        if (inputAsset == K) {
-            uint256 balance = IERC20(address(K)).balanceOf(address(this));
-            if (IERC20(address(K)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
-                IERC20(address(K)).forceApprove(address(UNI_ROUTER), type(uint256).max);
-            }
-
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: K,
-                tokenOut: address(WETH),
-                fee: 10000, // 1%
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: balance,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-            // The call to `exactInputSingle` executes the swap.
-            amount = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
-            inputAsset = address(WETH);
-            amountBought = amount;
-        }
-
         if (inputAsset == wUSDM) {
             amount = IERC4626(wUSDM).redeem(amount, address(this), address(this));
             inputAsset = USDM;
@@ -479,28 +450,6 @@ contract Bridger is
             amountBought = IERC4626(wUSDM).deposit(balance, address(this));
         }
 
-        // If the final asset is $K, then swap USDT to $K.
-        if (finalAsset == K) {
-            uint256 balance = IERC20(address(WETH)).balanceOf(address(this));
-            if (IERC20(address(WETH)).allowance(address(this), address(UNI_ROUTER)) < type(uint256).max) {
-                IERC20(address(WETH)).forceApprove(address(UNI_ROUTER), type(uint256).max);
-            }
-
-            ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: address(WETH),
-                tokenOut: K,
-                fee: 10000, // 1%
-                recipient: address(this),
-                deadline: block.timestamp,
-                amountIn: balance,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            });
-
-            // The call to `exactInputSingle` executes the swap.
-            amountBought = ISwapRouter(UNI_ROUTER).exactInputSingle(params);
-        }
-
         // If the final asset is stUSD, then swap USDC to USDA and wrap it.
         if (finalAsset == stUSD) {
             uint256 balance = IERC20(USDC).balanceOf(address(this));
@@ -526,9 +475,6 @@ contract Bridger is
     }
 
     function _getFinalAssetByAsset(address finalAsset) private view returns (address) {
-        if (finalAsset == K) {
-            return address(WETH);
-        }
         if (finalAsset == sUSDe) {
             return USDe;
         }
