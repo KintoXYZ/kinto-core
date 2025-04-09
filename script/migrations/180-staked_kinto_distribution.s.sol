@@ -118,7 +118,9 @@ contract StakedKintoDistributeScript is MigrationHelper {
             }
         }
 
-        assertEq(IERC20(stakedKintoAddress).balanceOf(kintoAdminWallet), initialBalance - totalAmount, "Some tokens left");
+        assertEq(
+            IERC20(stakedKintoAddress).balanceOf(kintoAdminWallet), initialBalance - totalAmount, "Some tokens left"
+        );
 
         console2.log("StakedKinto distribution completed successfully!");
     }
