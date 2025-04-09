@@ -498,15 +498,15 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(ERC20(stUSD).balanceOf(data.vault), vaultSharesBefore + shares, "Invalid balance of the Vault");
     }
 
-    // WETH to K via UniV3
+    // WETH to K
     function testDepositERC20_WhenWethToK() public {
         setUpArbitrumFork();
-        vm.rollFork(321240287);
+        vm.rollFork(322993927);
         upgradeBridger();
 
         // Set up test data
         address assetToDeposit = WETH_ARBITRUM;
-        uint256 amountToDeposit = 1e13;
+        uint256 amountToDeposit = 1e16;
 
         IBridger.BridgeData memory data = bridgeData[block.chainid][K_ARBITRUM];
 
@@ -522,10 +522,11 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
-        // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
-        bytes memory swapCalldata = bytes("");
+        // WETH to K quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x010700AB046Dd8e92b0e3587842080Df36364ed3&sellToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellAmount=10000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' -H '0x-api-key: ' -H '0x-version: v2' | jq > ./test/data/swap-weth-to-k-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-weth-to-k-arb.json").readBytes(".transaction.data");
 
-        uint256 amountOut = 5991827719450;
+        uint256 amountOut = 6249985750051180552;
 
         // Execute the deposit
         vm.deal(address(bridger), data.gasFee);
@@ -536,10 +537,10 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         assertEq(ERC20(K_ARBITRUM).balanceOf(data.vault), 0, "Invalid balance of the Vault");
     }
 
-    // K to WETH via UniV3
+    // K to WETH
     function testDepositERC20_WhenKToWeth() public {
         setUpArbitrumFork();
-        vm.rollFork(321240287);
+        vm.rollFork(323002311);
         upgradeBridger();
 
         // Set up test data
@@ -563,10 +564,11 @@ contract BridgerTest is SignatureHelper, ForkTest, ArtifactsReader, BridgeDataHe
         vm.prank(bridger.owner());
         bridger.setBridgeVault(data.vault, true);
 
-        // For UniV3 swap, we don't need external swap calldata as it's handled internally in Bridger.sol
-        bytes memory swapCalldata = bytes("");
+        // K to WETH quote's swapData
+        // curl 'https://api.0x.org/swap/allowance-holder/quote?chainId=42161&buyToken=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1&sellToken=0x010700AB046Dd8e92b0e3587842080Df36364ed3&sellAmount=1000000000000000000&taker=0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0' -H '0x-api-key: ' -H '0x-version: v2' | jq > ./test/data/swap-k-to-weth-arb.json
+        bytes memory swapCalldata = vm.readFile("./test/data/swap-k-to-weth-arb.json").readBytes(".transaction.data");
 
-        uint256 amountOut = 157473449999455155;
+        uint256 amountOut = 1585634196195001;
 
         // Execute the deposit
         vm.deal(address(bridger), data.gasFee);
