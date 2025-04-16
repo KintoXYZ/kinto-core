@@ -196,12 +196,16 @@ abstract contract AATestScaffolding is SignatureHelper, StdAssertions, StdCheats
     }
 
     function whitelistApp(address app, bool whitelist) public {
+        whitelistApp(app, whitelist, address(_kintoWallet));
+    }
+
+    function whitelistApp(address app, bool whitelist, address wallet) public {
         address[] memory targets = new address[](1);
         targets[0] = address(app);
         bool[] memory flags = new bool[](1);
         flags[0] = whitelist;
-        vm.prank(address(_kintoWallet));
-        _kintoWallet.whitelistApp(targets, flags);
+        vm.prank(wallet);
+        IKintoWallet(wallet).whitelistApp(targets, flags);
     }
 
     function setAppKey(address app, address signer) public {
