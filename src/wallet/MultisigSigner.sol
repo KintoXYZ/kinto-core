@@ -69,23 +69,24 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @dev Thrown when an unauthorized access is attempted
     error NotAuthorized();
 
-    /// @dev Represents a multi-signature operation to be executed on a wallet
+    /// @notice Core data structure for handling multi-signature operations on KintoWallets
+    /// @dev Stores all necessary information for signature collection and execution
     struct Operation {
-        /// @dev The KintoWallet address that will execute the transaction
+        /// @notice The KintoWallet address that will execute the transaction
         address wallet;
-        /// @dev The target contract to call
+        /// @notice The target contract to call
         address destination;
-        /// @dev ETH value to send with the call
+        /// @notice ETH value to send with the call
         uint256 value;
-        /// @dev Call data to be executed
+        /// @notice Call data to be executed
         bytes data;
-        /// @dev Nonce of the wallet for the UserOperation
+        /// @notice Nonce of the wallet for the UserOperation
         uint256 nonce;
-        /// @dev Number of signatures needed based on wallet policy
+        /// @notice Number of signatures needed based on wallet policy
         uint256 threshold;
-        /// @dev Timestamp after which this operation expires
+        /// @notice Timestamp after which this operation expires
         uint256 expiresAt;
-        /// @dev Whether the operation has been executed
+        /// @notice Whether the operation has been executed
         bool executed;
         /// @dev Tracking which owners have already signed
         mapping(address => bool) hasSigned;
@@ -94,6 +95,7 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     /// @notice Maps operation IDs to their corresponding Operation data
+    /// @dev Key is keccak256(abi.encodePacked(wallet, destination, value, keccak256(data), nonce))
     mapping(bytes32 => Operation) public operations;
 
     /* ============ Events ============ */
@@ -136,7 +138,10 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @custom:oz-upgrades-unsafe-allow constructor
-     * @param _entryPoint The EntryPoint singleton contract
+     * @notice Sets the immutable EntryPoint reference for submitting UserOperations
+     * @param _entryPoint The EntryPoint singleton contract (EIP-4337 entry point)
+     * @dev The EntryPoint is the central contract in EIP-4337 Account Abstraction that
+     *      handles UserOperation verification and execution
      */
     constructor(IEntryPoint _entryPoint) {
         entryPoint = _entryPoint;
@@ -146,6 +151,8 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /**
      * @notice Initializes the contract with an owner
      * @param initialOwner The address to set as the initial owner
+     * @dev The owner is authorized to cancel operations and upgrade the contract.
+     *      This function should be called only once when the proxy is deployed.
      */
     function initialize(address initialOwner) external initializer {
         __Ownable_init();
@@ -155,12 +162,14 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Creates a new operation for signature collection
-     * @param wallet The KintoWallet address
+     * @param wallet The KintoWallet address that will execute the transaction
      * @param destination The target contract to call
-     * @param value ETH value to send
-     * @param data Call data
-     * @param expiresIn Time in seconds after which operation expires
-     * @return opId Operation ID
+     * @param value ETH value (in wei) to send with the transaction
+     * @param data Call data containing function selector and parameters
+     * @param expiresIn Time in seconds after which operation expires and can no longer be executed
+     * @return opId Unique identifier for the created operation, used for adding signatures
+     * @dev Only wallet owners can create operations. The function calculates a threshold
+     *      based on the wallet's current signer policy.
      */
     function createOperation(address wallet, address destination, uint256 value, bytes calldata data, uint256 expiresIn)
         public
@@ -253,7 +262,14 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Internal function to add a signature to an operation
-     * @dev Verifies signature validity and prevents duplicates
+     * @dev Verifies signature validity and prevents duplicates. This function implements
+     *      several important security checks:
+     *      1. Verifies that the operation has not already been executed
+     *      2. Checks if the operation has expired
+     *      3. Validates the signature length
+     *      4. Recovers the signer address from the signature using ECDSA
+     *      5. Verifies that the signer is a wallet owner
+     *      6. Prevents duplicate signatures from the same owner
      * @param opId Operation ID
      * @param signature The ECDSA signature (65 bytes)
      */
@@ -327,20 +343,32 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Authorizes an upgrade to a new implementation
-     * @dev Required by the UUPSUpgradeable contract
+     * @dev Required by the UUPSUpgradeable contract. This function is called before an upgrade
+     *      to validate that the caller is authorized to upgrade the contract.
+     * @dev Only the contract owner can upgrade this contract. This is a critical security control
+     *      since the upgrade could completely change the contract's behavior.
      * @param newImplementation The address of the new implementation
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /**
      * @notice Creates and submits a UserOperation to the EntryPoint
-     * @dev Private function to handle the actual execution via Account Abstraction
+     * @dev Private function to handle the actual execution via Account Abstraction (EIP-4337)
      * @param wallet The KintoWallet address that will execute the transaction
      * @param destination The target contract to call
      * @param value ETH value to send with the call
      * @param data Call data to be executed
      * @param nonce Nonce of the wallet for the UserOperation
      * @param signatures Combined signatures from wallet owners
+     * @dev This function creates an EIP-4337 UserOperation which is the primitive for
+     *      account abstraction. The UserOperation contains all necessary data to execute
+     *      the transaction, including the signatures and gas parameters. The EntryPoint
+     *      contract will verify the signatures and call the wallet's execute function.
+     *
+     *      Gas parameters are set to predefined constants to simplify the implementation.
+     *      In production, these might be adjusted based on network conditions.
+     *
+     *      The msg.sender is used as the beneficiary for any refunds from the EntryPoint.
      */
     function _executeUserOperation(
         address wallet,
@@ -353,26 +381,26 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         // Prepare the calldata for the wallet's execute function
         bytes memory callData = abi.encodeCall(KintoWallet.execute, (destination, value, data));
 
-        // Create the UserOperation
+        // Create the UserOperation according to EIP-4337 specification
         UserOperation memory userOp = UserOperation({
             sender: wallet,
             nonce: nonce,
-            initCode: bytes(""),
-            callData: callData,
+            initCode: bytes(""), // Empty for existing wallets
+            callData: callData, // The wallet's execute function call
             callGasLimit: CALL_GAS_LIMIT,
             verificationGasLimit: VERIFICATION_GAS_LIMIT,
             preVerificationGas: PRE_VERIFICATION_GAS,
             maxFeePerGas: DEFAULT_GAS_PRICE,
             maxPriorityFeePerGas: DEFAULT_GAS_PRICE,
-            paymasterAndData: bytes(""),
-            signature: signatures
+            paymasterAndData: bytes(""), // No paymaster used
+            signature: signatures // Combined wallet owner signatures
         });
 
         // Create array for EntryPoint.handleOps
         UserOperation[] memory userOps = new UserOperation[](1);
         userOps[0] = userOp;
 
-        // Submit the operation
+        // Submit the operation to the EntryPoint for verification and execution
         entryPoint.handleOps(userOps, payable(msg.sender));
     }
 
@@ -434,7 +462,7 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @dev Converts a wallet's signer policy code to a concrete threshold value
      * @param policy The wallet's signer policy (1=Single, 2=All-but-one, 3=All, 4=Two)
      * @param ownerCount The number of wallet owners
-     * @return threshold The number of signatures required
+     * @return requiredSignatures The number of signatures required to authorize transactions
      */
     function _calculateThreshold(uint8 policy, uint256 ownerCount) internal pure returns (uint256) {
         if (policy == SINGLE_SIGNER) {
@@ -456,7 +484,7 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @dev Iterates through the wallet's owner list to find a match
      * @param wallet The wallet address to check
      * @param owner The potential owner address to verify
-     * @return True if the address is an owner of the wallet
+     * @return isOwner True if the address is an owner of the wallet, false otherwise
      */
     function _isWalletOwner(address wallet, address owner) internal view returns (bool) {
         address[] memory owners = IKintoWallet(wallet).getOwners();
