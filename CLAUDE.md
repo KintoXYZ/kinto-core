@@ -15,6 +15,16 @@
 - **Types**: Prefer specific types (uint256 over uint), use interface types for external calls
 - **Error Handling**: Use custom errors with descriptive names instead of revert strings
 - **Documentation**: Add NatSpec comments for public/external functions and state variables
+  - Use `@notice` for describing what a function does (visible to end users)
+  - Use `@dev` for implementation details (visible to developers)
+  - Use `@param` to document each parameter
+  - Use `@return` to document return values
+  - Use `@inheritdoc` when implementing interface functions
+  - Add only `/// @notice`
+  - Document constants with `/// @notice` comments
+  - Add comprehensive comments for complex structs
+  - Document all custom errors with `/// @notice` comments
+  - Add detailed comments for events including all parameters
 - **Testing**: Follow AAA pattern (Arrange-Act-Assert), write thorough tests for all edge cases
 - **Security**: Follow security best practices, add proper access control
 - **Constants**: Use uppercase for constant values
