@@ -19,54 +19,94 @@ import "@kinto-core/libraries/ByteSignature.sol";
 contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     using ECDSAUpgradeable for bytes32;
 
-    // The EntryPoint singleton
+    /// @notice The EntryPoint singleton contract used for submitting UserOperations
     IEntryPoint public immutable entryPoint;
 
-    // Constants
+    /// @dev Length of an ECDSA signature in bytes
     uint256 private constant SIGNATURE_LENGTH = 65;
+    /// @dev Gas limit for the main call execution
     uint256 private constant CALL_GAS_LIMIT = 4_000_000;
+    /// @dev Gas limit for the signature verification
     uint256 private constant VERIFICATION_GAS_LIMIT = 210_000;
+    /// @dev Gas used before the verification starts
     uint256 private constant PRE_VERIFICATION_GAS = 21_000;
+    /// @dev Default gas price used when submitting UserOperations
     uint256 private constant DEFAULT_GAS_PRICE = 1e9; // 1 Gwei
 
-    // Wallet signer policy constants
+    /// @dev Wallet policy requiring only 1 signature
     uint8 private constant SINGLE_SIGNER = 1;
+    /// @dev Wallet policy requiring all signatures except one
     uint8 private constant MINUS_ONE_SIGNER = 2;
+    /// @dev Wallet policy requiring all signatures
     uint8 private constant ALL_SIGNERS = 3;
+    /// @dev Wallet policy requiring exactly 2 signatures
     uint8 private constant TWO_SIGNERS = 4;
 
     /* ============ Custom Errors ============ */
 
+    /// @dev Thrown when an operation is initiated by a non-owner of the wallet
     error NotWalletOwner(address wallet, address sender);
+    /// @dev Thrown when an invalid wallet address is provided (e.g., zero address)
     error InvalidWalletAddress(address wallet);
+    /// @dev Thrown when an invalid destination address is provided (e.g., zero address)
     error InvalidDestinationAddress(address destination);
+    /// @dev Thrown when the calculated threshold is invalid for the given owner count
     error InvalidThreshold(uint256 threshold, uint256 ownerCount);
+    /// @dev Thrown when attempting to access an operation that does not exist
     error OperationNotFound(bytes32 opId);
+    /// @dev Thrown when attempting to modify or execute an already executed operation
     error OperationAlreadyExecuted(bytes32 opId);
+    /// @dev Thrown when attempting to operate on an expired operation
     error OperationExpired(bytes32 opId, uint256 expiresAt, uint256 currentTime);
+    /// @dev Thrown when a provided signature has an invalid length
     error InvalidSignatureLength(uint256 length, uint256 expected);
+    /// @dev Thrown when a signature is from an address that is not a wallet owner
     error SignerNotWalletOwner(address wallet, address signer);
+    /// @dev Thrown when a wallet owner attempts to sign an operation multiple times
     error DuplicateSignature(bytes32 opId, address signer);
+    /// @dev Thrown when an operation doesn't have enough signatures to be executed
     error InsufficientSignatures(bytes32 opId, uint256 current, uint256 required);
+    /// @dev Thrown when an unauthorized access is attempted
     error NotAuthorized();
 
+    /// @dev Represents a multi-signature operation to be executed on a wallet
     struct Operation {
-        address wallet; // The KintoWallet address
-        address destination; // The target contract to call
-        uint256 value; // ETH value to send
-        bytes data; // Call data
-        uint256 nonce; // Nonce of the wallet
-        uint256 threshold; // Number of signatures needed
-        uint256 expiresAt; // Expiration timestamp
-        bool executed; // Whether operation has been executed
-        mapping(address => bool) hasSigned; // Tracking which signers have signed
-        bytes[] signatures; // Collected signatures (65 bytes each)
+        /// @dev The KintoWallet address that will execute the transaction
+        address wallet;
+        /// @dev The target contract to call
+        address destination;
+        /// @dev ETH value to send with the call
+        uint256 value;
+        /// @dev Call data to be executed
+        bytes data;
+        /// @dev Nonce of the wallet for the UserOperation
+        uint256 nonce;
+        /// @dev Number of signatures needed based on wallet policy
+        uint256 threshold;
+        /// @dev Timestamp after which this operation expires
+        uint256 expiresAt;
+        /// @dev Whether the operation has been executed
+        bool executed;
+        /// @dev Tracking which owners have already signed
+        mapping(address => bool) hasSigned;
+        /// @dev Collected signatures (65 bytes each)
+        bytes[] signatures;
     }
 
-    // Operation ID => Operation
+    /// @notice Maps operation IDs to their corresponding Operation data
     mapping(bytes32 => Operation) public operations;
 
-    // Events
+    /* ============ Events ============ */
+
+    /// @notice Emitted when a new operation is created
+    /// @param opId Unique identifier for the operation
+    /// @param wallet The KintoWallet address that will execute the transaction
+    /// @param destination The target contract to call
+    /// @param value ETH value to send with the call
+    /// @param data Call data to be executed
+    /// @param nonce Nonce of the wallet for the UserOperation
+    /// @param threshold Number of signatures needed
+    /// @param expiresAt Timestamp after which this operation expires
     event OperationCreated(
         bytes32 indexed opId,
         address indexed wallet,
@@ -78,8 +118,20 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 expiresAt
     );
 
+    /// @notice Emitted when a signature is added to an operation
+    /// @param opId Unique identifier for the operation
+    /// @param signer Address of the wallet owner who signed
+    /// @param signature The ECDSA signature
     event SignatureAdded(bytes32 indexed opId, address indexed signer, bytes signature);
+
+    /// @notice Emitted when an operation is executed
+    /// @param opId Unique identifier for the operation
+    /// @param wallet The KintoWallet address that executed the transaction
+    /// @param destination The target contract called
     event OperationExecuted(bytes32 indexed opId, address indexed wallet, address indexed destination);
+
+    /// @notice Emitted when an operation is cancelled
+    /// @param opId Unique identifier for the cancelled operation
     event OperationCancelled(bytes32 indexed opId);
 
     /**
@@ -200,26 +252,29 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function to add a signature
+     * @notice Internal function to add a signature to an operation
+     * @dev Verifies signature validity and prevents duplicates
      * @param opId Operation ID
      * @param signature The ECDSA signature (65 bytes)
      */
     function _addSignature(bytes32 opId, bytes calldata signature) internal {
         Operation storage op = operations[opId];
 
+        // Validate operation state
         if (op.executed) revert OperationAlreadyExecuted(opId);
         if (block.timestamp > op.expiresAt) revert OperationExpired(opId, op.expiresAt, block.timestamp);
         if (signature.length != SIGNATURE_LENGTH) revert InvalidSignatureLength(signature.length, SIGNATURE_LENGTH);
 
-        // Get the operation hash
+        // Recover the signer from the signature
         bytes32 messageHash = _getOperationHash(op.wallet, op.destination, op.value, op.data, op.nonce);
         bytes32 ethSignedMessageHash = messageHash.toEthSignedMessageHash();
         address signer = ethSignedMessageHash.recover(signature);
 
-        // Verify that signer is an owner of the wallet
+        // Validate the signer
         if (!_isWalletOwner(op.wallet, signer)) revert SignerNotWalletOwner(op.wallet, signer);
         if (op.hasSigned[signer]) revert DuplicateSignature(opId, signer);
 
+        // Record the signature
         op.hasSigned[signer] = true;
         op.signatures.push(signature);
 
@@ -279,7 +334,13 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Creates and submits a UserOperation to the EntryPoint
-     * @dev Private function to handle the actual execution
+     * @dev Private function to handle the actual execution via Account Abstraction
+     * @param wallet The KintoWallet address that will execute the transaction
+     * @param destination The target contract to call
+     * @param value ETH value to send with the call
+     * @param data Call data to be executed
+     * @param nonce Nonce of the wallet for the UserOperation
+     * @param signatures Combined signatures from wallet owners
      */
     function _executeUserOperation(
         address wallet,
@@ -289,8 +350,6 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 nonce,
         bytes memory signatures
     ) private {
-        // Use the immutable EntryPoint reference
-
         // Prepare the calldata for the wallet's execute function
         bytes memory callData = abi.encodeCall(KintoWallet.execute, (destination, value, data));
 
@@ -319,6 +378,12 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Gets the operation hash that needs to be signed
+     * @dev Computes the hash following EIP-4337 UserOperation hash calculation
+     * @param wallet The KintoWallet address that will execute the transaction
+     * @param destination The target contract to call
+     * @param value ETH value to send with the call
+     * @param data Call data to be executed
+     * @param nonce Nonce of the wallet for the UserOperation
      * @return The hash that should be signed by wallet owners
      */
     function _getOperationHash(address wallet, address destination, uint256 value, bytes memory data, uint256 nonce)
@@ -326,8 +391,6 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         view
         returns (bytes32)
     {
-        // Use the immutable EntryPoint
-
         // Prepare the calldata for the wallet's execute function
         bytes memory callData = abi.encodeCall(KintoWallet.execute, (destination, value, data));
 
@@ -362,12 +425,14 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             )
         );
 
+        // Add chain-specific data to the hash
         return keccak256(abi.encode(opHash, address(entryPoint), block.chainid));
     }
 
     /**
      * @notice Calculates the signature threshold based on wallet policy
-     * @param policy The wallet's signer policy
+     * @dev Converts a wallet's signer policy code to a concrete threshold value
+     * @param policy The wallet's signer policy (1=Single, 2=All-but-one, 3=All, 4=Two)
      * @param ownerCount The number of wallet owners
      * @return threshold The number of signatures required
      */
@@ -388,9 +453,10 @@ contract MultisigSigner is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /**
      * @notice Checks if an address is an owner of a wallet
-     * @param wallet The wallet address
-     * @param owner The potential owner address
-     * @return True if the address is an owner
+     * @dev Iterates through the wallet's owner list to find a match
+     * @param wallet The wallet address to check
+     * @param owner The potential owner address to verify
+     * @return True if the address is an owner of the wallet
      */
     function _isWalletOwner(address wallet, address owner) internal view returns (bool) {
         address[] memory owners = IKintoWallet(wallet).getOwners();
