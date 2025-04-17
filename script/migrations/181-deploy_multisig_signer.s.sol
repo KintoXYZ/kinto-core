@@ -32,16 +32,13 @@ contract DeployMultisigSignerScript is MigrationHelper {
         // Deploy Proxy contract
         address proxy = _deployProxy("MultisigSigner", implementation);
 
-
         _whitelistApp(address(proxy));
         // Otherwise, use the _handleOps helper function
-        _handleOps(
-            abi.encodeWithSelector(MultisigSigner.initialize.selector, adminWallet), proxy
-        );
+        _handleOps(abi.encodeWithSelector(MultisigSigner.initialize.selector, adminWallet), proxy);
         console2.log("Initialized MultisigSigner with handleOps");
 
         // Verify that initialization was successful by checking the owner
-        address owner =  MultisigSigner(proxy).owner();
+        address owner = MultisigSigner(proxy).owner();
         console2.log("Owner of MultisigSigner:", owner);
         require(owner == adminWallet, "Owner is not the KintoAdmin wallet");
         console2.log("Ownership verification successful");
@@ -55,6 +52,5 @@ contract DeployMultisigSignerScript is MigrationHelper {
 
         // Save proxy address
         saveContractAddress("MultisigSigner", proxy);
-
     }
 }
