@@ -374,6 +374,34 @@ contract MigrationHelper is Script, DeployerHelper, SignatureHelper, UserOp, Sal
         IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
     }
 
+    function _handleOpsBatchExecute(bytes[] memory selectorAndParams, address[] memory tos, uint256[] memory values)
+        internal
+    {
+        address payable from = payable(kintoAdminWallet);
+        uint256[] memory privateKeys = new uint256[](2);
+        privateKeys[0] = deployerPrivateKey;
+        privateKeys[1] = hardwareWalletType;
+
+        OperationParamsBatch memory opParams =
+            OperationParamsBatch({targets: tos, values: values, bytesOps: selectorAndParams});
+        UserOperation[] memory userOps = new UserOperation[](1);
+        userOps[0] = _createUserOperation(
+            block.chainid,
+            from,
+            address(0),
+            0,
+            IKintoWallet(from).getNonce(),
+            privateKeys,
+            bytes(""),
+            address(0),
+            [CALL_GAS_LIMIT, MAX_FEE_PER_GAS, MAX_PRIORITY_FEE_PER_GAS],
+            true,
+            opParams
+        );
+        vm.broadcast(deployerPrivateKey);
+        IEntryPoint(_getChainDeployment("EntryPoint")).handleOps(userOps, payable(vm.addr(privateKeys[0])));
+    }
+
     function _fundPaymaster(address proxy, uint256 signerPk) internal {
         ISponsorPaymaster _paymaster = ISponsorPaymaster(_getChainDeployment("SponsorPaymaster"));
         vm.broadcast(signerPk);
