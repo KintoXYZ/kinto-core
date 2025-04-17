@@ -279,5 +279,7 @@
   "RewardsDistributorV9-impl": "0x29F615E20Ae9Ce4Eb5E42Ac2eaf08b2c975B13bd",
   "KV10-impl": "0x20c62f11d2Af472b23b10fB6308a6e81CadBFb3b",
   "RewardsDistributorV10-impl": "0x1E455Ac7F1D7f82A6756E833e79c69f5eFf29884",
-  "RewardsDistributorV11-impl": "0xEAb50CBF40fBc3FEaBE0DC48406b43FCf3589A0C"
+  "RewardsDistributorV11-impl": "0xEAb50CBF40fBc3FEaBE0DC48406b43FCf3589A0C",
+  "MultisigSigner-impl": "0x831f431B499259AeaD24646Db829D24187248827",
+  "MultisigSigner": "0xCA3Fc9eCD24d0F8C7A6DFDB6A4bCbb91ff241892"
 }
