@@ -11,7 +11,7 @@ import {
     InsufficientSubmissionCost,
     L1Forked,
     NotAllowedOrigin,
-    NotOrigin,
+    NotCodelessOrigin,
     NotRollupOrOwner,
     RetryableData
 } from "@arbitrum/nitro-contracts/src/libraries/Error.sol";
@@ -19,6 +19,7 @@ import "@arbitrum/nitro-contracts/src/bridge/IInboxBase.sol";
 import "@arbitrum/nitro-contracts/src/bridge/ISequencerInbox.sol";
 import "@arbitrum/nitro-contracts/src/bridge/IBridge.sol";
 import "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@arbitrum/nitro-contracts/src/libraries/CallerChecker.sol";
 import "@arbitrum/nitro-contracts/src/libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
@@ -156,8 +157,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     /// @inheritdoc IInboxBase
     function sendL2MessageFromOrigin(bytes calldata messageData) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
+        if (!CallerChecker.isCallerCodelessOrigin()) revert NotCodelessOrigin();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
         emit InboxMessageDeliveredFromOrigin(msgNum);
@@ -231,9 +231,12 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         uint256 amount,
         bytes calldata data
     ) internal returns (uint256) {
-        // ensure the user's deposit alone will make submission succeed
-        if (amount < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
-            revert InsufficientValue(maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas, amount);
+        // Ensure the user's deposit alone will make submission succeed.
+        // In case of native token having non-18 decimals: 'amount' is denominated in native token's decimals. All other
+        // value params - l2CallValue, maxSubmissionCost and maxFeePerGas are denominated in child chain's native 18 decimals.
+        uint256 amountToBeMintedOnL2 = _fromNativeTo18Decimals(amount);
+        if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
+            revert InsufficientValue(maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas, amountToBeMintedOnL2);
         }
 
         // if a refund address is a contract, we apply the alias to it
@@ -305,7 +308,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
             abi.encodePacked(
                 uint256(uint160(to)),
                 l2CallValue,
-                amount,
+                _fromNativeTo18Decimals(amount),
                 maxSubmissionCost,
                 uint256(uint160(excessFeeRefundAddress)),
                 uint256(uint160(callValueRefundAddress)),
@@ -340,6 +343,15 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         view
         virtual
         returns (uint256);
+
+    /// @notice get amount of ETH/token to mint on child chain based on provided value.
+    ///         In case of ETH-based rollup this amount will always equal the provided
+    ///         value. In case of ERC20-based rollup where native token has number of
+    ///         decimals different thatn 18, amount will be re-adjusted to reflect 18
+    ///         decimals used for native currency on child chain.
+    /// @dev    provided value has to be less than 'type(uint256).max/10**(18-decimalsIn)'
+    ///         or otherwise it will overflow.
+    function _fromNativeTo18Decimals(uint256 value) internal view virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
