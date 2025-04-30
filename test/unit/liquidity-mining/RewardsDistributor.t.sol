@@ -533,6 +533,185 @@ contract RewardsDistributorTest is SharedSetup {
         assertEq(newRemainingLimit, distributor.DAILY_CLAIM_LIMIT());
     }
 
+    function testWhitelistAddAndRemove() public {
+        address whitelistUser = address(0xABCD);
+
+        // Initially user should not be whitelisted
+        vm.prank(_owner);
+        assertFalse(distributor.isClaimWhitelisted(whitelistUser));
+
+        // Add user to whitelist
+        vm.prank(_owner);
+        vm.expectEmit(true, false, false, false);
+        emit RewardsDistributor.WalletClaimWhitelistAdded(whitelistUser);
+        distributor.addToClaimWhitelist(whitelistUser);
+
+        // Verify user is now whitelisted
+        vm.prank(_owner);
+        assertTrue(distributor.isClaimWhitelisted(whitelistUser));
+
+        // Remove user from whitelist
+        vm.prank(_owner);
+        vm.expectEmit(true, false, false, false);
+        emit RewardsDistributor.WalletClaimWhitelistRemoved(whitelistUser);
+        distributor.removeFromClaimWhitelist(whitelistUser);
+
+        // Verify user is no longer whitelisted
+        vm.prank(_owner);
+        assertFalse(distributor.isClaimWhitelisted(whitelistUser));
+    }
+
+    function testWhitelistAccessControl() public {
+        address whitelistUser = address(0xABCD);
+        address nonAdmin = address(0x1234);
+
+        // Non-admin should not be able to add to whitelist
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nonAdmin, distributor.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        vm.prank(nonAdmin);
+        distributor.addToClaimWhitelist(whitelistUser);
+
+        // Non-admin should not be able to remove from whitelist
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nonAdmin, distributor.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        vm.prank(nonAdmin);
+        distributor.removeFromClaimWhitelist(whitelistUser);
+
+        // Admin should be able to add to whitelist
+        vm.prank(_owner);
+        distributor.addToClaimWhitelist(whitelistUser);
+
+        // Verify user is now whitelisted
+        vm.prank(_owner);
+        assertTrue(distributor.isClaimWhitelisted(whitelistUser));
+    }
+
+    function testClaimWhitelistArray() public {
+        // Add multiple users to the whitelist
+        address[] memory usersToWhitelist = new address[](3);
+        usersToWhitelist[0] = address(0xABCD);
+        usersToWhitelist[1] = address(0x1234);
+        usersToWhitelist[2] = address(0x5678);
+
+        vm.startPrank(_owner);
+        for (uint256 i = 0; i < usersToWhitelist.length; i++) {
+            distributor.addToClaimWhitelist(usersToWhitelist[i]);
+        }
+        vm.stopPrank();
+
+        // Get the whitelist array
+        address[] memory whitelistedAddresses = distributor.claimWhitelist();
+
+        // Verify the correct number of addresses
+        assertEq(whitelistedAddresses.length, usersToWhitelist.length);
+
+        // Verify each user is in the whitelist
+        for (uint256 i = 0; i < usersToWhitelist.length; i++) {
+            bool foundUser = false;
+            for (uint256 j = 0; j < whitelistedAddresses.length; j++) {
+                if (whitelistedAddresses[j] == usersToWhitelist[i]) {
+                    foundUser = true;
+                    break;
+                }
+            }
+            assertTrue(foundUser, "User not found in whitelist array");
+        }
+    }
+
+    function testWhitelistedUserCanBypassDailyLimit() public {
+        address whitelistedUser = address(0xABCD);
+        uint256 dailyLimit = distributor.DAILY_CLAIM_LIMIT();
+        uint256 aboveLimit = dailyLimit * 2; // Double the daily limit
+
+        // Add user to whitelist
+        vm.prank(_owner);
+        distributor.addToClaimWhitelist(whitelistedUser);
+
+        // Mint tokens to the distributor
+        kinto.mint(address(distributor), aboveLimit);
+
+        // Set up valid merkle proof for the claim
+        bytes32[] memory proof = _setupNewMerkleRoot(whitelistedUser, aboveLimit);
+
+        // Whitelisted user should be able to claim above the daily limit
+        distributor.claim(proof, whitelistedUser, aboveLimit);
+
+        // Verify the whitelisted user received the full amount despite it being above the daily limit
+        assertEq(kinto.balanceOf(whitelistedUser), aboveLimit);
+
+        // Verify the daily remaining claimable shows max uint256 for whitelisted user
+        assertEq(distributor.getDailyRemainingClaimable(whitelistedUser), type(uint256).max);
+    }
+
+    function testNonWhitelistedVsWhitelistedClaims() public {
+        address normalUser = address(0x1111);
+        address whitelistedUser = address(0xABCD);
+        uint256 dailyLimit = distributor.DAILY_CLAIM_LIMIT();
+        uint256 aboveLimit = dailyLimit * 2; // Double the daily limit
+
+        // Add only one user to whitelist
+        vm.prank(_owner);
+        distributor.addToClaimWhitelist(whitelistedUser);
+
+        // Mint tokens to the distributor for both users
+        kinto.mint(address(distributor), aboveLimit * 2);
+
+        // Set up valid merkle proofs for both users
+        bytes32[] memory proofNormal = _setupNewMerkleRoot(normalUser, aboveLimit);
+        // Normal user should be limited by daily limit
+        distributor.claim(proofNormal, normalUser, aboveLimit);
+
+        bytes32[] memory proofWhitelisted = _setupNewMerkleRoot(whitelistedUser, aboveLimit);
+
+        // Whitelisted user should get full amount
+        distributor.claim(proofWhitelisted, whitelistedUser, aboveLimit);
+
+        // Verify normal user only received the daily limit
+        assertEq(kinto.balanceOf(normalUser), dailyLimit);
+
+        // Verify whitelisted user received the full amount
+        assertEq(kinto.balanceOf(whitelistedUser), aboveLimit);
+    }
+
+    function testRemovingFromWhitelistEnforcesDailyLimit() public {
+        address user = address(0xABCD);
+        uint256 dailyLimit = distributor.DAILY_CLAIM_LIMIT();
+        uint256 halfLimit = dailyLimit / 2;
+        uint256 aboveLimit = dailyLimit * 2; // Double the daily limit
+
+        // Mint tokens to the distributor
+        kinto.mint(address(distributor), aboveLimit);
+
+        // Add user to whitelist
+        vm.prank(_owner);
+        distributor.addToClaimWhitelist(user);
+
+        // Set up valid merkle proof for the first claim
+        bytes32[] memory proof = _setupNewMerkleRoot(user, halfLimit);
+
+        // User should be able to claim while whitelisted
+        distributor.claim(proof, user, halfLimit);
+
+        // Remove user from whitelist
+        vm.prank(_owner);
+        distributor.removeFromClaimWhitelist(user);
+
+        // Set up valid merkle proof for the second claim, now exceeding daily limit when combined
+        proof = _setupNewMerkleRoot(user, halfLimit + dailyLimit);
+
+        // User should only be able to claim up to daily limit now
+        distributor.claim(proof, user, halfLimit + dailyLimit);
+
+        // Verify user received half limit from first claim plus remaining half from second claim
+        assertEq(kinto.balanceOf(user), dailyLimit);
+    }
+
     function testMultiDayClaim() public {
         uint256 exactLimit = 5000 * 1e18; // Exactly 5000 Kinto tokens (daily limit)
         uint256 largeAmount = 12000 * 1e18; // 12000 Kinto tokens (multiple days worth)

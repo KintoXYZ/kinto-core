@@ -361,6 +361,10 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         return _claimWhitelistedAddresses.contains(account);
     }
 
+    /**
+     * @notice Returns an array of all claim whitelisted wallets
+     * @return An array of claim whitelist wallets
+     */
     function claimWhitelist() external view returns (address[] memory) {
         return _claimWhitelistedAddresses.values();
     }
