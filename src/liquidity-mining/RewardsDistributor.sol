@@ -10,6 +10,7 @@ import {OwnableUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/acce
 import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {EnumerableSet} from "@openzeppelin-5.0.1/contracts/utils/structs/EnumerableSet.sol";
 
 import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 
@@ -22,6 +23,7 @@ import "forge-std/console2.sol";
  */
 contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /* ============ Events ============ */
 
@@ -59,6 +61,18 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      * @param amount Amount of tokens claimed.
      */
     event NewUserReward(address indexed user, uint256 indexed amount);
+
+    /**
+     * @notice Emitted when an address is added to the whitelist to bypass claim limits.
+     * @param account The account added to the whitelist.
+     */
+    event WalletClaimWhitelistAdded(address indexed account);
+
+    /**
+     * @notice Emitted when an address is removed from the whitelist.
+     * @param account The account removed from the whitelist.
+     */
+    event WalletClaimWhitelistRemoved(address indexed account);
 
     /* ============ Errors ============ */
 
@@ -177,6 +191,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
 
     /// @notice Mapping to track amount claimed by user for the current day
     mapping(address => uint256) public dailyClaimedAmount;
+
+    /// @notice Set of addresses that are exempt from daily claim limits
+    EnumerableSet.AddressSet private _claimWhitelistedAddresses;
 
     /* ============ Constructor ============ */
 
@@ -317,6 +334,41 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         bonusAmount = newBonusAmount;
     }
 
+    /**
+     * @notice Adds an address to the whitelist to bypass daily claim limits
+     * @param account The address to whitelist
+     */
+    function addToClaimWhitelist(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _claimWhitelistedAddresses.add(account);
+        emit WalletClaimWhitelistAdded(account);
+    }
+
+    /**
+     * @notice Removes an address from the whitelist
+     * @param account The address to remove from whitelist
+     */
+    function removeFromClaimWhitelist(address account) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _claimWhitelistedAddresses.remove(account);
+        emit WalletClaimWhitelistRemoved(account);
+    }
+
+    /**
+     * @notice Checks if an address is whitelisted to bypass daily claim limits
+     * @param account The address to check
+     * @return true if the address is whitelisted
+     */
+    function isClaimWhitelisted(address account) external view returns (bool) {
+        return _claimWhitelistedAddresses.contains(account);
+    }
+
+    /**
+     * @notice Returns an array of all claim whitelisted wallets
+     * @return An array of claim whitelist wallets
+     */
+    function claimWhitelist() external view returns (address[] memory) {
+        return _claimWhitelistedAddresses.values();
+    }
+
     /* ============ View ============ */
 
     /**
@@ -411,9 +463,14 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /**
      * @notice Returns the amount of tokens a user can still claim today
      * @param user The address of the user
-     * @return The amount of tokens still claimable today
+     * @return The amount of tokens still claimable today, or the maximum uint256 value if the user is whitelisted
      */
     function getDailyRemainingClaimable(address user) public view returns (uint256) {
+        // If user is whitelisted, they can claim any amount
+        if (_claimWhitelistedAddresses.contains(user)) {
+            return type(uint256).max;
+        }
+
         // If the user has never claimed or this is a new day, user has the full daily limit available
         if (lastClaimTimestamp[user] == 0 || block.timestamp >= lastClaimTimestamp[user] + ONE_DAY) {
             return DAILY_CLAIM_LIMIT;
@@ -440,11 +497,20 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /**
      * @notice Checks if a claim amount is within daily limits and updates tracking state
      * If amount exceeds the daily limit, it transfers the available limit instead
+     * Whitelisted addresses bypass the daily limit check
      * @param user The address of the user claiming tokens
      * @param amount The amount being claimed
      * @return actualAmount The actual amount that will be claimed (limited by daily limit if necessary)
      */
     function checkAndUpdateDailyLimit(address user, uint256 amount) internal returns (uint256 actualAmount) {
+        // If user is whitelisted, bypass daily limit check
+        if (_claimWhitelistedAddresses.contains(user)) {
+            // Still update timestamps for tracking purposes
+            lastClaimTimestamp[user] = block.timestamp;
+            dailyClaimedAmount[user] += amount;
+            return amount;
+        }
+
         // Calculate current day based on timestamp
         uint256 currentDay = block.timestamp / ONE_DAY;
         uint256 lastClaimDay = lastClaimTimestamp[user] == 0 ? 0 : lastClaimTimestamp[user] / ONE_DAY;

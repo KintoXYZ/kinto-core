@@ -281,5 +281,6 @@
   "RewardsDistributorV10-impl": "0x1E455Ac7F1D7f82A6756E833e79c69f5eFf29884",
   "RewardsDistributorV11-impl": "0xEAb50CBF40fBc3FEaBE0DC48406b43FCf3589A0C",
   "MultisigSigner-impl": "0x831f431B499259AeaD24646Db829D24187248827",
-  "MultisigSigner": "0xCA3Fc9eCD24d0F8C7A6DFDB6A4bCbb91ff241892"
+  "MultisigSigner": "0xCA3Fc9eCD24d0F8C7A6DFDB6A4bCbb91ff241892",
+  "RewardsDistributorV12-impl": "0xC27c9bDDE6306dEB47f0FF4b264afd9205Fd43b2"
 }
