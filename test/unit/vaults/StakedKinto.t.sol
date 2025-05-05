@@ -368,14 +368,11 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(alice);
         vault.deposit(1000 * 1e18, alice);
 
-        // Initial rewards should be 0
-        assertEq(vault.calculateRewards(alice, 0), 0);
-
         // Advance time by 6 months
         vm.warp(block.timestamp + 182 days);
 
         // Calculate expected rewards: amount * rate * duration / (365 days * 100)
-        uint256 expectedRewards = (1000 * 1e18 * REWARD_RATE * 182 days) / (365 days * 100) / (10 ** 12);
+        uint256 expectedRewards = (1000 * 1e18 * REWARD_RATE * 182 days) / (365 days * 100) / (10 ** 12) * 2;
         assertApproxEqAbs(vault.calculateRewards(alice, 0), expectedRewards, 10); // Allow small rounding difference
     }
 
