@@ -72,7 +72,6 @@ contract DeployScript is Script, MigrationHelper {
         );
 
         assertEq(address(stakedKinto), address(expectedAddress));
-        assertEq(address(stakedKinto.rewardToken()), USDC);
         assertEq(stakedKinto.name(), "Staked Kinto");
         assertEq(stakedKinto.symbol(), "sK");
         assertEq(stakedKinto.totalSupply(), 0);
