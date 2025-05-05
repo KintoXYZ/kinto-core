@@ -335,7 +335,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to redeem before end date
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSignature("CannotRedeemBeforeEndDate()"));
+        vm.expectRevert(abi.encodeWithSignature("CannotWithdrawBeforeEndDate()"));
         vault.redeem(1000 * 1e18, alice, alice);
     }
 

@@ -57,12 +57,12 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     event Rollover(address indexed user, uint256 amount, uint256 weightedTimestamp);
 
     /* ============ Constants ============ */
-    uint256 public constant MAX_REWARD_RATE = 50; // 50% APY cap
+    uint256 private constant MAX_REWARD_RATE = 50; // 50% APY cap
 
     /* ============ State ============ */
 
-    ERC20Upgradeable public rewardToken;
-    StakingPeriod[] public stakingPeriods;
+    ERC20Upgradeable private rewardToken;
+    StakingPeriod[] private stakingPeriods;
     uint256 public currentPeriodId;
     mapping(uint256 => mapping(address => bool)) public hasClaimedRewards;
 
@@ -148,9 +148,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     // Override withdraw function to prevent withdrawals before end date
     function withdraw(uint256 assets, address receiver, address owner) public virtual override returns (uint256) {
-        uint256 endDate = stakingPeriods[currentPeriodId].endTime;
-        if (block.timestamp < endDate) revert CannotWithdrawBeforeEndDate();
-
         _handleRewardsAndReset(owner, receiver);
 
         // Call parent withdraw function to handle the actual token transfer and share burning
@@ -159,9 +156,6 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     // Override redeem function to prevent redemptions before end date
     function redeem(uint256 shares, address receiver, address owner) public virtual override returns (uint256) {
-        uint256 endDate = stakingPeriods[currentPeriodId].endTime;
-        if (block.timestamp < endDate) revert CannotRedeemBeforeEndDate();
-
         _handleRewardsAndReset(owner, receiver);
 
         // Call parent redeem function to handle the actual token transfer and share burning
@@ -194,8 +188,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     function maxWithdraw(address owner) public view override returns (uint256) {
-        uint256 userStake = _checkWithdrawAllowed(owner);
-        return userStake;
+        return _checkWithdrawAllowed(owner);
     }
 
     /**
@@ -210,11 +203,11 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         if (userStake.amount == 0 || hasClaimedRewards[periodId][user]) return 0;
 
-        uint256 stakingEndTime = block.timestamp < period.endTime ? block.timestamp : period.endTime;
-        uint256 stakingDuration = stakingEndTime - userStake.weightedTimestamp;
+        uint256 stakingDuration = period.endTime - userStake.weightedTimestamp;
 
         // Simplify calculation
-        return (userStake.amount * period.rewardRate * stakingDuration) / (365 days * 100) / (10 ** 12);
+        return (userStake.amount * period.rewardRate * stakingDuration) / (365 days)
+            / (10 ** (18 - rewardToken.decimals())) * 2;
     }
 
     /**
@@ -263,6 +256,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     /* ============ Internal Functions ============ */
 
     function _handleRewardsAndReset(address user, address receiver) private {
+        uint256 endDate = stakingPeriods[currentPeriodId].endTime;
+        if (block.timestamp < endDate) revert CannotWithdrawBeforeEndDate();
         // Combine reward calculations
         uint256 totalRewards = 0;
 
