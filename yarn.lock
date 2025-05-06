@@ -3349,15 +3349,16 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-"nitro-contracts@npm:@arbitrum/nitro-contracts@1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@arbitrum/nitro-contracts/-/nitro-contracts-1.2.1.tgz#2ebff205886e7dd1017a3e1df68fb1a8ab36185b"
-  integrity sha512-1k8t5ozeyCUpZ4RFlPXF876JE57z3w/YW1qUow1l9TF2+VDnbqGAiK3axhVZFhYUZxo+PajqsdpWr3FK+yW6uA==
+"nitro-contracts@npm:@arbitrum/nitro-contracts@2.1.3":
+  version "2.1.3"
+  resolved "https://registry.yarnpkg.com/@arbitrum/nitro-contracts/-/nitro-contracts-2.1.3.tgz#94e88495e2c5623cafa44ff234e435c382b1a6e6"
+  integrity sha512-tN224y23Iw47EsTYxjechaHeXN6NVLvTO0cEPNw5Hw9jzAjM3jhST2+6XldQtL+p+qvMoHbdX7pFxKKR5+Z+lg==
   dependencies:
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
     "@openzeppelin/contracts" "4.5.0"
     "@openzeppelin/contracts-upgradeable" "4.5.2"
     patch-package "^6.4.7"
+    solady "0.0.182"
 
 node-addon-api@^2.0.0:
   version "2.0.2"
@@ -4107,6 +4108,11 @@ slice-ansi@^4.0.0:
     ansi-styles "^4.0.0"
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
+
+solady@0.0.182:
+  version "0.0.182"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.182.tgz#bd8c47f128a3a752358ad052782773966d74c400"
+  integrity sha512-FW6xo1akJoYpkXMzu58/56FcNU3HYYNamEbnFO3iSibXk0nSHo0DV2Gu/zI3FPg3So5CCX6IYli1TT1IWATnvg==
 
 "solady@https://github.com/vectorized/solady.git#9deb9ed36a27261a8745db5b7cd7f4cdc3b1cd4e":
   version "0.0.168"
