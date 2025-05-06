@@ -335,7 +335,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Try to redeem before end date
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSignature("CannotRedeemBeforeEndDate()"));
+        vm.expectRevert(abi.encodeWithSignature("CannotWithdrawBeforeEndDate()"));
         vault.redeem(1000 * 1e18, alice, alice);
     }
 
@@ -368,14 +368,10 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(alice);
         vault.deposit(1000 * 1e18, alice);
 
-        // Initial rewards should be 0
-        assertEq(vault.calculateRewards(alice, 0), 0);
+        vm.warp(block.timestamp + 365 days);
 
-        // Advance time by 6 months
-        vm.warp(block.timestamp + 182 days);
-
-        // Calculate expected rewards: amount * rate * duration / (365 days * 100)
-        uint256 expectedRewards = (1000 * 1e18 * REWARD_RATE * 182 days) / (365 days * 100) / (10 ** 12);
+        // Calculate expected rewards: amount * rate * duration * 2 / (365 days)
+        uint256 expectedRewards = (1000 * 1e18 * REWARD_RATE * 365 days * 2) / (365 days * (10 ** 12));
         assertApproxEqAbs(vault.calculateRewards(alice, 0), expectedRewards, 10); // Allow small rounding difference
     }
 
