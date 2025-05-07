@@ -469,7 +469,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Execute rollover
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(1);
 
         // Verify alice no longer needs rollover
         assertFalse(vault.needsRollover(alice));
@@ -482,14 +482,14 @@ contract StakedKintoTest is SharedSetup {
         // Verify alice can't rollover again
         vm.expectRevert(abi.encodeWithSignature("AlreadyRolledOver()"));
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(1);
     }
 
     function testRollover_RevertWhen_NoPreviousPeriod() public {
         // Try to rollover when there's no previous period
         vm.expectRevert(abi.encodeWithSignature("NoPreviousPeriod()"));
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(0);
     }
 
     function testRollover_RevertWhen_NoPreviousStake() public {
@@ -501,7 +501,7 @@ contract StakedKintoTest is SharedSetup {
         // Try to rollover with no stake in previous period
         vm.expectRevert(abi.encodeWithSignature("NoPreviousStake()"));
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(1);
     }
 
     function testWithdrawAfterRollover() public {
@@ -518,7 +518,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Execute rollover
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(1);
 
         // Advance to end of second period
         vm.warp(newEndDate + 1);
@@ -547,7 +547,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Rollover to second period
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(1);
 
         // End second period and start third
         vm.warp(secondEndDate + 1);
@@ -557,7 +557,7 @@ contract StakedKintoTest is SharedSetup {
 
         // Rollover to third period
         vm.prank(alice);
-        vault.rollover();
+        vault.rollover(2);
 
         // Verify stake is in third period
         (uint256 amount,,) = vault.getUserStakeInfo(alice);
