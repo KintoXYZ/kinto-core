@@ -405,9 +405,10 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(admin);
         vault.setMaxCapacity(newCapacity);
 
-        (,,, uint256 maxCapacity) = vault.getPeriodInfo(0);
+        (,,, uint256 maxCapacity, address rewardToken) = vault.getPeriodInfo(0);
         assertEq(maxCapacity, newCapacity);
         assertEq(vault.maxDeposit(alice), newCapacity);
+        assertEq(rewardToken, address(usdc));
     }
 
     function testSetMaxCapacityUnauthorized() public {
@@ -441,7 +442,7 @@ contract StakedKintoTest is SharedSetup {
         // End first period and start new one
         vm.warp(endTime + 1);
         vm.prank(admin);
-        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         // Alice should need rollover
         assertTrue(vault.needsRollover(alice));
@@ -459,7 +460,7 @@ contract StakedKintoTest is SharedSetup {
         vm.warp(endTime + 1);
         vm.prank(admin);
         uint256 newEndDate = endTime + 365 days;
-        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         uint256 secondPeriodStartTime = block.timestamp;
 
@@ -495,7 +496,7 @@ contract StakedKintoTest is SharedSetup {
         // End first period and start new one
         vm.warp(endTime + 1);
         vm.prank(admin);
-        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         // Try to rollover with no stake in previous period
         vm.expectRevert(abi.encodeWithSignature("NoPreviousStake()"));
@@ -513,7 +514,7 @@ contract StakedKintoTest is SharedSetup {
         vm.warp(endTime + 1);
         vm.prank(admin);
         uint256 newEndDate = endTime + 365 days;
-        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         // Execute rollover
         vm.prank(alice);
@@ -542,7 +543,7 @@ contract StakedKintoTest is SharedSetup {
         vm.warp(endTime + 1);
         vm.prank(admin);
         uint256 secondEndDate = endTime + 365 days;
-        vault.startNewPeriod(secondEndDate, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(secondEndDate, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         // Rollover to second period
         vm.prank(alice);
@@ -552,7 +553,7 @@ contract StakedKintoTest is SharedSetup {
         vm.warp(secondEndDate + 1);
         vm.prank(admin);
         uint256 thirdEndDate = secondEndDate + 365 days;
-        vault.startNewPeriod(thirdEndDate, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(thirdEndDate, REWARD_RATE, MAX_CAPACITY, address(usdc));
 
         // Rollover to third period
         vm.prank(alice);

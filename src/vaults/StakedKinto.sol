@@ -31,6 +31,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         uint256 endTime;
         uint256 rewardRate;
         uint256 maxCapacity;
+        ERC20Upgradeable rewardToken;
     }
 
     /* ============ Custom Errors ============ */
@@ -61,7 +62,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ State ============ */
 
-    ERC20Upgradeable private rewardToken;
+    ERC20Upgradeable private __rewardToken__deprecated;
     StakingPeriod[] private stakingPeriods;
     uint256 public currentPeriodId;
     mapping(uint256 => mapping(address => bool)) public hasClaimedRewards;
@@ -74,6 +75,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         _disableInitializers();
     }
 
+    // Save Space on new deployments
     function initialize(
         IERC20MetadataUpgradeable _stakingToken,
         ERC20Upgradeable _rewardToken,
@@ -88,9 +90,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         __Ownable_init_unchained();
         __UUPSUpgradeable_init();
 
-        rewardToken = _rewardToken;
+        __rewardToken__deprecated = _rewardToken;
 
-        _startNewPeriod(_endDate, _rewardRate, _maxCapacity);
+        _startNewPeriod(_endDate, _rewardRate, _maxCapacity, address(_rewardToken));
 
         emit MaxCapacityUpdated(_maxCapacity);
     }
@@ -111,9 +113,13 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @param _endDate The end date of the new period
      * @param _rewardRate The reward rate for the new period
      * @param _maxCapacity The maximum capacity for the new period
+     * @param _rewardToken The reward token for the new period
      */
-    function startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) external onlyOwner {
-        _startNewPeriod(_endDate, _rewardRate, _maxCapacity);
+    function startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity, address _rewardToken)
+        external
+        onlyOwner
+    {
+        _startNewPeriod(_endDate, _rewardRate, _maxCapacity, _rewardToken);
     }
 
     // Required by UUPSUpgradeable
@@ -128,8 +134,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         UserStake memory lastPeriodUserStake = _periodUserStakes[currentPeriodId - 1][msg.sender];
         if (lastPeriodUserStake.amount == 0) revert NoPreviousStake();
         if (_periodUserStakes[currentPeriodId][msg.sender].amount > 0) revert AlreadyRolledOver();
-        _periodUserStakes[currentPeriodId][msg.sender] =
-            UserStake({amount: lastPeriodUserStake.amount, weightedTimestamp: currentPeriod.startTime});
+        _periodUserStakes[currentPeriodId][msg.sender] = UserStake({
+            amount: lastPeriodUserStake.amount,
+            weightedTimestamp: block.timestamp > currentPeriod.startTime ? block.timestamp : currentPeriod.startTime
+        });
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
 
@@ -207,7 +215,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         // Simplify calculation
         return (userStake.amount * period.rewardRate * stakingDuration) / (365 days)
-            / (10 ** (18 - rewardToken.decimals())) * 2;
+            / (10 ** (18 - period.rewardToken.decimals())) * 2;
     }
 
     /**
@@ -243,20 +251,22 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @return endTime The end time of the period
      * @return rewardRate The reward rate for the period
      * @return maxCapacity The maximum capacity for the period
+     * @return rewardToken The reward token for the period
      */
     function getPeriodInfo(uint256 periodId)
         external
         view
-        returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity)
+        returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity, address rewardToken)
     {
         StakingPeriod memory period = stakingPeriods[periodId];
-        return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity);
+        return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity, address(period.rewardToken));
     }
 
     /* ============ Internal Functions ============ */
 
     function _handleRewardsAndReset(address user, address receiver) private {
         uint256 endDate = stakingPeriods[currentPeriodId].endTime;
+        ERC20Upgradeable rewardToken = stakingPeriods[currentPeriodId].rewardToken;
         if (block.timestamp < endDate) revert CannotWithdrawBeforeEndDate();
         // Combine reward calculations
         uint256 totalRewards = 0;
@@ -280,7 +290,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     // Helper function to start a new staking period
-    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) private {
+
+    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity, address _rewardToken)
+        private
+    {
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
         if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
@@ -289,7 +302,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
                 startTime: uint64(block.timestamp),
                 endTime: uint64(_endDate),
                 rewardRate: uint32(_rewardRate),
-                maxCapacity: uint96(_maxCapacity)
+                maxCapacity: uint96(_maxCapacity),
+                rewardToken: ERC20Upgradeable(_rewardToken)
             })
         );
 
