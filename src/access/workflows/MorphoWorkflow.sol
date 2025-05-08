@@ -5,10 +5,13 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 import {Id, IMorpho, MarketParams} from "@kinto-core/interfaces/external/IMorpho.sol";
+import {IPreLiquidationFactory} from "@kinto-core/interfaces/external/IMorphoPreLiquidationFactory.sol";
+import {IPreLiquidation, PreLiquidationParams} from "@kinto-core/interfaces/external/IMorphoPreLiquidation.sol";
 
 /**
  * @title MorphoWorkflow
  * @notice Allows interacting with Morpho protocol for lending and borrowing operations
+ * @dev Provides functions to lend, borrow, repay, and withdraw from Morpho markets on Arbitrum
  */
 contract MorphoWorkflow {
     using SafeERC20 for IERC20;
@@ -34,6 +37,9 @@ contract MorphoWorkflow {
     /// @notice Liquidation Loan-to-Value (62.5%)
     uint256 public constant LLTV = 625000000000000000;
 
+    /// @notice Address of the pre-liquidation factory contract
+    address public constant PRE_LIQUIDATION_FACTORY = 0x635c31B5DF1F7EFbCbC07E302335Ef4230758e3d;
+
     /* ============ Internal Functions ============ */
 
     /**
@@ -50,10 +56,53 @@ contract MorphoWorkflow {
         });
     }
 
+    /**
+     * @notice Creates the PreLiquidationParams struct for Morpho pre-liquidation setup
+     * @dev Sets parameters for pre-liquidation conditions and incentives
+     * @return PreLiquidationParams struct with configured values
+     */
+    function _getPreLiquidationParams() internal pure returns (PreLiquidationParams memory) {
+        // +------------------------+---------------------------+----------------------------------------------+
+        // | Parameter              | Suggested Value (WAD)     | Meaning                                      |
+        // +------------------------+---------------------------+----------------------------------------------+
+        // | preLltv                | 550000000000000000        | Pre-liquidation starts here (55% LTV)        |
+        // | preLCF1                | 500000000000000000        | Liquidate up to 50% of debt at 55% LTV       |
+        // | preLCF2                | 1000000000000000000       | Liquidate up to 100% of debt at 62.5% LTV    |
+        // | preLIF1                | 1050000000000000000       | 5% bonus on repaid debt at 55% LTV           |
+        // | preLIF2                | 1120000000000000000       | 12% bonus on repaid debt at 62.5% LTV        |
+        // | preLiquidationOracle   | (same as main market)     | Must match the asset price source            |
+        // +------------------------+---------------------------+----------------------------------------------+
+        return PreLiquidationParams({
+            preLltv: 0.55e18,
+            preLCF1: 0.5e18,
+            preLCF2: 1e18,
+            preLIF1: 1.05e18,
+            preLIF2: 1.12e18,
+            preLiquidationOracle: ORACLE
+        });
+    }
+
+    /// @notice The length of the data used to compute the id of a market.
+    /// @dev The length is 5 * 32 because `MarketParams` has 5 variables of 32 bytes each.
+    uint256 internal constant MARKET_PARAMS_BYTES_LENGTH = 5 * 32;
+
+    /**
+     * @notice Calculates the unique ID for a market based on its parameters
+     * @dev Uses keccak256 hash of the packed market parameters
+     * @param marketParams The market parameters struct
+     * @return marketParamsId The unique identifier for the market
+     */
+    function id(MarketParams memory marketParams) internal pure returns (Id marketParamsId) {
+        assembly ("memory-safe") {
+            marketParamsId := keccak256(marketParams, MARKET_PARAMS_BYTES_LENGTH)
+        }
+    }
+
     /* ============ External Functions ============ */
 
     /**
      * @notice Supplies collateral and optionally borrows loan tokens
+     * @dev Creates pre-liquidation contract if not already set up
      * @param amountLend The amount of collateral tokens to lend
      * @param amountBorrow The amount of loan tokens to borrow (can be 0)
      * @return borrowed The amount of loan tokens borrowed
@@ -62,6 +111,12 @@ contract MorphoWorkflow {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
+        if (!IPreLiquidationFactory(PRE_LIQUIDATION_FACTORY).isPreLiquidation(address(this))) {
+            IPreLiquidation preLiquidation = IPreLiquidationFactory(PRE_LIQUIDATION_FACTORY).createPreLiquidation(
+                id(marketParams), _getPreLiquidationParams()
+            );
+            IMorpho(MORPHO).setAuthorization(address(preLiquidation), true);
+        }
         // Approve Morpho to spend collateral tokens
         IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
 
@@ -79,6 +134,7 @@ contract MorphoWorkflow {
 
     /**
      * @notice Repays loan and optionally withdraws collateral
+     * @dev Handles both repayment and withdrawal in a single transaction
      * @param amountRepay The amount of loan tokens to repay (can be 0)
      * @param amountWithdraw The amount of collateral tokens to withdraw
      * @return withdrawn The amount of collateral tokens withdrawn
@@ -107,6 +163,7 @@ contract MorphoWorkflow {
 
     /**
      * @notice Supplies assets to Morpho protocol
+     * @dev Supplies loan tokens (USDC.e) to the Morpho market
      * @param amountSupply The amount of assets to supply
      * @return supplied The amount of assets supplied
      */
@@ -125,6 +182,7 @@ contract MorphoWorkflow {
 
     /**
      * @notice Withdraws assets from Morpho protocol
+     * @dev Withdraws loan tokens (USDC.e) from the Morpho market
      * @param amountWithdraw The amount of assets to withdraw
      * @return withdrawn The amount of assets withdrawn
      */

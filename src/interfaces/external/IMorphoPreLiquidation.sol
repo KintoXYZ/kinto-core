@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >= 0.5.0;
 
-import {Id, IMorpho, MarketParams} from "../../lib/morpho-blue/src/interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams} from "./IMorpho.sol";
 
 /// @notice The pre-liquidation parameters are:
 ///  - preLltv, the maximum LTV of a position before allowing pre-liquidation, scaled by WAD.
