@@ -122,11 +122,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
 
         // Deal some loan tokens for repayment (use a different approach for USDC.e)
-        address usdcWhale = 0x252cd4Fe84EbDa2276eb6dEA86b16A48768d4650; // A known USDC.e holder on Arbitrum
-        vm.startPrank(usdcWhale);
-        // Transfer USDC.e to access point
-        IERC20(LOAN_TOKEN).transfer(address(accessPoint), borrowAmount);
-        vm.stopPrank();
+        deal(LOAN_TOKEN, address(accessPoint), borrowAmount);
 
         // Execute lend and borrow first
         bytes memory lendWorkflowData =
@@ -158,14 +154,13 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testSupply() public {
-        uint256 supplyAmount = 10 ether; // 10 $K
+        uint256 supplyAmount = 10e6; // 10 USDC
 
         // Mint tokens to the access point
-        vm.prank(COLLATERAL_MINTER);
-        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), supplyAmount);
+        deal(LOAN_TOKEN, address(accessPoint), supplyAmount);
 
         // Get initial balance
-        uint256 initialBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
+        uint256 initialBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
 
         // Prepare workflow data
         bytes memory workflowData = abi.encodeWithSelector(MorphoWorkflow.supply.selector, supplyAmount);
@@ -175,18 +170,15 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), workflowData);
 
         // Check that tokens were supplied
-        assertLt(
-            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)), initialBalance, "Balance should have decreased"
-        );
+        assertLt(IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), initialBalance, "Balance should have decreased");
     }
 
     function testWithdraw() public {
         // First, supply some tokens
-        uint256 supplyAmount = 10 ether; // 10 $K
+        uint256 supplyAmount = 10e6; // 10 USDC
 
         // Mint tokens to the access point
-        vm.prank(COLLATERAL_MINTER);
-        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), supplyAmount);
+        deal(LOAN_TOKEN, address(accessPoint), supplyAmount);
 
         // Supply tokens first
         bytes memory supplyWorkflowData = abi.encodeWithSelector(MorphoWorkflow.supply.selector, supplyAmount);
@@ -194,7 +186,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), supplyWorkflowData);
 
         // Get balance after supply
-        uint256 balanceAfterSupply = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
+        uint256 balanceAfterSupply = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
 
         // Prepare withdraw workflow data (withdraw half)
         bytes memory withdrawWorkflowData = abi.encodeWithSelector(MorphoWorkflow.withdraw.selector, supplyAmount / 2);
@@ -205,9 +197,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
 
         // Check that tokens were withdrawn
         assertGt(
-            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
-            balanceAfterSupply,
-            "Balance should have increased"
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), balanceAfterSupply, "Balance should have increased"
         );
     }
 }

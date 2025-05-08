@@ -115,7 +115,7 @@ contract MorphoWorkflow {
         MarketParams memory marketParams = _getMarketParams();
 
         // Approve Morpho to spend tokens
-        IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountSupply);
+        IERC20(LOAN_TOKEN).forceApprove(MORPHO, amountSupply);
 
         // Supply to Morpho
         (supplied,) = IMorpho(MORPHO).supply(marketParams, amountSupply, 0, address(this), "");
