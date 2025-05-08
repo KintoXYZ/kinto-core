@@ -92,7 +92,7 @@ contract MorphoWorkflow {
      * @param marketParams The market parameters struct
      * @return marketParamsId The unique identifier for the market
      */
-    function id(MarketParams memory marketParams) internal pure returns (Id marketParamsId) {
+    function id(MarketParams memory marketParams) public pure returns (Id marketParamsId) {
         assembly ("memory-safe") {
             marketParamsId := keccak256(marketParams, MARKET_PARAMS_BYTES_LENGTH)
         }
