@@ -30,8 +30,6 @@ import {SuperToken} from "@kinto-core/tokens/bridged/SuperToken.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "forge-std/console2.sol";
-
 contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Constants, BridgeDataHelper {
     using stdJson for string;
 
@@ -39,6 +37,8 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     AccessRegistry internal accessRegistry;
     IAccessPoint internal accessPoint;
     MorphoWorkflow internal morphoWorkflow;
+    MarketParams internal marketParams;
+    Id internal marketId;
 
     // Morpho protocol constants
     address constant MORPHO = 0x6c247b1F6182318877311737BaC0844bAa518F5e;
@@ -214,21 +214,17 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
 
         // Get oracle price to calculate max borrowable amount
         uint256 oraclePrice = IOracle(ORACLE).price();
-        console2.log("oraclePrice:", oraclePrice);
         uint256 collateralValueInUSD = collateralAmount * oraclePrice / 1e24;
-        console2.log("collateralValueInUSD:", collateralValueInUSD);
 
         // Calculate maximum borrow amount at LLTV (62.5%)
         uint256 maxBorrowAmount = collateralValueInUSD * (LLTV - 0.005e18) / 1e18 / 1e12;
-        console2.log("maxBorrowAmount:", maxBorrowAmount);
 
         // Deal collateral to the access point
         vm.prank(COLLATERAL_MINTER);
         SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
 
-        // Deal loan token to a liquidator address for later use
-        address liquidator = address(0x9999);
-        deal(LOAN_TOKEN, liquidator, maxBorrowAmount);
+        // Deal loan token to a bob0 address for later use
+        deal(LOAN_TOKEN, bob0, maxBorrowAmount * 2); // Extra funds for the bob0
 
         // Prepare workflow data for lending and borrowing at max LTV
         bytes memory lendWorkflowData =
@@ -239,33 +235,65 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
 
         // Get market parameters and ID
-        MarketParams memory marketParams = _getMarketParams();
-        Id marketId = morphoWorkflow.id(marketParams);
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
 
         // Verify position was created at max LTV
         Position memory position = IMorpho(MORPHO).position(marketId, address(accessPoint));
         assertTrue(position.collateral > 0, "Collateral not supplied");
         assertTrue(position.borrowShares > 0, "No loan borrowed");
 
-        // Get pre-liquidation contract from the factory
+        // Get pre-liquidation contract from the provided address
         address preliquidation = 0xdE616CeEF394f5E05ed8b6cABa83cBBCC60C0640;
         IPreLiquidationFactory factory = IPreLiquidationFactory(PRE_LIQUIDATION_FACTORY);
-        assertTrue(factory.isPreLiquidation(address(preliquidation)), "No preliquidation contract found");
+        assertTrue(factory.isPreLiquidation(preliquidation), "Not a valid pre-liquidation contract");
 
-
-        // Since we borrowed at max LTV, the position should be eligible for pre-liquidation
         // Record position before liquidation
         uint256 initialCollateral = position.collateral;
         uint256 initialBorrowShares = position.borrowShares;
 
-        // In a complete implementation, we would:
-        // 1. Get the actual pre-liquidation contract address
-        // 2. Calculate repayable shares based on the position's LTV
-        // 3. Execute pre-liquidation
+        // Calculate the amount of shares to repay in pre-liquidation
+        // Use a small portion of the loan for this test
+        uint256 repayShares = initialBorrowShares / 4; // Repay 25% of the loan
 
-        // For this test, we demonstrate the structure and verification points:
-        // - Verify pre-liquidation contract was created
-        // - Position is at max LTV
-        // - Pre-liquidation would be possible on this position
+        // Switch to the bob0 account to perform the pre-liquidation
+        vm.startPrank(bob0);
+
+        // Approve the Morpho contract to use the loan token for repayment
+        IERC20(LOAN_TOKEN).approve(preliquidation, type(uint256).max);
+
+        // Perform the pre-liquidation through the pre-liquidation contract
+        IPreLiquidation preLiquidation = IPreLiquidation(preliquidation);
+        (uint256 seizedCollateral, uint256 repaidAssets) = preLiquidation.preLiquidate(
+            address(accessPoint), // borrower (the access point)
+            0, // seizedAssets (0 means we're specifying repaidShares instead)
+            repayShares, // repaidShares (how much of the loan we want to repay)
+            "" // data (no callback needed)
+        );
+        vm.stopPrank();
+
+        // Verify the bob0 received the collateral
+        uint256 liquidatorCollateral = IERC20(COLLATERAL_TOKEN).balanceOf(bob0);
+        assertEq(liquidatorCollateral, seizedCollateral, "bob0 didn't receive collateral");
+
+        // Verify the borrower's position was updated
+        Position memory positionAfter = IMorpho(MORPHO).position(marketId, address(accessPoint));
+
+        // Verify position health: collateral decreased, borrow share decreased
+        assertLt(positionAfter.collateral, initialCollateral, "Collateral should have decreased");
+        assertLt(positionAfter.borrowShares, initialBorrowShares, "Borrow shares should have decreased");
+
+        // Verify the amount of seized collateral and repaid assets are reasonable
+        assertGt(seizedCollateral, 0, "Should have seized some collateral");
+        assertGt(repaidAssets, 0, "Should have repaid some assets");
+
+        // If the liquidation was successful with bonus, the protocol should have applied an incentive factor
+        // The pre-liquidation bonus means that the bob0 gets more collateral than would be exactly fair value
+        uint256 fairValueCollateral = repaidAssets * 1e12 / oraclePrice * 1e18;
+        assertGt(seizedCollateral, fairValueCollateral, "bob0 should receive a bonus");
+
+        // The position should still exist but be healthier
+        assertTrue(positionAfter.collateral > 0, "Position should still have collateral");
+        assertTrue(positionAfter.borrowShares > 0, "Position should still have debt");
     }
 }
