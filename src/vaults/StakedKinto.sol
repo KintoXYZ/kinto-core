@@ -250,17 +250,13 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     /* ============ Internal Functions ============ */
 
     function _handleRewardsAndReset(address user, address receiver) private {
-        uint256 endDatePrevious =
-            currentPeriodId > 0 ? stakingPeriods[currentPeriodId - 1].endTime : stakingPeriods[0].endTime;
-        if (
-            block.timestamp < endDatePrevious
-                || _periodUserStakes[currentPeriodId][user].untilPeriodId > currentPeriodId
-        ) {
+        uint256 withdrawableAmount = _checkWithdrawAllowed(user);
+        if (withdrawableAmount == 0) {
             revert CannotWithdrawBeforeEndDate();
         }
         // Previous periods (use a more efficient loop)
         for (uint256 i = 0; i <= currentPeriodId; i++) {
-            if (!hasClaimedRewards[i][user] && _periodUserStakes[currentPeriodId][user].amount > 0) {
+            if (!hasClaimedRewards[i][user] && _periodUserStakes[i][user].amount > 0) {
                 ERC20Upgradeable rewardToken = address(stakingPeriods[i].rewardToken) != address(0)
                     ? stakingPeriods[i].rewardToken
                     : __rewardToken__deprecated;
@@ -352,6 +348,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     function _checkWithdrawAllowed(address user) private view returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         uint256 userStake = _periodUserStakes[currentPeriodId][user].amount;
+
         // User staked in the current period and the period has not ended
         if (userStake > 0 && block.timestamp < currentPeriod.endTime) {
             return 0; // Cannot withdraw before end date
@@ -366,7 +363,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             // No stake in the current period
             // Previous periods (use a more efficient loop)
             for (uint256 i = 0; i < currentPeriodId; i++) {
-                userStake += _periodUserStakes[i][user].amount;
+                uint256 amount = _periodUserStakes[i][user].amount;
+                if (amount > 0 && _periodUserStakes[i][user].untilPeriodId <= currentPeriodId) {
+                    userStake += _periodUserStakes[i][user].amount;
+                }
             }
         }
 
