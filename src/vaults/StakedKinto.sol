@@ -51,6 +51,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     error AlreadyRolledOver();
     error RewardRateTooHigh();
     error DepositTooSmall();
+    error CannotTransferAfterClaim();
 
     /* ============ Events ============ */
     event RewardsDistributed(address indexed user, uint256 amount);
@@ -248,30 +249,43 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity, address(period.rewardToken));
     }
 
-    // Transfer the user info when token is transferred
-    function transfer(address to, uint256 amount) public override(ERC20Upgradeable, IERC20Upgradeable) returns (bool) {
-        // Override periodUserStake and move info to recipient
-        for (uint256 i = 0; i <= currentPeriodId; i++) {
-            if (_periodUserStakes[i][msg.sender].amount > 0) {
-                // Recipient may already have fields set, so we need to merge them
-                UserStake memory recipientStake = _periodUserStakes[i][to];
-                if (recipientStake.amount == 0) {
-                    _periodUserStakes[i][to] = _periodUserStakes[i][msg.sender];
-                } else {
-                    _periodUserStakes[i][to].amount += _periodUserStakes[i][msg.sender].amount;
-                    _periodUserStakes[i][to].weightedTimestamp = (
-                        (_periodUserStakes[i][to].weightedTimestamp * _periodUserStakes[i][to].amount)
-                            + (_periodUserStakes[i][msg.sender].weightedTimestamp * _periodUserStakes[i][msg.sender].amount)
-                    ) / (_periodUserStakes[i][to].amount + _periodUserStakes[i][msg.sender].amount);
-                    _periodUserStakes[i][to].untilPeriodId = _periodUserStakes[i][msg.sender].untilPeriodId
-                        > _periodUserStakes[i][to].untilPeriodId
-                        ? _periodUserStakes[i][msg.sender].untilPeriodId
-                        : _periodUserStakes[i][to].untilPeriodId;
-                }
-                delete _periodUserStakes[i][msg.sender];
+    /// @dev Hook called by OpenZeppelin ERC20 after *any* share movement:
+    /// mint, burn, transfer, or transferFrom.
+    function _afterTokenTransfer(address from, address to, uint256 /* amount */ ) internal virtual override {
+        // Ignore mint, burn, or self-transfer.
+        if (from == address(0) || to == address(0) || from == to) return;
+
+        for (uint256 i; i <= currentPeriodId; ++i) {
+            UserStake storage sFrom = _periodUserStakes[i][from];
+            if (sFrom.amount == 0) continue;
+
+            // ✅ protect receiver’s un-claimed rewards
+            if (hasClaimedRewards[i][from] && !hasClaimedRewards[i][to]) {
+                revert CannotTransferAfterClaim();
             }
+
+            UserStake storage sTo = _periodUserStakes[i][to];
+
+            if (sTo.amount == 0) {
+                // Simple move.
+                _periodUserStakes[i][to] = sFrom;
+            } else {
+                uint256 total = sTo.amount + sFrom.amount;
+                sTo.weightedTimestamp =
+                    (sTo.weightedTimestamp * sTo.amount + sFrom.weightedTimestamp * sFrom.amount) / total;
+                sTo.amount = total;
+                if (sFrom.untilPeriodId > sTo.untilPeriodId) {
+                    sTo.untilPeriodId = sFrom.untilPeriodId;
+                }
+            }
+
+            // Merge reward-claim bitmap.
+            hasClaimedRewards[i][to] = hasClaimedRewards[i][to] || hasClaimedRewards[i][from];
+
+            // Clean up sender.
+            delete _periodUserStakes[i][from];
+            delete hasClaimedRewards[i][from];
         }
-        return super.transfer(to, amount);
     }
 
     /* ============ Internal Functions ============ */
