@@ -432,7 +432,59 @@ contract StakedKintoTest is SharedSetup {
         assertEq(StakedKintoUpgraded(address(vault)).newFunction(), 1);
     }
 
-    // TODO : Add tests for deposit with bonus
+    /* ============ Deposit with bonus Tests ============ */
+
+    /// No bonus when untilPeriodId == currentPeriodId
+    function testDepositWithBonusNoBonus() public {
+        uint256 amount = 1_000 ether;
+        uint256 currentPid = vault.currentPeriodId();
+        _depositWithBonus(alice, amount, currentPid);
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, amount, "Unexpected bonus applied");
+        assertEq(vault.balanceOf(alice), amount, "Shares mismatch");
+    }
+
+    /// 4 % bonus per future period
+    function testDepositWithBonusAddsFourPercent() public {
+        uint256 amount = 2_000 ether;
+        uint256 untilPid = vault.currentPeriodId() + 1; // lock one extra period
+        uint256 shares = _depositWithBonus(alice, amount, untilPid);
+
+        uint256 expected = (amount * 104) / 100; // +4 %
+        assertEq(shares, expected, "Returned shares wrong");
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, expected, "Stake amount without bonus");
+        assertEq(vault.balanceOf(alice), expected, "Share balance wrong");
+
+        // untilPeriodId stored correctly
+        (,, uint256 pending) = vault.getUserStakeInfo(alice);
+        assertEq(pending, vault.calculateRewards(alice, vault.currentPeriodId()), "Pending mismatch");
+    }
+
+    function testDepositWithBonusTwoPeriodsAddsNinePercent() public {
+        uint256 amount = 3_000 ether;
+        uint256 untilPid = vault.currentPeriodId() + 2; // diff = 2 (10 %)
+        uint256 shares = _depositWithBonus(bob, amount, untilPid);
+
+        uint256 expected = (amount * 109) / 100;
+        assertEq(shares, expected, "Shares wrong for diff=2");
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, expected, "Stake amt wrong for diff=2");
+    }
+
+    /// untilPeriodId < currentPeriodId should revert with arithmetic error (underflow)
+    function testDepositWithBonusInvalidUntilPeriod() public {
+        // Start a new period so currentPid becomes 1
+        uint256 newEnd = block.timestamp + 30 days;
+        vm.prank(admin);
+        vault.startNewPeriod(newEnd, 10, 1_000_000 ether, address(usdc));
+
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.depositWithBonus(100 ether, alice, 0);
+    }
 
     /* ============ afterTokenTransfer() Tests ============ */
 
@@ -564,6 +616,16 @@ contract StakedKintoTest is SharedSetup {
         vm.startPrank(user);
         kToken.approve(address(vault), amount);
         vault.deposit(amount, user);
+        vm.stopPrank();
+    }
+
+    function _depositWithBonus(address user, uint256 amount, uint256 untilPid) internal returns (uint256 shares) {
+        uint256 diff = untilPid - vault.currentPeriodId();
+        uint256 bonusPct = 5 * diff; // 5 % per future period
+        uint256 amountWithBonus = amount + (amount * bonusPct) / 100;
+        vm.startPrank(user);
+        kToken.approve(address(vault), amountWithBonus);
+        shares = vault.depositWithBonus(amount, user, untilPid);
         vm.stopPrank();
     }
 }

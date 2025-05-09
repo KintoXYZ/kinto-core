@@ -337,7 +337,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     function _innerDeposit(uint256 assets, address receiver, uint256 untilPeriodId) private returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
+        if (untilPeriodId < currentPeriodId || block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
 
         // Check if deposit would exceed max capacity
         if (totalAssets() + assets > currentPeriod.maxCapacity) revert MaxCapacityReached();
@@ -360,7 +360,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         // Longer bonus
         if (untilPeriodId > currentPeriodId) {
             uint256 diff = untilPeriodId - currentPeriodId;
-            uint256 bonus = (diff * 4e16) + (1e16 * diff);
+            uint256 bonus = (diff * (diff + 7) * 1e16) / 2;
             assets += (bonus * assets) / 1e18;
         }
 
