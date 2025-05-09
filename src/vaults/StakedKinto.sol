@@ -24,6 +24,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     struct UserStake {
         uint256 amount;
         uint256 weightedTimestamp;
+        uint256 untilPeriodId;
     }
 
     struct StakingPeriod {
@@ -136,21 +137,27 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         if (_periodUserStakes[newPeriod][msg.sender].amount > 0) revert AlreadyRolledOver();
         _periodUserStakes[newPeriod][msg.sender] = UserStake({
             amount: lastPeriodUserStake.amount,
-            weightedTimestamp: block.timestamp > currentPeriod.startTime ? block.timestamp : currentPeriod.startTime
+            weightedTimestamp: block.timestamp > currentPeriod.startTime ? block.timestamp : currentPeriod.startTime,
+            untilPeriodId: currentPeriodId
         });
         emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
     }
 
+    function depositWithBonus(uint256 assets, address receiver, uint256 untilPeriodId) public returns (uint256) {
+        _innerDeposit(assets, receiver, untilPeriodId);
+        return super.deposit(assets, receiver);
+    }
+
     // Override deposit function to implement weighted timestamp logic and check capacity
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
-        _innerDeposit(assets, receiver);
+        _innerDeposit(assets, receiver, currentPeriodId);
 
         // Call parent deposit function to handle the actual token transfer and share minting
         return super.deposit(assets, receiver);
     }
 
     function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
-        _innerDeposit(convertToAssets(shares), receiver);
+        _innerDeposit(convertToAssets(shares), receiver, currentPeriodId);
         return super.mint(shares, receiver);
     }
 
@@ -267,7 +274,12 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     function _handleRewardsAndReset(address user, address receiver) private {
         uint256 endDatePrevious =
             currentPeriodId > 0 ? stakingPeriods[currentPeriodId - 1].endTime : stakingPeriods[0].endTime;
-        if (block.timestamp < endDatePrevious) revert CannotWithdrawBeforeEndDate();
+        if (
+            block.timestamp < endDatePrevious
+                || _periodUserStakes[currentPeriodId][user].untilPeriodId > currentPeriodId
+        ) {
+            revert CannotWithdrawBeforeEndDate();
+        }
         // Previous periods (use a more efficient loop)
         for (uint256 i = 0; i <= currentPeriodId; i++) {
             if (!hasClaimedRewards[i][user]) {
@@ -306,7 +318,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         emit NewPeriodStarted(currentPeriodId, block.timestamp, _endDate);
     }
 
-    function _innerDeposit(uint256 assets, address receiver) private {
+    function _innerDeposit(uint256 assets, address receiver, uint256 untilPeriodId) private returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
 
@@ -327,10 +339,20 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             userStake.weightedTimestamp = block.timestamp;
         }
 
+        userStake.untilPeriodId = untilPeriodId;
+        // Longer bonus
+        if (untilPeriodId > currentPeriodId) {
+            uint256 diff = untilPeriodId - currentPeriodId;
+            uint256 bonus = diff * 5e16;
+            assets += (bonus * assets) / 1e18;
+        }
+
         // Update stake amount
         userStake.amount += assets;
 
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
+
+        return assets;
     }
 
     function _getRemainingCapacity() private view returns (uint256) {
