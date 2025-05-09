@@ -96,10 +96,10 @@ contract DeployScript is MigrationHelper {
 
         // Part 3: Revoke GOVERNANCE_ROLE from NioGovernor
         console2.log("Checking if NioGovernor has GOVERNANCE_ROLE");
-        bool hasRole = kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), nioGovernor);
-        console2.log("NioGovernor has GOVERNANCE_ROLE:", hasRole);
+        bool hasRole2 = kintoID.hasRole(kintoID.GOVERNANCE_ROLE(), nioGovernor);
+        console2.log("NioGovernor has GOVERNANCE_ROLE:", hasRole2);
 
-        if (hasRole) {
+        if (hasRole2) {
             console2.log("Revoking GOVERNANCE_ROLE from NioGovernor");
             bytes memory data =
                 abi.encodeWithSelector(IAccessControl.revokeRole.selector, kintoID.GOVERNANCE_ROLE(), nioGovernor);

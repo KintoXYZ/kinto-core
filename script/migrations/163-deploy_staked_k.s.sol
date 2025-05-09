@@ -76,11 +76,13 @@ contract DeployScript is Script, MigrationHelper {
         assertEq(stakedKinto.symbol(), "sK");
         assertEq(stakedKinto.totalSupply(), 0);
         assertEq(stakedKinto.balanceOf(address(proxy)), 0);
-        (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity) = stakedKinto.getPeriodInfo(0);
+        (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity, address rewardToken) =
+            stakedKinto.getPeriodInfo(0);
         assertEq(startTime, block.timestamp);
         assertEq(endTime, END_TIME);
         assertEq(rewardRate, 3);
         assertEq(maxCapacity, 500_000 * 1e18);
+        assertEq(rewardToken, USDC);
         saveContractAddress("stakedKinto", address(stakedKinto));
         saveContractAddress("stakedKinto-impl", address(impl));
     }
