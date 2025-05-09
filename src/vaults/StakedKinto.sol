@@ -346,7 +346,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         // Longer bonus
         if (untilPeriodId > currentPeriodId) {
             uint256 diff = untilPeriodId - currentPeriodId;
-            uint256 bonus = diff * 5e16;
+            uint256 bonus = (diff * 4e16) + (1e16 * diff);
             assets += (bonus * assets) / 1e18;
         }
 
