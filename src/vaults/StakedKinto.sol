@@ -129,8 +129,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     /* ============ User State Functions ============ */
 
     function depositWithBonus(uint256 assets, address receiver, uint256 untilPeriodId) public returns (uint256) {
-        _innerDeposit(assets, receiver, untilPeriodId);
-        return super.deposit(assets, receiver);
+        uint assetsWithBonus = _innerDeposit(assets, receiver, untilPeriodId);
+        return super.deposit(assetsWithBonus, receiver);
     }
 
     // Override deposit function to implement weighted timestamp logic and check capacity
