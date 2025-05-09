@@ -432,6 +432,9 @@ contract StakedKintoTest is SharedSetup {
         assertEq(StakedKintoUpgraded(address(vault)).newFunction(), 1);
     }
 
+    // TODO : Add tests for deposit with bonus
+    // TODO : Add tests for token transfer
+
     /* ============ Edge Cases Tests ============ */
 
     function testZeroDeposit() public {

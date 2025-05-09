@@ -10,6 +10,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
  * @title StakedKinto
@@ -245,6 +246,32 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     {
         StakingPeriod memory period = stakingPeriods[periodId];
         return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity, address(period.rewardToken));
+    }
+
+    // Transfer the user info when token is transferred
+    function transfer(address to, uint256 amount) public override(ERC20Upgradeable, IERC20Upgradeable) returns (bool) {
+        // Override periodUserStake and move info to recipient
+        for (uint256 i = 0; i <= currentPeriodId; i++) {
+            if (_periodUserStakes[i][msg.sender].amount > 0) {
+                // Recipient may already have fields set, so we need to merge them
+                UserStake memory recipientStake = _periodUserStakes[i][to];
+                if (recipientStake.amount == 0) {
+                    _periodUserStakes[i][to] = _periodUserStakes[i][msg.sender];
+                } else {
+                    _periodUserStakes[i][to].amount += _periodUserStakes[i][msg.sender].amount;
+                    _periodUserStakes[i][to].weightedTimestamp = (
+                        (_periodUserStakes[i][to].weightedTimestamp * _periodUserStakes[i][to].amount)
+                            + (_periodUserStakes[i][msg.sender].weightedTimestamp * _periodUserStakes[i][msg.sender].amount)
+                    ) / (_periodUserStakes[i][to].amount + _periodUserStakes[i][msg.sender].amount);
+                    _periodUserStakes[i][to].untilPeriodId = _periodUserStakes[i][msg.sender].untilPeriodId
+                        > _periodUserStakes[i][to].untilPeriodId
+                        ? _periodUserStakes[i][msg.sender].untilPeriodId
+                        : _periodUserStakes[i][to].untilPeriodId;
+                }
+                delete _periodUserStakes[i][msg.sender];
+            }
+        }
+        return super.transfer(to, amount);
     }
 
     /* ============ Internal Functions ============ */
