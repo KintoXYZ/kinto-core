@@ -73,7 +73,6 @@ contract Viewer is Initializable, UUPSUpgradeable, OwnableUpgradeable {
      * @param newImplementation Address of the new contract implementation to which upgrade will happen.
      */
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-        // Optional: Add custom logic for upgrade authorization or validation of new implementation
         (newImplementation); // This line prevents unused variable warning.
     }
 
