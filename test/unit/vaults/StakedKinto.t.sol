@@ -433,7 +433,81 @@ contract StakedKintoTest is SharedSetup {
     }
 
     // TODO : Add tests for deposit with bonus
-    // TODO : Add tests for token transfer
+
+    /* ============ afterTokenTransfer() Tests ============ */
+
+    /// @dev Stake should follow `transfer` and merge correctly when receiver already has a stake.
+    function testTransferMovesStakeData() public {
+        uint256 amt = 1_000 ether;
+
+        // alice & bob both deposit
+        _deposit(alice, amt); // ts = t0
+        vm.warp(block.timestamp + 10);
+        _deposit(bob, amt / 2); // ts = t0 + 10
+
+        // Alice transfers her shares to Bob
+        vm.prank(alice);
+        vault.transfer(bob, amt);
+
+        // alice position should be gone
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, 0, "Alice stake not cleared");
+
+        // bob position should now be amt + amt/2 with correct weighted timestamp
+        (uint256 bAmt, uint256 wts,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, (3 * amt) / 2, "Bob merged amount incorrect");
+        // weightedTimestamp = (amt*t0 + (amt/2)*(t0+10)) / (1.5*amt) = t0 + 3.33…
+        uint256 expectedWts = (block.timestamp - 10) + 3; // block.timestamp is t0+10 here
+        assertApproxEqAbs(wts, expectedWts, 1, "Weighted timestamp skewed");
+    }
+
+    /// @dev transferFrom path should also move stake info (covers ERC20 permit / allowances).
+    function testTransferFromMovesStakeData() public {
+        uint256 amt = 500 ether;
+        _deposit(alice, amt);
+
+        // Grant allowance to bob and perform transferFrom
+        vm.prank(alice);
+        vault.approve(bob, amt);
+
+        vm.prank(bob);
+        vault.transferFrom(alice, bob, amt);
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, 0, "Stake stayed with Alice after transferFrom");
+
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, amt, "Stake did not reach Bob via transferFrom");
+    }
+
+    /// @dev Self‑transfer should be a no‑op and must not delete stake info.
+    function testSelfTransferNoOp() public {
+        uint256 amt = 750 ether;
+        _deposit(alice, amt);
+
+        vm.prank(alice);
+        vault.transfer(alice, amt);
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, amt, "Selftransfer corrupted stake info");
+    }
+
+    /// @dev If sender already claimed in a period and receiver has not, transfer must revert.
+    function testTransferAfterClaimReverts() public {
+        uint256 amt = 1_000 ether;
+        _deposit(alice, amt);
+        _deposit(bob, amt);
+
+        // Warp past period end so Alice can withdraw (and auto‑claim)
+        vm.warp(endTime + 1);
+        vm.prank(alice);
+        vault.withdraw(amt / 2, alice, alice); // partial withdraw triggers _handleRewards
+
+        // Now Alice tries to transfer remaining shares to Bob
+        vm.prank(alice);
+        vm.expectRevert(StakedKinto.CannotTransferAfterClaim.selector);
+        vault.transfer(bob, 500);
+    }
 
     /* ============ Edge Cases Tests ============ */
 
@@ -483,5 +557,13 @@ contract StakedKintoTest is SharedSetup {
         assertEq(kToken.balanceOf(bob), bobBalance + maxWithdrawAmount);
         assertGt(usdc.balanceOf(bob), 0);
         assertEq(vault.balanceOf(alice), 0);
+    }
+
+    /* ======================= Helper ======================= */
+    function _deposit(address user, uint256 amount) internal {
+        vm.startPrank(user);
+        kToken.approve(address(vault), amount);
+        vault.deposit(amount, user);
+        vm.stopPrank();
     }
 }
