@@ -209,6 +209,9 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testLendAndBorrowThenPreLiquidate() public {
+        vm.rollFork(334664828);
+        deploy();
+
         // Create high-risk position at maximum LTV to enter pre-liquidation zone
         uint256 collateralAmount = 1 ether; // 1 $K
 

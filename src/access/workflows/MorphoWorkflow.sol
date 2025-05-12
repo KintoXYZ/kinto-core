@@ -37,8 +37,8 @@ contract MorphoWorkflow {
     /// @notice Liquidation Loan-to-Value (62.5%)
     uint256 public constant LLTV = 625000000000000000;
 
-    /// @notice Address of the pre-liquidation factory contract
-    address public constant PRE_LIQUIDATION_FACTORY = 0x635c31B5DF1F7EFbCbC07E302335Ef4230758e3d;
+    /// @notice Address of the pre-liquidation contract
+    address public constant PRE_LIQUIDATION = 0xdE616CeEF394f5E05ed8b6cABa83cBBCC60C0640;
 
     /* ============ Internal Functions ============ */
 
@@ -53,32 +53,6 @@ contract MorphoWorkflow {
             oracle: ORACLE,
             irm: IRM,
             lltv: LLTV
-        });
-    }
-
-    /**
-     * @notice Creates the PreLiquidationParams struct for Morpho pre-liquidation setup
-     * @dev Sets parameters for pre-liquidation conditions and incentives
-     * @return PreLiquidationParams struct with configured values
-     */
-    function _getPreLiquidationParams() internal pure returns (PreLiquidationParams memory) {
-        // +------------------------+---------------------------+----------------------------------------------+
-        // | Parameter              | Suggested Value (WAD)     | Meaning                                      |
-        // +------------------------+---------------------------+----------------------------------------------+
-        // | preLltv                | 550000000000000000        | Pre-liquidation starts here (55% LTV)        |
-        // | preLCF1                | 500000000000000000        | Liquidate up to 50% of debt at 55% LTV       |
-        // | preLCF2                | 1000000000000000000       | Liquidate up to 100% of debt at 62.5% LTV    |
-        // | preLIF1                | 1050000000000000000       | 5% bonus on repaid debt at 55% LTV           |
-        // | preLIF2                | 1120000000000000000       | 12% bonus on repaid debt at 62.5% LTV        |
-        // | preLiquidationOracle   | (same as main market)     | Must match the asset price source            |
-        // +------------------------+---------------------------+----------------------------------------------+
-        return PreLiquidationParams({
-            preLltv: 0.55e18,
-            preLCF1: 0.5e18,
-            preLCF2: 1e18,
-            preLIF1: 1.05e18,
-            preLIF2: 1.12e18,
-            preLiquidationOracle: ORACLE
         });
     }
 
@@ -111,12 +85,10 @@ contract MorphoWorkflow {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
-        if (!IPreLiquidationFactory(PRE_LIQUIDATION_FACTORY).isPreLiquidation(address(this))) {
-            IPreLiquidation preLiquidation = IPreLiquidationFactory(PRE_LIQUIDATION_FACTORY).createPreLiquidation(
-                id(marketParams), _getPreLiquidationParams()
-            );
-            IMorpho(MORPHO).setAuthorization(address(preLiquidation), true);
+        if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
+            IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
         }
+
         // Approve Morpho to spend collateral tokens
         IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
 
