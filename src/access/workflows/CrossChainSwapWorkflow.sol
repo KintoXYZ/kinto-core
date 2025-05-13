@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 
-import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {IAccessPoint} from "@kinto-core/interfaces/IAccessPoint.sol";
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 

@@ -7,6 +7,7 @@ import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 import {Id, IMorpho, MarketParams} from "@kinto-core/interfaces/external/IMorpho.sol";
 import {IPreLiquidationFactory} from "@kinto-core/interfaces/external/IMorphoPreLiquidationFactory.sol";
 import {IPreLiquidation, PreLiquidationParams} from "@kinto-core/interfaces/external/IMorphoPreLiquidation.sol";
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 
 /**
  * @title MorphoWorkflow
@@ -39,6 +40,9 @@ contract MorphoWorkflow {
 
     /// @notice Address of the pre-liquidation contract
     address public constant PRE_LIQUIDATION = 0xdE616CeEF394f5E05ed8b6cABa83cBBCC60C0640;
+
+    /// @notice Address of the bridger contract
+    address public constant BRIDGER = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
 
     /* ============ Internal Functions ============ */
 
@@ -74,6 +78,22 @@ contract MorphoWorkflow {
 
     /* ============ External Functions ============ */
 
+    function lend(uint256 amountLend) public {
+        lendAndBorrow(
+            amountLend,
+            0, // amountBorrow = 0
+            address(0), // kintoWallet = zero
+            IBridger.BridgeData({ // empty “zero” BridgeData:
+                vault: address(0),
+                gasFee: 0,
+                msgGasLimit: 0,
+                connector: address(0),
+                execPayload: bytes(""), // or new bytes(0)
+                options: bytes("") // or new bytes(0)
+            })
+        );
+    }
+
     /**
      * @notice Supplies collateral and optionally borrows loan tokens
      * @dev Creates pre-liquidation contract if not already set up
@@ -81,7 +101,12 @@ contract MorphoWorkflow {
      * @param amountBorrow The amount of loan tokens to borrow (can be 0)
      * @return borrowed The amount of loan tokens borrowed
      */
-    function lendAndBorrow(uint256 amountLend, uint256 amountBorrow) external returns (uint256 borrowed) {
+    function lendAndBorrow(
+        uint256 amountLend,
+        uint256 amountBorrow,
+        address kintoWallet,
+        IBridger.BridgeData memory bridgeData
+    ) public returns (uint256 borrowed) {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
@@ -99,6 +124,9 @@ contract MorphoWorkflow {
         if (amountBorrow > 0) {
             // Borrow loan tokens from Morpho
             (borrowed,) = IMorpho(MORPHO).borrow(marketParams, amountBorrow, 0, address(this), address(this));
+            IBridger(BRIDGER).depositERC20(
+                LOAN_TOKEN, borrowed, kintoWallet, LOAN_TOKEN, borrowed, bytes(""), bridgeData
+            );
         }
 
         return borrowed;
