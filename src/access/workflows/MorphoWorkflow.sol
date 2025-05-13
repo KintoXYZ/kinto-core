@@ -78,6 +78,11 @@ contract MorphoWorkflow {
 
     /* ============ External Functions ============ */
 
+    /**
+     * @notice Supplies collateral tokens to the Morpho market without borrowing
+     * @dev This is a simplified version of lendAndBorrow with zero borrow amount
+     * @param amountLend The amount of collateral tokens to lend
+     */
     function lend(uint256 amountLend) public {
         lendAndBorrow(
             amountLend,
@@ -96,9 +101,11 @@ contract MorphoWorkflow {
 
     /**
      * @notice Supplies collateral and optionally borrows loan tokens
-     * @dev Creates pre-liquidation contract if not already set up
+     * @dev Creates pre-liquidation contract if not already set up, and bridges borrowed assets if requested
      * @param amountLend The amount of collateral tokens to lend
      * @param amountBorrow The amount of loan tokens to borrow (can be 0)
+     * @param kintoWallet The address of the Kinto wallet to send borrowed assets to
+     * @param bridgeData The data required for bridging borrowed assets
      * @return borrowed The amount of loan tokens borrowed
      */
     function lendAndBorrow(
@@ -136,7 +143,7 @@ contract MorphoWorkflow {
      * @notice Repays loan and optionally withdraws collateral
      * @dev Handles both repayment and withdrawal in a single transaction
      * @param amountRepay The amount of loan tokens to repay (can be 0)
-     * @param amountWithdraw The amount of collateral tokens to withdraw
+     * @param amountWithdraw The amount of collateral tokens to withdraw (can be 0)
      * @return withdrawn The amount of collateral tokens withdrawn
      */
     function repayAndWithdraw(uint256 amountRepay, uint256 amountWithdraw) external returns (uint256 withdrawn) {
