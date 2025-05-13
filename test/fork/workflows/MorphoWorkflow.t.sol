@@ -39,6 +39,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     MorphoWorkflow internal morphoWorkflow;
     MarketParams internal marketParams;
     Id internal marketId;
+    address internal kintoWallet = address(0x1234); // Non-zero Kinto wallet address
 
     // Morpho protocol constants
     address constant MORPHO = 0x6c247b1F6182318877311737BaC0844bAa518F5e;
@@ -87,8 +88,11 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testLendAndBorrow() public {
-        uint256 collateralAmount = 10 ether; // 10 $K
+        collateralAmount = 10 ether; // 10 $K
         uint256 borrowAmount = 5e6; // 5 USDC.e
+
+        // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
 
         // Deal collateral to the access point
         vm.prank(COLLATERAL_MINTER);
@@ -98,30 +102,34 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         uint256 initialCollateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
         uint256 initialLoanBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
 
-        // Prepare workflow data
-        bytes memory workflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount);
+        // Prepare workflow data with valid BridgeData
+        bytes memory workflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
+
+        uint256 vaultBalanceBefore = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
 
         // Execute the workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), workflowData);
 
         // Check that collateral was supplied
-        assertLt(
+        assertEq(
             IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
-            initialCollateralBalance,
+            initialCollateralBalance - collateralAmount,
             "Collateral balance should have decreased"
         );
 
         // Check that loan was received
-        assertGt(
+        assertEq(ERC20(LOAN_TOKEN).balanceOf(address(data.vault)), vaultBalanceBefore + borrowAmount);
+        assertEq(
             IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), initialLoanBalance, "Loan balance should have increased"
         );
     }
 
     function testRepayAndWithdraw() public {
         // First, lend and borrow
-        uint256 collateralAmount = 10 ether; // 10 $K
+        collateralAmount = 10 ether; // 10 $K
         uint256 borrowAmount = 5e6; // 5 USDC.e
 
         // Mint collateral to the access point
@@ -132,32 +140,36 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         deal(LOAN_TOKEN, address(accessPoint), borrowAmount);
 
         // Execute lend and borrow first
-        bytes memory lendWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount);
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
 
         // Get balances after lend/borrow
-        uint256 collateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
         uint256 loanBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
+        data = bridgeData[ARBITRUM_CHAINID][K_ARBITRUM];
 
         // Prepare repay and withdraw workflow data
-        bytes memory repayWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.repayAndWithdraw.selector, borrowAmount, collateralAmount / 2);
+        bytes memory repayWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.repayAndWithdraw.selector, borrowAmount, collateralAmount / 2, kintoWallet, data
+        );
 
         // Execute the repay workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), repayWorkflowData);
 
         // Check that loan was repaid
-        assertLt(IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), loanBalance, "Loan balance should have decreased");
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)),
+            loanBalance - borrowAmount,
+            "Loan balance should have decreased"
+        );
 
         // Check that collateral was partially withdrawn
-        assertGt(
-            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
-            collateralBalance,
-            "Collateral balance should have increased"
-        );
+        assertEq(ERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)), 0, "AccessPoint balance is wrong");
     }
 
     function testSupply() public {
@@ -181,6 +193,9 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testWithdraw() public {
+        // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
         // First, supply some tokens
         uint256 supplyAmount = 10e6; // 10 USDC
 
@@ -193,34 +208,139 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), supplyWorkflowData);
 
         // Get balance after supply
-        uint256 balanceAfterSupply = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
+        uint256 vaultBalanceBefore = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
 
         // Prepare withdraw workflow data (withdraw half)
-        bytes memory withdrawWorkflowData = abi.encodeWithSelector(MorphoWorkflow.withdraw.selector, supplyAmount / 2);
+        bytes memory withdrawWorkflowData =
+            abi.encodeWithSelector(MorphoWorkflow.withdraw.selector, supplyAmount / 2, kintoWallet, data);
 
         // Execute the withdraw workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), withdrawWorkflowData);
 
         // Check that tokens were withdrawn
-        assertGt(
-            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), balanceAfterSupply, "Balance should have increased"
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(data.vault)),
+            vaultBalanceBefore + supplyAmount / 2,
+            "Balance should have increased"
         );
     }
+
+    function testLend() public {
+        collateralAmount = 5 ether; // 5 $K
+
+        // Deal collateral to the access point
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
+
+        // Get initial balances
+        uint256 initialCollateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
+
+        // Get market parameters and ID
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
+
+        // Check initial position (should be zero)
+        Position memory positionBefore = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertEq(positionBefore.collateral, 0, "Initial collateral position should be zero");
+
+        // Prepare workflow data for lend function
+        bytes memory workflowData = abi.encodeWithSelector(MorphoWorkflow.lend.selector, collateralAmount);
+
+        // Execute the workflow
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), workflowData);
+
+        // Check that collateral was supplied to Morpho
+        assertEq(
+            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
+            initialCollateralBalance - collateralAmount,
+            "Collateral balance should have decreased"
+        );
+
+        // Verify position in Morpho
+        Position memory positionAfter = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertEq(positionAfter.collateral, collateralAmount, "Collateral position should match supplied amount");
+        assertEq(positionAfter.borrowShares, 0, "No borrow should have occurred");
+    }
+
+    function testRepay() public {
+        // First, lend and borrow to set up a position
+        collateralAmount = 10 ether; // 10 $K
+        uint256 borrowAmount = 5e6; // 5 USDC.e
+
+        // Mint collateral to the access point
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
+
+        // Get market parameters and ID
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
+
+        // Create initial position by lending and borrowing
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
+
+        // Verify the position has been created
+        Position memory positionAfterBorrow = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertTrue(positionAfterBorrow.borrowShares > 0, "Should have borrowed assets");
+
+        // Prepare for repayment - deal tokens to the access point
+        uint256 repayAmount = borrowAmount / 2; // Repay half of the loan
+        deal(LOAN_TOKEN, address(accessPoint), repayAmount);
+
+        // Snapshot Morpho position before repaying
+        Position memory positionBeforeRepay = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        uint256 borrowSharesBefore = positionBeforeRepay.borrowShares;
+
+        // Execute repay workflow
+        bytes memory repayWorkflowData = abi.encodeWithSelector(MorphoWorkflow.repay.selector, repayAmount);
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), repayWorkflowData);
+
+        // Verify repayment was successful
+        Position memory positionAfterRepay = IMorpho(MORPHO).position(marketId, address(accessPoint));
+
+        // Borrow shares should have decreased
+        assertLt(
+            positionAfterRepay.borrowShares, borrowSharesBefore, "Borrow shares should have decreased after repayment"
+        );
+
+        // Collateral should remain unchanged
+        assertEq(
+            positionAfterRepay.collateral,
+            positionBeforeRepay.collateral,
+            "Collateral should remain unchanged after repayment"
+        );
+
+        // Loan token balance should have decreased in the access point
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), 0, "All loan tokens should have been used for repayment"
+        );
+    }
+
+    uint256 internal collateralAmount;
+    uint256 internal oraclePrice;
+    uint256 internal collateralValueInUSD;
+    uint256 internal maxBorrowAmount;
 
     function testLendAndBorrowThenPreLiquidate() public {
         vm.rollFork(334664828);
         deploy();
 
         // Create high-risk position at maximum LTV to enter pre-liquidation zone
-        uint256 collateralAmount = 1 ether; // 1 $K
+        collateralAmount = 1 ether; // 1 $K
 
         // Get oracle price to calculate max borrowable amount
-        uint256 oraclePrice = IOracle(ORACLE).price();
-        uint256 collateralValueInUSD = collateralAmount * oraclePrice / 1e24;
+        oraclePrice = IOracle(ORACLE).price();
+        collateralValueInUSD = collateralAmount * oraclePrice / 1e24;
 
         // Calculate maximum borrow amount at LLTV (62.5%)
-        uint256 maxBorrowAmount = collateralValueInUSD * (LLTV - 0.005e18) / 1e18 / 1e12;
+        maxBorrowAmount = collateralValueInUSD * (LLTV - 0.005e18) / 1e18 / 1e12;
 
         // Deal collateral to the access point
         vm.prank(COLLATERAL_MINTER);
@@ -230,8 +350,10 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         deal(LOAN_TOKEN, bob0, maxBorrowAmount * 2); // Extra funds for the bob0
 
         // Prepare workflow data for lending and borrowing at max LTV
-        bytes memory lendWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, maxBorrowAmount);
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, maxBorrowAmount, kintoWallet, data
+        );
 
         // Execute the workflow to create a position at max LTV
         vm.prank(alice0);

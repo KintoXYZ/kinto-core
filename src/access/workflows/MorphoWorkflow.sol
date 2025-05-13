@@ -7,6 +7,7 @@ import {Address} from "@openzeppelin-5.0.1/contracts/utils/Address.sol";
 import {Id, IMorpho, MarketParams} from "@kinto-core/interfaces/external/IMorpho.sol";
 import {IPreLiquidationFactory} from "@kinto-core/interfaces/external/IMorphoPreLiquidationFactory.sol";
 import {IPreLiquidation, PreLiquidationParams} from "@kinto-core/interfaces/external/IMorphoPreLiquidation.sol";
+import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
 
 /**
  * @title MorphoWorkflow
@@ -39,6 +40,9 @@ contract MorphoWorkflow {
 
     /// @notice Address of the pre-liquidation contract
     address public constant PRE_LIQUIDATION = 0xdE616CeEF394f5E05ed8b6cABa83cBBCC60C0640;
+
+    /// @notice Address of the bridger contract
+    address public constant BRIDGER = 0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0;
 
     /* ============ Internal Functions ============ */
 
@@ -75,43 +79,108 @@ contract MorphoWorkflow {
     /* ============ External Functions ============ */
 
     /**
+     * @notice Supplies collateral tokens to the Morpho market without borrowing
+     * @dev This is a simplified version of lendAndBorrow with zero borrow amount
+     * @param amountLend The amount of collateral tokens to lend
+     */
+    function lend(uint256 amountLend) public {
+        lendAndBorrow(
+            amountLend,
+            0, // amountBorrow = 0
+            address(0), // kintoWallet = zero
+            IBridger.BridgeData({ // empty “zero” BridgeData:
+                vault: address(0),
+                gasFee: 0,
+                msgGasLimit: 0,
+                connector: address(0),
+                execPayload: bytes(""), // or new bytes(0)
+                options: bytes("") // or new bytes(0)
+            })
+        );
+    }
+
+    /**
      * @notice Supplies collateral and optionally borrows loan tokens
-     * @dev Creates pre-liquidation contract if not already set up
+     * @dev Creates pre-liquidation contract if not already set up, and bridges borrowed assets if requested
      * @param amountLend The amount of collateral tokens to lend
      * @param amountBorrow The amount of loan tokens to borrow (can be 0)
+     * @param kintoWallet The address of the Kinto wallet to send borrowed assets to
+     * @param bridgeData The data required for bridging borrowed assets
      * @return borrowed The amount of loan tokens borrowed
      */
-    function lendAndBorrow(uint256 amountLend, uint256 amountBorrow) external returns (uint256 borrowed) {
+    function lendAndBorrow(
+        uint256 amountLend,
+        uint256 amountBorrow,
+        address kintoWallet,
+        IBridger.BridgeData memory bridgeData
+    ) public returns (uint256 borrowed) {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
-        if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
-            IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
+        if (amountLend > 0) {
+            // Approve Morpho to spend collateral tokens
+            IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
+
+            // Supply collateral to Morpho
+            IMorpho(MORPHO).supplyCollateral(marketParams, amountLend, address(this), "");
         }
-
-        // Approve Morpho to spend collateral tokens
-        IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
-
-        // Supply collateral to Morpho
-        IMorpho(MORPHO).supplyCollateral(marketParams, amountLend, address(this), "");
 
         // If amountBorrow > 0, borrow loan tokens
         if (amountBorrow > 0) {
+            if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
+                IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
+            }
             // Borrow loan tokens from Morpho
             (borrowed,) = IMorpho(MORPHO).borrow(marketParams, amountBorrow, 0, address(this), address(this));
+
+            // Approve max allowance to save on gas for future transfers
+            if (IERC20(LOAN_TOKEN).allowance(address(this), address(BRIDGER)) < borrowed) {
+                IERC20(LOAN_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+            }
+
+            IBridger(BRIDGER).depositERC20(
+                LOAN_TOKEN, borrowed, kintoWallet, LOAN_TOKEN, borrowed, bytes(""), bridgeData
+            );
         }
 
         return borrowed;
     }
 
     /**
-     * @notice Repays loan and optionally withdraws collateral
-     * @dev Handles both repayment and withdrawal in a single transaction
-     * @param amountRepay The amount of loan tokens to repay (can be 0)
-     * @param amountWithdraw The amount of collateral tokens to withdraw
-     * @return withdrawn The amount of collateral tokens withdrawn
+     * @notice Repays a loan in the Morpho protocol without withdrawing collateral
+     * @dev This is a simplified version of repayAndWithdraw with zero withdraw amount and empty bridge data
+     * @param amountRepay The amount of loan tokens to repay
      */
-    function repayAndWithdraw(uint256 amountRepay, uint256 amountWithdraw) external returns (uint256 withdrawn) {
+    function repay(uint256 amountRepay) external {
+        repayAndWithdraw(
+            amountRepay,
+            0,
+            address(0),
+            IBridger.BridgeData({ // empty “zero” BridgeData:
+                vault: address(0),
+                gasFee: 0,
+                msgGasLimit: 0,
+                connector: address(0),
+                execPayload: bytes(""), // or new bytes(0)
+                options: bytes("") // or new bytes(0)
+            })
+        );
+    }
+
+    /**
+     * @notice Repays loan and optionally withdraws collateral
+     * @dev Handles both repayment and withdrawal in a single transaction, with option to bridge withdrawn collateral
+     * @param amountRepay The amount of loan tokens to repay (can be 0)
+     * @param amountWithdraw The amount of collateral tokens to withdraw (can be 0)
+     * @param kintoWallet The address of the Kinto wallet to send withdrawn collateral to
+     * @param bridgeData The data required for bridging withdrawn collateral
+     */
+    function repayAndWithdraw(
+        uint256 amountRepay,
+        uint256 amountWithdraw,
+        address kintoWallet,
+        IBridger.BridgeData memory bridgeData
+    ) public {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
@@ -127,10 +196,16 @@ contract MorphoWorkflow {
         // Withdraw collateral from Morpho
         if (amountWithdraw > 0) {
             IMorpho(MORPHO).withdrawCollateral(marketParams, amountWithdraw, address(this), address(this));
-            withdrawn = amountWithdraw;
-        }
 
-        return withdrawn;
+            // Approve max allowance to save on gas for future transfers
+            if (IERC20(COLLATERAL_TOKEN).allowance(address(this), address(BRIDGER)) < amountWithdraw) {
+                IERC20(COLLATERAL_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+            }
+
+            IBridger(BRIDGER).depositERC20(
+                COLLATERAL_TOKEN, amountWithdraw, kintoWallet, COLLATERAL_TOKEN, amountWithdraw, bytes(""), bridgeData
+            );
+        }
     }
 
     /**
@@ -153,18 +228,26 @@ contract MorphoWorkflow {
     }
 
     /**
-     * @notice Withdraws assets from Morpho protocol
-     * @dev Withdraws loan tokens (USDC.e) from the Morpho market
+     * @notice Withdraws assets from Morpho protocol and bridges them to a Kinto wallet
+     * @dev Withdraws loan tokens (USDC.e) from the Morpho market and sends them to a specified wallet through the bridge
      * @param amountWithdraw The amount of assets to withdraw
-     * @return withdrawn The amount of assets withdrawn
+     * @param kintoWallet The address of the Kinto wallet to send withdrawn assets to
+     * @param bridgeData The data required for bridging withdrawn assets
      */
-    function withdraw(uint256 amountWithdraw) external returns (uint256 withdrawn) {
+    function withdraw(uint256 amountWithdraw, address kintoWallet, IBridger.BridgeData memory bridgeData) external {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
         // Withdraw from Morpho
-        (withdrawn,) = IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), address(this));
+        IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), address(this));
 
-        return withdrawn;
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(LOAN_TOKEN).allowance(address(this), address(BRIDGER)) < amountWithdraw) {
+            IERC20(LOAN_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+        }
+
+        IBridger(BRIDGER).depositERC20(
+            LOAN_TOKEN, amountWithdraw, kintoWallet, LOAN_TOKEN, amountWithdraw, bytes(""), bridgeData
+        );
     }
 }
