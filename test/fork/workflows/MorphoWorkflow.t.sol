@@ -193,6 +193,9 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testWithdraw() public {
+        // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
         // First, supply some tokens
         uint256 supplyAmount = 10e6; // 10 USDC
 
@@ -205,18 +208,21 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), supplyWorkflowData);
 
         // Get balance after supply
-        uint256 balanceAfterSupply = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
+        uint256 vaultBalanceBefore = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
 
         // Prepare withdraw workflow data (withdraw half)
-        bytes memory withdrawWorkflowData = abi.encodeWithSelector(MorphoWorkflow.withdraw.selector, supplyAmount / 2);
+        bytes memory withdrawWorkflowData =
+            abi.encodeWithSelector(MorphoWorkflow.withdraw.selector, supplyAmount / 2, kintoWallet, data);
 
         // Execute the withdraw workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), withdrawWorkflowData);
 
         // Check that tokens were withdrawn
-        assertGt(
-            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), balanceAfterSupply, "Balance should have increased"
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(data.vault)),
+            vaultBalanceBefore + supplyAmount / 2,
+            "Balance should have increased"
         );
     }
 

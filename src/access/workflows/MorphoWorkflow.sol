@@ -117,10 +117,6 @@ contract MorphoWorkflow {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
-        if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
-            IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
-        }
-
         if (amountLend > 0) {
             // Approve Morpho to spend collateral tokens
             IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
@@ -131,6 +127,9 @@ contract MorphoWorkflow {
 
         // If amountBorrow > 0, borrow loan tokens
         if (amountBorrow > 0) {
+            if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
+                IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
+            }
             // Borrow loan tokens from Morpho
             (borrowed,) = IMorpho(MORPHO).borrow(marketParams, amountBorrow, 0, address(this), address(this));
 
