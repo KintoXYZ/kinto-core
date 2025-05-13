@@ -2374,6 +2374,19 @@
         },
         {
           "type": "function",
+          "name": "USDT",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "USDe",
           "inputs": [],
           "outputs": [
@@ -3525,113 +3538,6 @@
       ],
       "address": "0xa5e9f2dd08582bBe2D41FAd465Cf8feCbFcbF6F3"
     },
-    "IBridge": {
-      "abi": [
-        {
-          "type": "function",
-          "name": "bridge",
-          "inputs": [
-            {
-              "name": "receiver_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "amount_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "msgGasLimit_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "execPayload_",
-              "type": "bytes",
-              "internalType": "bytes"
-            },
-            {
-              "name": "options_",
-              "type": "bytes",
-              "internalType": "bytes"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "payable"
-        },
-        {
-          "type": "function",
-          "name": "getMinFees",
-          "inputs": [
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "msgGasLimit_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "payloadSize_",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "totalFees",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "receiveInbound",
-          "inputs": [
-            {
-              "name": "siblingChainSlug_",
-              "type": "uint32",
-              "internalType": "uint32"
-            },
-            {
-              "name": "payload_",
-              "type": "bytes",
-              "internalType": "bytes"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "payable"
-        },
-        {
-          "type": "function",
-          "name": "retry",
-          "inputs": [
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "messageId_",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
-        }
-      ]
-    },
     "IConnector": {
       "abi": [
         {
@@ -3754,6 +3660,43 @@
             }
           ],
           "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "updateConnectorStatus",
+          "inputs": [
+            {
+              "name": "connectors",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "statuses",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "validConnectors",
+          "inputs": [
+            {
+              "name": "connector",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
         }
       ]
     },
@@ -4308,6 +4251,19 @@
         },
         {
           "type": "function",
+          "name": "executionManager__",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getMinFees",
           "inputs": [
             {
@@ -4445,6 +4401,19 @@
             }
           ],
           "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "setExecutionManager",
+          "inputs": [
+            {
+              "name": "executionManager",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
           "type": "event",
@@ -4675,6 +4644,19 @@
               "name": "",
               "type": "uint256",
               "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "STAKING_CONTRACT",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "view"
@@ -5772,6 +5754,11 @@
           "inputs": [
             {
               "name": "token",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "owner",
               "type": "address",
               "internalType": "address"
             }

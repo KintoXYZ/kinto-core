@@ -61,7 +61,7 @@ function processFiles() {
     const filePath = path.join(dirPath, file);
     const fileExt = path.extname(filePath);
     console.log('Processing file:', filePath);
-    if (fileExt === '' && !filePath.includes('interfaces') && !filePath.includes('libraries') && !filePath.includes('socket')) {
+    if (fileExt === '' && !filePath.includes('interfaces') && !filePath.includes('libraries')) {
       processDirectory(filePath);
     } else if (fileExt === '.sol') {
       const contractName = path.basename(filePath, '.sol');

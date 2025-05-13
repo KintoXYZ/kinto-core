@@ -7,17 +7,12 @@ import {IERC20} from "@openzeppelin-5.0.1/contracts/interfaces/IERC20.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
+import {ISocket} from "@kinto-core/socket/ISocket.sol";
 import {IAccessControl} from "@openzeppelin-5.0.1/contracts/access/IAccessControl.sol";
 import {IKintoWallet} from "@kinto-core/interfaces/IKintoWallet.sol";
 import {RewardsDistributor} from "@kinto-core/liquidity-mining/RewardsDistributor.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {console2} from "forge-std/console2.sol";
-
-interface ISocket {
-    function setExecutionManager(address executionManager) external;
-
-    function executionManager__() external view returns (address);
-}
 
 contract Script is MigrationHelper {
     using LibString for *;

@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {stdJson} from "forge-std/StdJson.sol";
 import {IBridger} from "@kinto-core/interfaces/bridger/IBridger.sol";
-import {IBridge} from "@kinto-core/socket/IBridge.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {BridgerL2} from "@kinto-core/bridger/BridgerL2.sol";
 
 import {SignatureHelper} from "@kinto-core-test/helpers/SignatureHelper.sol";

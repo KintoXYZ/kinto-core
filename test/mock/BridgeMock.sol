@@ -22,4 +22,8 @@ contract BridgeMock is IBridge {
     function receiveInbound(uint32, bytes memory) external payable {}
 
     function retry(address, bytes32) external {}
+
+    function getMinFees(address, uint256, uint256) external pure returns (uint256 totalFees) {
+        return 0;
+    }
 }

@@ -6,13 +6,9 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {console2} from "forge-std/console2.sol";
 import "@kinto-core-test/helpers/ArrayHelpers.sol";
+import {IController} from "@kinto-core/socket/IController.sol";
 
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
-
-interface IController {
-    function updateConnectorStatus(address[] calldata connectors, bool[] calldata statuses) external;
-    function validConnectors(address connector) external view returns (bool);
-}
 
 contract Script is MigrationHelper {
     using LibString for *;

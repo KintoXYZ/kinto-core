@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/IERC20.sol";
-import {IBridge} from "@kinto-core/socket/IBridge.sol";
+import {IBridge} from "@kinto-core/interfaces/bridger/IBridge.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";
