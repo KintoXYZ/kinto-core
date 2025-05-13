@@ -39,6 +39,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     MorphoWorkflow internal morphoWorkflow;
     MarketParams internal marketParams;
     Id internal marketId;
+    address internal kintoWallet = address(0x1234); // Non-zero Kinto wallet address
 
     // Morpho protocol constants
     address constant MORPHO = 0x6c247b1F6182318877311737BaC0844bAa518F5e;
@@ -90,6 +91,9 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         uint256 collateralAmount = 10 ether; // 10 $K
         uint256 borrowAmount = 5e6; // 5 USDC.e
 
+        // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
         // Deal collateral to the access point
         vm.prank(COLLATERAL_MINTER);
         SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
@@ -98,23 +102,27 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         uint256 initialCollateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
         uint256 initialLoanBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
 
-        // Prepare workflow data
-        bytes memory workflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount);
+        // Prepare workflow data with valid BridgeData
+        bytes memory workflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
+
+        uint256 vaultBalanceBefore = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
 
         // Execute the workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), workflowData);
 
         // Check that collateral was supplied
-        assertLt(
+        assertEq(
             IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
-            initialCollateralBalance,
+            initialCollateralBalance - collateralAmount,
             "Collateral balance should have decreased"
         );
 
         // Check that loan was received
-        assertGt(
+        assertEq(ERC20(LOAN_TOKEN).balanceOf(address(data.vault)), vaultBalanceBefore + borrowAmount);
+        assertEq(
             IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), initialLoanBalance, "Loan balance should have increased"
         );
     }
@@ -132,8 +140,11 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         deal(LOAN_TOKEN, address(accessPoint), borrowAmount);
 
         // Execute lend and borrow first
-        bytes memory lendWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount);
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
 
@@ -208,19 +219,24 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         );
     }
 
+    uint256 internal collateralAmount;
+    uint256 internal oraclePrice;
+    uint256 internal collateralValueInUSD;
+    uint256 internal maxBorrowAmount;
+
     function testLendAndBorrowThenPreLiquidate() public {
         vm.rollFork(334664828);
         deploy();
 
         // Create high-risk position at maximum LTV to enter pre-liquidation zone
-        uint256 collateralAmount = 1 ether; // 1 $K
+        collateralAmount = 1 ether; // 1 $K
 
         // Get oracle price to calculate max borrowable amount
-        uint256 oraclePrice = IOracle(ORACLE).price();
-        uint256 collateralValueInUSD = collateralAmount * oraclePrice / 1e24;
+        oraclePrice = IOracle(ORACLE).price();
+        collateralValueInUSD = collateralAmount * oraclePrice / 1e24;
 
         // Calculate maximum borrow amount at LLTV (62.5%)
-        uint256 maxBorrowAmount = collateralValueInUSD * (LLTV - 0.005e18) / 1e18 / 1e12;
+        maxBorrowAmount = collateralValueInUSD * (LLTV - 0.005e18) / 1e18 / 1e12;
 
         // Deal collateral to the access point
         vm.prank(COLLATERAL_MINTER);
@@ -230,8 +246,10 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         deal(LOAN_TOKEN, bob0, maxBorrowAmount * 2); // Extra funds for the bob0
 
         // Prepare workflow data for lending and borrowing at max LTV
-        bytes memory lendWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.lendAndBorrow.selector, collateralAmount, maxBorrowAmount);
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, maxBorrowAmount, kintoWallet, data
+        );
 
         // Execute the workflow to create a position at max LTV
         vm.prank(alice0);

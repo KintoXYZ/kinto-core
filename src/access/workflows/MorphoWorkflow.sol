@@ -131,6 +131,12 @@ contract MorphoWorkflow {
         if (amountBorrow > 0) {
             // Borrow loan tokens from Morpho
             (borrowed,) = IMorpho(MORPHO).borrow(marketParams, amountBorrow, 0, address(this), address(this));
+
+            // Approve max allowance to save on gas for future transfers
+            if (IERC20(LOAN_TOKEN).allowance(address(this), address(BRIDGER)) < borrowed) {
+                IERC20(LOAN_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+            }
+
             IBridger(BRIDGER).depositERC20(
                 LOAN_TOKEN, borrowed, kintoWallet, LOAN_TOKEN, borrowed, bytes(""), bridgeData
             );
