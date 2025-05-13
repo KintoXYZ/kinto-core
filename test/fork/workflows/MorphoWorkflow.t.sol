@@ -88,7 +88,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     }
 
     function testLendAndBorrow() public {
-        uint256 collateralAmount = 10 ether; // 10 $K
+        collateralAmount = 10 ether; // 10 $K
         uint256 borrowAmount = 5e6; // 5 USDC.e
 
         // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
@@ -129,7 +129,7 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
 
     function testRepayAndWithdraw() public {
         // First, lend and borrow
-        uint256 collateralAmount = 10 ether; // 10 $K
+        collateralAmount = 10 ether; // 10 $K
         uint256 borrowAmount = 5e6; // 5 USDC.e
 
         // Mint collateral to the access point
@@ -149,26 +149,27 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
 
         // Get balances after lend/borrow
-        uint256 collateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
         uint256 loanBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
+        data = bridgeData[ARBITRUM_CHAINID][K_ARBITRUM];
 
         // Prepare repay and withdraw workflow data
-        bytes memory repayWorkflowData =
-            abi.encodeWithSelector(MorphoWorkflow.repayAndWithdraw.selector, borrowAmount, collateralAmount / 2);
+        bytes memory repayWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.repayAndWithdraw.selector, borrowAmount, collateralAmount / 2, kintoWallet, data
+        );
 
         // Execute the repay workflow
         vm.prank(alice0);
         accessPoint.execute(address(morphoWorkflow), repayWorkflowData);
 
         // Check that loan was repaid
-        assertLt(IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), loanBalance, "Loan balance should have decreased");
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)),
+            loanBalance - borrowAmount,
+            "Loan balance should have decreased"
+        );
 
         // Check that collateral was partially withdrawn
-        assertGt(
-            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
-            collateralBalance,
-            "Collateral balance should have increased"
-        );
+        assertEq(ERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)), 0, "AccessPoint balance is wrong");
     }
 
     function testSupply() public {

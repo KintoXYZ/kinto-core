@@ -121,11 +121,13 @@ contract MorphoWorkflow {
             IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
         }
 
-        // Approve Morpho to spend collateral tokens
-        IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
+        if (amountLend > 0) {
+            // Approve Morpho to spend collateral tokens
+            IERC20(COLLATERAL_TOKEN).forceApprove(MORPHO, amountLend);
 
-        // Supply collateral to Morpho
-        IMorpho(MORPHO).supplyCollateral(marketParams, amountLend, address(this), "");
+            // Supply collateral to Morpho
+            IMorpho(MORPHO).supplyCollateral(marketParams, amountLend, address(this), "");
+        }
 
         // If amountBorrow > 0, borrow loan tokens
         if (amountBorrow > 0) {
