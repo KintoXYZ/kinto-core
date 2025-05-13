@@ -147,7 +147,7 @@ contract MorphoWorkflow {
 
     /**
      * @notice Repays a loan in the Morpho protocol without withdrawing collateral
-     * @dev This is a simplified version of repayAndWithdraw with zero withdraw amount
+     * @dev This is a simplified version of repayAndWithdraw with zero withdraw amount and empty bridge data
      * @param amountRepay The amount of loan tokens to repay
      */
     function repay(uint256 amountRepay) external {
@@ -202,7 +202,7 @@ contract MorphoWorkflow {
             }
 
             IBridger(BRIDGER).depositERC20(
-                LOAN_TOKEN, amountWithdraw, kintoWallet, LOAN_TOKEN, amountWithdraw, bytes(""), bridgeData
+                COLLATERAL_TOKEN, amountWithdraw, kintoWallet, COLLATERAL_TOKEN, amountWithdraw, bytes(""), bridgeData
             );
         }
     }
@@ -227,18 +227,26 @@ contract MorphoWorkflow {
     }
 
     /**
-     * @notice Withdraws assets from Morpho protocol
-     * @dev Withdraws loan tokens (USDC.e) from the Morpho market
+     * @notice Withdraws assets from Morpho protocol and bridges them to a Kinto wallet
+     * @dev Withdraws loan tokens (USDC.e) from the Morpho market and sends them to a specified wallet through the bridge
      * @param amountWithdraw The amount of assets to withdraw
-     * @return withdrawn The amount of assets withdrawn
+     * @param kintoWallet The address of the Kinto wallet to send withdrawn assets to
+     * @param bridgeData The data required for bridging withdrawn assets
      */
-    function withdraw(uint256 amountWithdraw) external returns (uint256 withdrawn) {
+    function withdraw(uint256 amountWithdraw, address kintoWallet, IBridger.BridgeData memory bridgeData) external {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
         // Withdraw from Morpho
-        (withdrawn,) = IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), address(this));
+        IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), address(this));
 
-        return withdrawn;
+        // Approve max allowance to save on gas for future transfers
+        if (IERC20(LOAN_TOKEN).allowance(address(this), address(BRIDGER)) < amountWithdraw) {
+            IERC20(LOAN_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+        }
+
+        IBridger(BRIDGER).depositERC20(
+            LOAN_TOKEN, amountWithdraw, kintoWallet, LOAN_TOKEN, amountWithdraw, bytes(""), bridgeData
+        );
     }
 }
