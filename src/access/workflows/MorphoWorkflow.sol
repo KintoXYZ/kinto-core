@@ -146,13 +146,40 @@ contract MorphoWorkflow {
     }
 
     /**
+     * @notice Repays a loan in the Morpho protocol without withdrawing collateral
+     * @dev This is a simplified version of repayAndWithdraw with zero withdraw amount
+     * @param amountRepay The amount of loan tokens to repay
+     */
+    function repay(uint256 amountRepay) external {
+        repayAndWithdraw(
+            amountRepay,
+            0,
+            address(0),
+            IBridger.BridgeData({ // empty “zero” BridgeData:
+                vault: address(0),
+                gasFee: 0,
+                msgGasLimit: 0,
+                connector: address(0),
+                execPayload: bytes(""), // or new bytes(0)
+                options: bytes("") // or new bytes(0)
+            })
+        );
+    }
+
+    /**
      * @notice Repays loan and optionally withdraws collateral
-     * @dev Handles both repayment and withdrawal in a single transaction
+     * @dev Handles both repayment and withdrawal in a single transaction, with option to bridge withdrawn collateral
      * @param amountRepay The amount of loan tokens to repay (can be 0)
      * @param amountWithdraw The amount of collateral tokens to withdraw (can be 0)
-     * @return withdrawn The amount of collateral tokens withdrawn
+     * @param kintoWallet The address of the Kinto wallet to send withdrawn collateral to
+     * @param bridgeData The data required for bridging withdrawn collateral
      */
-    function repayAndWithdraw(uint256 amountRepay, uint256 amountWithdraw) external returns (uint256 withdrawn) {
+    function repayAndWithdraw(
+        uint256 amountRepay,
+        uint256 amountWithdraw,
+        address kintoWallet,
+        IBridger.BridgeData memory bridgeData
+    ) public {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
@@ -168,10 +195,16 @@ contract MorphoWorkflow {
         // Withdraw collateral from Morpho
         if (amountWithdraw > 0) {
             IMorpho(MORPHO).withdrawCollateral(marketParams, amountWithdraw, address(this), address(this));
-            withdrawn = amountWithdraw;
-        }
 
-        return withdrawn;
+            // Approve max allowance to save on gas for future transfers
+            if (IERC20(COLLATERAL_TOKEN).allowance(address(this), address(BRIDGER)) < amountWithdraw) {
+                IERC20(COLLATERAL_TOKEN).forceApprove(address(BRIDGER), type(uint256).max);
+            }
+
+            IBridger(BRIDGER).depositERC20(
+                LOAN_TOKEN, amountWithdraw, kintoWallet, LOAN_TOKEN, amountWithdraw, bytes(""), bridgeData
+            );
+        }
     }
 
     /**
