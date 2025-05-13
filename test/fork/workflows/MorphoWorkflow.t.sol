@@ -226,6 +226,103 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
         );
     }
 
+    function testLend() public {
+        collateralAmount = 5 ether; // 5 $K
+
+        // Deal collateral to the access point
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
+
+        // Get initial balances
+        uint256 initialCollateralBalance = IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint));
+
+        // Get market parameters and ID
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
+
+        // Check initial position (should be zero)
+        Position memory positionBefore = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertEq(positionBefore.collateral, 0, "Initial collateral position should be zero");
+
+        // Prepare workflow data for lend function
+        bytes memory workflowData = abi.encodeWithSelector(MorphoWorkflow.lend.selector, collateralAmount);
+
+        // Execute the workflow
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), workflowData);
+
+        // Check that collateral was supplied to Morpho
+        assertEq(
+            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
+            initialCollateralBalance - collateralAmount,
+            "Collateral balance should have decreased"
+        );
+
+        // Verify position in Morpho
+        Position memory positionAfter = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertEq(positionAfter.collateral, collateralAmount, "Collateral position should match supplied amount");
+        assertEq(positionAfter.borrowShares, 0, "No borrow should have occurred");
+    }
+
+    function testRepay() public {
+        // First, lend and borrow to set up a position
+        collateralAmount = 10 ether; // 10 $K
+        uint256 borrowAmount = 5e6; // 5 USDC.e
+
+        // Mint collateral to the access point
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), collateralAmount);
+
+        // Get market parameters and ID
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
+
+        // Create initial position by lending and borrowing
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+        bytes memory lendWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, collateralAmount, borrowAmount, kintoWallet, data
+        );
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), lendWorkflowData);
+
+        // Verify the position has been created
+        Position memory positionAfterBorrow = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertTrue(positionAfterBorrow.borrowShares > 0, "Should have borrowed assets");
+
+        // Prepare for repayment - deal tokens to the access point
+        uint256 repayAmount = borrowAmount / 2; // Repay half of the loan
+        deal(LOAN_TOKEN, address(accessPoint), repayAmount);
+
+        // Snapshot Morpho position before repaying
+        Position memory positionBeforeRepay = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        uint256 borrowSharesBefore = positionBeforeRepay.borrowShares;
+
+        // Execute repay workflow
+        bytes memory repayWorkflowData = abi.encodeWithSelector(MorphoWorkflow.repay.selector, repayAmount);
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), repayWorkflowData);
+
+        // Verify repayment was successful
+        Position memory positionAfterRepay = IMorpho(MORPHO).position(marketId, address(accessPoint));
+
+        // Borrow shares should have decreased
+        assertLt(
+            positionAfterRepay.borrowShares, borrowSharesBefore, "Borrow shares should have decreased after repayment"
+        );
+
+        // Collateral should remain unchanged
+        assertEq(
+            positionAfterRepay.collateral,
+            positionBeforeRepay.collateral,
+            "Collateral should remain unchanged after repayment"
+        );
+
+        // Loan token balance should have decreased in the access point
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)), 0, "All loan tokens should have been used for repayment"
+        );
+    }
+
     uint256 internal collateralAmount;
     uint256 internal oraclePrice;
     uint256 internal collateralValueInUSD;
