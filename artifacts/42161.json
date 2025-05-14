@@ -1902,6 +1902,859 @@
       ],
       "address": "0x16d1BC7AFC41DDe731fb280152CfC6F18FDD0Ad6"
     },
+    "MorphoViewer": {
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "COLLATERAL_TOKEN",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "IRM",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "LLTV",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "LOAN_TOKEN",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "MORPHO",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "ORACLE",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "UPGRADE_INTERFACE_VERSION",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "string",
+              "internalType": "string"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "calculateLTV",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "lendAmount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "borrowAmount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "ltv",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "healthFactor",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "id",
+          "inputs": [
+            {
+              "name": "marketParams",
+              "type": "tuple",
+              "internalType": "struct MarketParams",
+              "components": [
+                {
+                  "name": "loanToken",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "collateralToken",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "oracle",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "irm",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "lltv",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "marketParamsId",
+              "type": "bytes32",
+              "internalType": "Id"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "initialize",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "marketInfo",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "totalSupply",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "totalBorrow",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "borrowRatePerSecond",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "supplyRatePerSecond",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "owner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "position",
+          "inputs": [
+            {
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "supplyAssets",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "borrowAssets",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "collateral",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "proxiableUUID",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "renounceOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "transferOwnership",
+          "inputs": [
+            {
+              "name": "newOwner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "upgradeToAndCall",
+          "inputs": [
+            {
+              "name": "newImplementation",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "data",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
+        },
+        {
+          "type": "event",
+          "name": "Initialized",
+          "inputs": [
+            {
+              "name": "version",
+              "type": "uint64",
+              "indexed": false,
+              "internalType": "uint64"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "OwnershipTransferred",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Upgraded",
+          "inputs": [
+            {
+              "name": "implementation",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ERC1967InvalidImplementation",
+          "inputs": [
+            {
+              "name": "implementation",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ERC1967NonPayable",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "InvalidInitialization",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "NotInitializing",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "OwnableInvalidOwner",
+          "inputs": [
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "OwnableUnauthorizedAccount",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "UUPSUnauthorizedCallContext",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "UUPSUnsupportedProxiableUUID",
+          "inputs": [
+            {
+              "name": "slot",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
+        }
+      ],
+      "address": "0x1109408fEd639E8e182Cf45aFf90eF5BF93c1B38"
+    },
+    "MorphoWorkflow": {
+      "abi": [
+        {
+          "type": "function",
+          "name": "BRIDGER",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "COLLATERAL_TOKEN",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "IRM",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "LLTV",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "LOAN_TOKEN",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "MORPHO",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "ORACLE",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "PRE_LIQUIDATION",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "id",
+          "inputs": [
+            {
+              "name": "marketParams",
+              "type": "tuple",
+              "internalType": "struct MarketParams",
+              "components": [
+                {
+                  "name": "loanToken",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "collateralToken",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "oracle",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "irm",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "lltv",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "marketParamsId",
+              "type": "bytes32",
+              "internalType": "Id"
+            }
+          ],
+          "stateMutability": "pure"
+        },
+        {
+          "type": "function",
+          "name": "lend",
+          "inputs": [
+            {
+              "name": "amountLend",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "lendAndBorrow",
+          "inputs": [
+            {
+              "name": "amountLend",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "amountBorrow",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "name": "borrowed",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "repay",
+          "inputs": [
+            {
+              "name": "amountRepay",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "repayAndWithdraw",
+          "inputs": [
+            {
+              "name": "amountRepay",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "amountWithdraw",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "supply",
+          "inputs": [
+            {
+              "name": "amountSupply",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "supplied",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "withdraw",
+          "inputs": [
+            {
+              "name": "amountWithdraw",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "kintoWallet",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "bridgeData",
+              "type": "tuple",
+              "internalType": "struct IBridger.BridgeData",
+              "components": [
+                {
+                  "name": "vault",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "gasFee",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "msgGasLimit",
+                  "type": "uint256",
+                  "internalType": "uint256"
+                },
+                {
+                  "name": "connector",
+                  "type": "address",
+                  "internalType": "address"
+                },
+                {
+                  "name": "execPayload",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                },
+                {
+                  "name": "options",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "error",
+          "name": "AddressEmptyCode",
+          "inputs": [
+            {
+              "name": "target",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "AddressInsufficientBalance",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "FailedInnerCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SafeERC20FailedOperation",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "address": "0x2f17418dA6cBAA1713f4eb272AbEb648ef3b796d"
+    },
     "SwapWorkflow": {
       "abi": [
         {
@@ -2362,6 +3215,19 @@
         {
           "type": "function",
           "name": "USDM",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "USDT",
           "inputs": [],
           "outputs": [
             {
@@ -3410,113 +4276,6 @@
       ],
       "address": "0xb7DfE09Cf3950141DFb7DB8ABca90dDef8d06Ec0"
     },
-    "IBridge": {
-      "abi": [
-        {
-          "type": "function",
-          "name": "bridge",
-          "inputs": [
-            {
-              "name": "receiver_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "amount_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "msgGasLimit_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "execPayload_",
-              "type": "bytes",
-              "internalType": "bytes"
-            },
-            {
-              "name": "options_",
-              "type": "bytes",
-              "internalType": "bytes"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "payable"
-        },
-        {
-          "type": "function",
-          "name": "getMinFees",
-          "inputs": [
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "msgGasLimit_",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "payloadSize_",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "totalFees",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "receiveInbound",
-          "inputs": [
-            {
-              "name": "siblingChainSlug_",
-              "type": "uint32",
-              "internalType": "uint32"
-            },
-            {
-              "name": "payload_",
-              "type": "bytes",
-              "internalType": "bytes"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "payable"
-        },
-        {
-          "type": "function",
-          "name": "retry",
-          "inputs": [
-            {
-              "name": "connector_",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "messageId_",
-              "type": "bytes32",
-              "internalType": "bytes32"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
-        }
-      ]
-    },
     "IConnector": {
       "abi": [
         {
@@ -3639,6 +4398,43 @@
             }
           ],
           "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "updateConnectorStatus",
+          "inputs": [
+            {
+              "name": "connectors",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "statuses",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "validConnectors",
+          "inputs": [
+            {
+              "name": "connector",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
         }
       ]
     },
@@ -4193,6 +4989,19 @@
         },
         {
           "type": "function",
+          "name": "executionManager__",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "getMinFees",
           "inputs": [
             {
@@ -4330,6 +5139,19 @@
             }
           ],
           "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "setExecutionManager",
+          "inputs": [
+            {
+              "name": "executionManager",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
           "type": "event",

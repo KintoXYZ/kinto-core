@@ -183,4 +183,8 @@ interface ISocket {
             address capacitor__,
             address decapacitor__
         );
+
+    function setExecutionManager(address executionManager) external;
+
+    function executionManager__() external view returns (address);
 }
