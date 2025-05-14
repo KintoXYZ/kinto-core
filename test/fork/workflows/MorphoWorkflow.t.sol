@@ -328,6 +328,108 @@ contract MorphoWorkflowTest is SignatureHelper, ForkTest, ArtifactsReader, Const
     uint256 internal collateralValueInUSD;
     uint256 internal maxBorrowAmount;
 
+    function testLendAndBorrowTwice() public {
+        // First lending and borrowing operation
+        uint256 firstCollateralAmount = 10 ether; // 10 $K
+        uint256 firstBorrowAmount = 5e6; // 5 USDC.e
+
+        // Use a valid BridgeData from BridgeDataHelper for USDC on Arbitrum
+        IBridger.BridgeData memory data = bridgeData[ARBITRUM_CHAINID][USDC_ARBITRUM];
+
+        // Deal collateral to the access point for first operation
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), firstCollateralAmount);
+
+        // Get initial balances
+        uint256 initialLoanBalance = IERC20(LOAN_TOKEN).balanceOf(address(accessPoint));
+
+        // Prepare workflow data with valid BridgeData for first operation
+        bytes memory firstWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, firstCollateralAmount, firstBorrowAmount, kintoWallet, data
+        );
+
+        uint256 vaultBalanceBefore = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
+
+        // Execute the first lendAndBorrow operation
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), firstWorkflowData);
+
+        // Get market parameters and ID for verification
+        marketParams = _getMarketParams();
+        marketId = morphoWorkflow.id(marketParams);
+
+        // Verify the first position
+        Position memory positionAfterFirst = IMorpho(MORPHO).position(marketId, address(accessPoint));
+        assertEq(positionAfterFirst.collateral, firstCollateralAmount, "First collateral amount doesn't match");
+        assertTrue(positionAfterFirst.borrowShares > 0, "First borrow shares should be positive");
+
+        // Verify vault balance increased by first borrow amount
+        assertEq(
+            ERC20(LOAN_TOKEN).balanceOf(address(data.vault)),
+            vaultBalanceBefore + firstBorrowAmount,
+            "Vault balance should have increased by first borrow amount"
+        );
+
+        // Second lending and borrowing operation
+        uint256 secondCollateralAmount = 5 ether; // 5 more $K
+        uint256 secondBorrowAmount = 2e6; // 2 more USDC.e
+
+        // Deal more collateral to the access point for second operation
+        vm.prank(COLLATERAL_MINTER);
+        SuperToken(COLLATERAL_TOKEN).mint(address(accessPoint), secondCollateralAmount);
+
+        // Record vault balance before second operation
+        uint256 vaultBalanceAfterFirst = ERC20(LOAN_TOKEN).balanceOf(address(data.vault));
+
+        // Prepare workflow data for second operation
+        bytes memory secondWorkflowData = abi.encodeWithSelector(
+            MorphoWorkflow.lendAndBorrow.selector, secondCollateralAmount, secondBorrowAmount, kintoWallet, data
+        );
+
+        // Execute the second lendAndBorrow operation
+        vm.prank(alice0);
+        accessPoint.execute(address(morphoWorkflow), secondWorkflowData);
+
+        // Verify the updated position after second operation
+        Position memory positionAfterSecond = IMorpho(MORPHO).position(marketId, address(accessPoint));
+
+        // Total collateral should be sum of both deposits
+        assertEq(
+            positionAfterSecond.collateral,
+            firstCollateralAmount + secondCollateralAmount,
+            "Total collateral should be sum of both deposits"
+        );
+
+        // Borrow shares should have increased
+        assertGt(
+            positionAfterSecond.borrowShares,
+            positionAfterFirst.borrowShares,
+            "Borrow shares should have increased after second borrow"
+        );
+
+        // Verify vault balance increased by second borrow amount
+        assertEq(
+            ERC20(LOAN_TOKEN).balanceOf(address(data.vault)),
+            vaultBalanceAfterFirst + secondBorrowAmount,
+            "Vault balance should have increased by second borrow amount"
+        );
+
+        // Final assertions
+        // Check that all collateral was supplied to Morpho
+        assertEq(
+            IERC20(COLLATERAL_TOKEN).balanceOf(address(accessPoint)),
+            0,
+            "All collateral should have been supplied to Morpho"
+        );
+
+        // Check that no loan tokens remain in access point (all bridged to vault)
+        assertEq(
+            IERC20(LOAN_TOKEN).balanceOf(address(accessPoint)),
+            initialLoanBalance,
+            "Loan balance shouldn't change in access point (all bridged to vault)"
+        );
+    }
+
     function testLendAndBorrowThenPreLiquidate() public {
         vm.rollFork(334664828);
         deploy();

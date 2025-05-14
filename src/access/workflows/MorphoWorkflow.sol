@@ -127,7 +127,7 @@ contract MorphoWorkflow {
 
         // If amountBorrow > 0, borrow loan tokens
         if (amountBorrow > 0) {
-            if (!IMorpho(MORPHO).isAuthorized(PRE_LIQUIDATION, address(this))) {
+            if (!IMorpho(MORPHO).isAuthorized(address(this), PRE_LIQUIDATION)) {
                 IMorpho(MORPHO).setAuthorization(address(PRE_LIQUIDATION), true);
             }
             // Borrow loan tokens from Morpho
