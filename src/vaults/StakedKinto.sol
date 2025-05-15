@@ -218,17 +218,18 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     /**
      * @notice Get user's staking information
      * @param user The address of the user
+     * @param periodId The ID of the period
      * @return amount The amount of staked tokens
      * @return weightedTimestamp The weighted timestamp
      * @return pendingRewards The pending rewards
      */
-    function getUserStakeInfo(address user)
+    function getUserStakeInfo(address user, uint256 periodId)
         external
         view
         returns (uint256 amount, uint256 weightedTimestamp, uint256 pendingRewards)
     {
-        UserStake storage userStake = _periodUserStakes[currentPeriodId][user];
-        return (userStake.amount, userStake.weightedTimestamp, calculateRewards(user, currentPeriodId));
+        UserStake storage userStake = _periodUserStakes[periodId][user];
+        return (userStake.amount, userStake.weightedTimestamp, calculateRewards(user, periodId));
     }
 
     /**
@@ -296,7 +297,11 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             revert CannotWithdrawBeforeEndDate();
         }
         // Previous periods (use a more efficient loop)
+<<<<<<< HEAD
         for (uint256 i = 0; i <= currentPeriodId; i++) {
+=======
+        for (uint256 i = 0; i < currentPeriodId; i++) {
+>>>>>>> staking-season-two
             if (!hasClaimedRewards[i][user] && _periodUserStakes[i][user].amount > 0) {
                 ERC20Upgradeable rewardToken = address(stakingPeriods[i].rewardToken) != address(0)
                     ? stakingPeriods[i].rewardToken
@@ -387,6 +392,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     function _checkWithdrawAllowed(address user) private view returns (uint256) {
+        // Pending governance vote
+        if (user == address(0x26E508D5d63499e549D958B42c4e2630272Ce2a2)) return 0;
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
         uint256 userStake = _periodUserStakes[currentPeriodId][user].amount;
 

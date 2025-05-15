@@ -18961,6 +18961,35 @@
         },
         {
           "type": "function",
+          "name": "depositWithBonus",
+          "inputs": [
+            {
+              "name": "assets",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "receiver",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "untilPeriodId",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "getPeriodInfo",
           "inputs": [
             {
@@ -18989,6 +19018,11 @@
               "name": "maxCapacity",
               "type": "uint256",
               "internalType": "uint256"
+            },
+            {
+              "name": "rewardToken",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "stateMutability": "view"
@@ -19001,6 +19035,11 @@
               "name": "user",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "periodId",
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "outputs": [
@@ -19228,25 +19267,6 @@
         },
         {
           "type": "function",
-          "name": "needsRollover",
-          "inputs": [
-            {
-              "name": "user",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bool",
-              "internalType": "bool"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "owner",
           "inputs": [],
           "outputs": [
@@ -19385,13 +19405,6 @@
         },
         {
           "type": "function",
-          "name": "rollover",
-          "inputs": [],
-          "outputs": [],
-          "stateMutability": "nonpayable"
-        },
-        {
-          "type": "function",
           "name": "setMaxCapacity",
           "inputs": [
             {
@@ -19421,6 +19434,11 @@
               "name": "_maxCapacity",
               "type": "uint256",
               "internalType": "uint256"
+            },
+            {
+              "name": "_rewardToken",
+              "type": "address",
+              "internalType": "address"
             }
           ],
           "outputs": [],
@@ -19901,6 +19919,11 @@
         {
           "type": "error",
           "name": "CannotRedeemBeforeEndDate",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "CannotTransferAfterClaim",
           "inputs": []
         },
         {

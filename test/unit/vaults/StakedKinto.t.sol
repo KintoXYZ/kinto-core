@@ -233,7 +233,7 @@ contract StakedKintoTest is SharedSetup {
         assertEq(vault.totalAssets(), depositAmount);
 
         // Check user stake info
-        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice);
+        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(amount, depositAmount);
         assertEq(weightedTimestamp, block.timestamp);
     }
@@ -253,7 +253,7 @@ contract StakedKintoTest is SharedSetup {
         vault.deposit(2000 * 1e18, alice);
 
         // Check user stake info - weighted timestamp should be calculated correctly
-        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice);
+        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(amount, 3000 * 1e18);
 
         // Calculate expected weighted timestamp: (1000 * firstTimestamp + 2000 * (firstTimestamp + 10 days)) / 3000
@@ -315,6 +315,10 @@ contract StakedKintoTest is SharedSetup {
         // Advance time to after end date
         vm.warp(endTime + 1);
 
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
+
         // Withdraw
         vm.prank(alice);
         uint256 assets = vault.withdraw(1000 * 1e18, alice, alice);
@@ -347,6 +351,10 @@ contract StakedKintoTest is SharedSetup {
 
         // Advance time to after end date
         vm.warp(endTime + 1);
+
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
 
         // Redeem
         vm.prank(alice);
@@ -440,7 +448,7 @@ contract StakedKintoTest is SharedSetup {
         uint256 currentPid = vault.currentPeriodId();
         _depositWithBonus(alice, amount, currentPid);
 
-        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, amount, "Unexpected bonus applied");
         assertEq(vault.balanceOf(alice), amount, "Shares mismatch");
     }
@@ -454,12 +462,12 @@ contract StakedKintoTest is SharedSetup {
         uint256 expected = (amount * 104) / 100; // +4 %
         assertEq(shares, expected, "Returned shares wrong");
 
-        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, expected, "Stake amount without bonus");
         assertEq(vault.balanceOf(alice), expected, "Share balance wrong");
 
         // untilPeriodId stored correctly
-        (,, uint256 pending) = vault.getUserStakeInfo(alice);
+        (,, uint256 pending) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(pending, vault.calculateRewards(alice, vault.currentPeriodId()), "Pending mismatch");
     }
 
@@ -470,7 +478,7 @@ contract StakedKintoTest is SharedSetup {
 
         uint256 expected = (amount * 109) / 100;
         assertEq(shares, expected, "Shares wrong for diff=2");
-        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob, vault.currentPeriodId());
         assertEq(bAmt, expected, "Stake amt wrong for diff=2");
     }
 
@@ -502,11 +510,11 @@ contract StakedKintoTest is SharedSetup {
         vault.transfer(bob, amt);
 
         // alice position should be gone
-        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, 0, "Alice stake not cleared");
 
         // bob position should now be amt + amt/2 with correct weighted timestamp
-        (uint256 bAmt, uint256 wts,) = vault.getUserStakeInfo(bob);
+        (uint256 bAmt, uint256 wts,) = vault.getUserStakeInfo(bob, vault.currentPeriodId());
         assertEq(bAmt, (3 * amt) / 2, "Bob merged amount incorrect");
         // weightedTimestamp = (amt*t0 + (amt/2)*(t0+10)) / (1.5*amt) = t0 + 3.33…
         uint256 expectedWts = (block.timestamp - 10) + 3; // block.timestamp is t0+10 here
@@ -525,10 +533,10 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(bob);
         vault.transferFrom(alice, bob, amt);
 
-        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, 0, "Stake stayed with Alice after transferFrom");
 
-        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob, vault.currentPeriodId());
         assertEq(bAmt, amt, "Stake did not reach Bob via transferFrom");
     }
 
@@ -540,7 +548,7 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(alice);
         vault.transfer(alice, amt);
 
-        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, amt, "Selftransfer corrupted stake info");
     }
 
@@ -552,6 +560,10 @@ contract StakedKintoTest is SharedSetup {
 
         // Warp past period end so Alice can withdraw (and auto‑claim)
         vm.warp(endTime + 1);
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
+
         vm.prank(alice);
         vault.withdraw(amt / 2, alice, alice); // partial withdraw triggers _handleRewards
 
@@ -578,10 +590,10 @@ contract StakedKintoTest is SharedSetup {
         assertEq(vault.balanceOf(alice), 0);
 
         // Check user stake info is for bob, not alice
-        (uint256 amount,,) = vault.getUserStakeInfo(bob);
+        (uint256 amount,,) = vault.getUserStakeInfo(bob, vault.currentPeriodId());
         assertEq(amount, 1000 * 1e18);
 
-        (amount,,) = vault.getUserStakeInfo(alice);
+        (amount,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(amount, 0);
     }
 
@@ -593,6 +605,10 @@ contract StakedKintoTest is SharedSetup {
 
         // Advance time to after end date
         vm.warp(endTime + 1);
+
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
 
         // Check the actual maxWithdraw value
         uint256 maxWithdrawAmount = vault.maxWithdraw(alice);
