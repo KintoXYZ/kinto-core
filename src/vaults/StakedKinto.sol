@@ -10,6 +10,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
  * @title StakedKinto
@@ -24,6 +25,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     struct UserStake {
         uint256 amount;
         uint256 weightedTimestamp;
+        uint256 untilPeriodId;
     }
 
     struct StakingPeriod {
@@ -31,6 +33,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         uint256 endTime;
         uint256 rewardRate;
         uint256 maxCapacity;
+        ERC20Upgradeable rewardToken;
     }
 
     /* ============ Custom Errors ============ */
@@ -48,6 +51,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     error AlreadyRolledOver();
     error RewardRateTooHigh();
     error DepositTooSmall();
+    error CannotTransferAfterClaim();
 
     /* ============ Events ============ */
     event RewardsDistributed(address indexed user, uint256 amount);
@@ -61,7 +65,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ State ============ */
 
-    ERC20Upgradeable private rewardToken;
+    ERC20Upgradeable private __rewardToken__deprecated;
     StakingPeriod[] private stakingPeriods;
     uint256 public currentPeriodId;
     mapping(uint256 => mapping(address => bool)) public hasClaimedRewards;
@@ -74,6 +78,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         _disableInitializers();
     }
 
+    // Save Space on new deployments
     function initialize(
         IERC20MetadataUpgradeable _stakingToken,
         ERC20Upgradeable _rewardToken,
@@ -88,9 +93,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         __Ownable_init_unchained();
         __UUPSUpgradeable_init();
 
-        rewardToken = _rewardToken;
+        __rewardToken__deprecated = _rewardToken;
 
-        _startNewPeriod(_endDate, _rewardRate, _maxCapacity);
+        _startNewPeriod(_endDate, _rewardRate, _maxCapacity, address(_rewardToken));
 
         emit MaxCapacityUpdated(_maxCapacity);
     }
@@ -111,9 +116,13 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
      * @param _endDate The end date of the new period
      * @param _rewardRate The reward rate for the new period
      * @param _maxCapacity The maximum capacity for the new period
+     * @param _rewardToken The reward token for the new period
      */
-    function startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) external onlyOwner {
-        _startNewPeriod(_endDate, _rewardRate, _maxCapacity);
+    function startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity, address _rewardToken)
+        external
+        onlyOwner
+    {
+        _startNewPeriod(_endDate, _rewardRate, _maxCapacity, _rewardToken);
     }
 
     // Required by UUPSUpgradeable
@@ -121,28 +130,21 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ User State Functions ============ */
 
-    function rollover() external {
-        if (currentPeriodId == 0) revert NoPreviousPeriod();
-        StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        // Grab data from last period
-        UserStake memory lastPeriodUserStake = _periodUserStakes[currentPeriodId - 1][msg.sender];
-        if (lastPeriodUserStake.amount == 0) revert NoPreviousStake();
-        if (_periodUserStakes[currentPeriodId][msg.sender].amount > 0) revert AlreadyRolledOver();
-        _periodUserStakes[currentPeriodId][msg.sender] =
-            UserStake({amount: lastPeriodUserStake.amount, weightedTimestamp: currentPeriod.startTime});
-        emit Rollover(msg.sender, lastPeriodUserStake.amount, currentPeriod.startTime);
+    function depositWithBonus(uint256 assets, address receiver, uint256 untilPeriodId) public returns (uint256) {
+        uint256 assetsWithBonus = _innerDeposit(assets, receiver, untilPeriodId);
+        return super.deposit(assetsWithBonus, receiver);
     }
 
     // Override deposit function to implement weighted timestamp logic and check capacity
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
-        _innerDeposit(assets, receiver);
+        _innerDeposit(assets, receiver, currentPeriodId);
 
         // Call parent deposit function to handle the actual token transfer and share minting
         return super.deposit(assets, receiver);
     }
 
     function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
-        _innerDeposit(convertToAssets(shares), receiver);
+        _innerDeposit(convertToAssets(shares), receiver, currentPeriodId);
         return super.mint(shares, receiver);
     }
 
@@ -205,9 +207,12 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         uint256 stakingDuration = period.endTime - userStake.weightedTimestamp;
 
+        address rewardToken =
+            address(period.rewardToken) != address(0) ? address(period.rewardToken) : address(__rewardToken__deprecated);
+
         // Simplify calculation
         return (userStake.amount * period.rewardRate * stakingDuration) / (365 days)
-            / (10 ** (18 - rewardToken.decimals())) * 2;
+            / (10 ** (18 - IERC20MetadataUpgradeable(rewardToken).decimals())) * 2;
     }
 
     /**
@@ -227,60 +232,92 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     /**
-     * @notice Returns true if the user needs to rollover
-     * @param user The address of the user
-     * @return True if the user needs to rollover, false otherwise
-     */
-    function needsRollover(address user) external view returns (bool) {
-        return _periodUserStakes[currentPeriodId - 1][user].amount > 0
-            && _periodUserStakes[currentPeriodId][user].amount == 0;
-    }
-
-    /**
      * @notice Returns the information for a specific staking period
      * @param periodId The ID of the period
      * @return startTime The start time of the period
      * @return endTime The end time of the period
      * @return rewardRate The reward rate for the period
      * @return maxCapacity The maximum capacity for the period
+     * @return rewardToken The reward token for the period
      */
     function getPeriodInfo(uint256 periodId)
         external
         view
-        returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity)
+        returns (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity, address rewardToken)
     {
         StakingPeriod memory period = stakingPeriods[periodId];
-        return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity);
+        return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity, address(period.rewardToken));
+    }
+
+    /// @dev Hook called by OpenZeppelin ERC20 after *any* share movement:
+    /// mint, burn, transfer, or transferFrom.
+    function _afterTokenTransfer(address from, address to, uint256 /* amount */ ) internal virtual override {
+        // Ignore mint, burn, or self-transfer.
+        if (from == address(0) || to == address(0) || from == to) return;
+
+        for (uint256 i; i <= currentPeriodId; ++i) {
+            UserStake storage sFrom = _periodUserStakes[i][from];
+            if (sFrom.amount == 0) continue;
+
+            // ✅ protect receiver’s un-claimed rewards
+            if (hasClaimedRewards[i][from] && !hasClaimedRewards[i][to]) {
+                revert CannotTransferAfterClaim();
+            }
+
+            UserStake storage sTo = _periodUserStakes[i][to];
+
+            if (sTo.amount == 0) {
+                // Simple move.
+                _periodUserStakes[i][to] = sFrom;
+            } else {
+                uint256 total = sTo.amount + sFrom.amount;
+                sTo.weightedTimestamp =
+                    (sTo.weightedTimestamp * sTo.amount + sFrom.weightedTimestamp * sFrom.amount) / total;
+                sTo.amount = total;
+                if (sFrom.untilPeriodId > sTo.untilPeriodId) {
+                    sTo.untilPeriodId = sFrom.untilPeriodId;
+                }
+            }
+
+            // Merge reward-claim bitmap.
+            hasClaimedRewards[i][to] = hasClaimedRewards[i][to] || hasClaimedRewards[i][from];
+
+            // Clean up sender.
+            delete _periodUserStakes[i][from];
+            delete hasClaimedRewards[i][from];
+        }
     }
 
     /* ============ Internal Functions ============ */
 
     function _handleRewardsAndReset(address user, address receiver) private {
-        uint256 endDate = stakingPeriods[currentPeriodId].endTime;
-        if (block.timestamp < endDate) revert CannotWithdrawBeforeEndDate();
-        // Combine reward calculations
-        uint256 totalRewards = 0;
-
-        // Previous periods (use a more efficient loop)
-        for (uint256 i = 0; i <= currentPeriodId; ++i) {
-            if (!hasClaimedRewards[i][user]) {
-                totalRewards += calculateRewards(user, i);
-                hasClaimedRewards[i][user] = true;
-            }
+        uint256 withdrawableAmount = _checkWithdrawAllowed(user);
+        if (withdrawableAmount == 0) {
+            revert CannotWithdrawBeforeEndDate();
         }
+        // Previous periods (use a more efficient loop)
+        for (uint256 i = 0; i <= currentPeriodId; i++) {
+            if (!hasClaimedRewards[i][user] && _periodUserStakes[i][user].amount > 0) {
+                ERC20Upgradeable rewardToken = address(stakingPeriods[i].rewardToken) != address(0)
+                    ? stakingPeriods[i].rewardToken
+                    : __rewardToken__deprecated;
+                uint256 rewardsPeriod = calculateRewards(user, i);
 
-        // Single transfer instead of multiple
-        if (totalRewards > 0) {
-            if (rewardToken.balanceOf(address(this)) < totalRewards) {
-                revert InsufficientRewardTokenBalance();
+                if (rewardToken.balanceOf(address(this)) < rewardsPeriod) {
+                    revert InsufficientRewardTokenBalance();
+                }
+                hasClaimedRewards[i][user] = true;
+                rewardToken.safeTransfer(receiver, rewardsPeriod);
+                emit RewardsDistributed(user, rewardsPeriod);
             }
-            rewardToken.safeTransfer(receiver, totalRewards);
-            emit RewardsDistributed(user, totalRewards);
         }
     }
 
     // Helper function to start a new staking period
-    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity) private {
+
+    function _startNewPeriod(uint256 _endDate, uint256 _rewardRate, uint256 _maxCapacity, address _rewardToken)
+        private
+    {
         if (_endDate <= block.timestamp) revert EndDateMustBeInTheFuture();
         if (_rewardRate > MAX_REWARD_RATE) revert RewardRateTooHigh();
 
@@ -289,7 +326,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
                 startTime: uint64(block.timestamp),
                 endTime: uint64(_endDate),
                 rewardRate: uint32(_rewardRate),
-                maxCapacity: uint96(_maxCapacity)
+                maxCapacity: uint96(_maxCapacity),
+                rewardToken: ERC20Upgradeable(_rewardToken)
             })
         );
 
@@ -297,9 +335,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         emit NewPeriodStarted(currentPeriodId, block.timestamp, _endDate);
     }
 
-    function _innerDeposit(uint256 assets, address receiver) private {
+    function _innerDeposit(uint256 assets, address receiver, uint256 untilPeriodId) private returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
+        if (untilPeriodId < currentPeriodId || block.timestamp >= currentPeriod.endTime) revert StakingPeriodEnded();
 
         // Check if deposit would exceed max capacity
         if (totalAssets() + assets > currentPeriod.maxCapacity) revert MaxCapacityReached();
@@ -318,10 +356,20 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             userStake.weightedTimestamp = block.timestamp;
         }
 
+        userStake.untilPeriodId = untilPeriodId;
+        // Longer bonus
+        if (untilPeriodId > currentPeriodId) {
+            uint256 diff = untilPeriodId - currentPeriodId;
+            uint256 bonus = (diff * (diff + 7) * 1e16) / 2;
+            assets += (bonus * assets) / 1e18;
+        }
+
         // Update stake amount
         userStake.amount += assets;
 
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
+
+        return assets;
     }
 
     function _getRemainingCapacity() private view returns (uint256) {
@@ -340,7 +388,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     function _checkWithdrawAllowed(address user) private view returns (uint256) {
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
-        if (block.timestamp < currentPeriod.endTime) {
+        uint256 userStake = _periodUserStakes[currentPeriodId][user].amount;
+
+        // User staked in the current period and the period has not ended
+        if (userStake > 0 && block.timestamp < currentPeriod.endTime) {
             return 0; // Cannot withdraw before end date
         }
 
@@ -349,9 +400,15 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             return 0;
         }
 
-        uint256 userStake = _periodUserStakes[currentPeriodId][user].amount;
-        if (userStake == 0) {
-            return 0;
+        if (userStake == 0 && currentPeriodId > 0) {
+            // No stake in the current period
+            // Previous periods (use a more efficient loop)
+            for (uint256 i = 0; i < currentPeriodId; i++) {
+                uint256 amount = _periodUserStakes[i][user].amount;
+                if (amount > 0 && _periodUserStakes[i][user].untilPeriodId <= currentPeriodId) {
+                    userStake += _periodUserStakes[i][user].amount;
+                }
+            }
         }
 
         return userStake;

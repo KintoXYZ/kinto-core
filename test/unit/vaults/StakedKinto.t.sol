@@ -405,9 +405,10 @@ contract StakedKintoTest is SharedSetup {
         vm.prank(admin);
         vault.setMaxCapacity(newCapacity);
 
-        (,,, uint256 maxCapacity) = vault.getPeriodInfo(0);
+        (,,, uint256 maxCapacity, address rewardToken) = vault.getPeriodInfo(0);
         assertEq(maxCapacity, newCapacity);
         assertEq(vault.maxDeposit(alice), newCapacity);
+        assertEq(rewardToken, address(usdc));
     }
 
     function testSetMaxCapacityUnauthorized() public {
@@ -431,148 +432,133 @@ contract StakedKintoTest is SharedSetup {
         assertEq(StakedKintoUpgraded(address(vault)).newFunction(), 1);
     }
 
-    /* ============ Rollover Tests ============ */
+    /* ============ Deposit with bonus Tests ============ */
 
-    function testNeedsRollover() public {
-        // First period setup
-        vm.prank(alice);
-        vault.deposit(1000 * 1e18, alice);
+    /// No bonus when untilPeriodId == currentPeriodId
+    function testDepositWithBonusNoBonus() public {
+        uint256 amount = 1_000 ether;
+        uint256 currentPid = vault.currentPeriodId();
+        _depositWithBonus(alice, amount, currentPid);
 
-        // End first period and start new one
-        vm.warp(endTime + 1);
-        vm.prank(admin);
-        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
-
-        // Alice should need rollover
-        assertTrue(vault.needsRollover(alice));
-
-        // Bob shouldn't need rollover (no stake in previous period)
-        assertFalse(vault.needsRollover(bob));
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, amount, "Unexpected bonus applied");
+        assertEq(vault.balanceOf(alice), amount, "Shares mismatch");
     }
 
-    function testRollover() public {
-        // First period setup
-        vm.prank(alice);
-        vault.deposit(1000 * 1e18, alice);
+    /// 4 % bonus per future period
+    function testDepositWithBonusAddsFourPercent() public {
+        uint256 amount = 2_000 ether;
+        uint256 untilPid = vault.currentPeriodId() + 1; // lock one extra period
+        uint256 shares = _depositWithBonus(alice, amount, untilPid);
 
-        // End first period and start new one
-        vm.warp(endTime + 1);
-        vm.prank(admin);
-        uint256 newEndDate = endTime + 365 days;
-        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+        uint256 expected = (amount * 104) / 100; // +4 %
+        assertEq(shares, expected, "Returned shares wrong");
 
-        uint256 secondPeriodStartTime = block.timestamp;
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, expected, "Stake amount without bonus");
+        assertEq(vault.balanceOf(alice), expected, "Share balance wrong");
 
-        // Verify alice needs rollover
-        assertTrue(vault.needsRollover(alice));
-
-        // Execute rollover
-        vm.prank(alice);
-        vault.rollover();
-
-        // Verify alice no longer needs rollover
-        assertFalse(vault.needsRollover(alice));
-
-        // Check that stake was properly rolled over
-        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(alice);
-        assertEq(amount, 1000 * 1e18);
-        assertEq(weightedTimestamp, secondPeriodStartTime);
-
-        // Verify alice can't rollover again
-        vm.expectRevert(abi.encodeWithSignature("AlreadyRolledOver()"));
-        vm.prank(alice);
-        vault.rollover();
+        // untilPeriodId stored correctly
+        (,, uint256 pending) = vault.getUserStakeInfo(alice);
+        assertEq(pending, vault.calculateRewards(alice, vault.currentPeriodId()), "Pending mismatch");
     }
 
-    function testRollover_RevertWhen_NoPreviousPeriod() public {
-        // Try to rollover when there's no previous period
-        vm.expectRevert(abi.encodeWithSignature("NoPreviousPeriod()"));
-        vm.prank(alice);
-        vault.rollover();
+    function testDepositWithBonusTwoPeriodsAddsNinePercent() public {
+        uint256 amount = 3_000 ether;
+        uint256 untilPid = vault.currentPeriodId() + 2; // diff = 2 (10 %)
+        uint256 shares = _depositWithBonus(bob, amount, untilPid);
+
+        uint256 expected = (amount * 109) / 100;
+        assertEq(shares, expected, "Shares wrong for diff=2");
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, expected, "Stake amt wrong for diff=2");
     }
 
-    function testRollover_RevertWhen_NoPreviousStake() public {
-        // End first period and start new one
-        vm.warp(endTime + 1);
+    /// untilPeriodId < currentPeriodId should revert with arithmetic error (underflow)
+    function testDepositWithBonusInvalidUntilPeriod() public {
+        // Start a new period so currentPid becomes 1
+        uint256 newEnd = block.timestamp + 30 days;
         vm.prank(admin);
-        vault.startNewPeriod(endTime + 365 days, REWARD_RATE, MAX_CAPACITY);
+        vault.startNewPeriod(newEnd, 10, 1_000_000 ether, address(usdc));
 
-        // Try to rollover with no stake in previous period
-        vm.expectRevert(abi.encodeWithSignature("NoPreviousStake()"));
         vm.prank(alice);
-        vault.rollover();
+        vm.expectRevert();
+        vault.depositWithBonus(100 ether, alice, 0);
     }
 
-    function testWithdrawAfterRollover() public {
-        // First period setup
-        uint256 aliceBalance = kToken.balanceOf(alice);
+    /* ============ afterTokenTransfer() Tests ============ */
+
+    /// @dev Stake should follow `transfer` and merge correctly when receiver already has a stake.
+    function testTransferMovesStakeData() public {
+        uint256 amt = 1_000 ether;
+
+        // alice & bob both deposit
+        _deposit(alice, amt); // ts = t0
+        vm.warp(block.timestamp + 10);
+        _deposit(bob, amt / 2); // ts = t0 + 10
+
+        // Alice transfers her shares to Bob
         vm.prank(alice);
-        vault.deposit(1000 * 1e18, alice);
+        vault.transfer(bob, amt);
 
-        // End first period and start new one
-        vm.warp(endTime + 1);
-        vm.prank(admin);
-        uint256 newEndDate = endTime + 365 days;
-        vault.startNewPeriod(newEndDate, REWARD_RATE, MAX_CAPACITY);
+        // alice position should be gone
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, 0, "Alice stake not cleared");
 
-        // Execute rollover
-        vm.prank(alice);
-        vault.rollover();
-
-        // Advance to end of second period
-        vm.warp(newEndDate + 1);
-
-        // Withdraw after rollover
-        vm.prank(alice);
-        vault.withdraw(1000 * 1e18, alice, alice);
-
-        // Verify withdrawal was successful
-        assertEq(vault.balanceOf(alice), 0);
-        assertEq(kToken.balanceOf(alice), aliceBalance);
-        assertGt(usdc.balanceOf(alice), 0); // Should have received rewards
+        // bob position should now be amt + amt/2 with correct weighted timestamp
+        (uint256 bAmt, uint256 wts,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, (3 * amt) / 2, "Bob merged amount incorrect");
+        // weightedTimestamp = (amt*t0 + (amt/2)*(t0+10)) / (1.5*amt) = t0 + 3.33…
+        uint256 expectedWts = (block.timestamp - 10) + 3; // block.timestamp is t0+10 here
+        assertApproxEqAbs(wts, expectedWts, 1, "Weighted timestamp skewed");
     }
 
-    function testMultiplePeriodRollovers() public {
-        // First period setup
-        uint256 aliceBalance = kToken.balanceOf(alice);
-        vm.prank(alice);
-        vault.deposit(1000 * 1e18, alice);
+    /// @dev transferFrom path should also move stake info (covers ERC20 permit / allowances).
+    function testTransferFromMovesStakeData() public {
+        uint256 amt = 500 ether;
+        _deposit(alice, amt);
 
-        // End first period and start second
+        // Grant allowance to bob and perform transferFrom
+        vm.prank(alice);
+        vault.approve(bob, amt);
+
+        vm.prank(bob);
+        vault.transferFrom(alice, bob, amt);
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, 0, "Stake stayed with Alice after transferFrom");
+
+        (uint256 bAmt,,) = vault.getUserStakeInfo(bob);
+        assertEq(bAmt, amt, "Stake did not reach Bob via transferFrom");
+    }
+
+    /// @dev Self‑transfer should be a no‑op and must not delete stake info.
+    function testSelfTransferNoOp() public {
+        uint256 amt = 750 ether;
+        _deposit(alice, amt);
+
+        vm.prank(alice);
+        vault.transfer(alice, amt);
+
+        (uint256 aAmt,,) = vault.getUserStakeInfo(alice);
+        assertEq(aAmt, amt, "Selftransfer corrupted stake info");
+    }
+
+    /// @dev If sender already claimed in a period and receiver has not, transfer must revert.
+    function testTransferAfterClaimReverts() public {
+        uint256 amt = 1_000 ether;
+        _deposit(alice, amt);
+        _deposit(bob, amt);
+
+        // Warp past period end so Alice can withdraw (and auto‑claim)
         vm.warp(endTime + 1);
-        vm.prank(admin);
-        uint256 secondEndDate = endTime + 365 days;
-        vault.startNewPeriod(secondEndDate, REWARD_RATE, MAX_CAPACITY);
-
-        // Rollover to second period
         vm.prank(alice);
-        vault.rollover();
+        vault.withdraw(amt / 2, alice, alice); // partial withdraw triggers _handleRewards
 
-        // End second period and start third
-        vm.warp(secondEndDate + 1);
-        vm.prank(admin);
-        uint256 thirdEndDate = secondEndDate + 365 days;
-        vault.startNewPeriod(thirdEndDate, REWARD_RATE, MAX_CAPACITY);
-
-        // Rollover to third period
+        // Now Alice tries to transfer remaining shares to Bob
         vm.prank(alice);
-        vault.rollover();
-
-        // Verify stake is in third period
-        (uint256 amount,,) = vault.getUserStakeInfo(alice);
-        assertEq(amount, 1000 * 1e18);
-
-        // Advance to end of third period
-        vm.warp(thirdEndDate + 1);
-
-        // Withdraw after multiple rollovers
-        vm.prank(alice);
-        vault.withdraw(1000 * 1e18, alice, alice);
-
-        // Verify withdrawal was successful
-        assertEq(vault.balanceOf(alice), 0);
-        assertEq(kToken.balanceOf(alice), aliceBalance);
-        assertGt(usdc.balanceOf(alice), 0); // Should have received rewards
+        vm.expectRevert(StakedKinto.CannotTransferAfterClaim.selector);
+        vault.transfer(bob, 500);
     }
 
     /* ============ Edge Cases Tests ============ */
@@ -623,5 +609,23 @@ contract StakedKintoTest is SharedSetup {
         assertEq(kToken.balanceOf(bob), bobBalance + maxWithdrawAmount);
         assertGt(usdc.balanceOf(bob), 0);
         assertEq(vault.balanceOf(alice), 0);
+    }
+
+    /* ======================= Helper ======================= */
+    function _deposit(address user, uint256 amount) internal {
+        vm.startPrank(user);
+        kToken.approve(address(vault), amount);
+        vault.deposit(amount, user);
+        vm.stopPrank();
+    }
+
+    function _depositWithBonus(address user, uint256 amount, uint256 untilPid) internal returns (uint256 shares) {
+        uint256 diff = untilPid - vault.currentPeriodId();
+        uint256 bonusPct = 5 * diff; // 5 % per future period
+        uint256 amountWithBonus = amount + (amount * bonusPct) / 100;
+        vm.startPrank(user);
+        kToken.approve(address(vault), amountWithBonus);
+        shares = vault.depositWithBonus(amount, user, untilPid);
+        vm.stopPrank();
     }
 }
