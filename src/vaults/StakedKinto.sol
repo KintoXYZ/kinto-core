@@ -297,11 +297,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             revert CannotWithdrawBeforeEndDate();
         }
         // Previous periods (use a more efficient loop)
-<<<<<<< HEAD
-        for (uint256 i = 0; i <= currentPeriodId; i++) {
-=======
         for (uint256 i = 0; i < currentPeriodId; i++) {
->>>>>>> staking-season-two
             if (!hasClaimedRewards[i][user] && _periodUserStakes[i][user].amount > 0) {
                 ERC20Upgradeable rewardToken = address(stakingPeriods[i].rewardToken) != address(0)
                     ? stakingPeriods[i].rewardToken
