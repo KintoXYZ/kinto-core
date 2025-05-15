@@ -19035,6 +19035,11 @@
               "name": "user",
               "type": "address",
               "internalType": "address"
+            },
+            {
+              "name": "periodId",
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "outputs": [

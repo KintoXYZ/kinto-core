@@ -23,10 +23,10 @@ contract StakeSeasonTwo is MigrationHelper {
         (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity, address rewardToken) =
             stakedKinto.getPeriodInfo(0);
         // Checks interface change
-        require(rewardToken == 0x05DC0010C9902EcF6CBc921c6A4bd971c69E5A2E, "Wrong address");
+        console2.log("rewardToken", rewardToken);
+        require(rewardToken == address(0), "Wrong address 2");
         // Starts new period
-        uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = deployerPrivateKey;
+
         _handleOps(
             abi.encodeWithSelector(
                 StakedKinto.startNewPeriod.selector,
@@ -35,16 +35,13 @@ contract StakeSeasonTwo is MigrationHelper {
                 500_000 * 1e18,
                 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87
             ),
-            payable(kintoAdminWallet),
-            _getChainDeployment("StakedKinto"),
-            0,
-            address(0),
-            privateKeys
+            payable(_getChainDeployment("StakedKinto"))
         );
+
         (startTime, endTime, rewardRate, maxCapacity, rewardToken) = stakedKinto.getPeriodInfo(1);
         require(endTime == 1755236567, "Wrong end time");
         require(rewardRate == 1, "Wrong reward rate");
         require(maxCapacity == 500_000 * 1e18, "Wrong max capacity");
-        require(rewardToken == 0x05DC0010C9902EcF6CBc921c6A4bd971c69E5A2E, "Wrong address");
+        require(rewardToken == 0x010700808D59d2bb92257fCafACfe8e5bFF7aB87, "Wrong address");
     }
 }
