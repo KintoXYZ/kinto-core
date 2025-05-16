@@ -66,4 +66,8 @@ contract BridgedKinto is BridgedToken, ERC20VotesUpgradeable {
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";
     }
+
+    function getPastVotes(address account, uint256 /* timepoint */ ) public view override returns (uint256) {
+        return getVotes(account);
+    }
 }
