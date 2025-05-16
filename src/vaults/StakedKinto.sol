@@ -359,14 +359,15 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
         userStake.untilPeriodId = untilPeriodId;
         // Longer bonus
+        uint256 bonus = 0;
         if (untilPeriodId > currentPeriodId) {
             uint256 diff = untilPeriodId - currentPeriodId;
-            uint256 bonus = (diff * (diff + 7) * 1e16) / 2;
-            assets += (bonus * assets) / 1e18;
+            bonus = (diff * (diff + 7) * 1e16) / 2;
+            bonus = (bonus * assets) / 1e18;
         }
 
         // Update stake amount
-        userStake.amount += assets;
+        userStake.amount += assets + bonus;
 
         emit StakeUpdated(receiver, userStake.amount, userStake.weightedTimestamp);
 

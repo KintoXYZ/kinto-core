@@ -464,7 +464,7 @@ contract StakedKintoTest is SharedSetup {
 
         (uint256 aAmt,,) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
         assertEq(aAmt, expected, "Stake amount without bonus");
-        assertEq(vault.balanceOf(alice), expected, "Share balance wrong");
+        assertEq(vault.balanceOf(alice), amount, "Vault balance wrong");
 
         // untilPeriodId stored correctly
         (,, uint256 pending) = vault.getUserStakeInfo(alice, vault.currentPeriodId());
@@ -641,7 +641,8 @@ contract StakedKintoTest is SharedSetup {
         uint256 amountWithBonus = amount + (amount * bonusPct) / 100;
         vm.startPrank(user);
         kToken.approve(address(vault), amountWithBonus);
-        shares = vault.depositWithBonus(amount, user, untilPid);
+        vault.depositWithBonus(amount, user, untilPid);
+        (shares,,) = vault.getUserStakeInfo(user, vault.currentPeriodId());
         vm.stopPrank();
     }
 }
