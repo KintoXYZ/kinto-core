@@ -129,16 +129,6 @@ Find below the instructions to run some of these scripts:
 
 The best way is to use cast with the txhash
 
-### Running Funding Scripts
-
-Funding scripts maintain specific balances for apps on Kinto, and fund Bridgers on other chains. It is required to run one script per chain. Bash commands below would call the script at the specific interval.
-
-```bash
-source .env && while true; do forge script script/actions/fund-faucets.s.sol --rpc-url kinto --gas-estimate-multiplier 3000 --skip-simulation --broadcast; sleep 300; done
-source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url mainnet --skip-simulation --broadcast; sleep 300; done
-source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url arbitrum --skip-simulation --broadcast; sleep 300; done
-source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url base --skip-simulation --broadcast; sleep 300; done
-```
 
 ```
 cast run <tx-hash> --rpc-url $KINTO_RPC_URL
@@ -207,4 +197,15 @@ On Mainnet:
 
 ```
 forge verify-contract 0xA6ddF426008E8b7f1a70237bdEfafB5D928bA72E src/wallet/KintoWallet.sol:WalletV7 --verifier-url https://kinto-mainnet.calderaexplorer.xyz/api --constructor-args $(cast abi-encode "constructor(address,address,address)" "0x2843C269D2a64eCfA63548E8B3Fc0FD23B7F70cb" "0xf369f78E3A0492CC4e96a90dae0728A38498e9c7" "0x5A2b641b84b0230C8e75F55d5afd27f4Dbd59d5b")  --verifier blockscout --compiler-version 0.8.23
+```
+
+### Running Funding Scripts
+
+Funding scripts maintain specific balances for apps on Kinto, and fund Bridgers on other chains. It is required to run one script per chain. Bash commands below would call the script at the specific interval.
+
+```bash
+source .env && while true; do forge script script/actions/fund-faucets.s.sol --rpc-url kinto --gas-estimate-multiplier 3000 --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url mainnet --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url arbitrum --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url base --skip-simulation --broadcast; sleep 300; done
 ```
