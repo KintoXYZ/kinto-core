@@ -129,6 +129,17 @@ Find below the instructions to run some of these scripts:
 
 The best way is to use cast with the txhash
 
+### Running Funding Scripts
+
+Funding scripts maintain specific balances for apps on Kinto, and fund Bridgers on other chains. It is required to run one script per chain. Bash commands below would call the script at the specific interval.
+
+```bash
+source .env && while true; do forge script script/actions/fund-faucets.s.sol --rpc-url kinto --gas-estimate-multiplier 3000 --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url mainnet --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url arbitrum --skip-simulation --broadcast; sleep 300; done
+source .env && while true; do forge script script/actions/fund-bridger.s.sol --rpc-url base --skip-simulation --broadcast; sleep 300; done
+```
+
 ```
 cast run <tx-hash> --rpc-url $KINTO_RPC_URL
 ```
