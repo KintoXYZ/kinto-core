@@ -250,6 +250,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return (period.startTime, period.endTime, period.rewardRate, period.maxCapacity, address(period.rewardToken));
     }
 
+    /* ============ Private Functions ============ */
+
     /// @dev Hook called by OpenZeppelin ERC20 after *any* share movement:
     /// mint, burn, transfer, or transferFrom.
     function _afterTokenTransfer(address from, address to, uint256 /* amount */ ) internal virtual override {
@@ -389,9 +391,8 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     function _checkWithdrawAllowed(address user) private view returns (uint256) {
-        // Pending governance vote
-        if (user == address(0x26E508D5d63499e549D958B42c4e2630272Ce2a2)) return 0;
         StakingPeriod memory currentPeriod = stakingPeriods[currentPeriodId];
+
         uint256 userStake = _periodUserStakes[currentPeriodId][user].amount;
 
         // User staked in the current period and the period has not ended
