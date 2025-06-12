@@ -164,6 +164,24 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return super.redeem(shares, receiver, owner);
     }
 
+    function icoTokensAction(uint256 icoShares, bool isWithdraw, uint256 untilPeriodId) external {
+        uint256 stakedBalance = balanceOf(msg.sender);
+        if (icoShares > stakedBalance) {
+            revert DepositTooSmall();
+        }
+        if (isWithdraw) {
+            // Just redeem the shares. Skip max redeem logic
+            uint256 assets = previewRedeem(icoShares);
+            _withdraw(msg.sender, msg.sender, msg.sender, assets, icoShares);
+        } else {
+            // Transform into normal stake
+            _innerDeposit(icoShares, msg.sender, untilPeriodId);
+        }
+        // USDC Bonus
+        uint256 usdcBonus = (isWithdraw ? icoShares / 4 : icoShares / 2) / 1e12;
+        __rewardToken__deprecated.safeTransfer(msg.sender, usdcBonus);
+    }
+
     /* ============ View Functions ============ */
 
     /**
