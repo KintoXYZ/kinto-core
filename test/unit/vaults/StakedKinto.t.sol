@@ -369,6 +369,96 @@ contract StakedKintoTest is SharedSetup {
         assertGt(usdc.balanceOf(alice), 0); // Should have received some rewards
     }
 
+    /* ============ ICO Stake Token Tests ============ */
+
+    function testIcoTokensActionWhenWithdrawing() public {
+        // Deposit
+        uint256 bobBalance = kToken.balanceOf(bob);
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // Advance time to after end date
+        vm.warp(endTime + 1);
+
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
+
+        // Transfer some to BOb
+        vm.prank(alice);
+        vault.transfer(bob, 10 * 1e18);
+
+        // Withdraw
+        vm.prank(bob);
+        vault.icoTokensAction(10 * 1e18, true, 1);
+
+        // Check balances
+        assertEq(vault.balanceOf(alice), 990 * 1e18);
+        assertEq(vault.totalAssets(), 990 * 1e18);
+        assertEq(kToken.balanceOf(bob), bobBalance + 10 * 1e18);
+        assertEq(vault.balanceOf(bob), 0);
+
+        // Check rewards
+        assertEq(usdc.balanceOf(bob), 25 * 1e5); // Should have received some rewards
+    }
+
+    function testIcoTokensActionWhenDepositing() public {
+        // Deposit
+        uint256 bobBalance = kToken.balanceOf(bob);
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // Advance time to after end date
+        vm.warp(endTime + 1);
+
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
+
+        // Transfer some to BOb
+        vm.prank(alice);
+        vault.transfer(bob, 10 * 1e18);
+
+        // Withdraw
+        vm.prank(bob);
+        vault.icoTokensAction(10 * 1e18, false, 2);
+
+        // Check balances
+        assertEq(vault.balanceOf(alice), 990 * 1e18);
+        assertEq(vault.totalAssets(), 1000 * 1e18);
+        assertEq(kToken.balanceOf(bob), bobBalance);
+        assertEq(vault.balanceOf(bob), 10 * 1e18);
+
+        // Check user stake info
+        (uint256 amount, uint256 weightedTimestamp,) = vault.getUserStakeInfo(bob, vault.currentPeriodId());
+        assertGt(amount, 10 * 1e18); // includes bonus
+        assertEq(weightedTimestamp, block.timestamp);
+
+        // Check rewards
+        assertEq(usdc.balanceOf(bob), 50 * 1e5); // Should have received some rewards
+    }
+
+    function testIcoTokensRevertWhenWithdrawingTooMuch() public {
+        vm.prank(alice);
+        vault.deposit(1000 * 1e18, alice);
+
+        // Advance time to after end date
+        vm.warp(endTime + 1);
+
+        // Start a new period so currentPid becomes 1
+        vm.prank(admin);
+        vault.startNewPeriod(block.timestamp + 30 days, 10, 1_000_000 ether, address(usdc));
+
+        // Transfer some to BOb
+        vm.prank(alice);
+        vault.transfer(bob, 10 * 1e18);
+
+        // Withdraw
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSignature("DepositTooSmall()"));
+        vault.icoTokensAction(11 * 1e18, true, 1);
+    }
+
     /* ============ Rewards Tests ============ */
 
     function testCalculateRewards() public {
