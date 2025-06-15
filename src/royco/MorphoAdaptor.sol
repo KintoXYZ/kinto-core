@@ -86,9 +86,12 @@ contract MorphoRoycoAdaptor {
      * @param amountSupply The amount of assets to supply
      * @return supplied The amount of assets supplied
      */
-    function supply(uint256 amountSupply, address roycoWallet) external returns (uint256 supplied) {
+    function supply(uint256 amountSupply) external returns (uint256 supplied) {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
+
+        // Transfer from wallet
+        IERC20(LOAN_TOKEN).safeTransferFrom(msg.sender, address(this), amountSupply);
 
         // Approve Morpho to spend tokens
         IERC20(LOAN_TOKEN).forceApprove(MORPHO, amountSupply);
@@ -96,7 +99,7 @@ contract MorphoRoycoAdaptor {
         // Supply to Morpho
         (supplied,) = IMorpho(MORPHO).supply(marketParams, amountSupply, 0, address(this), "");
 
-        walletBalances[roycoWallet] += supplied;
+        walletBalances[msg.sender] += supplied;
 
         return supplied;
     }
@@ -105,10 +108,9 @@ contract MorphoRoycoAdaptor {
      * @notice Withdraws assets from Morpho protocol and bridges them to a Royco wallet
      * @dev Withdraws loan tokens (USDC.e) from the Morpho market and sends them to a specified wallet
      * @param amountWithdraw The amount of assets to withdraw
-     * @param roycoWallet The address of the Royco wallet to send withdrawn assets to
      */
-    function withdraw(uint256 amountWithdraw, address roycoWallet) external {
-        uint256 balance = walletBalances[roycoWallet];
+    function withdraw(uint256 amountWithdraw) external {
+        uint256 balance = walletBalances[msg.sender];
 
         if (balance < amountWithdraw) {
             revert("Insufficient balance");
@@ -117,8 +119,8 @@ contract MorphoRoycoAdaptor {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
-        walletBalances[roycoWallet] -= amountWithdraw;
+        walletBalances[msg.sender] -= amountWithdraw;
         // Withdraw from Morpho
-        IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), roycoWallet);
+        IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), msg.sender);
     }
 }
