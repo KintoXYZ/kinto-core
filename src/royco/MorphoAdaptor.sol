@@ -83,10 +83,10 @@ contract MorphoRoycoAdaptor {
     /**
      * @notice Supplies assets to Morpho protocol
      * @dev Supplies loan tokens (USDC.e) to the Morpho market
-     * @param amountSupply The amount of assets to supply
-     * @return supplied The amount of assets supplied
+     * @param amountSupply The amount of USDC to supply
+     * @return suppliedShares The amount of shares received
      */
-    function supply(uint256 amountSupply) external returns (uint256 supplied) {
+    function supply(uint256 amountSupply) external returns (uint256 suppliedShares) {
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
@@ -97,30 +97,30 @@ contract MorphoRoycoAdaptor {
         IERC20(LOAN_TOKEN).forceApprove(MORPHO, amountSupply);
 
         // Supply to Morpho
-        (supplied,) = IMorpho(MORPHO).supply(marketParams, amountSupply, 0, address(this), "");
+        (, suppliedShares) = IMorpho(MORPHO).supply(marketParams, amountSupply, 0, address(this), "");
 
-        walletBalances[msg.sender] += supplied;
+        walletBalances[msg.sender] += suppliedShares;
 
-        return supplied;
+        return suppliedShares;
     }
 
     /**
      * @notice Withdraws assets from Morpho protocol and bridges them to a Royco wallet
      * @dev Withdraws loan tokens (USDC.e) from the Morpho market and sends them to a specified wallet
-     * @param amountWithdraw The amount of assets to withdraw
+     * @param sharesWithdraw The amount of shares to withdraw
      */
-    function withdraw(uint256 amountWithdraw) external {
+    function withdraw(uint256 sharesWithdraw) external {
         uint256 balance = walletBalances[msg.sender];
 
-        if (balance < amountWithdraw) {
+        if (balance < sharesWithdraw) {
             revert("Insufficient balance");
         }
 
         // Get market params
         MarketParams memory marketParams = _getMarketParams();
 
-        walletBalances[msg.sender] -= amountWithdraw;
+        walletBalances[msg.sender] -= sharesWithdraw;
         // Withdraw from Morpho
-        IMorpho(MORPHO).withdraw(marketParams, amountWithdraw, 0, address(this), msg.sender);
+        IMorpho(MORPHO).withdraw(marketParams, 0, sharesWithdraw, address(this), msg.sender);
     }
 }
