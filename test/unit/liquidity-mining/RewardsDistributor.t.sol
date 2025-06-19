@@ -763,4 +763,23 @@ contract RewardsDistributorTest is SharedSetup {
         assertEq(distributor.claimedByUser(_user), largeAmount);
         assertEq(distributor.getDailyRemainingClaimable(_user), exactLimit - remaining);
     }
+
+    function testTransferToTreasury() public {
+        uint256 amount = 10000 * 1e18;
+        kinto.mint(address(distributor), amount);
+
+        vm.prank(_owner);
+        distributor.transferToTreasury(amount);
+
+        assertEq(kinto.balanceOf(distributor.TREASURY()), amount);
+    }
+
+    function testTransferToTreasury_RevertWhenNotOwner() public {
+        uint256 amount = 10000 * 1e18;
+        kinto.mint(address(distributor), amount);
+
+        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, _user, distributor.DEFAULT_ADMIN_ROLE()));
+        vm.prank(_user);
+        distributor.transferToTreasury(amount);
+    }
 }

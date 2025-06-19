@@ -157,6 +157,9 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
     /// @notice One day in seconds (24 hours)
     uint256 public constant ONE_DAY = 24 * 60 * 60;
 
+    /// @notice Treasury address
+    address public constant TREASURY = 0x793500709506652Fcc61F0d2D0fDa605638D4293;
+
     /* ============ State Variables ============ */
 
     /// @notice The root of the merkle tree for Kinto token distribition.
@@ -367,6 +370,14 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
      */
     function claimWhitelist() external view returns (address[] memory) {
         return _claimWhitelistedAddresses.values();
+    }
+
+    /**
+     * @notice Transfer the given amount of K tokens to the treasury - only the default admin can do this
+     * @param amount The amount of K tokens to transfer
+     */
+    function transferToTreasury(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        KINTO.safeTransfer(TREASURY, amount);
     }
 
     /* ============ View ============ */
