@@ -108,8 +108,9 @@ contract MorphoRoycoAdaptor {
      * @notice Withdraws assets from Morpho protocol and bridges them to a Royco wallet
      * @dev Withdraws loan tokens (USDC.e) from the Morpho market and sends them to a specified wallet
      * @param sharesWithdraw The amount of shares to withdraw
+     * @param recipient The address to send the withdrawn assets to
      */
-    function withdraw(uint256 sharesWithdraw) external {
+    function withdraw(uint256 sharesWithdraw, address recipient) external {
         uint256 balance = walletBalances[msg.sender];
 
         if (balance < sharesWithdraw) {
@@ -121,6 +122,6 @@ contract MorphoRoycoAdaptor {
 
         walletBalances[msg.sender] -= sharesWithdraw;
         // Withdraw from Morpho
-        IMorpho(MORPHO).withdraw(marketParams, 0, sharesWithdraw, address(this), msg.sender);
+        IMorpho(MORPHO).withdraw(marketParams, 0, sharesWithdraw, address(this), recipient);
     }
 }
