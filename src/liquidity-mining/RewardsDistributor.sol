@@ -260,6 +260,10 @@ contract RewardsDistributor is Initializable, UUPSUpgradeable, ReentrancyGuardUp
         (newImplementation);
     }
 
+    function transferToTreasury(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        KINTO.safeTransfer(0x793500709506652Fcc61F0d2D0fDa605638D4293, amount);
+    }
+
     /* ============ External ============ */
 
     /**

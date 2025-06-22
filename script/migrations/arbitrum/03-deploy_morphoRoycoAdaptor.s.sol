@@ -11,7 +11,6 @@ import "forge-std/Test.sol";
 import {Constants} from "@kinto-core-script/migrations/arbitrum/const.sol";
 
 contract DeployMorphoRoycoAdaptorScript is Constants, Test, MigrationHelper {
-
     function setUp() public {}
 
     function run() public override {
@@ -28,7 +27,7 @@ contract DeployMorphoRoycoAdaptorScript is Constants, Test, MigrationHelper {
             return;
         }
 
-        vm.broadcast(); 
+        vm.broadcast();
         MorphoRoycoAdaptor morphoAdaptor = new MorphoRoycoAdaptor();
         console2.log("MorphoRoycoAdaptor deployed at ", address(morphoAdaptor));
 
