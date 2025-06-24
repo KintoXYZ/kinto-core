@@ -19076,6 +19076,25 @@
         },
         {
           "type": "function",
+          "name": "hasClaimedICOBonus",
+          "inputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
           "name": "hasClaimedRewards",
           "inputs": [
             {

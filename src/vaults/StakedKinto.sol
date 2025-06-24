@@ -71,6 +71,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     mapping(uint256 => mapping(address => bool)) public hasClaimedRewards;
 
     mapping(uint256 => mapping(address => UserStake)) private _periodUserStakes;
+    mapping(address => bool) public hasClaimedICOBonus;
     /* ============ Constructor ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -166,7 +167,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     function icoTokensAction(uint256 icoShares, bool isWithdraw, uint256 untilPeriodId) external {
         uint256 stakedBalance = balanceOf(msg.sender);
-        if (icoShares > stakedBalance) {
+        if (icoShares > stakedBalance || hasClaimedICOBonus[msg.sender]) {
             revert DepositTooSmall();
         }
         if (isWithdraw) {
@@ -179,6 +180,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         }
         // USDC Bonus
         uint256 usdcBonus = (isWithdraw ? icoShares / 4 : icoShares / 2) / 1e12;
+        hasClaimedICOBonus[msg.sender] = true;
         __rewardToken__deprecated.safeTransfer(msg.sender, usdcBonus);
     }
 

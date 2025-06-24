@@ -34,6 +34,6 @@ contract StakeSeasonTwo is MigrationHelper {
         // require(stakedKinto.balanceOf(0x26E508D5d63499e549D958B42c4e2630272Ce2a2) == 0, "Wrong balance");
         // require(stakedKinto.balanceOf(0xf9e2E3F36C45F31ef4579c481C040772f086577b) == balanceAccBefore, "Wrong balance");
         // require(kinto.balanceOf(0xf9e2E3F36C45F31ef4579c481C040772f086577b) > 39000 * 1e18, "Wrong balance");
-        _deployImplementationAndUpgrade("StakedKinto", "V7", bytecode);
+        _deployImplementationAndUpgrade("StakedKinto", "V8", bytecode);
     }
 }
