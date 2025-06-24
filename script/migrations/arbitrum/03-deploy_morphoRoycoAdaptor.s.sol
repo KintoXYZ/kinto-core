@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {MorphoRoycoAdaptor} from "@kinto-core/royco/MorphoAdaptor.sol";
+import {MorphoRoycoAdaptor} from "@kinto-core/royco/MorphoRoycoAdaptor.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 
 import "forge-std/Script.sol";

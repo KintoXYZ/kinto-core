@@ -12862,6 +12862,19 @@
         },
         {
           "type": "function",
+          "name": "transferToTreasury",
+          "inputs": [
+            {
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "updateBonusAmount",
           "inputs": [
             {
@@ -19084,6 +19097,29 @@
             }
           ],
           "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "icoTokensAction",
+          "inputs": [
+            {
+              "name": "icoShares",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "isWithdraw",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "untilPeriodId",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
