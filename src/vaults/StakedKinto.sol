@@ -252,6 +252,10 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         return (userStake.amount, userStake.weightedTimestamp, calculateRewards(user, periodId));
     }
 
+    function getUserStakeUntilPeriodId(address user, uint256 periodId) external view returns (uint256) {
+        return _periodUserStakes[periodId][user].untilPeriodId;
+    }
+
     /**
      * @notice Returns the information for a specific staking period
      * @param periodId The ID of the period
@@ -379,7 +383,9 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             userStake.weightedTimestamp = block.timestamp;
         }
 
-        userStake.untilPeriodId = untilPeriodId;
+        if (untilPeriodId > userStake.untilPeriodId) {
+            userStake.untilPeriodId = untilPeriodId;
+        }
         // Longer bonus
         uint256 bonus = 0;
         if (untilPeriodId > currentPeriodId) {
