@@ -184,6 +184,12 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
         __rewardToken__deprecated.safeTransfer(msg.sender, usdcBonus);
     }
 
+    function fixICOPeriod(address[] calldata users) external onlyOwner {
+        for (uint256 i = 0; i < users.length; i++) {
+            _periodUserStakes[currentPeriodId][users[i]].untilPeriodId = 2;
+        }
+    }
+
     /* ============ View Functions ============ */
 
     /**
