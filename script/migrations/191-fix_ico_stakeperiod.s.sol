@@ -174,10 +174,10 @@ contract StakeSeasonTwoFix is MigrationHelper {
         users[149] = 0x5717B8B6256148C16473c16B70DF01C1b9a7a458;
         users[150] = 0x56aCf236aCd7C2c1Ab5fFc8Ca38470e9B7B304BE;
 
-        _handleOps(
-            abi.encodeWithSelector(StakedKinto.fixICOPeriod.selector, users),
-            payable(_getChainDeployment("StakedKinto"))
-        );
+        // _handleOps(
+        //     abi.encodeWithSelector(StakedKinto.fixICOPeriod.selector, users),
+        //     payable(_getChainDeployment("StakedKinto"))
+        // );
         require(stakedKinto.getUserStakeUntilPeriodId(users[0], 1) == 2, "Wrong period");
         require(stakedKinto.getUserStakeUntilPeriodId(users[50], 1) == 2, "Wrong period");
         require(stakedKinto.getUserStakeUntilPeriodId(users[100], 1) == 2, "Wrong period");
