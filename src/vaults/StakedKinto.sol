@@ -131,6 +131,40 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
 
     /* ============ User State Functions ============ */
 
+    // function burnCurrentPeriodStake(address account, uint256 shares) public onlyOwner {
+    //     require(shares > 0, "ZeroShares");
+
+    //     // How many underlying tokens those shares represent *right now*
+    //     uint256 assets = previewRedeem(shares);
+
+    //     // ── 1. Adjust stake bookkeeping ───────────────────────────────────────────
+    //     UserStake storage st = _periodUserStakes[currentPeriodId][account];
+    //     if (assets > st.amount) revert("BurnExceedsStake");
+    //     st.amount -= assets;
+
+    //     if (st.amount == 0) {
+    //         delete _periodUserStakes[currentPeriodId][account];
+    //         delete hasClaimedRewards[currentPeriodId][account]; // gas cleanup
+    //     }
+
+    //     // ── 2. Burn the ERC20 shares (triggers _afterTokenTransfer, which ignores burns)
+    //     _burn(account, shares);
+    // }
+
+    // function batchBurnCurrentPeriodStake(address[] calldata accounts, uint256[] calldata shares) external onlyOwner {
+    //     for (uint256 i = 0; i < accounts.length; i++) {
+    //         burnCurrentPeriodStake(accounts[i], shares[i]);
+    //     }
+    // }
+
+    // function batchMintCurrentPeriodStake(address[] calldata accounts, uint256[] calldata shares) external onlyOwner {
+    //     for (uint256 i = 0; i < accounts.length; i++) {
+    //         _innerDeposit(shares[i], accounts[i], 1);
+    //         // Need to mint sK without taking K
+    //         _mint(accounts[i], shares[i]);
+    //     }
+    // }
+
     function depositWithBonus(uint256 assets, address receiver, uint256 untilPeriodId) public returns (uint256) {
         uint256 assetsWithBonus = _innerDeposit(assets, receiver, untilPeriodId);
         return super.deposit(assetsWithBonus, receiver);
