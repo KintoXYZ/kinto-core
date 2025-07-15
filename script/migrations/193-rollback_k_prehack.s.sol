@@ -8,7 +8,7 @@ import {BridgedToken} from "@kinto-core/tokens/bridged/BridgedToken.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract FixStakedKinto is MigrationHelper {
+contract FixKintoPreHack is MigrationHelper {
     using Strings for string;
 
     struct Record {
@@ -22,16 +22,7 @@ contract FixStakedKinto is MigrationHelper {
     function run() public override {
         super.run();
 
-        address impl =
-            _deployImplementationAndUpgrade("KINTO", "V12", abi.encodePacked(type(BridgedKinto).creationCode));
-
         BridgedKinto kintoToken = BridgedKinto(_getChainDeployment("KINTO"));
-
-        require(kintoToken.decimals() == 18, "Decimals mismatch");
-        require(kintoToken.symbol().equal("K"), "");
-        require(kintoToken.name().equal("Kinto Token"), "");
-
-        saveContractAddress("KV12-impl", impl);
 
         // ────────────────────── hack-cleanup records ──────────────────────
         records.push(
@@ -541,6 +532,8 @@ contract FixStakedKinto is MigrationHelper {
         );
         records.push(Record({user: 0xf26fe167A0f1ccd17f493fbD54bB840EDc1d889d, shares: 9975742626999810, mint: true}));
         records.push(
+            Record({user: 0xBa9E760Cbbf6eF7368Ef84558219C46a93cBa215, shares: 1000000000000000000, mint: true}));
+        records.push(
             Record({user: 0x8DdE2c811EbdC2f6Cb4E6A02E547712CCa1A8577, shares: 95406786482100700000, mint: false})
         );
         records.push(
@@ -567,9 +560,7 @@ contract FixStakedKinto is MigrationHelper {
         records.push(
             Record({user: 0xeAFf2cfb01CD4C0b89C46817B7dC9368e857602a, shares: 208475627312268000000, mint: false})
         );
-        records.push(
-            Record({user: 0xBa9E760Cbbf6eF7368Ef84558219C46a93cBa215, shares: 1000000000000000000, mint: true})
-        );
+
         records.push(
             Record({user: 0x56a66d37f3054c39d65b0D28957B9A17d0afFcD2, shares: 1000000000000000000, mint: false})
         );
@@ -625,7 +616,7 @@ contract FixStakedKinto is MigrationHelper {
         );
 
         require(kintoToken.balanceOf(records[0].user) == balances[0] + 46647003430218700000, "Did not mint");
-        require(kintoToken.balanceOf(records[1].user) == balances[1] + 110058943328591000000, "Did not burn");
+        require(kintoToken.balanceOf(records[1].user) == balances[1] - 110058943328591000000, "Did not burn");
         require(
             kintoToken.balanceOf(records[records.length - 1].user)
                 == balances[records.length - 1] - 37399525068385500000,
