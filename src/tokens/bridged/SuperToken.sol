@@ -2,12 +2,10 @@
 
 pragma solidity ^0.8.18;
 
-import {ERC20PermitUpgradeable} from
-    "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {AccessControlUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {Initializable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC20} from "@openzeppelin-5.0.1/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20Permit} from "@openzeppelin-5.0.1/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {AccessControl} from "@openzeppelin-5.0.1/contracts/access/AccessControl.sol";
 
 /**
  * @title SuperToken
@@ -16,31 +14,16 @@ import {UUPSUpgradeable} from "@openzeppelin-5.0.1/contracts-upgradeable/proxy/u
  * @dev Introduces `mint` and `burn` functions secured with the `CONTROLLER_ROLE` for bridging processes.
  * Inherits ERC20 functionality, permit mechanism for gasless transactions, and role-based access control.
  */
-contract SuperToken is
-    Initializable,
-    ERC20Upgradeable,
-    ERC20PermitUpgradeable,
-    AccessControlUpgradeable,
-    UUPSUpgradeable
-{
+contract SuperToken is ERC20, ERC20Permit, AccessControl {
     uint8 private immutable _decimals;
 
     /// @notice for all controller access (mint, burn)
     bytes32 constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
 
-    /// @notice Role that can upgrade the implementation of the proxy.
-    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
-
     /// @notice Thrown when input array lengths don't match in batch operations
     error ArrayLengthMismatch();
     /// @notice Thrown when empty arrays are provided to batch operations
     error EmptyArrays();
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(uint8 decimals_) {
-        _disableInitializers();
-        _decimals = decimals_;
-    }
 
     /**
      * @notice Creates a new token with bridging capabilities.
@@ -50,26 +33,17 @@ contract SuperToken is
      * @dev Uses role-based access control for role assignments. Grants the deploying address the default admin
      * role for role management and assigns the MINTER_ROLE to a specified minter.
      */
-    function initialize(string memory name, string memory symbol, address admin) public initializer {
-        __ERC20_init(name, symbol);
-        __ERC20Permit_init(name);
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
-
+    constructor(uint8 decimals_, string memory name, string memory symbol, address admin)
+        ERC20(name, symbol)
+        ERC20Permit(name)
+    {
+        _decimals = decimals_;
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
     }
-
-    /**
-     * @dev Authorizes the contract upgrade.
-     * Called by the proxy to ensure the caller has `UPGRADER_ROLE` before upgrading.
-     *
-     * @param newImplementation Address of the new contract implementation.
-     */
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 
     /**
      * @notice Mints tokens to `to`, increasing the total supply.
