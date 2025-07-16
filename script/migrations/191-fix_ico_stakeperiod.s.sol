@@ -1,0 +1,186 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import {console2} from "forge-std/console2.sol";
+import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
+import {StakedKinto} from "@kinto-core/vaults/StakedKinto.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract StakeSeasonTwoFix is MigrationHelper {
+    function run() public override {
+        super.run();
+
+        // vm.broadcast(deployerPrivateKey);
+
+        StakedKinto stakedKinto = StakedKinto(payable(_getChainDeployment("StakedKinto")));
+        if (address(stakedKinto) == address(0)) {
+            console2.log("StakedKinto has to be deployed");
+            return;
+        }
+
+        bytes memory bytecode = abi.encodePacked(type(StakedKinto).creationCode);
+
+        // _deployImplementationAndUpgrade("StakedKinto", "V10", bytecode);
+        address[] memory users = new address[](151);
+        users[0] = 0xfD088c45926a4759d706570EC694c1D30677862E;
+        users[1] = 0xb14baddf473aF04B715459127C0CE5Dfb36403fd;
+        users[2] = 0x1573f5cEfdaaFd51fE6C8fC7C3cf6B196d4dCC0B;
+        users[3] = 0x3934D981a66E4BFD0F82EF99C9F405767f1cCfBD;
+        users[4] = 0xB3168732D1C78398421109a3f3456628748353c5;
+        users[5] = 0xF850d0b1e1ed7553F5407FFc1844310D12B74FB8;
+        users[6] = 0x9faCc00fE3f46d5005DA7ebC3B23FCC66EA50ADF;
+        users[7] = 0x7c83914a3497Fd07668bffd0F0675A8bac2BeFE7;
+        users[8] = 0x8529f0F07c67A983b9308393D2f359272b8CFe36;
+        users[9] = 0xC25aa8c3Eef75C60430EAEd45a9b778414fb78Fb;
+        users[10] = 0x0A6d6a9f95E68f0aB78eB081b5b21760CCC67356;
+        users[11] = 0x28561d4f4FD2128133e3D11f623BB6d077ca8e3d;
+        users[12] = 0xBFDbca3D3a3Eb096Ae210518b34579c419701f1D;
+        users[13] = 0x1342382667Ae3aA6e35Bf82ac20196E4A25549cE;
+        users[14] = 0x6F777BC8357Bf56C6fc3A4CA151c878aCde94C4a;
+        users[15] = 0x21CBe31780B5c90bDddcf171323f7f44aBf27246;
+        users[16] = 0x47FF3Ece49d3e14025B3aB951114da39d6664176;
+        users[17] = 0xc59576Ea9c3369DDE4f40C61F1d57Ce172827C87;
+        users[18] = 0x7dC3e8AC624af8F5C1fBE2100ce8Ad5DCdE18fBa;
+        users[19] = 0xF95E2544ad4Fa8008E6b5a88ceDc4E14d6C60856;
+        users[20] = 0x8f82365f4D754B877440EAa900E3B7cD9E218a32;
+        users[21] = 0x93a6AC75D9DB2f32874c47918DFC0f2a69E3C074;
+        users[22] = 0xfC57170E1132866e028Da2c66c16Cb936b6f6D1F;
+        users[23] = 0xa358de2c7b410A29e4bF3F7aA68D7F235358004d;
+        users[24] = 0x9538E07F74B8Dd9FE3b1F8c466eB41D344D893cA;
+        users[25] = 0x3Ec6Be919b04e62132312077A3bb88f54DB2Dc2d;
+        users[26] = 0x89C4984c0A332964e5aCc0a3fa875db56FcA91B7;
+        users[27] = 0x3eebc5b6d4C7CB9cD975c781A2771d4Fc5C698a0;
+        users[28] = 0x60B505DA5C5E80C8d753F2f6bbC2a3FC0b9305AE;
+        users[29] = 0xE9B6C47fe3bF3dC0A237C1b0A2A7D47Ccb3A45Ed;
+        users[30] = 0xcdd72dBF7E518b2aC830e907CD36AE3e4933aBA8;
+        users[31] = 0x059647454E1c8822eA9ad82e6668d0E726748226;
+        users[32] = 0xA4eD545994c9F6Aa5c6f4Ef8FE29dF7CF5d6eC8c;
+        users[33] = 0x3E2328389BdF68f762e33C6acd36F9aB05fbBf73;
+        users[34] = 0xBB282fF9620F69C8210310559bd1930ca504E446;
+        users[35] = 0xB66e7e7c62C89A70a91fBD4F629fbabC8e5aa9fb;
+        users[36] = 0x43EcD5dF5698184E3C04B1BA86946923f525F6De;
+        users[37] = 0xb98D2a827ec035dbaDDE4576C7931Ee13aFc0cBC;
+        users[38] = 0xace4D9c49a081a962028802c41db1A93c44CcB16;
+        users[39] = 0x1E77e7Cc5451a010A03364F6163e6B3d06C2A40A;
+        users[40] = 0x1FF85fA4093900Cd998f18Fe752888233a9ba712;
+        users[41] = 0x31a1d9B2274534C394dB8096ce9998c7F2bB0677;
+        users[42] = 0xF9fF32207AADD0CE32FbBB90Ee47bD2FF36e87bD;
+        users[43] = 0x561F972A218F3e994B927cE2B6d55720E17E00D1;
+        users[44] = 0xeB464e531Be416A4Df31a6F5A7AeaEDa5680E857;
+        users[45] = 0xF29041Ea776cf6B230e164C22959066acf651974;
+        users[46] = 0x967f594Ad093400f20b75f991F76ca320e747c18;
+        users[47] = 0x5Ff15A4b7EA38E685450bc8F539c383F35eAF479;
+        users[48] = 0x2170098e87DFD712b97745a1CCC4634d628D917b;
+        users[49] = 0x7D634Ed6edD45273A69FEc8eCEcE39B866FFaacD;
+        users[50] = 0x95666660C3A974aaab4CBDfBF311C9EAE03e7d82;
+        users[51] = 0x2015Afb3bC3629aC0AF767b4DDcaeE42e241D874;
+        users[52] = 0x85c577346Fc4De96e739A86F7ed744d154e24857;
+        users[53] = 0x63F99b6206568bCD7815667A75351D3aEDE9430c;
+        users[54] = 0x8bcc1456A0973C91dcFa85E2469ddb884895Cd63;
+        users[55] = 0x715370871A6d4d580e78084D84997DeeF33a3252;
+        users[56] = 0xb94eBBEc91172C8cd9B446413BC2e81d0bEa3B97;
+        users[57] = 0x903EEd228E0fdE7A5Bb4C3c0CfAbdc63a222AFad;
+        users[58] = 0x4EE755d2801F9C932F295A33F96A1D137e5e97D2;
+        users[59] = 0xf9F6Df13AAE34F43B7a93f07B6B8f1BD3EAC5496;
+        users[60] = 0x7F9BfC4E8375869e1dde6AAeC0370C901BA06322;
+        users[61] = 0x0d718666ACcb671BB7b2CE5DFbD86491F8BAaC36;
+        users[62] = 0x00F9d320d507D4b4F1E5c8Bd1976fc6d886fcd6c;
+        users[63] = 0x023a6977233f4255bdbB12B376c41d19cfF3f01c;
+        users[64] = 0x03d35C5Ed389a3feA9Af8921C1B514c60B44e2c2;
+        users[65] = 0x05A4122b85a62540A5195C2577B993bC23228d06;
+        users[66] = 0x079877CB2fB5300A4ce31b1f2C89DAC8E8b0BAf5;
+        users[67] = 0x0d90433fBF7AfA22Fd3034e8Ec7C40B34cedcF3E;
+        users[68] = 0x114cF79a33Bf963b90A57165B3D2C83774f4Db42;
+        users[69] = 0x172853F2588e96e60adEa4B7722E75f2a005375F;
+        users[70] = 0x1a85CEEd5110bcCc6aAd7cf88e55728456332498;
+        users[71] = 0x20a48eaEc09b0197bCE8872813Ab82CD5E4E0061;
+        users[72] = 0x224D926D2Ccd655F8dD5d9b34311a947ba481dD7;
+        users[73] = 0x23F441553f92B539DEC52535aD7eE085C3AA20A3;
+        users[74] = 0x24aBf1776812173B3bB9Cb986534B7BA59fDf101;
+        users[75] = 0x29725FEA0e3826B3c1B67599954108a4921697fd;
+        users[76] = 0x2acd4B01799c3bAa561aec5f5F246eC1B000a3BC;
+        users[77] = 0x2fd8175c7a3f0FD624859fD55c52f6EC8B58B367;
+        users[78] = 0x3FF3360979aAEE52B36e2B0a107EEcb93f8c9600;
+        users[79] = 0x3fa517BF4a79839f1deBd5E9A9A66fFf4c6E7Cd0;
+        users[80] = 0x452F52FbB21B44BDd4ef0D608BC0ba00d302887b;
+        users[81] = 0x45b44C0AecbD8CF842b83e05125c585477278f69;
+        users[82] = 0x49Ca2dCc66776242b57a7e8a40FFaF465a2dC3e8;
+        users[83] = 0x4f6e65703E296a950427b45Bee045663673E15Cc;
+        users[84] = 0x5920f531F9B09F83Bfafc1e22360d2b359C6302D;
+        users[85] = 0x5d8377Def732D821D5Bc925a7C243f0163479967;
+        users[86] = 0x6043998919509Db7434D6ec5d0Ec289408B3888d;
+        users[87] = 0x62A862DB2184B1CEcB139fEEDDE93Ec3359ce188;
+        users[88] = 0x6B7873D93A04ed9f9D172Df430556B976dBCccF6;
+        users[89] = 0x70F342f00e1dB75Bd5300B26C63EFaee5718bD29;
+        users[90] = 0x7C98122e2a35269fEb71589Dc8bF635667DAb1Dc;
+        users[91] = 0x7D3Ca786a511a27C41c80F8a122E51527C7C3120;
+        users[92] = 0x86F9cA99275bfA05fC68Fa84B6Dd19bc58B83dA4;
+        users[93] = 0x88fbca1b2d0624B566D3DC5c8d8997d24466d440;
+        users[94] = 0x8d4908b7595F4645E0Cfed46eaBb25B5e5296Ce5;
+        users[95] = 0x8dF179d778d617dCDd2DaA5cE5901CE782012189;
+        users[96] = 0x9eE8C18D649cf92c84795ec792E600e7f72E15c0;
+        users[97] = 0x9f4f871DEC0D550e397B5bb62b32A6f0FB13d4af;
+        users[98] = 0xABbc5Fa34FBC91B77c3306BEDB94e25404dbeADc;
+        users[99] = 0xB50363a2e80Bc8D6Bb1EA3594aBFC8c728F510F1;
+        users[100] = 0xC03384De2688Ba17Cf0618b2393a94c8461E4142;
+        users[101] = 0xE3f7933a1F02733964922948b87C45c3bc9BB21A;
+        users[102] = 0xE64cfC371814800747269dE93896EeF43Bb7Db8B;
+        users[103] = 0xF7C6AF4c1d5606d61eE92D3C62427Acb1daA7B1b;
+        users[104] = 0xF7F8092944cc6B5a6e93Ee902C5Ca853d56a530e;
+        users[105] = 0xF93100D6c635C49d0dE5C93d8b0F50B6697B8951;
+        users[106] = 0xFD3532740123B7638e26F349c1C81Bb683577089;
+        users[107] = 0xa929cBB021fDA84A98B4735772b39057F06366cA;
+        users[108] = 0xb08ef491DB88F21738c35eB6E6A2A7B1478CB5e6;
+        users[109] = 0xb22C544D27A178c9d569a1b88b823B22f3674D27;
+        users[110] = 0xc55BD0943378a1cD57AF67a2341D9f0E83C56fec;
+        users[111] = 0xd213945d693f933ffc4f5698272Fc802DF31658F;
+        users[112] = 0xe823612f44328C6Ef7bE7Fe3eDDFC62CE4880442;
+        users[113] = 0xefc710f5E3b2cdc445F124B146C5358dc4bE219C;
+        users[114] = 0xf96f2ec884606C0286f12419BCccf810f50D38f5;
+        users[115] = 0x47D2db40105cBC39ED00A0d9d95401b8b9179195;
+        users[116] = 0xB7464950FBFe26E4073ec17b09f37801bda24998;
+        users[117] = 0xafE64F6CB491eb05205c82e96366EbB7fC902038;
+        users[118] = 0xeAFf2cfb01CD4C0b89C46817B7dC9368e857602a;
+        users[119] = 0xE9D3D4617F74D8c06097D5378DF2021dff369816;
+        users[120] = 0x9573B62A4fE56e3A6637DBD9830c40b5908b2c7F;
+        users[121] = 0x4a398E85d933d7542310ea011a842f58957c06c3;
+        users[122] = 0xA92599A6FADf293B8b37C3f8153fE461A8cC4DE3;
+        users[123] = 0xd234cC94b99860D83F4AaD4951640396d5052E25;
+        users[124] = 0xb24d4637EE7576Baa389d5fddc2c5386335A3B5B;
+        users[125] = 0x07ACB6081D363c3c5c585Fb59768a5F1c72Fb1Da;
+        users[126] = 0x006124186a75D469A2DCa6b355b7e664e2eBef5F;
+        users[127] = 0x01324BBc2291EC2b89f26E7D60aF11dD331ccf73;
+        users[128] = 0x025450D53D869f70794AA9d874c58a766d4A7f99;
+        users[129] = 0x0d26145Da820754EB1D9aeBf5dB88CF06cC777Ab;
+        users[130] = 0x1B4B578462b7e295c7a4A83478F09b93cf7457cb;
+        users[131] = 0x1fE7a61b6e9F0825B356c46523dFaa59B30ECEBD;
+        users[132] = 0x2E46AF02A69A44a16CbF3617B45DAc36eE48bb42;
+        users[133] = 0x32A74D1F2437a9c55e01D6C47e72F21926E9F5b1;
+        users[134] = 0x33a0f409Df1819f2d9a247253815e09d46bD9e00;
+        users[135] = 0x3799A0043fc3F056E5575934850a4429a4438391;
+        users[136] = 0x38B4B4b579a8f5B74069Ac4F575b0d37356B205C;
+        users[137] = 0x39e9937BE24C99cC4c498165602745d33c9AB5f2;
+        users[138] = 0x3D3EBcDdda21ac7154039DB4d45C9118350C9115;
+        users[139] = 0x3F199E793d595C9A73739b040Af7B4dC24636631;
+        users[140] = 0x3cb145e7962f1B6740f3193c63cbFAF1CDcc0df2;
+        users[141] = 0x4390b567DFd0ce4fbF90f8AAE43558bf642B611a;
+        users[142] = 0x46528611F17309dDdeAfe87Dd2Ce7c4B126A1B29;
+        users[143] = 0x467eD0b2905aAa41fAF6c70a21c09D59453fBB78;
+        users[144] = 0x476Ed41105724EA693fF097C69D092FC3Ac13153;
+        users[145] = 0x4b91d7Da63e3f75D24D8963302140B32815cE522;
+        users[146] = 0x50467bDeC12F2827BC2ccB589325bbaA3484aFf2;
+        users[147] = 0x51b56Da88F583db13A893A56Fd990700F6C8065b;
+        users[148] = 0x52BE9976CEF6EA61EEd4aAAD3a32B8923EB1E26b;
+        users[149] = 0x5717B8B6256148C16473c16B70DF01C1b9a7a458;
+        users[150] = 0x56aCf236aCd7C2c1Ab5fFc8Ca38470e9B7B304BE;
+
+        // _handleOps(
+        //     abi.encodeWithSelector(StakedKinto.fixICOPeriod.selector, users),
+        //     payable(_getChainDeployment("StakedKinto"))
+        // );
+        require(stakedKinto.getUserStakeUntilPeriodId(users[0], 1) == 2, "Wrong period");
+        require(stakedKinto.getUserStakeUntilPeriodId(users[50], 1) == 2, "Wrong period");
+        require(stakedKinto.getUserStakeUntilPeriodId(users[100], 1) == 2, "Wrong period");
+        require(stakedKinto.getUserStakeUntilPeriodId(users[150], 1) == 2, "Wrong period");
+    }
+}
