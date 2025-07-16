@@ -532,7 +532,8 @@ contract FixKintoPreHack is MigrationHelper {
         );
         records.push(Record({user: 0xf26fe167A0f1ccd17f493fbD54bB840EDc1d889d, shares: 9975742626999810, mint: true}));
         records.push(
-            Record({user: 0xBa9E760Cbbf6eF7368Ef84558219C46a93cBa215, shares: 1000000000000000000, mint: true}));
+            Record({user: 0xBa9E760Cbbf6eF7368Ef84558219C46a93cBa215, shares: 1000000000000000000, mint: true})
+        );
         records.push(
             Record({user: 0x8DdE2c811EbdC2f6Cb4E6A02E547712CCa1A8577, shares: 95406786482100700000, mint: false})
         );
