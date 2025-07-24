@@ -94,11 +94,10 @@ contract FixKintoPreHack is MigrationHelper {
 
         _readCsvIntoRecords(CSV_PATH);
 
-        uint256 batchSize = 700;
+        uint256 batchIndexStartingEnd = 4; // 4 done
+        uint256 batchSize = batchIndexStartingEnd == 6 ? 663 : 700;
 
-        uint256 batchIndexStartingEnd = 1;
-        uint256 totalMintRecords = records.length;
-        uint256 start = records.length - (batchSize * batchIndexStartingEnd);
+        uint256 start = records.length > (batchSize * batchIndexStartingEnd) ? records.length - (batchSize * batchIndexStartingEnd) : 0;
         address[] memory users = new address[](batchSize);
         uint256[] memory shares = new uint256[](batchSize);
         uint256 total = 0;
@@ -118,8 +117,8 @@ contract FixKintoPreHack is MigrationHelper {
                 == records[start + batchSize - 1].shares,
             "Did not mint"
         );
-        require(total >= 1802e18 && total <= 1803e18, "Total minted");
         console2.log("total", total);
+        require(total >= 683e18 && total <= 710e18, "Total minted");
 
         require(kintoToken.totalSupply() <= 1_600_000e18, "Total Supply under control");
     }
