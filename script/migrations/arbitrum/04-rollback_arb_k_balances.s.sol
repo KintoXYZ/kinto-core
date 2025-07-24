@@ -94,7 +94,7 @@ contract FixKintoPreHack is MigrationHelper {
 
         _readCsvIntoRecords(CSV_PATH);
 
-        uint256 batchSize = 750;
+        uint256 batchSize = 700;
 
         uint256 totalMintRecords = records.length;
         uint256 start = 0;
