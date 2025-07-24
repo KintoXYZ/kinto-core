@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {console2, Script} from "forge-std/console2.sol";
+import {console2} from "forge-std/console2.sol";
 import {MigrationHelper} from "@kinto-core-script/utils/MigrationHelper.sol";
 import {SuperToken} from "@kinto-core/tokens/bridged/SuperToken.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
@@ -78,47 +78,44 @@ contract FixKintoPreHack is MigrationHelper {
 
 
     Record[] public records;
-    string internal constant CSV_PATH =   "data/mint_records.csv";
+    string internal constant CSV_PATH =   "script/data/mint_records.csv";
 
     function run() public override {
         super.run();
 
-        console.log("Executing with address", msg.sender);
+        console2.log("Executing with address", msg.sender);
 
         if (block.chainid != ARBITRUM_CHAINID) {
             console2.log("This script is meant to be run on the chain: %s", ARBITRUM_CHAINID);
             return;
         }
 
-        SuperToken kintoToken = BridgedKinto(_getChainDeployment("K"));
+        SuperToken kintoToken = SuperToken(_getChainDeployment("K"));
 
         _readCsvIntoRecords(CSV_PATH);
 
         uint256 batchSize = 700;
 
+        uint256 batchIndexStartingEnd = 1;
         uint256 totalMintRecords = records.length;
-        uint256 start = 0;
+        uint256 start = records.length - (batchSize * batchIndexStartingEnd);
         address[] memory users = new address[](batchSize);
         uint256[] memory shares = new uint256[](batchSize);
-        uint256[] memory balances = new uint256[](batchSize);
         uint256 total = 0;
         for (uint256 i = start; i < start + batchSize; i++) {
             users[i - start] = records[i].user;
             shares[i - start] = records[i].shares;
-            balances[i - start] = kintoToken.balanceOf(records[i].user);
             total += records[i].shares;
         }
 
-        _handleOps(
-            abi.encodeWithSelector(BridgedToken.batchMint.selector, users1, shares1),
-            payable(_getChainDeployment("K"))
-        );
+        vm.broadcast(deployerPrivateKey);
+        kintoToken.batchMint(users, shares);
 
-        require(kintoToken.balanceOf(records[start].user) == balances[0] + records[start].shares, "Did not mint");
-        require(kintoToken.balanceOf(records[start + 1].user) == balances[1] + records[start + 1].shares, "Did not mint");
+        require(kintoToken.balanceOf(records[start].user) == records[start].shares, "Did not mint");
+        require(kintoToken.balanceOf(records[start + 1].user) == records[start + 1].shares, "Did not mint");
         require(
             kintoToken.balanceOf(records[start + batchSize - 1].user)
-                == balances[batchSize - 1] + records[start + batchSize - 1].shares,
+                == records[start + batchSize - 1].shares,
             "Did not mint"
         );
         require(total >= 1802e18 && total <= 1803e18, "Total minted");
