@@ -113,6 +113,14 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
     }
 
     /**
+     * @notice Sets a new end time for the current period
+     * @param _endTime The new end time
+     */
+    function setEndTime(uint256 _endTime) external onlyOwner {
+        stakingPeriods[currentPeriodId].endTime = _endTime;
+    }
+
+    /**
      * @notice Starts a new staking period
      * @param _endDate The end date of the new period
      * @param _rewardRate The reward rate for the new period

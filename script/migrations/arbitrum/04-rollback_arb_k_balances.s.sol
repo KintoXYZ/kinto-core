@@ -94,10 +94,10 @@ contract FixKintoPreHack is MigrationHelper {
 
         _readCsvIntoRecords(CSV_PATH);
 
-        uint256 batchIndexStartingEnd = 4; // 4 done
-        uint256 batchSize = batchIndexStartingEnd == 6 ? 663 : 700;
+        uint256 batchIndexStartingEnd = 6; // 6 done
+        uint256 batchSize = batchIndexStartingEnd == 6 ? 662 : 700;
 
-        uint256 start = records.length > (batchSize * batchIndexStartingEnd) ? records.length - (batchSize * batchIndexStartingEnd) : 0;
+        uint256 start = batchIndexStartingEnd == 6 ? 0 : records.length > (batchSize * batchIndexStartingEnd) ? records.length - (batchSize * batchIndexStartingEnd) : 0;
         address[] memory users = new address[](batchSize);
         uint256[] memory shares = new uint256[](batchSize);
         uint256 total = 0;
@@ -118,8 +118,29 @@ contract FixKintoPreHack is MigrationHelper {
             "Did not mint"
         );
         console2.log("total", total);
-        require(total >= 683e18 && total <= 710e18, "Total minted");
 
-        require(kintoToken.totalSupply() <= 1_600_000e18, "Total Supply under control");
+        uint256 totalSupply = kintoToken.totalSupply();
+        require(totalSupply <= 1_600_000e18, "Total Supply under control");
+
+        if (batchIndexStartingEnd == 5) {
+            require(total >= 2807e18 && total <= 2808e18, "Total minted in this batch is not accurate");
+        }
+
+        if (batchIndexStartingEnd == 6) {
+            // Removes overhang from the safe
+            uint256 vaultBalance = 1553025704644939812527643;
+            console2.log("difference", totalSupply - vaultBalance);
+            if (totalSupply > vaultBalance) {
+                vm.broadcast(deployerPrivateKey);
+                kintoToken.burn(0x8bFe32Ac9C21609F45eE6AE44d4E326973700614, totalSupply - vaultBalance);
+                console2.log("burned", totalSupply - vaultBalance);
+            }
+            // Remove minter role
+            vm.broadcast(deployerPrivateKey);
+            kintoToken.renounceRole(0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357, 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c);
+            require(kintoToken.hasRole(0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357, 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c) == false, "Minter role removed");
+            require(kintoToken.totalSupply() == vaultBalance, "Total Supply exact");
+        }
+
     }
 }
