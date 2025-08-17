@@ -37,9 +37,9 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     IERC20Upgradeable public immutable collateralToken;
     IERC20Upgradeable public immutable debtToken;
 
-    uint256 public constant TOTAL_COLLATERAL = 1343246113000000000000000; // 1.34M K e18
-    uint256 public constant TOTAL_DEBT = 2_641_615_234; // 1e6 USDC
-    uint256 public constant TOTAL_USDC_LENT = 2_079_948_445; // 1e6 USDC
+    uint256 public constant TOTAL_COLLATERAL = 1343246113449322366913544; // 1.34M K e18
+    uint256 public constant TOTAL_DEBT = 2641615234325; // 1e6 USDC
+    uint256 public constant TOTAL_USDC_LENT = 2079948444941; // 1e6 USDC
     uint256 public constant BONUS_REPAYMENT = 1e17; // 10% bonus for repaying debt early
     uint256 public constant REPAYMENT_DEADLINE = 1763161200; // Nov 14th 2025 3pm PT
     uint256 public constant THREE_MONTHS = 7776000; // 90 days

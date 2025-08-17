@@ -50,9 +50,12 @@ contract DeployScript is Script, MigrationHelper {
         (bytes32 salt, address expectedAddress) =
             mineSalt(keccak256(abi.encodePacked(type(UUPSProxy).creationCode, abi.encode(address(impl), ""))), "5A1E00");
 
+        console2.log("Deployed impl");
         vm.broadcast(deployerPrivateKey);
         UUPSProxy proxy = new UUPSProxy{salt: salt}(address(impl), "");
         MorphoRepayment morphoRepayment = MorphoRepayment(address(proxy));
+
+        console2.log("Deployed proxy");
 
         _handleOps(
             abi.encodeWithSelector(
@@ -61,16 +64,14 @@ contract DeployScript is Script, MigrationHelper {
             address(_getChainDeployment("KintoAppRegistry"))
         );
 
-        uint256[] memory privateKeys = new uint256[](1);
-        privateKeys[0] = deployerPrivateKey;
+        console2.log("set in pp");
+
+        console2.log("BBBB");
         _handleOps(
             abi.encodeWithSelector(MorphoRepayment.initialize.selector),
-            payable(kintoAdminWallet),
-            address(proxy),
-            0,
-            address(0),
-            privateKeys
+            address(proxy)
         );
+        console2.log("AAAAAA");
 
         // Push records
         // Auto-generated records (scaled: USDC x1e6, collateral x1e18)
@@ -2030,8 +2031,8 @@ contract DeployScript is Script, MigrationHelper {
         );
 
         assertEq(morphoRepayment.TOTAL_COLLATERAL(), totalCollateralLocked);
-        assertEq(morphoRepayment.TOTAL_DEBT(), totalUsdcLent);
-        assertEq(morphoRepayment.TOTAL_USDC_LENT(), totalUsdcBorrowed);
+        assertEq(morphoRepayment.TOTAL_DEBT(), totalUsdcBorrowed);
+        assertEq(morphoRepayment.TOTAL_USDC_LENT(), totalUsdcLent);
 
         assertEq(address(morphoRepayment), address(expectedAddress));
         assertEq(address(morphoRepayment.collateralToken()), address(K));
