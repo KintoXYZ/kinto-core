@@ -67,10 +67,7 @@ contract DeployScript is Script, MigrationHelper {
         console2.log("set in pp");
 
         console2.log("BBBB");
-        _handleOps(
-            abi.encodeWithSelector(MorphoRepayment.initialize.selector),
-            address(proxy)
-        );
+        _handleOps(abi.encodeWithSelector(MorphoRepayment.initialize.selector), address(proxy));
         console2.log("AAAAAA");
 
         // Push records

@@ -30,7 +30,6 @@ contract ExtendSeasonTwoTime is MigrationHelper {
 
         _deployImplementationAndUpgrade("StakedKinto", "V13", bytecode);
 
-
         _handleOps(
             abi.encodeWithSelector(StakedKinto.setEndTime.selector, 1756677600),
             payable(_getChainDeployment("StakedKinto"))
