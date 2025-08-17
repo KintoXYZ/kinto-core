@@ -21,14 +21,18 @@ contract FixKintoPreHack is MigrationHelper {
      *      & lines starting with '#'.
      */
     function _readCsvIntoRecords(string memory path) internal {
-        string memory raw = vm.readFile(path);        // forge-std cheat-code
-        bytes  memory data = bytes(raw);
+        string memory raw = vm.readFile(path); // forge-std cheat-code
+        bytes memory data = bytes(raw);
 
-        uint256 i;                                    // cursor in `data`
+        uint256 i; // cursor in `data`
         while (i < data.length) {
             // ── 1. Skip blank lines / comments ───────────────────────────
-            if (_isEOL(data[i])) { i++; continue; }
-            if (data[i] == "#") {                     // comment line
+            if (_isEOL(data[i])) {
+                i++;
+                continue;
+            }
+            if (data[i] == "#") {
+                // comment line
                 while (i < data.length && !_isEOL(data[i])) i++;
                 continue;
             }
@@ -58,27 +62,24 @@ contract FixKintoPreHack is MigrationHelper {
 
     /* ──────────────── tiny string/byte helpers (pure) ───────────── */
 
-    function _slice(
-        bytes memory src,
-        uint256      start,
-        uint256      len
-    ) internal pure returns (string memory) {
+    function _slice(bytes memory src, uint256 start, uint256 len) internal pure returns (string memory) {
         bytes memory out = new bytes(len);
-        for (uint256 j; j < len; ++j) out[j] = src[start + j];
+        for (uint256 j; j < len; ++j) {
+            out[j] = src[start + j];
+        }
         return string(out);
     }
 
-    function _isSep(bytes1 b)  internal pure returns (bool) {
+    function _isSep(bytes1 b) internal pure returns (bool) {
         return b == "," || b == "\t";
     }
 
-    function _isEOL(bytes1 b)  internal pure returns (bool) {
+    function _isEOL(bytes1 b) internal pure returns (bool) {
         return b == "\n" || b == "\r";
     }
 
-
     Record[] public records;
-    string internal constant CSV_PATH =   "script/data/mint_records.csv";
+    string internal constant CSV_PATH = "script/data/mint_records.csv";
 
     function run() public override {
         super.run();
@@ -97,7 +98,11 @@ contract FixKintoPreHack is MigrationHelper {
         uint256 batchIndexStartingEnd = 6; // 6 done
         uint256 batchSize = batchIndexStartingEnd == 6 ? 662 : 700;
 
-        uint256 start = batchIndexStartingEnd == 6 ? 0 : records.length > (batchSize * batchIndexStartingEnd) ? records.length - (batchSize * batchIndexStartingEnd) : 0;
+        uint256 start = batchIndexStartingEnd == 6
+            ? 0
+            : records.length > (batchSize * batchIndexStartingEnd)
+                ? records.length - (batchSize * batchIndexStartingEnd)
+                : 0;
         address[] memory users = new address[](batchSize);
         uint256[] memory shares = new uint256[](batchSize);
         uint256 total = 0;
@@ -113,8 +118,7 @@ contract FixKintoPreHack is MigrationHelper {
         require(kintoToken.balanceOf(records[start].user) == records[start].shares, "Did not mint");
         require(kintoToken.balanceOf(records[start + 1].user) == records[start + 1].shares, "Did not mint");
         require(
-            kintoToken.balanceOf(records[start + batchSize - 1].user)
-                == records[start + batchSize - 1].shares,
+            kintoToken.balanceOf(records[start + batchSize - 1].user) == records[start + batchSize - 1].shares,
             "Did not mint"
         );
         console2.log("total", total);
@@ -137,10 +141,18 @@ contract FixKintoPreHack is MigrationHelper {
             }
             // Remove minter role
             vm.broadcast(deployerPrivateKey);
-            kintoToken.renounceRole(0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357, 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c);
-            require(kintoToken.hasRole(0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357, 0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c) == false, "Minter role removed");
+            kintoToken.renounceRole(
+                0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357,
+                0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c
+            );
+            require(
+                kintoToken.hasRole(
+                    0x7b765e0e932d348852a6f810bfa1ab891e259123f02db8cdcde614c570223357,
+                    0x660ad4B5A74130a4796B4d54BC6750Ae93C86e6c
+                ) == false,
+                "Minter role removed"
+            );
             require(kintoToken.totalSupply() == vaultBalance, "Total Supply exact");
         }
-
     }
 }

@@ -23,7 +23,7 @@ contract DeployScript is Constants, Test, MigrationHelper {
 
         token = _getChainDeployment("K", block.chainid);
         if (token != address(0)) {
-            console.log("Deployed",  token);
+            console.log("Deployed", token);
             return;
         }
 
@@ -33,8 +33,8 @@ contract DeployScript is Constants, Test, MigrationHelper {
 
         // Checks
         assertEq(SuperToken(token).decimals(), 18, "Invalid decimals");
-        assertEq(SuperToken(token).name(), 'Kinto', "Invalid name");
-        assertEq(SuperToken(token).symbol(), 'K', "Invalid symbol");
+        assertEq(SuperToken(token).name(), "Kinto", "Invalid name");
+        assertEq(SuperToken(token).symbol(), "K", "Invalid symbol");
 
         saveContractAddress("K", token);
     }

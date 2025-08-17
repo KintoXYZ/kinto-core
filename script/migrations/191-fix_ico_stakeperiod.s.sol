@@ -18,7 +18,7 @@ contract StakeSeasonTwoFix is MigrationHelper {
             return;
         }
 
-        bytes memory bytecode = abi.encodePacked(type(StakedKinto).creationCode);
+        // bytes memory bytecode = abi.encodePacked(type(StakedKinto).creationCode);
 
         // _deployImplementationAndUpgrade("StakedKinto", "V10", bytecode);
         address[] memory users = new address[](151);

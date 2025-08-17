@@ -430,7 +430,6 @@ contract FixKintoPreHack is MigrationHelper {
         //     Record({user: 0x25499ce734F62cf5Fc8301999185d4A943297B6D, shares: 38179999999999900000, mint: false})
         // );
 
-
         records.push(
             Record({user: 0x6b7d8C7682cc336DfE26CC3e5042459193808bec, shares: 12358600000000000000, mint: true})
         );
@@ -534,13 +533,12 @@ contract FixKintoPreHack is MigrationHelper {
         records.push(
             Record({user: 0xe847c816b99eB3f7f380B1B377c4c446743666d5, shares: 21194499999999900000, mint: false})
         );
-        
+
         // Done
         // records.push(Record({user: 0xf26fe167A0f1ccd17f493fbD54bB840EDc1d889d, shares: 9975742626999810, mint: true}));
         // records.push(
         //     Record({user: 0xBa9E760Cbbf6eF7368Ef84558219C46a93cBa215, shares: 1000000000000000000, mint: true}));
-        
-        
+
         // records.push(
         //     Record({user: 0x8DdE2c811EbdC2f6Cb4E6A02E547712CCa1A8577, shares: 95406786482100700000, mint: false})
         // );
