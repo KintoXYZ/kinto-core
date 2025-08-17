@@ -10,7 +10,6 @@ import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/Ma
 
 import {MorphoRepayment} from "@kinto-core/vaults/MorphoRepayment.sol";
 import {SharedSetup} from "@kinto-core-test/SharedSetup.t.sol";
-import "@kinto-core/wallet/KintoWalletFactory.sol";
 import {console2} from "forge-std/console2.sol";
 
 /* ===== Upgrade target ===== */
@@ -19,7 +18,7 @@ contract MorphoRepaymentV2 is MorphoRepayment {
         return 42;
     }
 
-    constructor(IERC20Upgradeable c, IERC20Upgradeable d, IKintoWalletFactory f) MorphoRepayment(c, d, f) {}
+    constructor(IERC20Upgradeable c, IERC20Upgradeable d) MorphoRepayment(c, d) {}
 }
 
 contract MorphoRepaymentTest is SharedSetup {
@@ -53,29 +52,13 @@ contract MorphoRepaymentTest is SharedSetup {
         collateral = new ERC20Mock("Kinto", "K", 18);
         usdc = new ERC20Mock("USD Coin", "USDC", 6);
 
-        // Mark test users as valid Kinto wallets
-        console2.log("EOOO");
-        approveKYC(_kycProvider, vm.addr(1), 1);
-        approveKYC(_kycProvider, vm.addr(2), 2);
-        approveKYC(_kycProvider, vm.addr(8), 8);
-
         alice2 = vm.addr(1);
         bob2 = vm.addr(2);
         charlie2 = vm.addr(8);
 
-        vm.prank(alice2);
-        _walletFactory.createAccount(alice2, alice2, 0);
-        vm.prank(bob2);
-        _walletFactory.createAccount(bob2, bob2, 0);
-        vm.prank(charlie2);
-        _walletFactory.createAccount(charlie2, charlie2, 0);
-
         // Deploy implementation then proxy
-        MorphoRepayment impl = new MorphoRepayment(
-            IERC20Upgradeable(address(collateral)),
-            IERC20Upgradeable(address(usdc)),
-            IKintoWalletFactory(address(_walletFactory))
-        );
+        MorphoRepayment impl =
+            new MorphoRepayment(IERC20Upgradeable(address(collateral)), IERC20Upgradeable(address(usdc)));
 
         vm.startPrank(admin);
         repay = MorphoRepayment(payable(address(new UUPSProxy{salt: 0}(address(impl), ""))));
@@ -121,7 +104,6 @@ contract MorphoRepaymentTest is SharedSetup {
     function testDeploymentConfig() public view {
         assertEq(address(repay.collateralToken()), address(collateral));
         assertEq(address(repay.debtToken()), address(usdc));
-        assertEq(address(repay.factory()), address(_walletFactory));
         assertEq(repay.owner(), admin);
     }
 
@@ -129,22 +111,16 @@ contract MorphoRepaymentTest is SharedSetup {
 
     function testUpgradeOnlyOwnerReverts(address someone) public {
         vm.assume(someone != admin);
-        MorphoRepaymentV2 v2 = new MorphoRepaymentV2(
-            IERC20Upgradeable(address(collateral)),
-            IERC20Upgradeable(address(usdc)),
-            IKintoWalletFactory(address(_walletFactory))
-        );
+        MorphoRepaymentV2 v2 =
+            new MorphoRepaymentV2(IERC20Upgradeable(address(collateral)), IERC20Upgradeable(address(usdc)));
         vm.prank(someone);
         vm.expectRevert("Ownable: caller is not the owner");
         repay.upgradeTo(address(v2));
     }
 
     function testUpgradeSuccess() public {
-        MorphoRepaymentV2 v2 = new MorphoRepaymentV2(
-            IERC20Upgradeable(address(collateral)),
-            IERC20Upgradeable(address(usdc)),
-            IKintoWalletFactory(address(_walletFactory))
-        );
+        MorphoRepaymentV2 v2 =
+            new MorphoRepaymentV2(IERC20Upgradeable(address(collateral)), IERC20Upgradeable(address(usdc)));
         vm.prank(admin);
         repay.upgradeTo(address(v2));
         assertEq(MorphoRepaymentV2(address(repay)).ping(), 42);
@@ -168,20 +144,24 @@ contract MorphoRepaymentTest is SharedSetup {
         users[0] = alice2;
         users[1] = bob2;
 
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 100_000 * 1e6,
-            collateralLocked: 50_000 ether,
-            usdcBorrowed: 20_000 * 1e6,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 200_000 * 1e6,
-            collateralLocked: 70_000 ether,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 100_000 * 1e6,
+                collateralLocked: 50_000 ether,
+                usdcBorrowed: 20_000 * 1e6,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 200_000 * 1e6,
+                collateralLocked: 70_000 ether,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
 
         vm.prank(admin);
         repay.setUserInfo(users, infos);
@@ -203,36 +183,19 @@ contract MorphoRepaymentTest is SharedSetup {
 
     /* ============ repayDebt: all flows ============ */
 
-    function testRepayRevertsIfNotKintoWallet() public {
-        users = new address[](1);
-        users[0] = charlie2;
-        MorphoRepayment.UserInfo;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 100 ether,
-            usdcBorrowed: 1000 * 1e6,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
-        vm.prank(admin);
-        repay.setUserInfo(users, infos);
-
-        vm.prank(charlie2);
-        vm.expectRevert(bytes("Not a Kinto wallet"));
-        repay.repayDebt(100 * 1e6);
-    }
-
     function testRepayZeroAmountUnlocksWhenNoDebt() public {
         // bob2 has collateral but borrowed == 0; zero-amount call returns principal (bonus = 0)
         users = new address[](1);
         users[0] = bob2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 1_000 ether,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 1_000 ether,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
 
         vm.prank(admin);
         repay.setUserInfo(users, infos);
@@ -252,13 +215,15 @@ contract MorphoRepaymentTest is SharedSetup {
         // alice2 borrowed 2,000 USDC; repay 500; no collateral returned yet
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 1_000 ether,
-            usdcBorrowed: 2_000 * 1e6,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 1_000 ether,
+                usdcBorrowed: 2_000 * 1e6,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -284,13 +249,15 @@ contract MorphoRepaymentTest is SharedSetup {
         // alice2 borrowed 1,200 USDC; on final repayment bonus base = 3× amountRepaid (in 18dp)
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 10_000 ether,
-            usdcBorrowed: 1_200 * 1e6,
-            usdcRepaid: 1_200 * 1e6 - 200 * 1e6,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 10_000 ether,
+                usdcBorrowed: 1_200 * 1e6,
+                usdcRepaid: 1_200 * 1e6 - 200 * 1e6,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -321,13 +288,15 @@ contract MorphoRepaymentTest is SharedSetup {
     function testRepayRevertOverRemaining() public {
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 1_000 ether,
-            usdcBorrowed: 1_000 * 1e6,
-            usdcRepaid: 100 * 1e6,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 1_000 ether,
+                usdcBorrowed: 1_000 * 1e6,
+                usdcRepaid: 100 * 1e6,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -339,13 +308,15 @@ contract MorphoRepaymentTest is SharedSetup {
     function testRepayRevertAfterDeadline() public {
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 1_000 ether,
-            usdcBorrowed: 1_000 * 1e6,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 1_000 ether,
+                usdcBorrowed: 1_000 * 1e6,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -360,13 +331,15 @@ contract MorphoRepaymentTest is SharedSetup {
     function testRecoverRevertBeforeDeadline() public {
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 500_000 * 1e6,
-            collateralLocked: 0,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 500_000 * 1e6,
+                collateralLocked: 0,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -380,20 +353,24 @@ contract MorphoRepaymentTest is SharedSetup {
         users = new address[](2);
         users[0] = alice2;
         users[1] = bob2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 600_000 * 1e6,
-            collateralLocked: 0,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 400_000 * 1e6,
-            collateralLocked: 0,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 600_000 * 1e6,
+                collateralLocked: 0,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 400_000 * 1e6,
+                collateralLocked: 0,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
@@ -402,13 +379,15 @@ contract MorphoRepaymentTest is SharedSetup {
         moreUsers = new address[](1);
         moreUsers[0] = charlie2;
         uint256 targetRepay = (TOTAL_DEBT * 40) / 100; // 40%
-        moreInfos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 0,
-            usdcBorrowed: targetRepay,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        moreInfos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 0,
+                usdcBorrowed: targetRepay,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(moreUsers, moreInfos);
 
@@ -441,26 +420,30 @@ contract MorphoRepaymentTest is SharedSetup {
         // alice2 lent 1,000, fully funded → withdraw 100%
         users = new address[](1);
         users[0] = alice2;
-        infos.push(MorphoRepayment.UserInfo({
-            usdcLent: 1_000_000 * 1e6,
-            collateralLocked: 0,
-            usdcBorrowed: 0,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        infos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 1_000_000 * 1e6,
+                collateralLocked: 0,
+                usdcBorrowed: 0,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(users, infos);
 
         // Repay TOTAL_DEBT via charlie2 to set factor == 1e18
         moreUsers = new address[](1);
         moreUsers[0] = charlie2;
-        moreInfos.push(MorphoRepayment.UserInfo({
-            usdcLent: 0,
-            collateralLocked: 0,
-            usdcBorrowed: TOTAL_DEBT,
-            usdcRepaid: 0,
-            isRepaid: false
-        }));
+        moreInfos.push(
+            MorphoRepayment.UserInfo({
+                usdcLent: 0,
+                collateralLocked: 0,
+                usdcBorrowed: TOTAL_DEBT,
+                usdcRepaid: 0,
+                isRepaid: false
+            })
+        );
         vm.prank(admin);
         repay.setUserInfo(moreUsers, moreInfos);
 

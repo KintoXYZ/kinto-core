@@ -7,7 +7,6 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import {IKintoWalletFactory} from "@kinto-core/interfaces/IKintoWalletFactory.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
@@ -37,7 +36,6 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /* ============ State Variables ============ */
     IERC20Upgradeable public immutable collateralToken;
     IERC20Upgradeable public immutable debtToken;
-    IKintoWalletFactory public immutable factory;
 
     uint256 public constant TOTAL_COLLATERAL = 1e24;
     uint256 public constant TOTAL_DEBT = 25e11; // 1e6 USDC
@@ -53,11 +51,10 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     /* ============ Constructor ============ */
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(IERC20Upgradeable _collateralToken, IERC20Upgradeable _debtToken, IKintoWalletFactory _factory) {
+    constructor(IERC20Upgradeable _collateralToken, IERC20Upgradeable _debtToken) {
         _disableInitializers();
         collateralToken = _collateralToken;
         debtToken = _debtToken;
-        factory = _factory;
     }
 
     function initialize() external initializer {
@@ -95,7 +92,6 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
      */
     function repayDebt(uint256 _debtAmount) external nonReentrant {
         UserInfo storage userInfo = userInfos[msg.sender];
-        require(factory.getWalletTimestamp(msg.sender) > 0, "Not a Kinto wallet");
         require(userInfo.usdcBorrowed - userInfo.usdcRepaid >= _debtAmount, "Not enough debt");
         require(!userInfo.isRepaid, "Has repaid already");
         require(block.timestamp <= REPAYMENT_DEADLINE, "Repayment deadline reached");
@@ -128,7 +124,6 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
     function recoverSuppliedUSDC() external nonReentrant {
         UserInfo storage userInfo = userInfos[msg.sender];
         uint256 lent = userInfo.usdcLent;
-        require(factory.getWalletTimestamp(msg.sender) > 0, "Not a Kinto wallet");
         require(lent > 0, "Not enough lent");
         require(block.timestamp >= REPAYMENT_DEADLINE, "Repayment deadline not reached");
 
