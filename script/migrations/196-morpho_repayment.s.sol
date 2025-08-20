@@ -2036,6 +2036,24 @@ contract DeployScript is Script, MigrationHelper {
         assertEq(address(morphoRepayment.debtToken()), address(USDC));
         assertEq(morphoRepayment.totalCollateralUnlocked(), 0);
         assertEq(morphoRepayment.totalDebtRepaid(), 0);
+        (uint usdcLent, uint collateralLocked, uint usdcBorrowed, uint usdcRepaid, bool isRepaid) = morphoRepayment.userInfos(0x5457C2dbB3EbE468481193be1786FA8190e66D21);
+        assertEq(usdcLent, 2804);
+        assertEq(collateralLocked, 300000000000000);
+        assertEq(usdcBorrowed, 0);
+        assertEq(usdcRepaid, 0);
+        assertEq(isRepaid, false);
+        (usdcLent, collateralLocked, usdcBorrowed, usdcRepaid, isRepaid) = morphoRepayment.userInfos(0xC841C7b66bC6300449C5a9eCbE85Fc910bb82892);
+        assertEq(usdcLent, 0);
+        assertEq(collateralLocked, 523404688699999977472);
+        assertEq(usdcBorrowed, 660848916);
+        assertEq(usdcRepaid, 0);
+        assertEq(isRepaid, false);
+        (usdcLent, collateralLocked, usdcBorrowed, usdcRepaid, isRepaid) = morphoRepayment.userInfos(0xC42f37a8b36f6C4AE7f214989357A4fEcEb55Ea9);
+        assertEq(usdcLent, 0);
+        assertEq(collateralLocked, 261185918100000);
+        assertEq(usdcBorrowed, 0);
+        assertEq(usdcRepaid, 0);
+        assertEq(isRepaid, false);
         saveContractAddress("MorphoRepayment", address(morphoRepayment));
         saveContractAddress("MorphoRepayment-impl", address(impl));
     }
