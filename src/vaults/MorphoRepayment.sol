@@ -92,7 +92,7 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
      */
     function repayDebt(uint256 _debtAmount) external nonReentrant {
         UserInfo storage userInfo = userInfos[msg.sender];
-        require(userInfo.usdcBorrowed - userInfo.usdcRepaid >= _debtAmount, "Not enough debt");
+        require(userInfo.usdcBorrowed - userInfo.usdcRepaid >= (_debtAmount > 1e4 ? _debtAmount - 1e4 : 0), "Not enough debt");
         require(!userInfo.isRepaid, "Has repaid already");
         require(block.timestamp <= REPAYMENT_DEADLINE, "Repayment deadline reached");
 
@@ -102,12 +102,12 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
             totalDebtRepaid += _debtAmount;
         }
 
-        if (userInfo.usdcRepaid == userInfo.usdcBorrowed) {
+        if (userInfo.usdcRepaid >= userInfo.usdcBorrowed) {
             userInfo.isRepaid = true;
             totalCollateralUnlocked += userInfo.collateralLocked;
             uint256 timeLeft = REPAYMENT_DEADLINE - block.timestamp;
             // prorata bonus based on time left, only 10% when left is 3 months
-            uint256 collateralLockedBonusDen = _debtAmount * 1e12 * 3; // Using 3 as the conservative lock
+            uint256 collateralLockedBonusDen = userInfo.usdcBorrowed * 1e12 / 7; // Using 7 as the conservative lock
             uint256 tenPct = MathUpgradeable.mulDiv(collateralLockedBonusDen, BONUS_REPAYMENT, 1e18);
             uint256 bonus = MathUpgradeable.mulDiv(tenPct, timeLeft, THREE_MONTHS);
             collateralToken.safeTransfer(msg.sender, userInfo.collateralLocked + bonus);

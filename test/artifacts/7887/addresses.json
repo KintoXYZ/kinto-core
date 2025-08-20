@@ -299,5 +299,8 @@
   "MultisigSigner": "0xCA3Fc9eCD24d0F8C7A6DFDB6A4bCbb91ff241892",
   "ProtoGovernance": "0x6033B0fE6C23E6D160AB8a0381e4666e6978d325",
   "MorphoRepayment": "0x5A1E00cA7E14CcA18b7a6EAb0A586ed7801bAbd3",
-  "MorphoRepayment-impl": "0x5e8bBc539B5C439EDE187172780dc720a85C89d1"
+  "MorphoRepayment-impl": "0x5e8bBc539B5C439EDE187172780dc720a85C89d1",
+  "MorphoRepaymentV2-impl": "0xA876983d3d2A6FA41D6E0640aD053ec920d92cd3",
+  "MorphoRepaymentV3-impl": "0x6a9AA99F0F96E0b3dc489B0ccB16c4114b6E6317",
+  "MorphoRepaymentV4-impl": "0xDC4eFf9240fB70B668c665D15Fe68D1d48eCc274"
 }
