@@ -273,7 +273,7 @@ contract StakedKinto is Initializable, ERC4626Upgradeable, UUPSUpgradeable, Owna
             address(period.rewardToken) != address(0) ? address(period.rewardToken) : address(__rewardToken__deprecated);
 
         // Simplify calculation
-        return (userStake.amount * period.rewardRate * stakingDuration) / (365 days)
+        return (userStake.amount * period.rewardRate * stakingDuration) / (365 days) / 15
             / (10 ** (18 - IERC20MetadataUpgradeable(rewardToken).decimals())) * 2;
     }
 
