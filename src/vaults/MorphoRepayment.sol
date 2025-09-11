@@ -92,7 +92,10 @@ contract MorphoRepayment is Initializable, UUPSUpgradeable, OwnableUpgradeable, 
      */
     function repayDebt(uint256 _debtAmount) external nonReentrant {
         UserInfo storage userInfo = userInfos[msg.sender];
-        require(userInfo.usdcBorrowed - userInfo.usdcRepaid >= (_debtAmount > 1e4 ? _debtAmount - 1e4 : 0), "Not enough debt");
+        require(
+            userInfo.usdcBorrowed - userInfo.usdcRepaid >= (_debtAmount > 1e4 ? _debtAmount - 1e4 : 0),
+            "Not enough debt"
+        );
         require(!userInfo.isRepaid, "Has repaid already");
         require(block.timestamp <= REPAYMENT_DEADLINE, "Repayment deadline reached");
 

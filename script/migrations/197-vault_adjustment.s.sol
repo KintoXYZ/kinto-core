@@ -21,9 +21,9 @@ contract FixVaultBalance is MigrationHelper {
         uint256 vaultBalance = kintoToken.balanceOf(vaultAd);
         uint256 devBalance = kintoToken.balanceOf(devWallet);
         uint256 burnedAdmin = 1352661940777106379283442;
-        uint256 arbBridged = 228074132415388490747789 ; // todo: grab
+        uint256 arbBridged = 228074132415388490747789; // todo: grab
 
-        uint diff = 228074132415388490747789 - vaultBalance;
+        uint256 diff = 228074132415388490747789 - vaultBalance;
 
         _handleOps(
             abi.encodeWithSelector(BridgedToken.mint.selector, vaultAd, arbBridged - vaultBalance),
@@ -31,14 +31,10 @@ contract FixVaultBalance is MigrationHelper {
         );
 
         _handleOps(
-            abi.encodeWithSelector(BridgedToken.burn.selector, devWallet, diff),
-            payable(_getChainDeployment("KINTO"))
+            abi.encodeWithSelector(BridgedToken.burn.selector, devWallet, diff), payable(_getChainDeployment("KINTO"))
         );
-        
 
         require(kintoToken.balanceOf(vaultAd) == arbBridged, "Chains do not match");
         require(kintoToken.totalSupply() == 10_000_000e18, "Total supply incorrect");
-
-
     }
 }

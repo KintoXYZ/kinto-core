@@ -19,7 +19,7 @@ contract StakeSeasonThree is MigrationHelper {
 
         bytes memory bytecode = abi.encodePacked(type(StakedKinto).creationCode);
 
-        _deployImplementationAndUpgrade("StakedKinto", "V14", bytecode);
+        _deployImplementationAndUpgrade("StakedKinto", "V16", bytecode);
         (uint256 startTime, uint256 endTime, uint256 rewardRate, uint256 maxCapacity, address rewardToken) =
             stakedKinto.getPeriodInfo(0);
 
@@ -45,5 +45,8 @@ contract StakeSeasonThree is MigrationHelper {
         // Check calculate rewards
         uint256 rewards = stakedKinto.calculateRewards(address(0xe68dAF0de5152e155CFfE2B2d116b74E6CA5CcB3), 1);
         require(rewards >= 170 * 1e18 && rewards <= 172 * 1e18, "Wrong rewards");
+
+        uint256 maxRedeem = stakedKinto.maxRedeem(0x0073E4F234319c19B435A85aEe79A6f22d2eF5Be);
+        require(maxRedeem == 20999332612800865806, "Wrong max redeem");
     }
 }
