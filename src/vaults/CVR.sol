@@ -7,30 +7,32 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
- * @title KintoLeftOver
+ * @title CVR
  * @notice A contract that holds users balances in USDC that did not withdraw.
  * @dev Only users with at least $50 are included
  */
-contract KintoLeftOver is Ownable, ReentrancyGuard {
+contract CVR is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /* ============ Struct ============ */
 
-    struct UserInfo {
+    struct FounderDonation {
         uint256 amount; // 1e6 USDC
         bool claimed;
     }
 
     /* ============ Events ============ */
 
-    event Claimed(address indexed user, uint256 amount);
+    event DonationClaimed(address indexed user, uint256 amount);
     event EmergencyRecovered(uint256 amount);
+    event CVREntrySignedUp(address indexed user);
 
     /* ============ State Variables ============ */
     IERC20 public constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     address public constant OWNER = 0x2E7111Ef34D39b36EC84C656b947CA746e495Ff6;
 
-    mapping(address => UserInfo) public userInfos;
+    mapping(address => FounderDonation) public founderDonations;
+    mapping(address => bool) public signedUp;
 
     /* ============ Constructor ============ */
 
@@ -42,14 +44,24 @@ contract KintoLeftOver is Ownable, ReentrancyGuard {
     /* ============ Claims============ */
 
     /**
-     * @notice Accept terms and claims first period
+     * @notice Claim Founder Donation
      */
     function acceptAndClaim() external nonReentrant {
-        require(!userInfos[msg.sender].claimed, "Already claimed");
-        require(userInfos[msg.sender].amount > 0, "Nothing to claim");
-        userInfos[msg.sender].claimed = true;
-        USDC.safeTransfer(msg.sender, userInfos[msg.sender].amount);
-        emit Claimed(msg.sender, userInfos[msg.sender].amount);
+        require(!founderDonations[msg.sender].claimed, "Already claimed");
+        require(founderDonations[msg.sender].amount > 0, "Nothing to claim");
+        founderDonations[msg.sender].claimed = true;
+        signedUp[msg.sender] = true;
+        USDC.safeTransfer(msg.sender, founderDonations[msg.sender].amount);
+        emit DonationClaimed(msg.sender, founderDonations[msg.sender].amount);
+    }
+
+    /**
+     * @notice Sign up for CVR
+     */
+    function acceptAndSignupCVREntry() external nonReentrant {
+        require(!signedUp[msg.sender], "Already signed up");
+        signedUp[msg.sender] = true;
+        emit CVREntrySignedUp(msg.sender);
     }
 
     /* ============ Admin functions ============ */
@@ -64,25 +76,25 @@ contract KintoLeftOver is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Set user info
-     * @param _user The users to update
-     * @param _userInfo The info to set
+     * @notice Set donation info
+     * @param _user The user to receive a donation
+     * @param _donationInfo The info to set for the user
      */
-    function updateUserInfo(address _user, UserInfo calldata _userInfo) external onlyOwner {
-        require(!userInfos[_user].claimed, "User immutable");
-        userInfos[_user] = _userInfo;
+    function updateDonationInfo(address _user, FounderDonation calldata _donationInfo) external onlyOwner {
+        require(!founderDonations[_user].claimed, "User immutable");
+        founderDonations[_user] = _donationInfo;
     }
 
     /**
-     * @notice Set users info
-     * @param _users The users to set info for
+     * @notice Set donations info
+     * @param _users The users to set donations for
      * @param _amounts The amounts to set for the users
      */
-    function setUsersInfo(address[] calldata _users, uint256[] calldata _amounts) external onlyOwner {
+    function setUsersDonationInfo(address[] calldata _users, uint256[] calldata _amounts) external onlyOwner {
         require(_users.length == _amounts.length, "Invalid params");
         for (uint256 i = 0; i < _users.length; i++) {
-            require(userInfos[_users[i]].claimed == false, "User already claimed");
-            userInfos[_users[i]] = UserInfo({amount: _amounts[i], claimed: false});
+            require(founderDonations[_users[i]].claimed == false, "User already claimed");
+            founderDonations[_users[i]] = FounderDonation({amount: _amounts[i], claimed: false});
         }
     }
 }

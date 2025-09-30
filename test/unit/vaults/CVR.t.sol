@@ -2,13 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {console2} from "forge-std/console2.sol";
 import {ERC20Mock} from "@kinto-core-test/helpers/ERC20Mock.sol";
 
-import {KintoLeftOver} from "@kinto-core/vaults/KintoLeftOver.sol";
+import {CVR} from "@kinto-core/vaults/CVR.sol";
 
-contract KintoLeftOverTest is Test {
-    // Addresses/constants from KintoLeftOver
+contract CVRTest is Test {
+    // Addresses/constants from CVR
     address public constant USDC_ADDR = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant OWNER = 0x2E7111Ef34D39b36EC84C656b947CA746e495Ff6;
 
@@ -21,7 +20,7 @@ contract KintoLeftOverTest is Test {
     uint256[] public amounts = new uint256[](3);
 
     ERC20Mock usdc; // Mocked into USDC_ADDR via vm.etch
-    KintoLeftOver leftover;
+    CVR cvr;
 
     function setUp() public {
         // Deploy ERC20Mock, then etch runtime code into canonical USDC address used by the contract
@@ -30,7 +29,7 @@ contract KintoLeftOverTest is Test {
         usdc = ERC20Mock(USDC_ADDR);
 
         // Deploy target contract
-        leftover = new KintoLeftOver();
+        cvr = new CVR();
 
         // Identities
         alice = vm.addr(1);
@@ -39,7 +38,7 @@ contract KintoLeftOverTest is Test {
         rando = vm.addr(444);
 
         // Fund contract to cover claims
-        usdc.mint(address(leftover), 1_000_000_000 * 1e6);
+        usdc.mint(address(cvr), 1_000_000_000 * 1e6);
 
         // Touch balances (not necessary but keeps state explicit)
         usdc.mint(OWNER, 0);
@@ -53,9 +52,9 @@ contract KintoLeftOverTest is Test {
 
     function testDeploymentConfig() public view {
         // Owner is the constant OWNER
-        assertEq(leftover.owner(), OWNER);
+        assertEq(cvr.owner(), OWNER);
         // USDC address should be the canonical one
-        assertEq(address(leftover.USDC()), USDC_ADDR);
+        assertEq(address(cvr.USDC()), USDC_ADDR);
     }
 
     /* ============ acceptAndClaim ============ */
@@ -63,80 +62,96 @@ contract KintoLeftOverTest is Test {
     function testAcceptAndClaim_HappyPath() public {
         // Owner seeds Alice with 123,456 USDC (6dp)
         vm.prank(OWNER);
-        leftover.updateUserInfo(alice, KintoLeftOver.UserInfo({amount: 123_456 * 1e6, claimed: false}));
+        cvr.updateDonationInfo(alice, CVR.FounderDonation({amount: 123_456 * 1e6, claimed: false}));
 
         uint256 before = usdc.balanceOf(alice);
         vm.prank(alice);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
 
         // Received funds + flag flipped
         assertEq(usdc.balanceOf(alice) - before, 123_456 * 1e6);
-        (uint256 amt, bool claimed) = leftover.userInfos(alice);
+        (uint256 amt, bool claimed) = cvr.founderDonations(alice);
         assertEq(amt, 123_456 * 1e6);
         assertTrue(claimed);
     }
 
     function testAcceptAndClaim_RevertAlreadyClaimed() public {
         vm.startPrank(OWNER);
-        leftover.updateUserInfo(alice, KintoLeftOver.UserInfo({amount: 1 * 1e6, claimed: false}));
+        cvr.updateDonationInfo(alice, CVR.FounderDonation({amount: 1 * 1e6, claimed: false}));
         vm.stopPrank();
 
         vm.prank(alice);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
 
         vm.prank(alice);
         vm.expectRevert(bytes("Already claimed"));
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
     }
 
     function testAcceptAndClaim_RevertNothingToClaim() public {
         // rando has no allocation
         vm.prank(rando);
         vm.expectRevert(bytes("Nothing to claim"));
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
     }
 
-    /* ============ Admin: updateUserInfo ============ */
+    /* ============ acceptAndSignupCVREntry ============ */
 
-    function testUpdateUserInfo_OnlyOwner() public {
-        KintoLeftOver.UserInfo memory info = KintoLeftOver.UserInfo({amount: 10_000 * 1e6, claimed: false});
+    function testAcceptAndSignupCVREntry_HappyPath() public {
+        vm.prank(alice);
+        cvr.acceptAndSignupCVREntry();
+        assertTrue(cvr.signedUp(alice));
+    }
+
+    function testAcceptAndSignupCVREntry_RevertAlreadySignedUp() public {
+        vm.prank(alice);
+        cvr.acceptAndSignupCVREntry();
+        vm.expectRevert(bytes("Already signed up"));
+        vm.prank(alice);
+        cvr.acceptAndSignupCVREntry();
+    }
+
+    /* ============ Admin: updateDonationInfo ============ */
+
+    function testUpdateFounderDonation_OnlyOwner() public {
+        CVR.FounderDonation memory info = CVR.FounderDonation({amount: 10_000 * 1e6, claimed: false});
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        leftover.updateUserInfo(rando, info);
+        cvr.updateDonationInfo(rando, info);
     }
 
-    function testUpdateUserInfo_RejectsClaimedFlag() public {
+    function testUpdateFounderDonation_RejectsClaimedFlag() public {
         vm.stopPrank();
         vm.startPrank(OWNER);
-        leftover.updateUserInfo(alice, KintoLeftOver.UserInfo({amount: 1 * 1e6, claimed: false}));
+        cvr.updateDonationInfo(alice, CVR.FounderDonation({amount: 1 * 1e6, claimed: false}));
         vm.stopPrank();
 
         vm.prank(alice);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
 
-        KintoLeftOver.UserInfo memory bad = KintoLeftOver.UserInfo({amount: 90_000 * 1e6, claimed: false});
+        CVR.FounderDonation memory bad = CVR.FounderDonation({amount: 90_000 * 1e6, claimed: false});
 
         vm.prank(OWNER);
         vm.expectRevert(bytes("User immutable"));
-        leftover.updateUserInfo(alice, bad);
+        cvr.updateDonationInfo(alice, bad);
     }
 
-    function testUpdateUserInfo_SetsThenClaim() public {
+    function testUpdateFounderDonation_SetsThenClaim() public {
         vm.prank(OWNER);
-        leftover.updateUserInfo(bob, KintoLeftOver.UserInfo({amount: 777_777 * 1e6, claimed: false}));
+        cvr.updateDonationInfo(bob, CVR.FounderDonation({amount: 777_777 * 1e6, claimed: false}));
 
         // Verify set
-        (uint256 amt, bool claimed) = leftover.userInfos(bob);
+        (uint256 amt, bool claimed) = cvr.founderDonations(bob);
         assertEq(amt, 777_777 * 1e6);
         assertFalse(claimed);
 
         // Claim works
         uint256 before = usdc.balanceOf(bob);
         vm.prank(bob);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
         assertEq(usdc.balanceOf(bob) - before, 777_777 * 1e6);
-        (, claimed) = leftover.userInfos(bob);
+        (, claimed) = cvr.founderDonations(bob);
         assertTrue(claimed);
     }
 
@@ -148,7 +163,7 @@ contract KintoLeftOverTest is Test {
 
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        leftover.setUsersInfo(users, amounts);
+        cvr.setUsersDonationInfo(users, amounts);
     }
 
     function testSetUsersInfo_LengthMismatch() public {
@@ -161,15 +176,15 @@ contract KintoLeftOverTest is Test {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes("Invalid params"));
-        leftover.setUsersInfo(users2, amounts2);
+        cvr.setUsersDonationInfo(users2, amounts2);
     }
 
     function testSetUsersInfo_UserAlreadyClaimedReverts() public {
         // Seed & claim for Alice
         vm.prank(OWNER);
-        leftover.updateUserInfo(alice, KintoLeftOver.UserInfo({amount: 10 * 1e6, claimed: false}));
+        cvr.updateDonationInfo(alice, CVR.FounderDonation({amount: 10 * 1e6, claimed: false}));
         vm.prank(alice);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
 
         // Now try to set Alice again via batch; should revert on "User already claimed"
         users[0] = alice; // already claimed
@@ -180,7 +195,7 @@ contract KintoLeftOverTest is Test {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes("User already claimed"));
-        leftover.setUsersInfo(users, amounts);
+        cvr.setUsersDonationInfo(users, amounts);
     }
 
     function testSetUsersInfo_NormalMultiUserThenClaims() public {
@@ -193,12 +208,12 @@ contract KintoLeftOverTest is Test {
         amounts[2] = 90 * 1e6;
 
         vm.prank(OWNER);
-        leftover.setUsersInfo(users, amounts);
+        cvr.setUsersDonationInfo(users, amounts);
 
         // Verify stored
-        (uint256 aAmt, bool aClaimed) = leftover.userInfos(alice);
-        (uint256 bAmt, bool bClaimed) = leftover.userInfos(bob);
-        (uint256 cAmt, bool cClaimed) = leftover.userInfos(charlie);
+        (uint256 aAmt, bool aClaimed) = cvr.founderDonations(alice);
+        (uint256 bAmt, bool bClaimed) = cvr.founderDonations(bob);
+        (uint256 cAmt, bool cClaimed) = cvr.founderDonations(charlie);
         assertEq(aAmt, 50_000 * 1e6);
         assertFalse(aClaimed);
         assertEq(bAmt, 75_500 * 1e6);
@@ -209,19 +224,19 @@ contract KintoLeftOverTest is Test {
         // Alice claims
         uint256 aBefore = usdc.balanceOf(alice);
         vm.prank(alice);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
         assertEq(usdc.balanceOf(alice) - aBefore, 50_000 * 1e6);
 
         // Bob claims
         uint256 bBefore = usdc.balanceOf(bob);
         vm.prank(bob);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
         assertEq(usdc.balanceOf(bob) - bBefore, 75_500 * 1e6);
 
         // Charlie claims
         uint256 cBefore = usdc.balanceOf(charlie);
         vm.prank(charlie);
-        leftover.acceptAndClaim();
+        cvr.acceptAndClaim();
         assertEq(usdc.balanceOf(charlie) - cBefore, 90 * 1e6);
     }
 
@@ -230,21 +245,21 @@ contract KintoLeftOverTest is Test {
     function testEmergencyRecover_OnlyOwner() public {
         vm.prank(rando);
         vm.expectRevert("Ownable: caller is not the owner");
-        leftover.emergencyRecover();
+        cvr.emergencyRecover();
     }
 
     function testEmergencyRecover_PullsAllFundsToOwner() public {
         // Top up contract a distinct amount, then recover
         uint256 extra = 321_000 * 1e6;
-        usdc.mint(address(leftover), extra);
+        usdc.mint(address(cvr), extra);
 
         uint256 ownerBefore = usdc.balanceOf(OWNER);
-        uint256 contractBal = usdc.balanceOf(address(leftover));
+        uint256 contractBal = usdc.balanceOf(address(cvr));
 
         vm.prank(OWNER);
-        leftover.emergencyRecover();
+        cvr.emergencyRecover();
 
         assertEq(usdc.balanceOf(OWNER), ownerBefore + contractBal);
-        assertEq(usdc.balanceOf(address(leftover)), 0);
+        assertEq(usdc.balanceOf(address(cvr)), 0);
     }
 }
