@@ -53,6 +53,7 @@ contract CVR is Ownable, ReentrancyGuard {
         signedUp[msg.sender] = true;
         USDC.safeTransfer(msg.sender, founderDonations[msg.sender].amount);
         emit DonationClaimed(msg.sender, founderDonations[msg.sender].amount);
+        emit CVREntrySignedUp(msg.sender);
     }
 
     /**
