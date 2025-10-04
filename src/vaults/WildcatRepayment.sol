@@ -8,8 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 
 /**
  * @title WildcatRepayment
- * @notice A contract that holds all the positions from Wildcat lenders so they can recover a
- * portion of their principal as estipulated.
+ * @notice A contract that holds all the positions from Wildcat lenders so they can recover a portion of their principal as estipulated.
  * @dev This contract is owned by the Kinto foundation.
  */
 contract WildcatRepayment is Ownable, ReentrancyGuard {
