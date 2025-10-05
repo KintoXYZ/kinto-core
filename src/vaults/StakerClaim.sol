@@ -51,7 +51,7 @@ contract StakerClaim is Ownable, ReentrancyGuard {
         userInfos[msg.sender].claimed = true;
         KINTO.safeTransfer(msg.sender, userInfos[msg.sender].amount);
         // Adjusts decimals and ratio
-        USDC.safeTransfer(msg.sender, userInfos[msg.sender].amount / 1e8 / 3178);
+        USDC.safeTransfer(msg.sender, userInfos[msg.sender].amount / 1e9 / 3178);
         emit Claimed(msg.sender, userInfos[msg.sender].amount);
     }
 
