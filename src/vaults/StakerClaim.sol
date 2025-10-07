@@ -32,6 +32,7 @@ contract StakerClaim is Ownable, ReentrancyGuard {
     address public constant OWNER = 0x8bFe32Ac9C21609F45eE6AE44d4E326973700614;
 
     mapping(address => UserInfo) public userInfos;
+    uint256 public eraPriceFactor = 1;
 
     /* ============ Constructor ============ */
 
@@ -50,8 +51,9 @@ contract StakerClaim is Ownable, ReentrancyGuard {
         require(userInfos[msg.sender].amount > 0, "Nothing to claim");
         userInfos[msg.sender].claimed = true;
         KINTO.safeTransfer(msg.sender, userInfos[msg.sender].amount);
-        // Adjusts decimals and ratio
-        USDC.safeTransfer(msg.sender, userInfos[msg.sender].amount / 1e9 / 3177);
+        // Adjusts decimals and ratio in 10e6 decimals
+        uint256 eraAmountIn6Dec = userInfos[msg.sender].amount / 1e9 / 3177;
+        USDC.safeTransfer(msg.sender, eraAmountIn6Dec * eraPriceFactor);
         emit Claimed(msg.sender, userInfos[msg.sender].amount);
     }
 
@@ -87,5 +89,9 @@ contract StakerClaim is Ownable, ReentrancyGuard {
             require(userInfos[_users[i]].claimed == false, "User already claimed");
             userInfos[_users[i]] = UserInfo({amount: _amounts[i], claimed: false});
         }
+    }
+
+    function setEraPriceFactor(uint256 _eraPriceFactor) external onlyOwner {
+        eraPriceFactor = _eraPriceFactor;
     }
 }
