@@ -65,6 +65,8 @@ contract StakerClaim is Ownable, ReentrancyGuard {
     function emergencyRecover() external onlyOwner nonReentrant {
         uint256 amount = USDC.balanceOf(address(this));
         USDC.safeTransfer(OWNER, amount);
+        uint256 amountKinto = KINTO.balanceOf(address(this));
+        KINTO.safeTransfer(OWNER, amountKinto);
         emit EmergencyRecovered(amount);
     }
 
