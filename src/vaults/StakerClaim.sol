@@ -32,7 +32,7 @@ contract StakerClaim is Ownable, ReentrancyGuard {
     address public constant OWNER = 0x8bFe32Ac9C21609F45eE6AE44d4E326973700614;
 
     mapping(address => UserInfo) public userInfos;
-    uint256 public eraPriceFactor = 1;
+    uint256 public eraPriceFactor = 1e18;
 
     /* ============ Constructor ============ */
 
@@ -53,7 +53,7 @@ contract StakerClaim is Ownable, ReentrancyGuard {
         KINTO.safeTransfer(msg.sender, userInfos[msg.sender].amount);
         // Adjusts decimals and ratio in 10e6 decimals
         uint256 eraAmountIn6Dec = userInfos[msg.sender].amount / 1e9 / 3177;
-        USDC.safeTransfer(msg.sender, eraAmountIn6Dec * eraPriceFactor);
+        USDC.safeTransfer(msg.sender, eraAmountIn6Dec * eraPriceFactor / 1e18);
         emit Claimed(msg.sender, userInfos[msg.sender].amount);
     }
 
